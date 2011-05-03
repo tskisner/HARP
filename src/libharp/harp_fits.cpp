@@ -111,13 +111,13 @@ void harp::fits::img_read ( fitsfile * fp, size_t frow, size_t fcol, dense_mat_v
   int status = 0;
 
   long fpixel[2];
-  fpixel[0] = (long)fcol + 1;
+  fpixel[1] = (long)fcol + 1;
   
   long long width = data.size2();
   int anynul;
 
   for ( size_t i = 0; i < data.size1(); ++i ) {
-    fpixel[1] = (long)( frow + i ) + 1;
+    fpixel[0] = (long)( frow + i ) + 1;
 
     ret = fits_read_pix ( fp, TDOUBLE, fpixel, width, 0, &(data( i, 0 )), &anynul, &status );
     fits::check ( status );
@@ -127,14 +127,14 @@ void harp::fits::img_read ( fitsfile * fp, size_t frow, size_t fcol, dense_mat_v
 }
 
 
-void img_read_row ( fitsfile * fp, size_t row, data_vec & data ) {
+void harp::fits::img_read_row ( fitsfile * fp, size_t row, data_vec & data ) {
   
   int ret;
   int status = 0;
 
   long fpixel[2];
-  fpixel[0] = 0;
-  fpixel[1] = (long)row + 1;
+  fpixel[1] = 1;
+  fpixel[0] = (long)row + 1;
   
   int anynul;
 

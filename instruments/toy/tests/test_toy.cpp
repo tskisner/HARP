@@ -45,6 +45,32 @@ void harp::test_toy ( string const & datadir ) {
   cerr << "  (PASSED)" << endl;
   
   
+  cerr << "Testing toy spectra creation..." << endl;
+  
+  params.clear();
+  
+  params[ "path" ] = datadir + "/test_spectra.fits";
+  params[ "hdu" ] = "1";
+  params[ "pos" ] = "10";
+  
+  spectra_p testspec ( spectra::create ( string("toy"), params ) );
+  
+  cerr << "  (PASSED)" << endl;
+  
+  
+  cerr << "Testing toy spectra read..." << endl;
+  
+  data_vec spec ( testspec->size() );
+  
+  testspec->read ( spec );
+
+  //for ( size_t i = 0; i < spec.size(); ++i ) {
+  //  cout << spec[i] << endl;
+  //}
+  
+  cerr << "  (PASSED)" << endl;
+  
+  
   
   return;
 }
