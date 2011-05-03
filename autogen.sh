@@ -1127,7 +1127,7 @@ for inst in ${instruments}; do
     for typ in ${types}; do
 	if [ -e "${START_PATH}/instruments/${inst}/harp_${inst}_${typ}.cpp" ]; then
 	    echo "  if ( format == \"${inst}\" ) {" >> ${START_PATH}/src/libharp/harp_${typ}_formats.cpp
-	    echo "    return new harp::${typ}_${inst}( path, params );" >> ${START_PATH}/src/libharp/harp_${typ}_formats.cpp
+	    echo "    return new harp::${typ}_${inst}( params );" >> ${START_PATH}/src/libharp/harp_${typ}_formats.cpp
 	    echo "  }" >> ${START_PATH}/src/libharp/harp_${typ}_formats.cpp
 	    echo "  " >> ${START_PATH}/src/libharp/harp_${typ}_formats.cpp
 	fi
