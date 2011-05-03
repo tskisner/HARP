@@ -18,10 +18,6 @@
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 #include <boost/numeric/ublas/matrix_sparse.hpp>
 
-extern "C" {
-  #include <fitsio.h>
-}
-
 #include <moat.hpp>
 
 namespace harp {
@@ -35,6 +31,9 @@ namespace harp {
   typedef boost::numeric::ublas::matrix_range < dense_mat > dense_mat_view;
   
 }
+
+
+#include <harp/fits.hpp>
 
 #include <harp/image.hpp>
 #include <harp/spectra.hpp>
