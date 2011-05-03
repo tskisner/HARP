@@ -1,0 +1,3 @@
+#!/bin/sh
+
+CXX=g++-mp-4.4 ./configure
