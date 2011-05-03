@@ -1,14 +1,15 @@
 // @COPYRIGHT@
 
-#include <harp.hpp>
+#include <harp_internal.hpp>
 
 
 using namespace std;
 using namespace harp;
 
 
-harp::image::image ( string const & format ) {
+harp::image::image ( string const & format, std::map < std::string, std::string > const & params ) {
   format_ = format;
+  params_ = params;
 }
 
 
@@ -24,13 +25,11 @@ string harp::image::format ( ) {
 
 
 image * harp::image::clone ( ) {
-  return create ( format_, rows(), cols(), params_ );
+  return create ( format_, params_ );
 }
 
 
 image * harp::image::create ( std::string const & format, std::map < std::string, std::string > const & params ) {
-  
-  image * result = NULL;
   
   #include "harp_image_formats.cpp"
   
@@ -38,22 +37,8 @@ image * harp::image::create ( std::string const & format, std::map < std::string
   o << "Cannot create image of unknown format (" << format << ")";
   MOAT_THROW( o.str().c_str() );
 
-  return result;
+  return NULL;
   
 }
 
-
-image * harp::image::create ( std::string const & format, std::string const & path, std::map < std::string, std::string > const & params ) {
-  
-  image * result = NULL;
-  
-  #include "harp_image-path_formats.cpp"
-  
-  std::ostringstream o;
-  o << "Cannot create image of unknown format (" << format << ")";
-  MOAT_THROW( o.str().c_str() );
-
-  return result;
-  
-}
 
