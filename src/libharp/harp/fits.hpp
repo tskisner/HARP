@@ -18,8 +18,12 @@ namespace harp { namespace fits {
   void close ( fitsfile * fp );
   
   void img_seek ( fitsfile * fp, std::string const & extname );
+  
+  void img_seek ( fitsfile * fp, int hdu );
 
   void img_dims ( fitsfile * fp, size_t & rows, size_t & cols );
+  
+  void img_read ( fitsfile * fp, size_t frow, size_t fcol, dense_mat_view & data );
 
 } }
 

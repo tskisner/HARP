@@ -21,7 +21,7 @@ namespace harp {
       size_t rows_;
       size_t cols_;
       std::string path_;
-      std::string name_;
+      int hdu_;
     
   };
   

@@ -30,6 +30,9 @@ namespace harp {
   typedef boost::numeric::ublas::matrix < double, boost::numeric::ublas::row_major > dense_mat;
   typedef boost::numeric::ublas::matrix_range < dense_mat > dense_mat_view;
   
+  // typedef for range
+  typedef boost::numeric::ublas::range mv_range;
+  
 }
 
 

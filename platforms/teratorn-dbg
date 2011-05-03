@@ -1,3 +1,3 @@
 #!/bin/sh
 
-CXX=g++-mp-4.4 CC=gcc-mp-4.4 CXXFLAGS="-O0 -g -Wall" CFLAGS="-O0 -g -Wall" ./configure --prefix=/data/software --with-cfitsio-cpp="-I/ports/include" --with-cfitsio-libs="-L/ports/lib -lcfitsio" --prefix=/data/software
+CXX=g++-mp-4.4 CC=gcc-mp-4.4 CXXFLAGS="-O0 -g -Wall" CFLAGS="-O0 -g -Wall" ./configure --prefix=/data/software --with-cfitsio-cpp="-I/ports/include" --with-cfitsio-libs="-L/ports/lib -lcfitsio" --prefix=/data/software --disable-shared

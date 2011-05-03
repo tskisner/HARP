@@ -8,7 +8,7 @@ using namespace harp;
 
 
 static const char * toy_image_key_path = "path";
-static const char * toy_image_key_name = "name";
+static const char * toy_image_key_hdu = "hdu";
 static const char * toy_image_key_rows = "rows";
 static const char * toy_image_key_cols = "cols";
 
@@ -41,12 +41,12 @@ harp::image_toy::image_toy ( std::map < std::string, std::string > const & param
     
     path_ = val->second;
     
-    val = params.find( toy_image_key_name );
+    val = params.find( toy_image_key_hdu );
     if ( val == params.end() ) {
-      MOAT_THROW( "toy_image: must specify image extension name in addition to path" );
+      MOAT_THROW( "toy_image: must specify HDU number in addition to path" );
     }
     
-    name_ = val->second;
+    hdu_ = atoi ( val->second.c_str() );
     
     // read rows / cols from the FITS header
     
@@ -54,7 +54,7 @@ harp::image_toy::image_toy ( std::map < std::string, std::string > const & param
 
     fits::open_read ( fp, path_ );
 
-    fits::img_seek ( fp, name_ );
+    fits::img_seek ( fp, hdu_ );
     
     fits::img_dims ( fp, rows_, cols_ );
     
@@ -73,7 +73,15 @@ harp::image_toy::~image_toy ( ) {
 
 void harp::image_toy::read ( size_t startrow, size_t startcol, harp::dense_mat_view & data ) {
   
+  fitsfile *fp;
+
+  fits::open_read ( fp, path_ );
+
+  fits::img_seek ( fp, hdu_ );
   
+  fits::img_read ( fp, startrow, startcol, data );
+  
+  fits::close ( fp );
   
   return;
 }
