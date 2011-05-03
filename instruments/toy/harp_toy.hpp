@@ -26,4 +26,24 @@ namespace harp {
   };
   
   
+  class spectra_toy : public spectra {
+    
+    public :
+      spectra_toy ( std::map < std::string, std::string > const & params );
+      ~spectra_toy ( );
+      
+      size_t size ( ) { return size_; }
+      void read ( harp::data_vec & data );
+      void write ( std::string const & path, harp::data_vec & data ) { }
+    
+    private :
+    
+      size_t size_;
+      size_t pos_;
+      std::string path_;
+      int hdu_;
+    
+  };
+  
+  
 }

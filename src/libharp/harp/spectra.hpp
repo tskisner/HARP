@@ -14,7 +14,7 @@ namespace harp {
       void cleanup ( );
       
       virtual size_t size ( ) { return 0; }
-      virtual void read ( size_t startrow, size_t startcol, harp::data_vec & data ) { return; }
+      virtual void read ( harp::data_vec & data ) { return; }
       virtual void write ( std::string const & path, harp::data_vec & data ) { return; }
 
       std::string format ( );

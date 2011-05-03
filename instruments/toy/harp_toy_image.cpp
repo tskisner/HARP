@@ -17,6 +17,13 @@ harp::image_toy::image_toy ( std::map < std::string, std::string > const & param
   
   map < std::string, std::string > :: const_iterator val;
   
+  val = params.find( toy_image_key_hdu );
+  if ( val == params.end() ) {
+    hdu_ = 1;
+  } else {
+    hdu_ = atoi ( val->second.c_str() );
+  }
+  
   val = params.find( toy_image_key_path );
   
   if ( val == params.end() ) {
@@ -40,13 +47,6 @@ harp::image_toy::image_toy ( std::map < std::string, std::string > const & param
   } else {
     
     path_ = val->second;
-    
-    val = params.find( toy_image_key_hdu );
-    if ( val == params.end() ) {
-      MOAT_THROW( "toy_image: must specify HDU number in addition to path" );
-    }
-    
-    hdu_ = atoi ( val->second.c_str() );
     
     // read rows / cols from the FITS header
     
