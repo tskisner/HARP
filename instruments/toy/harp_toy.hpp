@@ -2,6 +2,8 @@
 
 namespace harp {
   
+  static const char * format_toy = "toy";
+  
   class image_toy : public image {
     
     public :
@@ -19,6 +21,7 @@ namespace harp {
       size_t rows_;
       size_t cols_;
       std::string path_;
+      std::string name_;
     
   };
   
