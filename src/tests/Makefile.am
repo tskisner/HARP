@@ -33,5 +33,5 @@ clean-local :
 
 include test_instruments.am
 
-MAINTAINERCLEANFILES = test_instruments.am harp_testcommands.cpp
+MAINTAINERCLEANFILES = test_instruments.am harp_testcommands.cpp harp_test_instruments.hpp
 

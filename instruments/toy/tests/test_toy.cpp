@@ -45,7 +45,7 @@ void harp::test_toy ( string const & datadir ) {
   cerr << "  (PASSED)" << endl;
   
   
-  cerr << "Testing toy spectra creation..." << endl;
+  cerr << "Testing toy spectrum creation..." << endl;
   
   params.clear();
   
@@ -53,12 +53,12 @@ void harp::test_toy ( string const & datadir ) {
   params[ "hdu" ] = "1";
   params[ "pos" ] = "10";
   
-  spectra_p testspec ( spectra::create ( string("toy"), params ) );
+  spectrum_p testspec ( spectrum::create ( string("toy"), params ) );
   
   cerr << "  (PASSED)" << endl;
   
   
-  cerr << "Testing toy spectra read..." << endl;
+  cerr << "Testing toy spectrum read..." << endl;
   
   data_vec spec ( testspec->size() );
   

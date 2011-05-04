@@ -7,39 +7,39 @@ using namespace std;
 using namespace harp;
 
 
-static const char * toy_spectra_key_path = "path";
-static const char * toy_spectra_key_hdu = "hdu";
-static const char * toy_spectra_key_size = "size";
-static const char * toy_spectra_key_pos = "pos";
+static const char * toy_spectrum_key_path = "path";
+static const char * toy_spectrum_key_hdu = "hdu";
+static const char * toy_spectrum_key_size = "size";
+static const char * toy_spectrum_key_pos = "pos";
 
 
-harp::spectra_toy::spectra_toy ( std::map < std::string, std::string > const & params ) : spectra ( format_toy, params ) {
+harp::spectrum_toy::spectrum_toy ( std::map < std::string, std::string > const & params ) : spectrum ( format_toy, params ) {
   
   map < std::string, std::string > :: const_iterator val;
   
-  val = params.find( toy_spectra_key_pos );
+  val = params.find( toy_spectrum_key_pos );
   if ( val == params.end() ) {
     pos_ = 0;
   } else {
     pos_ = (size_t) atoll ( val->second.c_str() );
   }
   
-  val = params.find( toy_spectra_key_hdu );
+  val = params.find( toy_spectrum_key_hdu );
   if ( val == params.end() ) {
     hdu_ = 1;
   } else {
     hdu_ = atoi ( val->second.c_str() );
   }
     
-  val = params.find( toy_spectra_key_path );
+  val = params.find( toy_spectrum_key_path );
   
   if ( val == params.end() ) {
     
     // no path specified- must specify size
     
-    val = params.find( toy_spectra_key_size );
+    val = params.find( toy_spectrum_key_size );
     if ( val == params.end() ) {
-      MOAT_THROW( "toy_spectra: must specify size if no path is given" );
+      MOAT_THROW( "toy_spectrum: must specify size if no path is given" );
     }
     
     size_ = (size_t) atoll ( val->second.c_str() );
@@ -69,13 +69,13 @@ harp::spectra_toy::spectra_toy ( std::map < std::string, std::string > const & p
 }
 
 
-harp::spectra_toy::~spectra_toy ( ) {
+harp::spectrum_toy::~spectrum_toy ( ) {
   
   
 }
 
 
-void harp::spectra_toy::read ( harp::data_vec & data ) {
+void harp::spectrum_toy::read ( harp::data_vec & data ) {
   
   fitsfile *fp;
 

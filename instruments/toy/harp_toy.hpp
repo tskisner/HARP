@@ -26,11 +26,11 @@ namespace harp {
   };
   
   
-  class spectra_toy : public spectra {
+  class spectrum_toy : public spectrum {
     
     public :
-      spectra_toy ( std::map < std::string, std::string > const & params );
-      ~spectra_toy ( );
+      spectrum_toy ( std::map < std::string, std::string > const & params );
+      ~spectrum_toy ( );
       
       size_t size ( ) { return size_; }
       void read ( harp::data_vec & data );

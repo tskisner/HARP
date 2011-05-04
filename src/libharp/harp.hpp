@@ -43,7 +43,7 @@ namespace harp {
 #include <harp/fits.hpp>
 
 #include <harp/image.hpp>
-#include <harp/spectra.hpp>
+#include <harp/spectrum.hpp>
 #include <harp/psf.hpp>
 
 #endif

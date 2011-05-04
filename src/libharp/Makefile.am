@@ -9,12 +9,12 @@ lib_LTLIBRARIES = libharp.la
 
 libharp_la_includedir = $(includedir)/harp
 
-libharp_la_include_HEADERS = harp/fits.hpp harp/image.hpp harp/spectra.hpp harp/psf.hpp
+libharp_la_include_HEADERS = harp/fits.hpp harp/image.hpp harp/spectrum.hpp harp/psf.hpp
 
-libharp_la_SOURCES = harp_image.cpp harp_spectra.cpp harp_psf.cpp harp_fits.cpp
+libharp_la_SOURCES = harp_image.cpp harp_spectrum.cpp harp_psf.cpp harp_fits.cpp
 
 
 include instruments.am
 
-MAINTAINERCLEANFILES = git-version.cpp instruments.am instruments.hpp harp_image_formats.cpp harp_spectra_formats.cpp harp_psf_formats.cpp
+MAINTAINERCLEANFILES = git-version.cpp instruments.am instruments.hpp harp_image_formats.cpp harp_spectrum_formats.cpp harp_psf_formats.cpp
 
