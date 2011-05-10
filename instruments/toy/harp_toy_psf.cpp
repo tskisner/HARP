@@ -6,6 +6,7 @@
 using namespace std;
 using namespace harp;
 
+static const char * format_toy = "toy";
 
 static const char * toy_psf_key_path = "path";
 
@@ -96,9 +97,135 @@ harp::psf_toy::~psf_toy ( ) {
 }
 
 
-size_t nspec ( ) { return nspec_; }
-size_t specsize ( size_t specnum );
-void lambda ( size_t specnum, data_vec & data );
-size_t extent ( size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin );
-void projection ( size_t firstX, size_t firstY, size_t lastX, size_t lastY, sparse_mat_view & data );
+void harp::psf_toy::cache_spec ( size_t first, size_t last ) {
+  
+  fitsfile *fp = NULL;
+
+  for ( size_t spec = first; spec <= last; ++spec ) {
+    map < size_t, psf_toy_resp > :: iterator check;
+    
+    check = resp_.find ( spec );
+
+    if ( check == resp_.end() ) {
+      if ( ! fp ) {
+        fits::open_read ( fp, path_ );
+      }
+      
+      psf_toy_resp temp;
+      resp_[ spec ] = temp;
+      
+      fits::img_seek ( fp, hdus_[ toy_psf_hdu_x ] );      
+      fits::img_read_row_int ( fp, 1 + spec, resp_[ spec ].x );
+      
+      fits::img_seek ( fp, hdus_[ toy_psf_hdu_y ] );      
+      fits::img_read_row_int ( fp, 1 + spec, resp_[ spec ].y );
+      
+      fits::img_seek ( fp, hdus_[ toy_psf_hdu_lambda ] );      
+      fits::img_read_row ( fp, 1 + spec, resp_[ spec ].lambda );
+      
+      fits::img_seek ( fp, hdus_[ toy_psf_hdu_amp ] );      
+      fits::img_read_row ( fp, 1 + spec, resp_[ spec ].amp );
+      
+      fits::img_seek ( fp, hdus_[ toy_psf_hdu_maj ] );      
+      fits::img_read_row ( fp, 1 + spec, resp_[ spec ].maj );
+      
+      fits::img_seek ( fp, hdus_[ toy_psf_hdu_min ] );      
+      fits::img_read_row ( fp, 1 + spec, resp_[ spec ].min );
+      
+      fits::img_seek ( fp, hdus_[ toy_psf_hdu_ang ] );      
+      fits::img_read_row ( fp, 1 + spec, resp_[ spec ].ang );
+      
+    }
+  }
+  
+  if ( fp ) {
+    fits::close ( fp );
+  }
+  
+  return;
+}
+
+
+void harp::psf_toy::lambda ( size_t specnum, data_vec & data ) {
+  
+  cache_spec ( specnum, specnum );
+  
+  size_t bins = resp_[ specnum ].x.size();
+  
+  data.resize ( bins );
+  
+  for ( size_t i = 0; i < bins; ++i ) {
+    data[ i ] = resp_[ specnum ].lambda[ i ];
+  }
+  
+  return;
+}
+
+
+void harp::psf_toy::extent ( size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t & firstX, size_t & firstY, size_t & lastX, size_t & lastY ) {
+  
+  cache_spec ( firstspec, lastspec );
+  
+  int upleftX = resp_[ firstspec ].x[ firstbin ];
+  int upleftY = resp_[ firstspec ].y[ firstbin ];
+  
+  int lowrightX = resp_[ lastspec ].x[ lastbin ];
+  int lowrightY = resp_[ lastspec ].y[ lastbin ];
+  
+  upleftX -= (int)pixcorr_;
+  upleftY += (int)pixcorr_;
+  
+  lowrightX += (int)pixcorr_;
+  lowrightY -= (int)pixcorr_;
+  
+  if ( upleftX < 0 ) {
+    upleftX = 0;
+  }
+  
+  if ( lowrightY < 0 ) {
+    lowrightY = 0;
+  }
+  
+  firstX = upleftX;
+  lastX = lowrightX;
+  
+  firstY = lowrightY;
+  lastY = upleftY;
+  
+  return;
+}
+
+
+void harp::psf_toy::projection ( size_t firstX, size_t firstY, size_t lastX, size_t lastY, sparse_mat_view & data ) {
+  
+  size_t nx = lastX - firstX + 1;
+  size_t ny = lastY - firstY + 1;
+  
+  size_t nbins = data.size2();
+  
+  size_t npix = data.size1();
+  
+  if ( npix != nx * ny ) {
+    MOAT_THROW( "toy_psf: PSF projection ranges must match dimensions of projection data" );
+  }
+  
+  
+  
+  for ( size_t imgcol = firstX; imgcol <= lastX; ++imgcol ) {
+    
+    for ( size_t imgrow = firstY; imgrow <= lastY; ++imgrow ) {
+      
+      
+      
+      
+    }
+    
+  }
+  
+  
+  return;
+}
+
+
+
 

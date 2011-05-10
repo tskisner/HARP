@@ -26,6 +26,8 @@ namespace harp { namespace fits {
   void img_read ( fitsfile * fp, size_t frow, size_t fcol, dense_mat_view & data );
   
   void img_read_row ( fitsfile * fp, size_t row, data_vec & data );
+  
+  void img_read_row_int ( fitsfile * fp, size_t row, int_vec & data );
 
 } }
 

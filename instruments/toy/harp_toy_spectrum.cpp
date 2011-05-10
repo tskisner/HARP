@@ -6,6 +6,7 @@
 using namespace std;
 using namespace harp;
 
+static const char * format_toy = "toy";
 
 static const char * toy_spectrum_key_path = "path";
 static const char * toy_spectrum_key_hdu = "hdu";

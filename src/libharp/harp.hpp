@@ -34,6 +34,10 @@ namespace harp {
   typedef boost::numeric::ublas::vector < double > data_vec;
   typedef boost::numeric::ublas::vector_range < data_vec > data_vec_view;
   
+  // typedef for int vector
+  typedef boost::numeric::ublas::vector < int > int_vec;
+  typedef boost::numeric::ublas::vector_range < int_vec > int_vec_view;
+  
   // typedef for range
   typedef boost::numeric::ublas::range mv_range;
   

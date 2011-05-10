@@ -148,3 +148,21 @@ void harp::fits::img_read_row ( fitsfile * fp, size_t row, data_vec & data ) {
 }
 
 
+void harp::fits::img_read_row_int ( fitsfile * fp, size_t row, int_vec & data ) {
+  
+  int ret;
+  int status = 0;
+
+  long fpixel[2];
+  fpixel[1] = 1;
+  fpixel[0] = (long)row + 1;
+  
+  int anynul;
+
+  ret = fits_read_pix ( fp, TINT, fpixel, (long long)data.size(), 0, &(data[0]), &anynul, &status );
+  fits::check ( status );
+  
+  return;
+}
+
+
