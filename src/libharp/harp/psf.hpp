@@ -13,10 +13,11 @@ namespace harp {
       virtual ~psf ( ) { }
       void cleanup ( );
       
-      virtual size_t npix ( ) { return 0; }
       virtual size_t nspec ( ) { return 0; }
-      virtual void read ( size_t firstpix, size_t firstspec, sparse_mat_view & data ) { return; }
-      virtual void write ( size_t firstpix, size_t firstspec, sparse_mat_view & data ) { return; }
+      virtual size_t specsize ( size_t specnum ) { return 0; }
+      virtual void lambda ( size_t specnum, data_vec & data ) { return ; }
+      virtual size_t extent ( size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin ) { return 0; }
+      virtual void projection ( size_t firstX, size_t firstY, size_t lastX, size_t lastY, sparse_mat_view & data ) { return; }
 
       std::string format ( );
       

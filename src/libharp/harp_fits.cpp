@@ -44,7 +44,8 @@ void harp::fits::open_read ( fitsfile * & fp, string const & path ) {
 }
 
 
-void harp::fits::img_seek ( fitsfile * fp, string const & extname ) {
+int harp::fits::img_seek ( fitsfile * fp, string const & extname ) {
+  int hdu;
   
   int ret;
   int status = 0;
@@ -55,7 +56,9 @@ void harp::fits::img_seek ( fitsfile * fp, string const & extname ) {
   ret = fits_movnam_hdu ( fp, IMAGE_HDU, extcopy, 0, &status );
   fits::check ( status );
   
-  return;
+  ret = fits_get_hdu_num ( fp, &hdu );
+  
+  return hdu;
 }
 
 
