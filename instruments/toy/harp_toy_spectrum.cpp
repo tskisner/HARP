@@ -71,6 +71,7 @@ harp::spectrum_toy::spectrum_toy ( std::map < std::string, std::string > const &
 
 harp::spectrum_toy::~spectrum_toy ( ) {
   
+  cleanup();
   
 }
 

@@ -67,6 +67,7 @@ harp::image_toy::image_toy ( std::map < std::string, std::string > const & param
 
 harp::image_toy::~image_toy ( ) {
   
+  cleanup();
   
 }
 

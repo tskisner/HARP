@@ -46,4 +46,38 @@ namespace harp {
   };
   
   
+  typedef struct {
+    size_t x;
+    size_t y;
+    size_t lambda;
+    double amp;
+    double maj;
+    double min;
+    double ang;
+  } psf_toy_resp;
+  
+  class psf_toy : public psf {
+    
+    public :
+      psf_toy ( std::string const & format, std::map < std::string, std::string > const & params );
+      ~psf_toy ( ) { }
+      
+      size_t nspec ( ) { return nspec_; }
+      size_t specsize ( size_t specnum ) { return nbins_; }
+      void lambda ( size_t specnum, data_vec & data );
+      size_t extent ( size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin );
+      void projection ( size_t firstX, size_t firstY, size_t lastX, size_t lastY, sparse_mat_view & data );
+      
+    private :
+    
+      std::string path_;
+      size_t nspec_;
+      size_t nbins_;
+      size_t pixcorr_;
+      std::map < std::string, int > hdus_;
+      std::map < size_t, std::list < psf_toy_resp > > resp_;
+      
+  };
+  
+  
 }
