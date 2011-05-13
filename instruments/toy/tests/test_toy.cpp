@@ -71,6 +71,48 @@ void harp::test_toy ( string const & datadir ) {
   cerr << "  (PASSED)" << endl;
   
   
+  cerr << "Testing toy PSF creation..." << endl;
+  
+  params.clear();
+  
+  params[ "path" ] = datadir + "/test_psf.fits";
+  
+  psf_p testpsf ( psf::create ( string("toy"), params ) );
+  
+  cerr << "  found " << testpsf->nspec() << " spectra" << endl;
+  
+  cerr << "  each with " << testpsf->specsize(0) << " flux bins" << endl;
+  
+  cerr << "  (PASSED)" << endl;
+  
+  
+  cerr << "Testing toy PSF lambda read..." << endl;
+  
+  data_vec lambda;
+  
+  for ( size_t i = 0; i < testpsf->nspec(); ++i ) {
+    testpsf->lambda ( i, lambda );
+    //cerr << "( " << i << " )" << endl;
+    //for ( size_t j = 0; j < lambda.size(); ++j ) {
+    //  cerr << lambda[j] << " ";
+    //}
+    //cerr << endl << endl;
+  }
+  
+  cerr << "  (PASSED)" << endl;
+  
+  
+  cerr << "Testing toy PSF read of sparse projection matrix..." << endl;
+  
+  sparse_mat projmat ( testpix->rows() * testpix->cols(), testpsf->nspec() * testpsf->specsize(0) );
+  sparse_mat_view projview ( projmat, mv_range ( 0, testpix->rows() * testpix->cols() ), mv_range ( 0, testpsf->nspec() * testpsf->specsize(0) ) );
+  
+  testpsf->projection ( (size_t)0, (size_t)0, testpix->cols(), testpix->rows(), projview );
+  
+  
+  cerr << "  (PASSED)" << endl;
+  
+  
   
   return;
 }

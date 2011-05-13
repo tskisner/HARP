@@ -10,6 +10,8 @@ static const char * format_toy = "toy";
 
 static const char * toy_psf_key_path = "path";
 
+static const char * toy_psf_key_name = "PSFPARAM";
+
 static const char * toy_psf_hdu_x = "X";
 static const char * toy_psf_hdu_y = "Y";
 static const char * toy_psf_hdu_lambda = "Wavelength";
@@ -35,48 +37,48 @@ harp::psf_toy::psf_toy ( std::map < std::string, std::string > const & params ) 
 
   fits::open_read ( fp, path_ );
   
-  int hdu = fits::img_seek ( fp, toy_psf_hdu_x );
+  int hdu = fits::img_seek ( fp, toy_psf_key_name, toy_psf_hdu_x );
   hdus_[ toy_psf_hdu_x ] = hdu;
   fits::img_dims ( fp, nspec_, nbins_ );
   
   size_t rows, cols;
   
-  hdu = fits::img_seek ( fp, toy_psf_hdu_y );
+  hdu = fits::img_seek ( fp, toy_psf_key_name, toy_psf_hdu_y );
   hdus_[ toy_psf_hdu_y ] = hdu;
   fits::img_dims ( fp, rows, cols );
   if ( ( rows != nspec_ ) || ( cols != nbins_ ) ) {
     MOAT_THROW( "toy_psf: PSF file must have identical dimensions for all HDUs" );
   }
   
-  hdu = fits::img_seek ( fp, toy_psf_hdu_lambda );
+  hdu = fits::img_seek ( fp, toy_psf_key_name, toy_psf_hdu_lambda );
   hdus_[ toy_psf_hdu_lambda ] = hdu;
   fits::img_dims ( fp, rows, cols );
   if ( ( rows != nspec_ ) || ( cols != nbins_ ) ) {
     MOAT_THROW( "toy_psf: PSF file must have identical dimensions for all HDUs" );
   }
   
-  hdu = fits::img_seek ( fp, toy_psf_hdu_amp );
+  hdu = fits::img_seek ( fp, toy_psf_key_name, toy_psf_hdu_amp );
   hdus_[ toy_psf_hdu_amp ] = hdu;
   fits::img_dims ( fp, rows, cols );
   if ( ( rows != nspec_ ) || ( cols != nbins_ ) ) {
     MOAT_THROW( "toy_psf: PSF file must have identical dimensions for all HDUs" );
   }
   
-  hdu = fits::img_seek ( fp, toy_psf_hdu_maj );
+  hdu = fits::img_seek ( fp, toy_psf_key_name, toy_psf_hdu_maj );
   hdus_[ toy_psf_hdu_maj ] = hdu;
   fits::img_dims ( fp, rows, cols );
   if ( ( rows != nspec_ ) || ( cols != nbins_ ) ) {
     MOAT_THROW( "toy_psf: PSF file must have identical dimensions for all HDUs" );
   }
   
-  hdu = fits::img_seek ( fp, toy_psf_hdu_min );
+  hdu = fits::img_seek ( fp, toy_psf_key_name, toy_psf_hdu_min );
   hdus_[ toy_psf_hdu_min ] = hdu;
   fits::img_dims ( fp, rows, cols );
   if ( ( rows != nspec_ ) || ( cols != nbins_ ) ) {
     MOAT_THROW( "toy_psf: PSF file must have identical dimensions for all HDUs" );
   }
   
-  hdu = fits::img_seek ( fp, toy_psf_hdu_ang );
+  hdu = fits::img_seek ( fp, toy_psf_key_name, toy_psf_hdu_ang );
   hdus_[ toy_psf_hdu_ang ] = hdu;
   fits::img_dims ( fp, rows, cols );
   if ( ( rows != nspec_ ) || ( cols != nbins_ ) ) {
@@ -85,6 +87,7 @@ harp::psf_toy::psf_toy ( std::map < std::string, std::string > const & params ) 
   
   fits::close ( fp );
   
+  // FIXME: this should be configurable at runtime
   pixcorr_ = (size_t) ( 5.0 * 4000.0 / (double) nspec_ ); 
   
 }
@@ -113,6 +116,14 @@ void harp::psf_toy::cache_spec ( size_t first, size_t last ) {
       
       psf_toy_resp temp;
       resp_[ spec ] = temp;
+      
+      resp_[ spec ].x.resize ( nbins_ );
+      resp_[ spec ].y.resize ( nbins_ );
+      resp_[ spec ].lambda.resize ( nbins_ );
+      resp_[ spec ].amp.resize ( nbins_ );
+      resp_[ spec ].maj.resize ( nbins_ );
+      resp_[ spec ].min.resize ( nbins_ );
+      resp_[ spec ].ang.resize ( nbins_ );
       
       fits::img_seek ( fp, hdus_[ toy_psf_hdu_x ] );      
       fits::img_read_row_int ( fp, 1 + spec, resp_[ spec ].x );
@@ -147,11 +158,11 @@ void harp::psf_toy::cache_spec ( size_t first, size_t last ) {
 
 
 void harp::psf_toy::lambda ( size_t specnum, data_vec & data ) {
-  
+  cerr << "lambda caching spectrum " << specnum << endl;
   cache_spec ( specnum, specnum );
   
   size_t bins = resp_[ specnum ].x.size();
-  
+  cerr << "lambda found " << bins << " spectral bins" << endl;
   data.resize ( bins );
   
   for ( size_t i = 0; i < bins; ++i ) {
@@ -201,9 +212,9 @@ void harp::psf_toy::projection ( size_t firstX, size_t firstY, size_t lastX, siz
   size_t nx = lastX - firstX + 1;
   size_t ny = lastY - firstY + 1;
   
-  size_t nbins = data.size2();
+  size_t nbins = data.size1();
   
-  size_t npix = data.size1();
+  size_t npix = data.size2();
   
   if ( npix != nx * ny ) {
     MOAT_THROW( "toy_psf: PSF projection ranges must match dimensions of projection data" );
