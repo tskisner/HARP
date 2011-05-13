@@ -19,6 +19,8 @@ namespace harp { namespace fits {
   
   int img_seek ( fitsfile * fp, std::string const & extname );
   
+  int img_seek ( fitsfile * fp, std::string const & keyname, std::string const & keyval );
+  
   void img_seek ( fitsfile * fp, int hdu );
 
   void img_dims ( fitsfile * fp, size_t & rows, size_t & cols );

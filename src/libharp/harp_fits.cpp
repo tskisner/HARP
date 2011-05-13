@@ -62,6 +62,51 @@ int harp::fits::img_seek ( fitsfile * fp, string const & extname ) {
 }
 
 
+int harp::fits::img_seek ( fitsfile * fp, std::string const & keyname, std::string const & keyval ) {
+  int hdu;
+  
+  int ret;
+  int status = 0;
+  
+  char keycopy[FLEN_VALUE];
+  strncpy ( keycopy, keyname.c_str(), FLEN_VALUE );
+  
+  char valcopy[FLEN_VALUE];
+  strncpy ( valcopy, keyval.c_str(), FLEN_VALUE );
+  
+  char valcheck[FLEN_VALUE];
+  char comment[FLEN_VALUE];
+  
+  int nhdu;
+  
+  ret = fits_get_num_hdus ( fp, &nhdu, &status );
+  fits::check ( status );
+  
+  int type;
+  
+  for ( int i = 0; i < nhdu; ++i ) {
+    hdu = 1 + i;
+    
+    ret = fits_movabs_hdu ( fp, hdu, &type, &status );
+    fits::check ( status );
+    
+    if ( type == IMAGE_HDU ) {
+      ret = fits_read_keyword ( fp, keycopy, valcheck, comment, &status );
+      if ( status == 0 ) {
+        // keyword exists
+        if ( strncmp ( valcheck, valcopy, FLEN_VALUE ) == 0 ) {
+          // a match!
+          break;
+        }
+      }
+      status = 0;
+    }
+  }
+  
+  return hdu;
+}
+
+
 void harp::fits::img_seek ( fitsfile * fp, int hdu ) {
   
   int ret;
