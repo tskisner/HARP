@@ -56,6 +56,7 @@ dnl +------------------------------------------------
 acx_have_boost=no
 AX_BOOST_BASE([], [acx_have_boost=yes], [])
 AM_CONDITIONAL([HAVE_AM_BOOST], [test $acx_have_boost = yes])
+AX_BOOST_PROGRAM_OPTIONS
 dnl +------------------------------------------------
 dnl | Check for CFITSIO
 dnl +------------------------------------------------
