@@ -10,8 +10,6 @@
 namespace harp {
 
 
-  //void test_run ( const std::string & datadir );
-  
   
 }
 

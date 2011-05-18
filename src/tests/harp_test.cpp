@@ -13,6 +13,8 @@ int main ( int argc, char *argv[] ) {
 
   // run built-in tests
   
+  fits::test ( datadir );
+  
   cerr << endl;
   
 

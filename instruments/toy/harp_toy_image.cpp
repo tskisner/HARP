@@ -88,3 +88,22 @@ void harp::image_toy::read ( size_t startrow, size_t startcol, harp::dense_mat_v
   return;
 }
 
+
+void harp::image_toy::write ( std::string const & path, size_t startrow, size_t startcol, harp::dense_mat_view & data ) {
+  
+  fitsfile *fp;
+  
+  fits::open_readwrite ( fp, path );
+  
+  fits::img_append ( fp, data.size1(), data.size2() );
+  
+  fits::img_write ( fp, 0, 0, data );
+  
+  fits::close ( fp );
+  
+  return;
+}
+
+
+
+
