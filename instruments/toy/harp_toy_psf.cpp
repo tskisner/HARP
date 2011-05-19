@@ -241,7 +241,7 @@ double harp::psf_toy::gauss_sample ( double xrel, double yrel, double amp, doubl
 
   cxx = ( cang * cang ) / ( 2.0 * maj * maj ) + ( sang * sang ) / ( 2.0 * min * min );
 
-  cxy = - s2ang / ( 4.0 * maj * maj ) + s2ang / ( 4.0 * min * min );
+  cxy = s2ang / ( 4.0 * maj * maj ) - s2ang / ( 4.0 * min * min );
 
   cyy = ( sang * sang ) / ( 2.0 * maj * maj ) + ( cang * cang ) / ( 2.0 * min * min );
 

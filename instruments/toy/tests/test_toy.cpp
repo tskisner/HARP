@@ -155,7 +155,7 @@ void harp::test_toy ( string const & datadir ) {
   
   image_p outimage ( image::create ( string("toy"), params ) );
   
-  outimage->write ( "!" + datadir + "/test_psf_prod.fits", 0, 0, outview );
+  outimage->write ( "!" + datadir + "/test_psf_prod.fits.out", 0, 0, outview );
   
   
   
