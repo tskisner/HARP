@@ -77,7 +77,7 @@ harp::spectrum_toy::~spectrum_toy ( ) {
 }
 
 
-void harp::spectrum_toy::read ( harp::data_vec & data ) {
+void harp::spectrum_toy::read ( harp::data_vec_view & data ) {
   
   fitsfile *fp;
 

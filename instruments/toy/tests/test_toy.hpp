@@ -8,6 +8,8 @@ namespace harp {
 
   void test_toy ( const std::string & datadir );
   
+  void test_bigtoy ( const std::string & datadir );
+  
 }
 
   

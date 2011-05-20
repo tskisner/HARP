@@ -284,6 +284,15 @@ void harp::fits::img_read ( fitsfile * fp, size_t frow, size_t fcol, dense_mat_v
 
 
 void harp::fits::img_read_row ( fitsfile * fp, size_t row, data_vec & data ) {
+  data_vec_view view ( data, mv_range ( 0, data.size() ) );
+  
+  fits::img_read_row ( fp, row, view );
+  
+  return;
+}
+
+
+void harp::fits::img_read_row ( fitsfile * fp, size_t row, data_vec_view & data ) {
   
   int ret;
   int status = 0;

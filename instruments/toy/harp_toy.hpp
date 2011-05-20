@@ -31,8 +31,8 @@ namespace harp {
       ~spectrum_toy ( );
       
       size_t size ( ) { return size_; }
-      void read ( harp::data_vec & data );
-      void write ( std::string const & path, harp::data_vec & data ) { }
+      void read ( harp::data_vec_view & data );
+      void write ( std::string const & path, harp::data_vec_view & data ) { }
     
     private :
     
@@ -70,7 +70,7 @@ namespace harp {
     
       void cache_spec ( size_t first, size_t last );
       
-      double gauss_sample ( double xrel, double yrel, double amp, double maj, double min, double ang );
+      void gauss_sample ( data_vec & vals, data_vec & xrel, data_vec & yrel, double amp, double maj, double min, double ang );
     
       std::string path_;
       size_t nspec_;

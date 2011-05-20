@@ -225,34 +225,36 @@ void harp::psf_toy::extent ( size_t firstspec, size_t lastspec, size_t firstbin,
 }
 
 
-double harp::psf_toy::gauss_sample ( double xrel, double yrel, double amp, double maj, double min, double ang ) {
-  double val;
+void harp::psf_toy::gauss_sample ( data_vec & vals, data_vec & xrel, data_vec & yrel, double amp, double maj, double min, double ang ) {
   
-  double cxx;
-  double cxy;
-  double cyy;
-  double cang;
-  double sang;
-  double s2ang;
+  //cerr << "gauss:  amp = " << amp << " maj = " << maj << " min = " << min << " ang = " << ang << endl;
   
-  cang = cos ( ang );
-  sang = sin ( ang );
-  s2ang = sin ( 2.0 * ang );
-
-  cxx = ( cang * cang ) / ( 2.0 * maj * maj ) + ( sang * sang ) / ( 2.0 * min * min );
-
-  cxy = s2ang / ( 4.0 * maj * maj ) - s2ang / ( 4.0 * min * min );
-
-  cyy = ( sang * sang ) / ( 2.0 * maj * maj ) + ( cang * cang ) / ( 2.0 * min * min );
-
-  val = amp * exp ( - ( cxx * xrel * xrel + 2.0 * cxy * xrel * yrel + cyy * yrel * yrel ) );
+  size_t nvals = xrel.size();
   
-  //if ( isnan ( val ) ) {
-  //  cout << "xrel = " << xrel << " yrel = " << yrel << " cxx = " << cxx << " cxy = " << cxy << " cyy = " << cyy << endl;
-  //  cout << "    amp = " << amp << " maj = " << maj << " min = " << min << " ang = " << ang << endl;
-  //}
+  double * buf = moat::double_alloc ( nvals );
   
-  return val;
+  double cang = cos ( ang );
+  double sang = sin ( ang );
+  double s2ang = sin ( 2.0 * ang );
+  
+  double mjmj = 0.5 / ( maj * maj );
+  double mnmn = 0.5 / ( min * min );
+  
+  double cxx = mjmj * cang * cang + mnmn * sang * sang;
+  double cxy = 0.5 * mjmj * s2ang - 0.5 * mnmn * s2ang;
+  double cyy  = mjmj * sang * sang + mnmn * cang * cang;
+
+  for ( size_t i = 0; i < nvals; ++i ) {
+    buf[i] = - ( cxx * xrel[i] * xrel[i] + 2.0 * cxy * xrel[i] * yrel[i] + cyy * yrel[i] * yrel[i] );
+  }
+  
+  moat::sf::fast_exp ( nvals, buf, &(vals[0]) );
+  
+  for ( size_t i = 0; i < nvals; ++i ) {
+    vals[i] *= amp;
+  }
+
+  return;
 }
 
 
@@ -273,79 +275,149 @@ void harp::psf_toy::projection ( size_t firstspec, size_t lastspec, size_t first
   
   cache_spec ( firstspec, lastspec );
   
-  /*
-  for ( size_t i = 0; i < npix; ++i ) {
-    for ( size_t j = 0; j < nbins; ++j ) {
-      data ( i, j ) = 0.0;
+  vector < size_t > binlist ( nbins );
+  
+  size_t b = 0;
+  for ( size_t i = firstspec; i <= lastspec; ++i ) {
+    for ( size_t j = firstbin; j <= lastbin; ++j ) {
+      binlist[b] = i * nbins_ + j;
+      //cerr << "binlist[" << b << "] = " << binlist[b] << endl;
+      ++b;
     }
   }
-  */
-  
-  std::map < size_t, psf_toy_resp > :: iterator itspec;
-  
-  int64_t xdist;
-  double fxdist;
-  int64_t ydist;
-  double fydist;
-  
-  double val;
-  size_t datarow;
-  size_t datacol = 0;
-  
-  for ( itspec = resp_.begin(); itspec != resp_.end(); ++itspec ) {
+
+  #ifdef _OPENMP
+  #pragma omp parallel for default(none) private(b) shared(nbins, binlist, firstX, firstY, lastX, lastY, data, cerr) schedule(static)
+  #endif
+  for ( b = 0; b < nbins; ++b ) {
     
-    size_t specindx = itspec->first;
+    //cerr << "bin " << b << " of " << nbins << endl;
     
-    if ( ( specindx >= firstspec ) && ( specindx <= lastspec ) ) {
-      
-      // process this spectrum
-      
-      psf_toy_resp & spec = itspec->second;
-      size_t specbins = spec.x.size();
+    size_t specbin = binlist[b] % nbins_;
     
-      for ( size_t bin = 0; bin < specbins; ++bin ) {
+    //cerr << "bin " << b << ": global = " << binlist[b] << " specbin = " << specbin << endl;
+    
+    psf_toy_resp & spec = resp_[ (size_t)(binlist[b] / nbins_) ];
+    
+    //cerr << "spec.x = " << spec.x[specbin] << " spec.y = " << spec.y[specbin] << endl;
+    
+    //cerr << "set spec" << endl;
+    
+    size_t startX;
+    size_t stopX;
+    size_t startY;
+    size_t stopY;
+    
+    bool valid = true;
+    
+    if ( spec.x[specbin] > pixcorr_ ) {
+      startX = spec.x[specbin] - pixcorr_;    
+    } else {
+      startX = 0;
+    }
+    if ( startX < firstX ) {
+      startX = firstX;
+    } else if ( startX > lastX ) {
+      valid = false;
+    }
+    
+    stopX = spec.x[specbin] + pixcorr_;
+    if ( stopX > lastX ) {
+      stopX = lastX;
+    } else if ( stopX < firstX ) {
+      valid = false;
+    }
+    
+    if ( spec.y[specbin] > pixcorr_ ) {
+      startY = spec.y[specbin] - pixcorr_;    
+    } else {
+      startY = 0;
+    }
+    if ( startY < firstY ) {
+      startY = firstY;
+    } else if ( startY > lastY ) {
+      valid = false;
+    }
+    
+    stopY = spec.y[specbin] + pixcorr_;
+    if ( stopY > lastY ) {
+      stopY = lastY;
+    } else if ( stopY < firstY ) {
+      valid = false;
+    }
       
-        if ( ( bin >= firstbin ) && ( bin <= lastbin ) ) {
+    //cerr << "pix range = [" << startX << ", " << stopX << "] and [" << startY << ", " << stopY << "]" << endl;
+    
+    if ( valid ) {
+      
+      size_t nvalid = ( stopY - startY + 1 ) * ( stopX - startX + 1);
+      
+      double amp = spec.amp[specbin];
+      double maj = spec.maj[specbin];
+      double min = spec.min[specbin];
+      double ang = spec.ang[specbin];
+      int xbin = spec.x[specbin];
+      int ybin = spec.y[specbin];
+      
+      data_vec fxdist ( nvalid );
+      data_vec fydist ( nvalid );
+      
+      int xdist;
+      int ydist;
+      
+      size_t pix = 0;
+      
+      //cerr << "  computing distances" << endl;
+      
+      for ( size_t imgrow = startY; imgrow <= stopY; ++imgrow ) {
+        
+        for ( size_t imgcol = startX; imgcol <= stopX; ++imgcol ) {
+        
+          xdist = (int)imgcol - xbin;
+          ydist = (int)imgrow - ybin;
+        
+          fxdist[pix] = (double)xdist;
+          fydist[pix] = (double)ydist;
           
-          // process this flux bin
+          ++pix;
+        }
+        
+      }
+      
+      data_vec vals ( nvalid );
           
-          //cerr << "processing bin " << bin << " of spectrum " << specindx << endl;
-    
-          for ( size_t imgcol = firstX; imgcol <= lastX; ++imgcol ) {
-    
-            for ( size_t imgrow = firstY; imgrow <= lastY; ++imgrow ) {
-              
-              xdist = spec.x[bin] - (int)imgcol;
-              ydist = spec.y[bin] - (int)imgrow;
-              
-              if ( ( labs ( (long)xdist ) < pixcorr_ ) && ( labs ( (long)ydist ) < pixcorr_ ) ) {
-              
-                fxdist = (double)xdist;
-                fydist = (double)ydist;
-              
-                val = gauss_sample ( fxdist, fydist, spec.amp[bin], spec.maj[bin], spec.min[bin], spec.ang[bin] );
-                
-                datarow = ( imgrow - firstY ) * ( lastX - firstX + 1 ) + ( imgcol - firstX );
-                
-                //if ( isnan ( val ) ) {
-                //  cout << "    NAN at spec " << specindx << ", bin " << bin << ": imgcol = " << imgcol << " imgrow = " << imgrow << endl;
-                //}
-              
-                //cout << "data(" << datarow << "," << datacol << ") = " << data(datarow,datacol);
-                data ( datarow, datacol ) += val;
-                //cout << " + " << val << " ==> " << data(datarow, datacol) << endl;
-              
-              }
+      //cerr << "  calling gauss_sample" << endl;
       
-            }
+      gauss_sample ( vals, fxdist, fydist, amp, maj, min, ang );
       
+      size_t datarow;
+      
+      pix = 0;
+      
+      #ifdef _OPENMP
+      #pragma omp critical
+      #endif
+      {
+        //cerr << "  incrementing matrix values" << endl;
+        
+        size_t rowoff;
+        
+        for ( size_t imgrow = startY; imgrow <= stopY; ++imgrow ) {
+          rowoff = ( imgrow - firstY ) * ( lastX - firstX + 1 );
+        
+          for ( size_t imgcol = startX; imgcol <= stopX; ++imgcol ) {
+          
+            datarow = rowoff + ( imgcol - firstX );
+
+            data ( datarow, b ) = vals[pix];
+          
+            ++pix;
           }
-          
-          ++datacol;
-    
         }
       }
+      
     }
+    
   }
   
   
