@@ -51,7 +51,7 @@ void bigtoy_pcgmle_profile ( string const & name, string const & desc, double & 
 
 void harp::test_bigtoy ( string const & datadir ) {
   
-  return;
+  //return;
   
   string psffile = datadir + "/psf-b1.fits";
   string specfile = datadir + "/spectra-b1.fits";
@@ -115,7 +115,7 @@ void harp::test_bigtoy ( string const & datadir ) {
   
   params[ "path" ] = psffile;
   
-  params[ "corr" ] = "1";
+  params[ "corr" ] = "10";
   
   psf_p resp ( psf::create ( string("toy"), params ) );
   

@@ -287,11 +287,21 @@ void harp::psf_toy::projection ( size_t firstspec, size_t lastspec, size_t first
   }
 
   #ifdef _OPENMP
-  #pragma omp parallel for default(none) private(b) shared(nbins, binlist, firstX, firstY, lastX, lastY, data, cerr) schedule(static)
+  #pragma omp parallel for default(none) private(b) shared(nbins, binlist, firstX, firstY, lastX, lastY, data, cerr, stderr) schedule(static)
   #endif
   for ( b = 0; b < nbins; ++b ) {
     
-    //cerr << "bin " << b << " of " << nbins << endl;
+    char msg[256];
+    int progfrac = (int) ( 10 * b / nbins );
+    for ( int p = 0; p < progfrac; ++p ) {
+      msg[p] = '*';
+    }
+    for ( int p = progfrac; p < 10; ++p ) {
+      msg[p] = ' ';
+    }
+    msg[10] = '\0';    
+    fprintf ( stderr, "  Sampling PSF [%s]\r", msg );
+    fflush ( stderr );
     
     size_t specbin = binlist[b] % nbins_;
     
