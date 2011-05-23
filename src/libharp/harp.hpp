@@ -22,9 +22,13 @@
 
 namespace harp {
   
-  // typedef for sparse row major matrix
+  // typedef for sparse mapped row major matrix
   typedef boost::numeric::ublas::mapped_matrix < double, boost::numeric::ublas::row_major > sparse_mat;
   typedef boost::numeric::ublas::matrix_range < sparse_mat > sparse_mat_view;
+  
+  // typedef for compressed row major matrix
+  typedef boost::numeric::ublas::compressed_matrix < double, boost::numeric::ublas::row_major > comp_mat;
+  typedef boost::numeric::ublas::matrix_range < comp_mat > comp_mat_view;
   
   // typedef for dense row major matrix
   typedef boost::numeric::ublas::matrix < double, boost::numeric::ublas::row_major > dense_mat;

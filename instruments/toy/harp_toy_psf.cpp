@@ -258,7 +258,7 @@ void harp::psf_toy::gauss_sample ( data_vec & vals, data_vec & xrel, data_vec & 
 }
 
 
-void harp::psf_toy::projection ( size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t firstX, size_t lastX, size_t firstY, size_t lastY, sparse_mat_view & data ) {
+void harp::psf_toy::projection ( size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t firstX, size_t lastX, size_t firstY, size_t lastY, comp_mat & data ) {
   
   size_t nx = lastX - firstX + 1;
   size_t ny = lastY - firstY + 1;
@@ -272,6 +272,10 @@ void harp::psf_toy::projection ( size_t firstspec, size_t lastspec, size_t first
     o << "toy_psf: PSF projection ranges must match dimensions of projection data (" << npix << " x " << nbins << ")";
     MOAT_THROW( o.str().c_str() );
   }
+  
+  sparse_mat builder ( npix, nbins );
+  
+  size_t nonzeros = 0;
   
   cache_spec ( firstspec, lastspec );
   
@@ -287,7 +291,7 @@ void harp::psf_toy::projection ( size_t firstspec, size_t lastspec, size_t first
   }
 
   #ifdef _OPENMP
-  #pragma omp parallel for default(none) private(b) shared(nbins, binlist, firstX, firstY, lastX, lastY, data, cerr, stderr) schedule(static)
+  #pragma omp parallel for default(none) private(b) shared(nbins, binlist, firstX, firstY, lastX, lastY, builder, nonzeros, cerr, stderr) schedule(static)
   #endif
   for ( b = 0; b < nbins; ++b ) {
     
@@ -419,7 +423,9 @@ void harp::psf_toy::projection ( size_t firstspec, size_t lastspec, size_t first
           
             datarow = rowoff + ( imgcol - firstX );
 
-            data ( datarow, b ) = vals[pix];
+            builder ( datarow, b ) = vals[pix];
+            
+            ++nonzeros;
           
             ++pix;
           }
@@ -429,7 +435,21 @@ void harp::psf_toy::projection ( size_t firstspec, size_t lastspec, size_t first
     }
     
   }
+
+  // remap the mapped matrix into compressed storage for faster calculations
   
+  data.reserve ( nonzeros );
+    
+  sparse_mat :: iterator1 itrow;
+  sparse_mat :: iterator2 itcol;
+    
+  cerr << "copy sparse matrix to compressed matrix" << endl;
+  
+  for ( itrow = builder.begin1(); itrow != builder.end1(); ++itrow ) {
+    for ( itcol = itrow.begin(); itcol != itrow.end(); ++itcol ) {
+      data ( itrow.index1(), itcol.index2() ) = (*itcol);            
+    }
+  }
   
   return;
 }

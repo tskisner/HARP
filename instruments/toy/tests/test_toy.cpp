@@ -141,13 +141,11 @@ void harp::test_toy ( string const & datadir ) {
   size_t nbins = testpsf->nspec() * testpsf->specsize(0);
   size_t npix = testpix->rows() * testpix->cols();
   
-  sparse_mat projmat ( npix, nbins );
-  
-  sparse_mat_view projview ( projmat, mv_range ( 0, npix ), mv_range ( 0, nbins ) );
+  comp_mat projmat ( npix, nbins );
   
   prof->start ( "PCG_PSF" );
   
-  testpsf->projection ( 0, testpsf->nspec() - 1, 0, testpsf->specsize(0) - 1, (size_t)0, testpix->cols() - 1, (size_t)0, testpix->rows() - 1, projview );
+  testpsf->projection ( 0, testpsf->nspec() - 1, 0, testpsf->specsize(0) - 1, (size_t)0, testpix->cols() - 1, (size_t)0, testpix->rows() - 1, projmat );
   
   prof->stop ( "PCG_PSF" );
   
@@ -179,7 +177,7 @@ void harp::test_toy ( string const & datadir ) {
   // write input spectra
   
   
-  boost::numeric::ublas::axpy_prod ( projview, inspec, measured, true );
+  boost::numeric::ublas::axpy_prod ( projmat, inspec, measured, true );
   
   dense_mat outmat ( testpix->rows(), testpix->cols() );
   
@@ -254,7 +252,7 @@ void harp::test_toy ( string const & datadir ) {
   
   // construct inverse noise covariance and preconditioner
   
-  sparse_mat invnoise ( npix, npix );
+  comp_mat invnoise ( npix, npix );
   data_vec precdata ( nbins );
   
   for ( size_t i = 0; i < npix; ++i ) {
@@ -290,7 +288,7 @@ void harp::test_toy ( string const & datadir ) {
   data_vec s ( nbins );
   data_vec d ( nbins );
   
-  double err = moat::la::pcg_mle < sparse_mat, sparse_mat, data_vec, int_vec > ( true, true, projmat, invnoise, measured, outspec, q, r, s, d, flags, rhs, 20, 1.0e-12, toy_pcgmle_prec, (void*)&precdata, toy_pcgmle_report, "PCG_TOT", "PCG_VEC", "PCG_PMV", "PCG_NMV", "PCG_PREC" );
+  double err = moat::la::pcg_mle < comp_mat, comp_mat, data_vec, int_vec > ( true, true, projmat, invnoise, measured, outspec, q, r, s, d, flags, rhs, 20, 1.0e-12, toy_pcgmle_prec, (void*)&precdata, toy_pcgmle_report, "PCG_TOT", "PCG_VEC", "PCG_PMV", "PCG_NMV", "PCG_PREC" );
   
   prof->stop_all();
   

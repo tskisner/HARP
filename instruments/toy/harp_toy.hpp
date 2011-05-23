@@ -64,7 +64,7 @@ namespace harp {
       size_t specsize ( size_t specnum ) { return nbins_; }
       void lambda ( size_t specnum, data_vec & data );
       void extent ( size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t & firstX, size_t & firstY, size_t & lastX, size_t & lastY );
-      void projection ( size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t firstX, size_t lastX, size_t firstY, size_t lastY, sparse_mat_view & data );
+      void projection ( size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t firstX, size_t lastX, size_t firstY, size_t lastY, comp_mat & data );
       
     private :
     

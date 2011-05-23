@@ -131,13 +131,11 @@ void harp::test_bigtoy ( string const & datadir ) {
 
   prof->reg ( "PCG_PSF", "build projection matrix" );
   
-  sparse_mat projmat ( npix, nbins );
-  
-  sparse_mat_view projview ( projmat, mv_range ( 0, npix ), mv_range ( 0, nbins ) );
+  comp_mat projmat ( npix, nbins );
   
   prof->start ( "PCG_PSF" );
   
-  resp->projection ( 0, nspec - 1, 0, specbins - 1, 0, cols - 1, 0, rows - 1, projview );
+  resp->projection ( 0, nspec - 1, 0, specbins - 1, 0, cols - 1, 0, rows - 1, projmat );
   
   prof->stop ( "PCG_PSF" );
   
@@ -146,7 +144,7 @@ void harp::test_bigtoy ( string const & datadir ) {
   
   data_vec measured ( npix );
   
-  boost::numeric::ublas::axpy_prod ( projview, truth, measured, true );
+  boost::numeric::ublas::axpy_prod ( projmat, truth, measured, true );
   
   tempmat.resize ( rows, cols );
   
@@ -229,7 +227,7 @@ void harp::test_bigtoy ( string const & datadir ) {
     outspec[b] = 0.0;
   }
   
-  sparse_mat invnoise ( npix, npix );
+  comp_mat invnoise ( npix, npix );
   data_vec precdata ( nbins );
   
   for ( size_t i = 0; i < npix; ++i ) {
@@ -263,7 +261,7 @@ void harp::test_bigtoy ( string const & datadir ) {
   data_vec s ( nbins );
   data_vec d ( nbins );
   
-  double err = moat::la::pcg_mle < sparse_mat, sparse_mat, data_vec, int_vec > ( true, true, projmat, invnoise, measured, outspec, q, r, s, d, flags, rhs, 100, 1.0e-12, bigtoy_pcgmle_prec, (void*)&precdata, bigtoy_pcgmle_report, "PCG_TOT", "PCG_VEC", "PCG_PMV", "PCG_NMV", "PCG_PREC" );
+  double err = moat::la::pcg_mle < comp_mat, comp_mat, data_vec, int_vec > ( true, true, projmat, invnoise, measured, outspec, q, r, s, d, flags, rhs, 100, 1.0e-12, bigtoy_pcgmle_prec, (void*)&precdata, bigtoy_pcgmle_report, "PCG_TOT", "PCG_VEC", "PCG_PMV", "PCG_NMV", "PCG_PREC" );
   
   prof->stop_all();
   
