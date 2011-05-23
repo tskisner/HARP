@@ -290,22 +290,15 @@ void harp::psf_toy::projection ( size_t firstspec, size_t lastspec, size_t first
     }
   }
 
+  int lastfrac = 0;
+  size_t complete = 0;
+
+  fprintf ( stderr, "  Sampling PSF [          ]\r" );
+
   #ifdef _OPENMP
-  #pragma omp parallel for default(none) private(b) shared(nbins, binlist, firstX, firstY, lastX, lastY, builder, nonzeros, cerr, stderr) schedule(static)
+  #pragma omp parallel for default(none) private(b) shared(nbins, binlist, firstX, firstY, lastX, lastY, builder, nonzeros, cerr, stderr, complete, lastfrac) schedule(static)
   #endif
   for ( b = 0; b < nbins; ++b ) {
-    
-    char msg[256];
-    int progfrac = (int) ( 10 * b / nbins );
-    for ( int p = 0; p < progfrac; ++p ) {
-      msg[p] = '*';
-    }
-    for ( int p = progfrac; p < 10; ++p ) {
-      msg[p] = ' ';
-    }
-    msg[10] = '\0';    
-    fprintf ( stderr, "  Sampling PSF [%s]\r", msg );
-    fflush ( stderr );
     
     size_t specbin = binlist[b] % nbins_;
     
@@ -433,6 +426,28 @@ void harp::psf_toy::projection ( size_t firstspec, size_t lastspec, size_t first
       }
       
     }
+
+    #ifdef _OPENMP
+    #pragma omp critical
+    #endif
+    {
+      ++complete;
+
+      char msg[256];
+      int progfrac = (int) ( 10 * complete / nbins );
+      if ( progfrac != lastfrac ) {
+        for ( int p = 0; p < progfrac; ++p ) {
+          msg[p] = '*';
+        }
+        for ( int p = progfrac; p < 10; ++p ) {
+          msg[p] = ' ';
+        }
+        msg[10] = '\0';    
+        fprintf ( stderr, "  Sampling PSF [%s]\r", msg );
+      }
+      lastfrac = progfrac;
+    }
+
     
   }
 
