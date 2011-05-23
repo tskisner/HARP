@@ -11,8 +11,8 @@ namespace harp {
       size_t rows ( ) { return rows_; }
       size_t cols ( ) { return cols_; }
       void rowscols ( size_t & rows, size_t & cols ) { rows = rows_; cols = cols_; return; }
-      void read ( size_t startrow, size_t startcol, harp::dense_mat_view & data );
-      void write ( std::string const & path, size_t startrow, size_t startcol, harp::dense_mat_view & data );
+      void read ( size_t startrow, size_t startcol, harp::dense_rowmat_view & data );
+      void write ( std::string const & path, size_t startrow, size_t startcol, harp::dense_rowmat_view & data );
     
     private :
     
@@ -64,11 +64,13 @@ namespace harp {
       size_t specsize ( size_t specnum ) { return nbins_; }
       void lambda ( size_t specnum, data_vec & data );
       void extent ( size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t & firstX, size_t & firstY, size_t & lastX, size_t & lastY );
-      void projection ( size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t firstX, size_t lastX, size_t firstY, size_t lastY, comp_mat & data );
+      void projection ( size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t firstX, size_t lastX, size_t firstY, size_t lastY, comp_rowmat & data );
       
     private :
     
       void cache_spec ( size_t first, size_t last );
+      
+      size_t valid_range ( size_t const & firstX, size_t const & lastX, size_t const & firstY, size_t const & lastY, size_t & startX, size_t & stopX, size_t & startY, size_t & stopY, psf_toy_resp & spec, size_t & bin );
       
       void gauss_sample ( data_vec & vals, data_vec & xrel, data_vec & yrel, double amp, double maj, double min, double ang );
     

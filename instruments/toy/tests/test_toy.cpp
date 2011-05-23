@@ -65,11 +65,11 @@ void harp::test_toy ( string const & datadir ) {
   
   cerr << "Testing toy image read..." << endl;
   
-  dense_mat pix ( testpix->rows(), testpix->cols() );
-  dense_mat noise ( testpix->rows(), testpix->cols() );
+  dense_rowmat pix ( testpix->rows(), testpix->cols() );
+  dense_rowmat noise ( testpix->rows(), testpix->cols() );
   
-  dense_mat_view pixview ( pix, mv_range ( 0, pix.size1() ), mv_range ( 0, pix.size2() ) );
-  dense_mat_view noiseview ( noise, mv_range ( 0, noise.size1() ), mv_range ( 0, noise.size2() ) );
+  dense_rowmat_view pixview ( pix, mv_range ( 0, pix.size1() ), mv_range ( 0, pix.size2() ) );
+  dense_rowmat_view noiseview ( noise, mv_range ( 0, noise.size1() ), mv_range ( 0, noise.size2() ) );
   
   testpix->read ( 0, 0, pixview );
   testnoise->read ( 0, 0, noiseview );
@@ -141,7 +141,7 @@ void harp::test_toy ( string const & datadir ) {
   size_t nbins = testpsf->nspec() * testpsf->specsize(0);
   size_t npix = testpix->rows() * testpix->cols();
   
-  comp_mat projmat ( npix, nbins );
+  comp_rowmat projmat ( npix, nbins );
   
   prof->start ( "PCG_PSF" );
   
@@ -179,9 +179,9 @@ void harp::test_toy ( string const & datadir ) {
   
   boost::numeric::ublas::axpy_prod ( projmat, inspec, measured, true );
   
-  dense_mat outmat ( testpix->rows(), testpix->cols() );
+  dense_rowmat outmat ( testpix->rows(), testpix->cols() );
   
-  dense_mat_view outview ( outmat, mv_range ( 0, testpix->rows() ), mv_range ( 0, testpix->cols() ) );
+  dense_rowmat_view outview ( outmat, mv_range ( 0, testpix->rows() ), mv_range ( 0, testpix->cols() ) );
   
   size_t pixoff = 0;
   for ( size_t i = 0; i < testpix->rows(); ++i ) {
@@ -252,7 +252,7 @@ void harp::test_toy ( string const & datadir ) {
   
   // construct inverse noise covariance and preconditioner
   
-  comp_mat invnoise ( npix, npix );
+  comp_rowmat invnoise ( npix, npix );
   data_vec precdata ( nbins );
   
   for ( size_t i = 0; i < npix; ++i ) {
@@ -288,7 +288,7 @@ void harp::test_toy ( string const & datadir ) {
   data_vec s ( nbins );
   data_vec d ( nbins );
   
-  double err = moat::la::pcg_mle < comp_mat, comp_mat, data_vec, int_vec > ( true, true, projmat, invnoise, measured, outspec, q, r, s, d, flags, rhs, 20, 1.0e-12, toy_pcgmle_prec, (void*)&precdata, toy_pcgmle_report, "PCG_TOT", "PCG_VEC", "PCG_PMV", "PCG_NMV", "PCG_PREC" );
+  double err = moat::la::pcg_mle < comp_rowmat, comp_rowmat, data_vec, int_vec > ( true, true, projmat, invnoise, measured, outspec, q, r, s, d, flags, rhs, 20, 1.0e-12, toy_pcgmle_prec, (void*)&precdata, toy_pcgmle_report, "PCG_TOT", "PCG_VEC", "PCG_PMV", "PCG_NMV", "PCG_PREC" );
   
   prof->stop_all();
   

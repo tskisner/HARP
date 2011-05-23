@@ -73,7 +73,7 @@ harp::image_toy::~image_toy ( ) {
 }
 
 
-void harp::image_toy::read ( size_t startrow, size_t startcol, harp::dense_mat_view & data ) {
+void harp::image_toy::read ( size_t startrow, size_t startcol, harp::dense_rowmat_view & data ) {
   
   fitsfile *fp;
 
@@ -89,7 +89,7 @@ void harp::image_toy::read ( size_t startrow, size_t startcol, harp::dense_mat_v
 }
 
 
-void harp::image_toy::write ( std::string const & path, size_t startrow, size_t startcol, harp::dense_mat_view & data ) {
+void harp::image_toy::write ( std::string const & path, size_t startrow, size_t startcol, harp::dense_rowmat_view & data ) {
   
   fitsfile *fp;
   

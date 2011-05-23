@@ -23,16 +23,28 @@
 namespace harp {
   
   // typedef for sparse mapped row major matrix
-  typedef boost::numeric::ublas::mapped_matrix < double, boost::numeric::ublas::row_major > sparse_mat;
-  typedef boost::numeric::ublas::matrix_range < sparse_mat > sparse_mat_view;
+  typedef boost::numeric::ublas::mapped_matrix < double, boost::numeric::ublas::row_major > sparse_rowmat;
+  typedef boost::numeric::ublas::matrix_range < sparse_rowmat > sparse_rowmat_view;
+  
+  // typedef for sparse mapped column major matrix
+  typedef boost::numeric::ublas::mapped_matrix < double, boost::numeric::ublas::column_major > sparse_colmat;
+  typedef boost::numeric::ublas::matrix_range < sparse_colmat > sparse_colmat_view;
   
   // typedef for compressed row major matrix
-  typedef boost::numeric::ublas::compressed_matrix < double, boost::numeric::ublas::row_major > comp_mat;
-  typedef boost::numeric::ublas::matrix_range < comp_mat > comp_mat_view;
+  typedef boost::numeric::ublas::compressed_matrix < double, boost::numeric::ublas::row_major > comp_rowmat;
+  typedef boost::numeric::ublas::matrix_range < comp_rowmat > comp_rowmat_view;
+  
+  // typedef for compressed column major matrix
+  typedef boost::numeric::ublas::compressed_matrix < double, boost::numeric::ublas::column_major > comp_colmat;
+  typedef boost::numeric::ublas::matrix_range < comp_colmat > comp_colmat_view;
   
   // typedef for dense row major matrix
-  typedef boost::numeric::ublas::matrix < double, boost::numeric::ublas::row_major > dense_mat;
-  typedef boost::numeric::ublas::matrix_range < dense_mat > dense_mat_view;
+  typedef boost::numeric::ublas::matrix < double, boost::numeric::ublas::row_major > dense_rowmat;
+  typedef boost::numeric::ublas::matrix_range < dense_rowmat > dense_rowmat_view;
+  
+  // typedef for dense column major matrix
+  typedef boost::numeric::ublas::matrix < double, boost::numeric::ublas::column_major > dense_colmat;
+  typedef boost::numeric::ublas::matrix_range < dense_colmat > dense_colmat_view;
   
   // typedef for dense vector
   typedef boost::numeric::ublas::vector < double > data_vec;

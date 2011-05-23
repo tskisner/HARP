@@ -172,7 +172,7 @@ void harp::fits::img_append ( fitsfile * fp, size_t rows, size_t cols ) {
 }
 
 
-void harp::fits::img_write ( fitsfile * fp, size_t frow, size_t fcol, dense_mat_view & data ) {
+void harp::fits::img_write ( fitsfile * fp, size_t frow, size_t fcol, dense_rowmat_view & data ) {
   
   int ret;
   int status = 0;
@@ -240,7 +240,7 @@ void harp::fits::img_dims ( fitsfile * fp, size_t & rows, size_t & cols ) {
 }
 
 
-void harp::fits::img_read ( fitsfile * fp, size_t frow, size_t fcol, dense_mat_view & data ) {
+void harp::fits::img_read ( fitsfile * fp, size_t frow, size_t fcol, dense_rowmat_view & data ) {
   
   int ret;
   int status = 0;
@@ -373,8 +373,8 @@ void harp::fits::test ( string const & datadir ) {
   size_t rows = 100;
   size_t cols = 500;
   
-  dense_mat data ( rows, cols );
-  dense_mat_view dataview ( data, mv_range ( 0, rows ), mv_range ( 0, cols ) );
+  dense_rowmat data ( rows, cols );
+  dense_rowmat_view dataview ( data, mv_range ( 0, rows ), mv_range ( 0, cols ) );
   
   for ( size_t i = 0; i < rows; ++i ) {
     for ( size_t j = 0; j < cols; ++j ) {
@@ -408,8 +408,8 @@ void harp::fits::test ( string const & datadir ) {
     exit(1);
   }
 
-  dense_mat checkdata ( rows, cols );
-  dense_mat_view checkdataview ( checkdata, mv_range ( 0, rows ), mv_range ( 0, cols ) );
+  dense_rowmat checkdata ( rows, cols );
+  dense_rowmat_view checkdataview ( checkdata, mv_range ( 0, rows ), mv_range ( 0, cols ) );
 
   fits::img_read ( fp, 0, 0, checkdataview );
   

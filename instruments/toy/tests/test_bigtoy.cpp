@@ -89,8 +89,8 @@ void harp::test_bigtoy ( string const & datadir ) {
   
   size_t nbins = nspec * specbins;
   
-  dense_mat tempmat ( nspec, specbins );
-  dense_mat_view tempmatview ( tempmat, mv_range ( 0, nspec ), mv_range ( 0, specbins ) );
+  dense_rowmat tempmat ( nspec, specbins );
+  dense_rowmat_view tempmatview ( tempmat, mv_range ( 0, nspec ), mv_range ( 0, specbins ) );
   
   fits::img_read ( fp, 0, 0, tempmatview );
   
@@ -115,7 +115,7 @@ void harp::test_bigtoy ( string const & datadir ) {
   
   params[ "path" ] = psffile;
   
-  params[ "corr" ] = "10";
+  params[ "corr" ] = "5";
   
   psf_p resp ( psf::create ( string("toy"), params ) );
   
@@ -131,7 +131,7 @@ void harp::test_bigtoy ( string const & datadir ) {
 
   prof->reg ( "PCG_PSF", "build projection matrix" );
   
-  comp_mat projmat ( npix, nbins );
+  comp_rowmat projmat ( npix, nbins );
   
   prof->start ( "PCG_PSF" );
   
@@ -148,7 +148,7 @@ void harp::test_bigtoy ( string const & datadir ) {
   
   tempmat.resize ( rows, cols );
   
-  dense_mat_view outview ( tempmat, mv_range ( 0, rows ), mv_range ( 0, cols ) );
+  dense_rowmat_view outview ( tempmat, mv_range ( 0, rows ), mv_range ( 0, cols ) );
   
   size_t pixoff = 0;
   for ( size_t i = 0; i < rows; ++i ) {
@@ -227,7 +227,7 @@ void harp::test_bigtoy ( string const & datadir ) {
     outspec[b] = 0.0;
   }
   
-  comp_mat invnoise ( npix, npix );
+  comp_rowmat invnoise ( npix, npix );
   data_vec precdata ( nbins );
   
   for ( size_t i = 0; i < npix; ++i ) {
@@ -261,7 +261,7 @@ void harp::test_bigtoy ( string const & datadir ) {
   data_vec s ( nbins );
   data_vec d ( nbins );
   
-  double err = moat::la::pcg_mle < comp_mat, comp_mat, data_vec, int_vec > ( true, true, projmat, invnoise, measured, outspec, q, r, s, d, flags, rhs, 100, 1.0e-12, bigtoy_pcgmle_prec, (void*)&precdata, bigtoy_pcgmle_report, "PCG_TOT", "PCG_VEC", "PCG_PMV", "PCG_NMV", "PCG_PREC" );
+  double err = moat::la::pcg_mle < comp_rowmat, comp_rowmat, data_vec, int_vec > ( true, true, projmat, invnoise, measured, outspec, q, r, s, d, flags, rhs, 100, 1.0e-12, bigtoy_pcgmle_prec, (void*)&precdata, bigtoy_pcgmle_report, "PCG_TOT", "PCG_VEC", "PCG_PMV", "PCG_NMV", "PCG_PREC" );
   
   prof->stop_all();
   

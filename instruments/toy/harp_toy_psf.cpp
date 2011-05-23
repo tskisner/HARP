@@ -258,7 +258,56 @@ void harp::psf_toy::gauss_sample ( data_vec & vals, data_vec & xrel, data_vec & 
 }
 
 
-void harp::psf_toy::projection ( size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t firstX, size_t lastX, size_t firstY, size_t lastY, comp_mat & data ) {
+size_t harp::psf_toy::valid_range ( size_t const & firstX, size_t const & lastX, size_t const & firstY, size_t const & lastY, size_t & startX, size_t & stopX, size_t & startY, size_t & stopY, psf_toy_resp & spec, size_t & bin ) {
+
+  bool valid = true;
+  
+  if ( spec.x[bin] > pixcorr_ ) {
+    startX = spec.x[bin] - pixcorr_;    
+  } else {
+    startX = 0;
+  }
+  if ( startX < firstX ) {
+    startX = firstX;
+  } else if ( startX > lastX ) {
+    valid = false;
+  }
+  
+  stopX = spec.x[bin] + pixcorr_;
+  if ( stopX > lastX ) {
+    stopX = lastX;
+  } else if ( stopX < firstX ) {
+    valid = false;
+  }
+  
+  if ( spec.y[bin] > pixcorr_ ) {
+    startY = spec.y[bin] - pixcorr_;    
+  } else {
+    startY = 0;
+  }
+  if ( startY < firstY ) {
+    startY = firstY;
+  } else if ( startY > lastY ) {
+    valid = false;
+  }
+  
+  stopY = spec.y[bin] + pixcorr_;
+  if ( stopY > lastY ) {
+    stopY = lastY;
+  } else if ( stopY < firstY ) {
+    valid = false;
+  }
+  
+  size_t nz = 0;
+  if ( valid ) {
+    nz = ( stopY - startY + 1 ) * ( stopX - startX + 1);
+  }
+    
+  return nz;
+}
+
+
+void harp::psf_toy::projection ( size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t firstX, size_t lastX, size_t firstY, size_t lastY, comp_rowmat & data ) {
   
   size_t nx = lastX - firstX + 1;
   size_t ny = lastY - firstY + 1;
@@ -272,8 +321,6 @@ void harp::psf_toy::projection ( size_t firstspec, size_t lastspec, size_t first
     o << "toy_psf: PSF projection ranges must match dimensions of projection data (" << npix << " x " << nbins << ")";
     MOAT_THROW( o.str().c_str() );
   }
-  
-  sparse_mat builder ( npix, nbins );
   
   size_t nonzeros = 0;
   
@@ -289,11 +336,45 @@ void harp::psf_toy::projection ( size_t firstspec, size_t lastspec, size_t first
       ++b;
     }
   }
-
+  
+  cerr << "computing number of non-zeros" << endl;
+  
+  #ifdef _OPENMP
+  #pragma omp parallel for default(none) private(b) shared(nbins, binlist, firstX, firstY, lastX, lastY, nonzeros) schedule(static)
+  #endif
+  for ( b = 0; b < nbins; ++b ) {
+    
+    size_t specbin = binlist[b] % nbins_;
+    
+    psf_toy_resp & spec = resp_[ (size_t)(binlist[b] / nbins_) ];
+    
+    size_t startX;
+    size_t stopX;
+    size_t startY;
+    size_t stopY;
+    
+    size_t nz = valid_range ( firstX, lastX, firstY, lastY, startX, stopX, startY, stopY, spec, specbin );
+        
+    #ifdef _OPENMP
+    #pragma omp critical
+    #endif
+    {
+      nonzeros += nz;      
+    }
+  }
+  
+  cerr << "reserving space in compressed matrix" << endl;
+  
+  // We want to fill the matrix in column-major order, but the output will be row-major to speed up
+  // axpy_prod computations.  We use a temporary matrix and then assign to the output.
+  
+  sparse_colmat builder ( npix, nbins );
+  
   int lastfrac = 0;
   size_t complete = 0;
 
   fprintf ( stderr, "  Sampling PSF [          ]\r" );
+  
 
   #ifdef _OPENMP
   #pragma omp parallel for default(none) private(b) shared(nbins, binlist, firstX, firstY, lastX, lastY, builder, nonzeros, cerr, stderr, complete, lastfrac) schedule(static)
@@ -315,49 +396,9 @@ void harp::psf_toy::projection ( size_t firstspec, size_t lastspec, size_t first
     size_t startY;
     size_t stopY;
     
-    bool valid = true;
-    
-    if ( spec.x[specbin] > pixcorr_ ) {
-      startX = spec.x[specbin] - pixcorr_;    
-    } else {
-      startX = 0;
-    }
-    if ( startX < firstX ) {
-      startX = firstX;
-    } else if ( startX > lastX ) {
-      valid = false;
-    }
-    
-    stopX = spec.x[specbin] + pixcorr_;
-    if ( stopX > lastX ) {
-      stopX = lastX;
-    } else if ( stopX < firstX ) {
-      valid = false;
-    }
-    
-    if ( spec.y[specbin] > pixcorr_ ) {
-      startY = spec.y[specbin] - pixcorr_;    
-    } else {
-      startY = 0;
-    }
-    if ( startY < firstY ) {
-      startY = firstY;
-    } else if ( startY > lastY ) {
-      valid = false;
-    }
-    
-    stopY = spec.y[specbin] + pixcorr_;
-    if ( stopY > lastY ) {
-      stopY = lastY;
-    } else if ( stopY < firstY ) {
-      valid = false;
-    }
-      
-    //cerr << "pix range = [" << startX << ", " << stopX << "] and [" << startY << ", " << stopY << "]" << endl;
-    
-    if ( valid ) {
-      
-      size_t nvalid = ( stopY - startY + 1 ) * ( stopX - startX + 1);
+    size_t nvalid = valid_range ( firstX, lastX, firstY, lastY, startX, stopX, startY, stopY, spec, specbin );
+
+    if ( nvalid > 0 ) {
       
       double amp = spec.amp[specbin];
       double maj = spec.maj[specbin];
@@ -418,8 +459,6 @@ void harp::psf_toy::projection ( size_t firstspec, size_t lastspec, size_t first
 
             builder ( datarow, b ) = vals[pix];
             
-            ++nonzeros;
-          
             ++pix;
           }
         }
@@ -450,19 +489,17 @@ void harp::psf_toy::projection ( size_t firstspec, size_t lastspec, size_t first
 
     
   }
-
-  // remap the mapped matrix into compressed storage for faster calculations
+  
+  // copy to output matrix
   
   data.reserve ( nonzeros );
-    
-  sparse_mat :: iterator1 itrow;
-  sparse_mat :: iterator2 itcol;
-    
-  cerr << "copy sparse matrix to compressed matrix" << endl;
+  
+  sparse_colmat :: iterator1 itrow;
+  sparse_colmat :: iterator2 itcol;
   
   for ( itrow = builder.begin1(); itrow != builder.end1(); ++itrow ) {
     for ( itcol = itrow.begin(); itcol != itrow.end(); ++itcol ) {
-      data ( itrow.index1(), itcol.index2() ) = (*itcol);            
+      data( itrow.index1(), itcol.index2() ) = (*itcol);
     }
   }
   
