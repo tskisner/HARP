@@ -368,7 +368,7 @@ void harp::psf_toy::projection ( size_t firstspec, size_t lastspec, size_t first
   // We want to fill the matrix in column-major order, but the output will be row-major to speed up
   // axpy_prod computations.  We use a temporary matrix and then assign to the output.
   
-  sparse_colmat builder ( npix, nbins );
+  sparse_rowmat builder ( npix, nbins );
   
   int lastfrac = 0;
   size_t complete = 0;
@@ -494,8 +494,8 @@ void harp::psf_toy::projection ( size_t firstspec, size_t lastspec, size_t first
   
   data.reserve ( nonzeros );
   
-  sparse_colmat :: iterator1 itrow;
-  sparse_colmat :: iterator2 itcol;
+  sparse_rowmat :: iterator1 itrow;
+  sparse_rowmat :: iterator2 itcol;
   
   /*
   for ( itcol = builder.begin2(); itcol != builder.end2(); ++itcol ) {
