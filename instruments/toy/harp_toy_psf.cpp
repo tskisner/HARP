@@ -497,11 +497,20 @@ void harp::psf_toy::projection ( size_t firstspec, size_t lastspec, size_t first
   sparse_colmat :: iterator1 itrow;
   sparse_colmat :: iterator2 itcol;
   
+  /*
+  for ( itcol = builder.begin2(); itcol != builder.end2(); ++itcol ) {
+    for ( itrow = itcol.begin(); itrow != itcol.end(); ++itrow ) {
+      data( itrow.index1(), itcol.index2() ) = (*itrow);
+    }
+  }
+  */
+  
   for ( itrow = builder.begin1(); itrow != builder.end1(); ++itrow ) {
     for ( itcol = itrow.begin(); itcol != itrow.end(); ++itcol ) {
       data( itrow.index1(), itcol.index2() ) = (*itcol);
     }
   }
+  
   
   return;
 }

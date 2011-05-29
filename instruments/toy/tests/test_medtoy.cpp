@@ -2,9 +2,6 @@
 
 #include <fstream>
 
-extern "C" {
-  #include <sys/stat.h>
-}
 
 #include <harp_test.hpp>
 
@@ -14,7 +11,7 @@ using namespace std;
 using namespace harp;
 
 
-void bigtoy_pcgmle_prec ( data_vec_view & in, data_vec_view & out, int_vec_view & flags, void * data ) {
+void medtoy_pcgmle_prec ( data_vec_view & in, data_vec_view & out, int_vec_view & flags, void * data ) {
   data_vec * prec = (data_vec *) data;
   
   data_vec_view :: const_iterator vit;
@@ -31,7 +28,7 @@ void bigtoy_pcgmle_prec ( data_vec_view & in, data_vec_view & out, int_vec_view 
 }
 
 
-void bigtoy_pcgmle_report ( double const & norm, double const & deltazero, int const & iter, double const & alpha, double const & beta, double const & delta, double const & epsilon ) {
+void medtoy_pcgmle_report ( double const & norm, double const & deltazero, int const & iter, double const & alpha, double const & beta, double const & delta, double const & epsilon ) {
   
   double relerr = sqrt ( delta / deltazero );
   
@@ -41,7 +38,7 @@ void bigtoy_pcgmle_report ( double const & norm, double const & deltazero, int c
 }
 
 
-void bigtoy_pcgmle_profile ( string const & name, string const & desc, double & totaltime, double & opencltime, map < string, long long int > & papi ) {
+void medtoy_pcgmle_profile ( string const & name, string const & desc, double & totaltime, double & opencltime, map < string, long long int > & papi ) {
   
   cerr << "Profiling:   " << desc << ":  " << totaltime << " seconds" << endl;
   
@@ -49,64 +46,14 @@ void bigtoy_pcgmle_profile ( string const & name, string const & desc, double & 
 }
 
 
-void harp::test_bigtoy ( string const & datadir ) {
+void harp::test_medtoy ( string const & datadir ) {
   
-  //return;
   
-  string psffile = datadir + "/psf-b1.fits";
-  string specfile = datadir + "/spectra-b1.fits";
+  string psffile = datadir + "/psf_gauss2d_200.fits";
   
-  struct stat statbuf;
-  int statret;
-  
-  statret = stat ( psffile.c_str(), &statbuf );
+  cerr << "Testing medium toy format spectral extraction" << endl;
 
-  if ( statret ) {
-    
-    cerr << "Skipping large toy test (files not found)" << endl;
-    
-    return;
 
-  } else {
-
-    cerr << "Testing large toy format spectral extraction" << endl;
-
-  }
-  
-  cerr << "  Reading input spectra..." << endl;
-  
-  size_t nspec;
-  size_t specbins;
-  
-  
-  fitsfile *fp;
-
-  fits::open_read ( fp, specfile );
-
-  fits::img_seek ( fp, 1 );
-  
-  fits::img_dims ( fp, nspec, specbins );
-  
-  size_t nbins = nspec * specbins;
-  
-  dense_rowmat tempmat ( nspec, specbins );
-  dense_rowmat_view tempmatview ( tempmat, mv_range ( 0, nspec ), mv_range ( 0, specbins ) );
-  
-  fits::img_read ( fp, 0, 0, tempmatview );
-  
-  fits::close ( fp );
-  
-  data_vec truth ( nbins );
-  
-  size_t b = 0;
-  for ( size_t i = 0; i < nspec; ++i ) {
-    for ( size_t j = 0; j < specbins; ++j ) {
-      truth[b] = tempmat( i, j );
-      ++b;
-    }
-  }
-  
-  
   cerr << "  Reading input PSF..." << endl;
   
   std::map < std::string, std::string > params;
@@ -115,14 +62,34 @@ void harp::test_bigtoy ( string const & datadir ) {
   
   params[ "path" ] = psffile;
   
-  params[ "corr" ] = "5";
+  params[ "corr" ] = "20";
   
   psf_p resp ( psf::create ( string("toy"), params ) );
   
+  
+  cerr << "  Generating input spectra..." << endl;
 
-  size_t rows = 4112;
-  size_t cols = 4352;
+  size_t rows = 200;
+  size_t cols = 200;
   size_t npix = rows * cols;
+
+  size_t nspec = 20;
+  size_t specbins = 200;
+  size_t nbins = nspec * specbins;
+  
+  data_vec truth ( nbins );
+  
+  size_t b = 0;
+  for ( size_t i = 0; i < nspec; ++i ) {
+    for ( size_t j = 0; j < specbins; ++j ) {
+      if ( ( b % 10 == 0 ) && ( b % 200 != 0 ) ) {
+        truth[b] = 2000.0;
+      } else {
+        truth[b] = 0.0;
+      }
+      ++b;
+    }
+  }
 
   
   cerr << "  Sampling PSF to build sparse projection matrix..." << endl;
@@ -146,7 +113,7 @@ void harp::test_bigtoy ( string const & datadir ) {
   
   boost::numeric::ublas::axpy_prod ( projmat, truth, measured, true );
   
-  tempmat.resize ( rows, cols );
+  dense_rowmat tempmat ( rows, cols );
   
   dense_rowmat_view outview ( tempmat, mv_range ( 0, rows ), mv_range ( 0, cols ) );
   
@@ -172,7 +139,7 @@ void harp::test_bigtoy ( string const & datadir ) {
   
   image_p outsigimage ( image::create ( string("toy"), params ) );
   
-  outsigimage->write ( "!" + datadir + "/bigtoy_MLE_inputs.fits.out", 0, 0, outview );
+  outsigimage->write ( "!" + datadir + "/medtoy_MLE_inputs.fits.out", 0, 0, outview );
   
   
   cerr << "  Generating noise realization..." << endl;
@@ -214,7 +181,7 @@ void harp::test_bigtoy ( string const & datadir ) {
   
   image_p outsnimage ( image::create ( string("toy"), params ) );
   
-  outsnimage->write ( datadir + "/bigtoy_MLE_inputs.fits.out", 0, 0, outview );
+  outsnimage->write ( datadir + "/medtoy_MLE_inputs.fits.out", 0, 0, outview );
   
   
   cerr << "  Computing preconditioner..." << endl;
@@ -261,11 +228,11 @@ void harp::test_bigtoy ( string const & datadir ) {
   data_vec s ( nbins );
   data_vec d ( nbins );
   
-  double err = moat::la::pcg_mle < comp_rowmat, comp_rowmat, data_vec, int_vec > ( true, true, projmat, invnoise, measured, outspec, q, r, s, d, flags, rhs, 100, 1.0e-12, bigtoy_pcgmle_prec, (void*)&precdata, bigtoy_pcgmle_report, "PCG_TOT", "PCG_VEC", "PCG_PMV", "PCG_NMV", "PCG_PREC" );
+  double err = moat::la::pcg_mle < comp_rowmat, comp_rowmat, data_vec, int_vec > ( true, true, projmat, invnoise, measured, outspec, q, r, s, d, flags, rhs, 20, 1.0e-12, medtoy_pcgmle_prec, (void*)&precdata, medtoy_pcgmle_report, "PCG_TOT", "PCG_VEC", "PCG_PMV", "PCG_NMV", "PCG_PREC" );
   
   prof->stop_all();
   
-  prof->query ( bigtoy_pcgmle_profile );
+  prof->query ( medtoy_pcgmle_profile );
   
   prof->unreg ( "PCG_PREC" );
   prof->unreg ( "PCG_PMV" );
@@ -274,7 +241,7 @@ void harp::test_bigtoy ( string const & datadir ) {
   prof->unreg ( "PCG_TOT" );
   prof->unreg ( "PCG_PSF" );
   
-  string outdata = datadir + "/bigtoy_MLE_spectra.out";
+  string outdata = datadir + "/medtoy_MLE_spectra.out";
   
   fstream out;
   out.open ( outdata.c_str(), ios::out );
