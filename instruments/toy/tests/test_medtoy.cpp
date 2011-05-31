@@ -49,7 +49,7 @@ void medtoy_pcgmle_profile ( string const & name, string const & desc, double & 
 void harp::test_medtoy ( string const & datadir ) {
   
   
-  string psffile = datadir + "/psf_gauss2d_200.fits";
+  string psffile = datadir + "/psf_gauss2d_500.fits";
   
   cerr << "Testing medium toy format spectral extraction" << endl;
 
@@ -64,17 +64,19 @@ void harp::test_medtoy ( string const & datadir ) {
   
   params[ "corr" ] = "20";
   
+  params[ "binning" ] = "4";
+  
   psf_p resp ( psf::create ( string("toy"), params ) );
   
   
   cerr << "  Generating input spectra..." << endl;
 
-  size_t rows = 200;
-  size_t cols = 200;
+  size_t rows = 500;
+  size_t cols = 500;
   size_t npix = rows * cols;
 
-  size_t nspec = 20;
-  size_t specbins = 200;
+  size_t nspec = resp->nspec();
+  size_t specbins = resp->specsize(0);
   size_t nbins = nspec * specbins;
   
   data_vec truth ( nbins );
@@ -82,7 +84,7 @@ void harp::test_medtoy ( string const & datadir ) {
   size_t b = 0;
   for ( size_t i = 0; i < nspec; ++i ) {
     for ( size_t j = 0; j < specbins; ++j ) {
-      if ( ( b % 10 == 0 ) && ( b % 200 != 0 ) ) {
+      if ( ( b % 10 == 0 ) && ( b % specbins != 0 ) ) {
         truth[b] = 2000.0;
       } else {
         truth[b] = 0.0;
@@ -228,7 +230,7 @@ void harp::test_medtoy ( string const & datadir ) {
   data_vec s ( nbins );
   data_vec d ( nbins );
   
-  double err = moat::la::pcg_mle < comp_rowmat, comp_rowmat, data_vec, int_vec > ( true, true, projmat, invnoise, measured, outspec, q, r, s, d, flags, rhs, 20, 1.0e-12, medtoy_pcgmle_prec, (void*)&precdata, medtoy_pcgmle_report, "PCG_TOT", "PCG_VEC", "PCG_PMV", "PCG_NMV", "PCG_PREC" );
+  double err = moat::la::pcg_mle < comp_rowmat, comp_rowmat, data_vec, int_vec > ( true, true, projmat, invnoise, measured, outspec, q, r, s, d, flags, rhs, 1000, 1.0e-12, medtoy_pcgmle_prec, (void*)&precdata, medtoy_pcgmle_report, "PCG_TOT", "PCG_VEC", "PCG_PMV", "PCG_NMV", "PCG_PREC" );
   
   prof->stop_all();
   

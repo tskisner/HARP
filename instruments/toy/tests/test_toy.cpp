@@ -112,6 +112,8 @@ void harp::test_toy ( string const & datadir ) {
   
   params[ "corr" ] = "20";
   
+  params[ "binning" ] = "2";
+  
   psf_p testpsf ( psf::create ( string("toy"), params ) );
   
   cerr << "  found " << testpsf->nspec() << " spectra" << endl;
@@ -166,8 +168,8 @@ void harp::test_toy ( string const & datadir ) {
     //  flags[b] = 1;
     //}
     
-    if ( ( b % 10 == 0 ) && ( b % 60 != 0 ) ) {
-      inspec[b] = 2000.0;
+    if ( ( b % 5 == 0 ) && ( b % testpsf->specsize(0) != 0 ) ) {
+      inspec[b] = 1000.0;
     } else {
       inspec[b] = 0.0;
     }
