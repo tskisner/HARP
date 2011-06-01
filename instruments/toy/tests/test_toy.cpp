@@ -10,10 +10,10 @@ using namespace std;
 using namespace harp;
 
 
-void toy_pcgmle_prec ( data_vec_view & in, data_vec_view & out, int_vec_view & flags, void * data ) {
+void toy_pcgmle_prec ( data_vec & in, data_vec & out, int_vec & flags, void * data ) {
   data_vec * prec = (data_vec *) data;
   
-  data_vec_view :: const_iterator vit;
+  data_vec :: const_iterator vit;
   for ( vit = in.begin(); vit != in.end(); ++vit ) {
     size_t pos = vit.index();
     if ( flags[ pos ] == 0 ) {
@@ -238,7 +238,7 @@ void harp::test_toy ( string const & datadir ) {
   
   params.clear();
   
-  params[ "hdu" ] = "2";
+  params[ "hdu" ] = "4";
   
   o.str("");
   o << testpix->rows();
@@ -290,7 +290,7 @@ void harp::test_toy ( string const & datadir ) {
   data_vec s ( nbins );
   data_vec d ( nbins );
   
-  double err = moat::la::pcg_mle < comp_rowmat, comp_rowmat, data_vec, int_vec > ( true, true, projmat, invnoise, measured, outspec, q, r, s, d, flags, rhs, 20, 1.0e-12, toy_pcgmle_prec, (void*)&precdata, toy_pcgmle_report, "PCG_TOT", "PCG_VEC", "PCG_PMV", "PCG_NMV", "PCG_PREC" );
+  double err = moat::la::pcg_mle < comp_rowmat, comp_rowmat, data_vec, int_vec > ( true, true, projmat, invnoise, measured, outspec, q, r, s, d, flags, rhs, 100, 1.0e-12, toy_pcgmle_prec, (void*)&precdata, toy_pcgmle_report, "PCG_TOT", "PCG_VEC", "PCG_PMV", "PCG_NMV", "PCG_PREC" );
   
   prof->stop_all();
   

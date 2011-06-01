@@ -14,16 +14,20 @@ using namespace std;
 using namespace harp;
 
 
-void bigtoy_pcgmle_prec ( data_vec_view & in, data_vec_view & out, int_vec_view & flags, void * data ) {
+void bigtoy_pcgmle_prec ( data_vec & in, data_vec & out, int_vec & flags, void * data ) {
   data_vec * prec = (data_vec *) data;
   
-  data_vec_view :: const_iterator vit;
-  for ( vit = in.begin(); vit != in.end(); ++vit ) {
-    size_t pos = vit.index();
-    if ( flags[ pos ] == 0 ) {
-      out[ pos ] = (*prec)[pos] * (*vit);
+  size_t vit;
+  size_t n = in.size();
+  
+  #ifdef _OPENMP
+  #pragma omp parallel for default(none) private(vit) shared(n, flags, in, out, prec) schedule(static)
+  #endif
+  for ( vit = 0; vit < n; ++vit ) {
+    if ( flags[ vit ] == 0 ) {
+      out[ vit ] = (*prec)[ vit ] * in[ vit ];
     } else {
-      out[ pos ] = 0.0;
+      out[ vit ] = 0.0;
     }
   }
   
@@ -54,7 +58,6 @@ void harp::test_bigtoy ( string const & datadir ) {
   //return;
   
   string psffile = datadir + "/psf-b1.fits";
-  string specfile = datadir + "/spectra-b1.fits";
   
   struct stat statbuf;
   int statret;
@@ -73,12 +76,63 @@ void harp::test_bigtoy ( string const & datadir ) {
 
   }
   
-  cerr << "  Reading input spectra..." << endl;
+  cerr << "  Reading input PSF..." << endl;
   
-  size_t nspec;
-  size_t specbins;
+  std::map < std::string, std::string > params;
   
+  params.clear();
   
+  params[ "path" ] = psffile;
+  
+  params[ "corr" ] = "5";
+  
+  params[ "binning" ] = "4";
+  
+  psf_p resp ( psf::create ( string("toy"), params ) );
+  
+  size_t firstspec = 0;
+  size_t lastspec = 19;
+  
+  cerr << "  Using spectra " << firstspec << " - " << lastspec << endl;
+  
+  size_t nspec = lastspec - firstspec + 1;
+  size_t specbins = resp->specsize(0);
+  size_t nbins = nspec * specbins;
+  
+  size_t Xmin;
+  size_t Xmax;
+  size_t Ymin;
+  size_t Ymax;
+  
+  resp->extent ( firstspec, lastspec, 0, specbins - 1, Xmin, Ymin, Xmax, Ymax );
+
+  size_t rows = Ymax - Ymin + 1;
+  size_t cols = Xmax - Xmin + 1;
+  size_t npix = rows * cols;
+  
+  cerr << "  Spectra extent includes " << npix << " pixels" << endl;
+  cerr << "    X=[" << Xmin << "," << Xmax << "] Y=[" << Ymin << "," << Ymax << "]" << endl;
+
+  
+  cerr << "  Generating input spectra..." << endl;
+  
+  data_vec truth ( nbins );
+  
+  size_t b = 0;
+  size_t i;
+  size_t j;
+  for ( i = 0; i < nspec; ++i ) {
+    for ( j = 0; j < specbins; ++j ) {
+      if ( ( b % 10 == 0 ) && ( b % specbins != 0 ) ) {
+        truth[b] = 2000.0;
+      } else {
+        truth[b] = 0.0;
+      }
+      ++b;
+    }
+  }
+  
+  /*
   fitsfile *fp;
 
   fits::open_read ( fp, specfile );
@@ -105,25 +159,8 @@ void harp::test_bigtoy ( string const & datadir ) {
       ++b;
     }
   }
+  */
   
-  
-  cerr << "  Reading input PSF..." << endl;
-  
-  std::map < std::string, std::string > params;
-  
-  params.clear();
-  
-  params[ "path" ] = psffile;
-  
-  params[ "corr" ] = "5";
-  
-  psf_p resp ( psf::create ( string("toy"), params ) );
-  
-
-  size_t rows = 4112;
-  size_t cols = 4352;
-  size_t npix = rows * cols;
-
   
   cerr << "  Sampling PSF to build sparse projection matrix..." << endl;
   
@@ -135,7 +172,7 @@ void harp::test_bigtoy ( string const & datadir ) {
   
   prof->start ( "PCG_PSF" );
   
-  resp->projection ( 0, nspec - 1, 0, specbins - 1, 0, cols - 1, 0, rows - 1, projmat );
+  resp->projection ( firstspec, lastspec, 0, specbins - 1, Xmin, Xmax, Ymin, Ymax, projmat );
   
   prof->stop ( "PCG_PSF" );
   
@@ -146,13 +183,13 @@ void harp::test_bigtoy ( string const & datadir ) {
   
   boost::numeric::ublas::axpy_prod ( projmat, truth, measured, true );
   
-  tempmat.resize ( rows, cols );
+  dense_rowmat tempmat ( rows, cols );
   
   dense_rowmat_view outview ( tempmat, mv_range ( 0, rows ), mv_range ( 0, cols ) );
   
   size_t pixoff = 0;
-  for ( size_t i = 0; i < rows; ++i ) {
-    for ( size_t j = 0; j < cols; ++j ) {
+  for ( i = 0; i < rows; ++i ) {
+    for ( j = 0; j < cols; ++j ) {
       outview( i, j ) = measured[pixoff];
       ++pixoff;
     }
@@ -182,7 +219,7 @@ void harp::test_bigtoy ( string const & datadir ) {
   
   data_vec rms ( npix );
   
-  for ( size_t i = 0; i < npix; ++i ) {
+  for ( i = 0; i < npix; ++i ) {
     rms[i] = sqrt( 16.0 + measured[i] );
     
     boost::normal_distribution < double > dist ( 0.0, rms[i] );
@@ -193,8 +230,8 @@ void harp::test_bigtoy ( string const & datadir ) {
   }
   
   pixoff = 0;
-  for ( size_t i = 0; i < rows; ++i ) {
-    for ( size_t j = 0; j < cols; ++j ) {
+  for ( i = 0; i < rows; ++i ) {
+    for ( j = 0; j < cols; ++j ) {
       tempmat( i, j ) = measured[pixoff];
       ++pixoff;
     }
@@ -230,18 +267,21 @@ void harp::test_bigtoy ( string const & datadir ) {
   comp_rowmat invnoise ( npix, npix );
   data_vec precdata ( nbins );
   
-  for ( size_t i = 0; i < npix; ++i ) {
+  for ( i = 0; i < npix; ++i ) {
     invnoise( i, i ) = 1.0 / ( rms[i] * rms[i] );
   }
   
-  for ( size_t i = 0; i < nbins; ++i ) {
+  #ifdef _OPENMP
+  #pragma omp parallel for default(none) private(i, j) shared(nbins, precdata, npix, projmat, invnoise) schedule(static)
+  #endif
+  for ( i = 0; i < nbins; ++i ) {
     precdata[i] = 0.0;
-    for ( size_t j = 0; j < npix; ++j ) {
+    for ( j = 0; j < npix; ++j ) {
       precdata[i] += projmat( j, i ) * projmat( j, i ) * invnoise( j, j );
     }
   }
   
-  for ( size_t i = 0; i < nbins; ++i ) {
+  for ( i = 0; i < nbins; ++i ) {
     precdata[i] = 1.0 / precdata[i];
   }
   
@@ -279,7 +319,7 @@ void harp::test_bigtoy ( string const & datadir ) {
   fstream out;
   out.open ( outdata.c_str(), ios::out );
   
-  for ( size_t i = 0; i < nbins; ++i ) {
+  for ( i = 0; i < nbins; ++i ) {
     if ( flags[i] == 0 ) {
       out << i << " " << truth[i] << " " << outspec[i] << " " << sqrt(precdata[i]) << endl;
     }

@@ -278,13 +278,21 @@ void harp::psf_toy::gauss_sample ( data_vec & vals, data_vec & xrel, data_vec & 
   double cxy = 0.5 * mjmj * s2ang - 0.5 * mnmn * s2ang;
   double cyy  = mjmj * sang * sang + mnmn * cang * cang;
 
-  for ( size_t i = 0; i < nvals; ++i ) {
+  size_t i;
+  
+  #ifdef _OPENMP
+  #pragma omp parallel for default(none) private(i) shared(nvals, xrel, yrel, buf, cxx, cxy, cyy) schedule(static)
+  #endif
+  for ( i = 0; i < nvals; ++i ) {
     buf[i] = - ( cxx * xrel[i] * xrel[i] + 2.0 * cxy * xrel[i] * yrel[i] + cyy * yrel[i] * yrel[i] );
   }
   
   moat::sf::fast_exp ( nvals, buf, &(vals[0]) );
   
-  for ( size_t i = 0; i < nvals; ++i ) {
+  #ifdef _OPENMP
+  #pragma omp parallel for default(none) private(i) shared(nvals, vals, amp) schedule(static)
+  #endif
+  for ( i = 0; i < nvals; ++i ) {
     vals[i] *= amp;
   }
 
@@ -346,8 +354,6 @@ void harp::psf_toy::projection ( size_t firstspec, size_t lastspec, size_t first
     MOAT_THROW( o.str().c_str() );
   }
   
-  size_t nonzeros = 0;
-  
   cache_spec ( firstspec, lastspec );
   
   vector < size_t > binlist ( nbins );
@@ -363,6 +369,8 @@ void harp::psf_toy::projection ( size_t firstspec, size_t lastspec, size_t first
   
   cerr << "computing number of non-zeros" << endl;
   
+  size_t nonzeros = 0;
+  
   #ifdef _OPENMP
   #pragma omp parallel for default(none) private(b) shared(nbins, binlist, firstX, firstY, lastX, lastY, nonzeros) schedule(static)
   #endif
@@ -377,14 +385,16 @@ void harp::psf_toy::projection ( size_t firstspec, size_t lastspec, size_t first
     size_t stopY;
     
     size_t nz = valid_range ( firstX, lastX, firstY, lastY, startX, stopX, startY, stopY, spec, specbin );
-        
+    
     #ifdef _OPENMP
     #pragma omp critical
     #endif
     {
-      nonzeros += nz;      
+      nonzeros += nz;
     }
   }
+  
+  cerr << "  = " << nonzeros << endl;
   
   
   // We want to fill the matrix using a mapped matrix, but the output will be a compressed matrix to speed up
@@ -395,23 +405,13 @@ void harp::psf_toy::projection ( size_t firstspec, size_t lastspec, size_t first
   int lastfrac = 0;
   size_t complete = 0;
 
-  //fprintf ( stderr, "  Sampling PSF [          ]\r" );
+  fprintf ( stderr, "  Sampling PSF [          ]\r" );
   
-
-  #ifdef _OPENMP
-  #pragma omp parallel for default(none) private(b) shared(nbins, binlist, firstX, firstY, lastX, lastY, builder, nonzeros, cerr, stderr, complete, lastfrac) schedule(static)
-  #endif
   for ( b = 0; b < nbins; ++b ) {
     
     size_t specbin = binlist[b] % nreduced_;
     
-    //cerr << "bin " << b << ": global = " << binlist[b] << " specbin = " << specbin << endl;
-    
     size_t spec = (size_t)(binlist[b] / nreduced_);
-    
-    //cerr << "spec.x = " << spec.x[specbin] << " spec.y = " << spec.y[specbin] << endl;
-    
-    //cerr << "set spec" << endl;
     
     size_t startX;
     size_t stopX;
@@ -458,34 +458,25 @@ void harp::psf_toy::projection ( size_t firstspec, size_t lastspec, size_t first
         }
       
         data_vec vals ( nvalid );
-          
-        //cerr << "  calling gauss_sample" << endl;
-      
+
         gauss_sample ( vals, fxdist, fydist, amp, maj, min, ang );
       
         size_t datarow;
       
         pix = 0;
       
-        #ifdef _OPENMP
-        #pragma omp critical
-        #endif
-        {
-          //cerr << "  incrementing matrix values" << endl;
+        size_t rowoff;
+      
+        for ( size_t imgrow = startY; imgrow <= stopY; ++imgrow ) {
+          rowoff = ( imgrow - firstY ) * ( lastX - firstX + 1 );
+      
+          for ( size_t imgcol = startX; imgcol <= stopX; ++imgcol ) {
         
-          size_t rowoff;
-        
-          for ( size_t imgrow = startY; imgrow <= stopY; ++imgrow ) {
-            rowoff = ( imgrow - firstY ) * ( lastX - firstX + 1 );
-        
-            for ( size_t imgcol = startX; imgcol <= stopX; ++imgcol ) {
-          
-              datarow = rowoff + ( imgcol - firstX );
+            datarow = rowoff + ( imgcol - firstX );
 
-              builder ( datarow, b ) += vals[pix];
-            
-              ++pix;
-            }
+            builder ( datarow, b ) += vals[pix];
+          
+            ++pix;
           }
         }
         
@@ -493,27 +484,21 @@ void harp::psf_toy::projection ( size_t firstspec, size_t lastspec, size_t first
       
     }
 
-    #ifdef _OPENMP
-    #pragma omp critical
-    #endif
-    {
-      ++complete;
+    ++complete;
 
-      char msg[256];
-      int progfrac = (int) ( 10 * complete / nbins );
-      if ( progfrac != lastfrac ) {
-        for ( int p = 0; p < progfrac; ++p ) {
-          msg[p] = '*';
-        }
-        for ( int p = progfrac; p < 10; ++p ) {
-          msg[p] = ' ';
-        }
-        msg[10] = '\0';    
-        //fprintf ( stderr, "  Sampling PSF [%s]\r", msg );
+    char msg[256];
+    int progfrac = (int) ( 10 * complete / nbins );
+    if ( progfrac != lastfrac ) {
+      for ( int p = 0; p < progfrac; ++p ) {
+        msg[p] = '*';
       }
-      lastfrac = progfrac;
+      for ( int p = progfrac; p < 10; ++p ) {
+        msg[p] = ' ';
+      }
+      msg[10] = '\0';    
+      fprintf ( stderr, "  Sampling PSF [%s]\r", msg );
     }
-
+    lastfrac = progfrac;
     
   }
   
