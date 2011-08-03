@@ -14,6 +14,8 @@ static const char * toy_psf_key_name = "PSFPARAM";
 
 static const char * toy_psf_key_binning = "binning";
 
+static const char * toy_psf_key_res = "res";
+
 static const char * toy_psf_hdu_x = "X";
 static const char * toy_psf_hdu_y = "Y";
 static const char * toy_psf_hdu_lambda = "Wavelength";
@@ -115,7 +117,6 @@ harp::psf_toy::psf_toy ( std::map < std::string, std::string > const & params ) 
   
   nreduced_ = (size_t)( nbins_ / binning_ );
   
-  
 }
 
 
@@ -156,10 +157,10 @@ void harp::psf_toy::cache_spec ( size_t first, size_t last ) {
       resp_[ spec ].ang.resize ( nbins_ );
       
       fits::img_seek ( fp, hdus_[ toy_psf_hdu_x ] );      
-      fits::img_read_row_int ( fp, spec, resp_[ spec ].x );
+      fits::img_read_row ( fp, spec, resp_[ spec ].x );
       
       fits::img_seek ( fp, hdus_[ toy_psf_hdu_y ] );      
-      fits::img_read_row_int ( fp, spec, resp_[ spec ].y );
+      fits::img_read_row ( fp, spec, resp_[ spec ].y );
       
       fits::img_seek ( fp, hdus_[ toy_psf_hdu_lambda ] );      
       fits::img_read_row ( fp, spec, resp_[ spec ].lambda );
@@ -176,11 +177,11 @@ void harp::psf_toy::cache_spec ( size_t first, size_t last ) {
       fits::img_seek ( fp, hdus_[ toy_psf_hdu_ang ] );      
       fits::img_read_row ( fp, spec, resp_[ spec ].ang );
       
-      /*
-      for ( size_t i = 0; i < nbins_; ++i ) {
-        cout << "spec[" << spec << "](" << i << ") = " << resp_[ spec ].x[i] << " " << resp_[ spec ].y[i] << " " << resp_[ spec ].lambda[i] << " " << resp_[ spec ].amp[i] << " " << resp_[ spec ].maj[i] << " " << resp_[ spec ].min[i] << " " << resp_[ spec ].ang[i] << endl;
-      }
-      */
+      
+      //for ( size_t i = 0; i < nbins_; ++i ) {
+        //cout << "spec[" << spec << "](" << i << ") = " << resp_[ spec ].x[i] << " " << resp_[ spec ].y[i] << " " << resp_[ spec ].lambda[i] << " " << resp_[ spec ].amp[i] << " " << resp_[ spec ].maj[i] << " " << resp_[ spec ].min[i] << " " << resp_[ spec ].ang[i] << endl;
+      //}
+      
       
     }
   }
@@ -218,10 +219,10 @@ void harp::psf_toy::extent ( size_t firstspec, size_t lastspec, size_t firstbin,
   size_t firstrawbin = firstbin * binning_;
   size_t lastrawbin = lastbin * binning_ + ( binning_ - 1 );
   
-  int minX = 1000000000;
-  int minY = 1000000000;
-  int maxX = 0;
-  int maxY = 0;
+  double minX = 1000000000.0;
+  double minY = 1000000000.0;
+  double maxX = 0.0;
+  double maxY = 0.0;
   
   for ( size_t curspec = firstspec; curspec <= lastspec; ++curspec ) {
     for ( size_t curbin = firstrawbin; curbin <= lastrawbin; ++curbin ) {
@@ -240,20 +241,20 @@ void harp::psf_toy::extent ( size_t firstspec, size_t lastspec, size_t firstbin,
     }
   }
   
-  if ( minX - (int)pixcorr_ < 0 ) {
+  if ( (int)minX - (int)pixcorr_ < 0 ) {
     firstX = 0;
   } else {
-    firstX = minX - (int)pixcorr_;
+    firstX = (int)minX - (int)pixcorr_;
   }
   
-  if ( minY - (int)pixcorr_ < 0 ) {
+  if ( (int)minY - (int)pixcorr_ < 0 ) {
     firstY = 0;
   } else {
-    firstY = minY - (int)pixcorr_;
+    firstY = (int)minY - (int)pixcorr_;
   }
   
-  lastX = maxX + (int)pixcorr_;
-  lastY = maxY + (int)pixcorr_;
+  lastX = (int)maxX + (int)pixcorr_;
+  lastY = (int)maxY + (int)pixcorr_;
   
   return;
 }
@@ -261,7 +262,49 @@ void harp::psf_toy::extent ( size_t firstspec, size_t lastspec, size_t firstbin,
 
 void harp::psf_toy::gauss_sample ( data_vec & vals, data_vec & xrel, data_vec & yrel, double amp, double maj, double min, double ang ) {
   
-  //cerr << "gauss:  amp = " << amp << " maj = " << maj << " min = " << min << " ang = " << ang << endl;
+  amp /= maj * min * moat::TWOPI;
+  
+  size_t nvals = xrel.size();
+  
+  double cang = cos ( ang );
+  double sang = sin ( ang );
+  
+  double invmaj = 1.0 / maj;
+  double invmin = 1.0 / min;
+  
+  double * buf = moat::double_alloc ( nvals );
+  
+  double xt, yt;
+  
+  size_t i;
+  
+  #ifdef _OPENMP
+  #pragma omp parallel for default(none) private(i, xt, yt) shared(nvals, xrel, yrel, buf, cang, sang, invmaj, invmin) schedule(static)
+  #endif
+  for ( i = 0; i < nvals; ++i ) {
+    xt = xrel[i] * cang + yrel[i] * sang;
+    yt = - xrel[i] * sang + yrel[i] * cang;
+    buf[i] = - 0.5 * ( xt * xt * invmaj * invmaj + yt * yt * invmin * invmin );
+  }
+  
+  moat::sf::fast_exp ( nvals, buf, &(vals[0]) );
+  
+  #ifdef _OPENMP
+  #pragma omp parallel for default(none) private(i) shared(nvals, vals, amp) schedule(static)
+  #endif
+  for ( i = 0; i < nvals; ++i ) {
+    vals[i] *= amp;
+  }
+  
+  free ( buf );
+  
+  return;
+}
+
+
+void harp::psf_toy::gauss_sample_alt ( data_vec & vals, data_vec & xrel, data_vec & yrel, double amp, double maj, double min, double ang ) {
+  
+  amp /= maj * min * moat::TWOPI;
   
   size_t nvals = xrel.size();
   
@@ -295,6 +338,8 @@ void harp::psf_toy::gauss_sample ( data_vec & vals, data_vec & xrel, data_vec & 
   for ( i = 0; i < nvals; ++i ) {
     vals[i] *= amp;
   }
+  
+  free ( buf );
 
   return;
 }
@@ -353,6 +398,9 @@ void harp::psf_toy::projection ( size_t firstspec, size_t lastspec, size_t first
     o << "toy_psf: PSF projection ranges must match dimensions of projection data (" << npix << " x " << nbins << ")";
     MOAT_THROW( o.str().c_str() );
   }
+
+  moat::profile * prof = moat::profile::get ( );
+  prof->start ( "PCG_PSF" );
   
   cache_spec ( firstspec, lastspec );
   
@@ -429,14 +477,11 @@ void harp::psf_toy::projection ( size_t firstspec, size_t lastspec, size_t first
         double maj = resp_[ spec ].maj[rawbin];
         double min = resp_[ spec ].min[rawbin];
         double ang = resp_[ spec ].ang[rawbin];
-        int xbin = resp_[ spec ].x[rawbin];
-        int ybin = resp_[ spec ].y[rawbin];
+        double xcenter = resp_[ spec ].x[rawbin];
+        double ycenter = resp_[ spec ].y[rawbin];
       
         data_vec fxdist ( nvalid );
         data_vec fydist ( nvalid );
-      
-        int xdist;
-        int ydist;
       
         size_t pix = 0;
       
@@ -446,11 +491,8 @@ void harp::psf_toy::projection ( size_t firstspec, size_t lastspec, size_t first
         
           for ( size_t imgcol = startX; imgcol <= stopX; ++imgcol ) {
         
-            xdist = (int)imgcol - xbin;
-            ydist = (int)imgrow - ybin;
-        
-            fxdist[pix] = (double)xdist;
-            fydist[pix] = (double)ydist;
+            fxdist[pix] = (double)imgcol - xcenter;
+            fydist[pix] = (double)imgrow - ycenter;
           
             ++pix;
           }
@@ -502,6 +544,10 @@ void harp::psf_toy::projection ( size_t firstspec, size_t lastspec, size_t first
     
   }
   
+  prof->stop ( "PCG_PSF" );
+  
+  prof->start ( "PCG_REMAP" );
+  
   // copy to output matrix
   
   data.reserve ( nonzeros );
@@ -517,11 +563,36 @@ void harp::psf_toy::projection ( size_t firstspec, size_t lastspec, size_t first
   }
   */
   
+  fprintf ( stderr, "  Memory Remap [          ]\r" );
+  
+  complete = 0;
+  char msg[256];
+  int progfrac;
+  lastfrac = 0;
+  
   for ( itrow = builder.begin1(); itrow != builder.end1(); ++itrow ) {
     for ( itcol = itrow.begin(); itcol != itrow.end(); ++itcol ) {
       data( itrow.index1(), itcol.index2() ) = (*itcol);
+      ++complete;
+      //cout << "data[ " << itrow.index1() << ", " << itcol.index2() << " ] = " << (*itcol) << endl;
     }
+
+    progfrac = (int) ( 10 * complete / nonzeros );
+    
+    if ( progfrac != lastfrac ) {
+      for ( int p = 0; p < progfrac; ++p ) {
+        msg[p] = '*';
+      }
+      for ( int p = progfrac; p < 10; ++p ) {
+        msg[p] = ' ';
+      }
+      msg[10] = '\0';    
+      fprintf ( stderr, "  Memory Remap [%s]\r", msg );
+    }
+    lastfrac = progfrac;
   }
+  
+  prof->stop ( "PCG_REMAP" );
   
   
   return;

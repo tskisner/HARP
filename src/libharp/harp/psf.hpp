@@ -14,11 +14,15 @@ namespace harp {
       void cleanup ( );
       
       virtual size_t nspec ( ) { return 0; }
+      
       virtual size_t specsize ( size_t specnum ) { return 0; }
+      
       virtual void lambda ( size_t specnum, data_vec & data ) { return ; }
+      
       virtual void extent ( size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t & firstX, size_t & firstY, size_t & lastX, size_t & lastY ) { return; }
+      
       virtual void projection ( size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t firstX, size_t lastX, size_t firstY, size_t lastY, comp_rowmat & data ) { return; }
-
+      
       std::string format ( );
       
       static psf * create ( std::string const & format, std::map < std::string, std::string > const & params );

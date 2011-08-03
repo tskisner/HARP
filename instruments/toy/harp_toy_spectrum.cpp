@@ -92,3 +92,21 @@ void harp::spectrum_toy::read ( harp::data_vec_view & data ) {
   return;
 }
 
+
+void harp::spectrum_toy::write ( string const & path, harp::data_vec_view & data ) {
+  
+  fitsfile *fp;
+
+  fits::open_readwrite ( fp, path );
+
+  fits::img_seek ( fp, hdu_ );
+  
+  fits::img_write_row ( fp, pos_, data );
+  
+  fits::close ( fp );
+  
+  return;
+}
+
+
+

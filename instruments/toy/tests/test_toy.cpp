@@ -112,7 +112,7 @@ void harp::test_toy ( string const & datadir ) {
   
   params[ "corr" ] = "20";
   
-  params[ "binning" ] = "2";
+  params[ "binning" ] = "4";
   
   psf_p testpsf ( psf::create ( string("toy"), params ) );
   
@@ -138,18 +138,15 @@ void harp::test_toy ( string const & datadir ) {
   
   moat::profile * prof = moat::profile::get ( );
 
-  prof->reg ( "PCG_PSF", "constructing projection matrix" );
+  prof->reg ( "PCG_PSF", "compute projection matrix" );
+  prof->reg ( "PCG_REMAP", "remap projection matrix" );
   
   size_t nbins = testpsf->nspec() * testpsf->specsize(0);
   size_t npix = testpix->rows() * testpix->cols();
   
   comp_rowmat projmat ( npix, nbins );
   
-  prof->start ( "PCG_PSF" );
-  
   testpsf->projection ( 0, testpsf->nspec() - 1, 0, testpsf->specsize(0) - 1, (size_t)0, testpix->cols() - 1, (size_t)0, testpix->rows() - 1, projmat );
-  
-  prof->stop ( "PCG_PSF" );
   
   cerr << "  (PASSED)" << endl;
 
@@ -254,6 +251,7 @@ void harp::test_toy ( string const & datadir ) {
   
   // construct inverse noise covariance and preconditioner
   
+
   comp_rowmat invnoise ( npix, npix );
   data_vec precdata ( nbins );
   
@@ -302,6 +300,7 @@ void harp::test_toy ( string const & datadir ) {
   prof->unreg ( "PCG_VEC" );
   prof->unreg ( "PCG_TOT" );
   prof->unreg ( "PCG_PSF" );
+  prof->unreg ( "PCG_REMAP" );
   
   string outdata = datadir + "/toy_MLE_spectra.out";
   

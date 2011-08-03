@@ -84,7 +84,7 @@ void harp::test_bigtoy ( string const & datadir ) {
   
   params[ "path" ] = psffile;
   
-  params[ "corr" ] = "5";
+  params[ "corr" ] = "20";
   
   params[ "binning" ] = "4";
   
@@ -123,7 +123,7 @@ void harp::test_bigtoy ( string const & datadir ) {
   size_t j;
   for ( i = 0; i < nspec; ++i ) {
     for ( j = 0; j < specbins; ++j ) {
-      if ( ( b % 10 == 0 ) && ( b % specbins != 0 ) ) {
+      if ( ( j % 10 == 0 ) && ( j != 0 ) ) {
         truth[b] = 2000.0;
       } else {
         truth[b] = 0.0;
@@ -165,16 +165,14 @@ void harp::test_bigtoy ( string const & datadir ) {
   cerr << "  Sampling PSF to build sparse projection matrix..." << endl;
   
   moat::profile * prof = moat::profile::get ( );
-
-  prof->reg ( "PCG_PSF", "build projection matrix" );
   
   comp_rowmat projmat ( npix, nbins );
   
-  prof->start ( "PCG_PSF" );
+  prof->reg ( "PCG_PSF", "compute projection matrix" );
+  prof->reg ( "PCG_REMAP", "remap projection matrix" );
+  prof->reg ( "PCG_PRECALC", "compute preconditioner" );
   
   resp->projection ( firstspec, lastspec, 0, specbins - 1, Xmin, Xmax, Ymin, Ymax, projmat );
-  
-  prof->stop ( "PCG_PSF" );
   
   
   cerr << "  Computing projected signal image..." << endl;
@@ -256,6 +254,8 @@ void harp::test_bigtoy ( string const & datadir ) {
   
   cerr << "  Computing preconditioner..." << endl;
   
+  prof->start ( "PCG_PRECALC" );
+  
   data_vec outspec ( nbins );
   int_vec flags ( nbins );
   
@@ -271,12 +271,15 @@ void harp::test_bigtoy ( string const & datadir ) {
     invnoise( i, i ) = 1.0 / ( rms[i] * rms[i] );
   }
   
+  for ( i = 0; i < nbins; ++i ) {
+    precdata[i] = 0.0;
+  }
+  
   #ifdef _OPENMP
   #pragma omp parallel for default(none) private(i, j) shared(nbins, precdata, npix, projmat, invnoise) schedule(static)
   #endif
-  for ( i = 0; i < nbins; ++i ) {
-    precdata[i] = 0.0;
-    for ( j = 0; j < npix; ++j ) {
+  for ( j = 0; j < npix; ++j ) {
+    for ( i = 0; i < nbins; ++i ) {
       precdata[i] += projmat( j, i ) * projmat( j, i ) * invnoise( j, j );
     }
   }
@@ -284,6 +287,8 @@ void harp::test_bigtoy ( string const & datadir ) {
   for ( i = 0; i < nbins; ++i ) {
     precdata[i] = 1.0 / precdata[i];
   }
+  
+  prof->stop ( "PCG_PRECALC" );
   
   
   cerr << "  Solving PCG..." << endl;
@@ -313,6 +318,8 @@ void harp::test_bigtoy ( string const & datadir ) {
   prof->unreg ( "PCG_VEC" );
   prof->unreg ( "PCG_TOT" );
   prof->unreg ( "PCG_PSF" );
+  prof->unreg ( "PCG_REMAP" );
+  prof->unreg ( "PCG_PRECALC" );
   
   string outdata = datadir + "/bigtoy_MLE_spectra.out";
   

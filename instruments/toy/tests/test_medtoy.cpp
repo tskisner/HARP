@@ -101,16 +101,14 @@ void harp::test_medtoy ( string const & datadir ) {
   cerr << "  Sampling PSF to build sparse projection matrix..." << endl;
   
   moat::profile * prof = moat::profile::get ( );
-
-  prof->reg ( "PCG_PSF", "build projection matrix" );
   
+  prof->reg ( "PCG_PSF", "compute projection matrix" );
+  prof->reg ( "PCG_REMAP", "remap projection matrix" );
+  prof->reg ( "PCG_PRECALC", "compute preconditioner" );
+
   comp_rowmat projmat ( npix, nbins );
   
-  prof->start ( "PCG_PSF" );
-  
   resp->projection ( 0, nspec - 1, 0, specbins - 1, 0, cols - 1, 0, rows - 1, projmat );
-  
-  prof->stop ( "PCG_PSF" );
   
   
   cerr << "  Computing projected signal image..." << endl;
@@ -192,6 +190,8 @@ void harp::test_medtoy ( string const & datadir ) {
   
   cerr << "  Computing preconditioner..." << endl;
   
+  prof->start ( "PCG_PRECALC" );
+  
   data_vec outspec ( nbins );
   int_vec flags ( nbins );
   
@@ -217,6 +217,8 @@ void harp::test_medtoy ( string const & datadir ) {
   for ( size_t i = 0; i < nbins; ++i ) {
     precdata[i] = 1.0 / precdata[i];
   }
+  
+  prof->stop ( "PCG_PRECALC" );
   
   
   cerr << "  Solving PCG..." << endl;
@@ -246,6 +248,8 @@ void harp::test_medtoy ( string const & datadir ) {
   prof->unreg ( "PCG_VEC" );
   prof->unreg ( "PCG_TOT" );
   prof->unreg ( "PCG_PSF" );
+  prof->unreg ( "PCG_REMAP" );
+  prof->unreg ( "PCG_PRECALC" );
   
   string outdata = datadir + "/medtoy_MLE_spectra.out";
   

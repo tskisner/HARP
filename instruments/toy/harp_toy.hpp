@@ -32,7 +32,7 @@ namespace harp {
       
       size_t size ( ) { return size_; }
       void read ( harp::data_vec_view & data );
-      void write ( std::string const & path, harp::data_vec_view & data ) { }
+      void write ( std::string const & path, harp::data_vec_view & data );
     
     private :
     
@@ -45,8 +45,8 @@ namespace harp {
   
   
   typedef struct {
-    int_vec x;
-    int_vec y;
+    data_vec x;
+    data_vec y;
     data_vec lambda;
     data_vec amp;
     data_vec maj;
@@ -66,6 +66,7 @@ namespace harp {
       void extent ( size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t & firstX, size_t & firstY, size_t & lastX, size_t & lastY );
       void projection ( size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t firstX, size_t lastX, size_t firstY, size_t lastY, comp_rowmat & data );
       
+            
     private :
     
       void cache_spec ( size_t first, size_t last );
@@ -73,6 +74,8 @@ namespace harp {
       size_t valid_range ( size_t const & firstX, size_t const & lastX, size_t const & firstY, size_t const & lastY, size_t & startX, size_t & stopX, size_t & startY, size_t & stopY, size_t & spec, size_t & bin );
       
       void gauss_sample ( data_vec & vals, data_vec & xrel, data_vec & yrel, double amp, double maj, double min, double ang );
+      
+      void gauss_sample_alt ( data_vec & vals, data_vec & xrel, data_vec & yrel, double amp, double maj, double min, double ang );
     
       std::string path_;
       size_t binning_;

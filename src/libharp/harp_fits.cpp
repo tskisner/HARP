@@ -165,7 +165,7 @@ void harp::fits::img_append ( fitsfile * fp, size_t rows, size_t cols ) {
   naxes[0] = cols;
   naxes[1] = rows;
   
-  ret = fits_create_img ( fp, 64, 2, naxes, &status );
+  ret = fits_create_img ( fp, -64, 2, naxes, &status );
   fits::check ( status );
   
   return;
@@ -359,6 +359,49 @@ void harp::fits::img_read_row_int ( fitsfile * fp, size_t row, int_vec & data ) 
   free ( buffer );
   
   //cerr << "read int row complete" << endl;
+  
+  return;
+}
+
+
+void harp::fits::img_write_row ( fitsfile * fp, size_t row, data_vec & data ) {
+  data_vec_view view ( data, mv_range ( 0, data.size() ) );
+  
+  fits::img_write_row ( fp, row, view );
+  
+  return;
+}
+
+
+void harp::fits::img_write_row ( fitsfile * fp, size_t row, data_vec_view & data ) {
+  
+  int ret;
+  int status = 0;
+
+  long fpixel[2];
+  long lpixel[2];
+  long inc[2] = {1, 1};
+  
+  fpixel[0] = 1;
+  fpixel[1] = (long)row + 1;
+  
+  lpixel[0] = (long)data.size();
+  lpixel[1] = fpixel[1];
+  
+  double * buffer = moat::double_alloc ( data.size() );
+  
+  for ( size_t j = 0; j < data.size(); ++j ) {
+    buffer[j] = data( j );
+  }
+  
+  //cerr << "FITS reading image row " << fpixel[1]-1 << " from columns " << fpixel[0]-1 << " to " << lpixel[0]-1 << endl;
+  
+  ret = fits_write_subset ( fp, TDOUBLE, fpixel, lpixel, buffer, &status );
+  fits::check ( status );
+  
+  free ( buffer );
+  
+  //cerr << "read row complete" << endl;
   
   return;
 }
