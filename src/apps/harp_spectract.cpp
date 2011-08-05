@@ -9,7 +9,7 @@
 
 
 using namespace std;
-using namespace toast;
+using namespace harp;
 
 
 namespace popts = boost::program_options;
@@ -107,12 +107,12 @@ int main ( int argc, char *argv[] ) {
   ( "imageformat", popts::value < string > ( &imageformat ), "format parameters of the image files" )
   ( "output", popts::value < string > ( &outfile ), "path to output spectra file" )
   ( "quiet,q", "supress information printing" )
-  ( "image-files", popts::value<string>(&imagelist), "input image files" )
+  ( "image-files", popts::value < vector < string > >(&imagefiles), "input image files" )
   ;
   
   popts::options_description hidden;
   hidden.add_options()
-  ("positional", po::value<vector<string> >())
+  ("positional", popts::value < vector < string > >())
   ;
 
   popts::options_description all_options;
@@ -141,7 +141,6 @@ int main ( int argc, char *argv[] ) {
     quiet = true;
   }
   
-  if
   
   
   if ( ! quiet ) {
@@ -152,7 +151,7 @@ int main ( int argc, char *argv[] ) {
   map < string, string > psfparams;
   parse_format ( psfformat, psftype, psfparams );
   
-  psfparams[ "path" ] = psf;
+  psfparams[ "path" ] = psffile;
   
   //psf_p resp ( psf::create ( psfformat, params ) );
   

@@ -95,6 +95,7 @@ AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([src/Makefile])
 AC_CONFIG_FILES([src/libharp/Makefile])
 AC_CONFIG_FILES([src/tests/Makefile])
+AC_CONFIG_FILES([src/apps/Makefile])
 dnl AC_CONFIG_FILES([src/python/Makefile])
 dnl AC_CONFIG_FILES([src/tests-python/Makefile])
 dnl AC_CONFIG_FILES([docs/Makefile])
@@ -109,25 +110,30 @@ dnl +------------------------------------------------
 AC_MSG_NOTICE([                                           ])
 AC_MSG_NOTICE([=========== Build Configuration ===========])
 AC_MSG_NOTICE([                                           ])
-AC_MSG_NOTICE([  C++ Compiler       : $CXX])
-AC_MSG_NOTICE([  C++ Compile flags  : $CXXFLAGS])
-AC_MSG_NOTICE([  CFITSIO            : $CFITSIO])
-AC_MSG_NOTICE([  BOOST              : $BOOST])
+AC_MSG_NOTICE([  C++ Compiler              : $CXX])
+AC_MSG_NOTICE([  C++ Compile flags         : $CXXFLAGS])
 if test x"${MPICXX}" = x; then
-  AC_MSG_NOTICE([  MPICXX Compiler    : Not found])
+  AC_MSG_NOTICE([  MPICXX Compiler           : Not found])
 else
-  AC_MSG_NOTICE([  MPICXX Compiler    : $MPICXX])
+  AC_MSG_NOTICE([  MPICXX Compiler           : $MPICXX])
 fi
 if test x"${ax_have_openmp}" = xyes; then
-  AC_MSG_NOTICE([  OpenMP             : Detected ($OPENMP_CXXFLAGS)])
+  AC_MSG_NOTICE([  OpenMP                    : Detected ($OPENMP_CXXFLAGS)])
 else
-  AC_MSG_NOTICE([  OpenMP             : Disabled])
+  AC_MSG_NOTICE([  OpenMP                    : Disabled])
 fi
+AC_MSG_NOTICE([  MOAT Compile              : $MOAT_CPPFLAGS])
+AC_MSG_NOTICE([  MOAT Link                 : $MOAT])
+AC_MSG_NOTICE([  CFITSIO Compile           : $CFITSIO_CPPFLAGS])
+AC_MSG_NOTICE([  CFITSIO Link              : $CFITSIO])
 if test x"${PYTHON_VERSION}" != x; then
-  AC_MSG_NOTICE([  Python             : $PYTHON])
+  AC_MSG_NOTICE([  Python                    : $PYTHON])
 else
-  AC_MSG_NOTICE([  Python             : Disabled])
+  AC_MSG_NOTICE([  Python                    : Disabled])
 fi
+AC_MSG_NOTICE([  Boost Compile             : $BOOST_CPPFLAGS])
+AC_MSG_NOTICE([  Boost Link Flags          : $BOOST_LDFLAGS])
+AC_MSG_NOTICE([  Boost Program Options     : $BOOST_PROGRAM_OPTIONS_LIB])
 AC_MSG_NOTICE([                                           ])
 AC_MSG_NOTICE([============== Format Status ==============])
 AC_MSG_NOTICE([                                           ])
