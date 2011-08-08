@@ -13,13 +13,16 @@ namespace harp {
       void rowscols ( size_t & rows, size_t & cols ) { rows = rows_; cols = cols_; return; }
       void read ( size_t startrow, size_t startcol, harp::dense_rowmat_view & data );
       void write ( std::string const & path, size_t startrow, size_t startcol, harp::dense_rowmat_view & data );
+      void read_noise ( size_t startrow, size_t startcol, harp::dense_rowmat_view & data );
+      void write_noise ( std::string const & path, size_t startrow, size_t startcol, harp::dense_rowmat_view & data );
     
     private :
     
       size_t rows_;
       size_t cols_;
       std::string path_;
-      int hdu_;
+      int sighdu_;
+      int nsehdu_;
     
   };
   

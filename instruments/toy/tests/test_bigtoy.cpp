@@ -195,7 +195,7 @@ void harp::test_bigtoy ( string const & datadir ) {
   
   params.clear();
   
-  params[ "hdu" ] = "1";
+  params[ "signal" ] = "1";
   
   std::ostringstream o;
   o << rows;
@@ -237,7 +237,7 @@ void harp::test_bigtoy ( string const & datadir ) {
   
   params.clear();
   
-  params[ "hdu" ] = "2";
+  params[ "noise" ] = "2";
   
   o.str("");
   o << rows;
@@ -249,7 +249,7 @@ void harp::test_bigtoy ( string const & datadir ) {
   
   image_p outsnimage ( image::create ( string("toy"), params ) );
   
-  outsnimage->write ( datadir + "/bigtoy_MLE_inputs.fits.out", 0, 0, outview );
+  outsnimage->write_noise ( datadir + "/bigtoy_MLE_inputs.fits.out", 0, 0, outview );
   
   
   cerr << "  Computing preconditioner..." << endl;

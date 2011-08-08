@@ -19,6 +19,8 @@ namespace harp {
       virtual void rowscols ( size_t & rows, size_t & cols ) { rows = 0; cols = 0; return; }
       virtual void read ( size_t startrow, size_t startcol, harp::dense_rowmat_view & data ) { return; }
       virtual void write ( std::string const & path, size_t startrow, size_t startcol, harp::dense_rowmat_view & data ) { return; }
+      virtual void read_noise ( size_t startrow, size_t startcol, harp::dense_rowmat_view & data ) { return; }
+      virtual void write_noise ( std::string const & path, size_t startrow, size_t startcol, harp::dense_rowmat_view & data ) { return; }
 
       std::string format ( );
       

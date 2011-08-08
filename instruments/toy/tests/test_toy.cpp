@@ -52,27 +52,24 @@ void harp::test_toy ( string const & datadir ) {
   std::map < std::string, std::string > params;
   
   params[ "path" ] = datadir + "/test_image.fits";
-  params[ "hdu" ] = "1";
+  params[ "signal" ] = "1";
+  params[ "noise" ] = "2";
   
-  image_p testpix ( image::create ( string("toy"), params ) );
-  
-  params[ "hdu" ] = "2";
-  
-  image_p testnoise ( image::create ( string("toy"), params ) );
+  image_p testimg ( image::create ( string("toy"), params ) );
   
   cerr << "  (PASSED)" << endl;
   
   
   cerr << "Testing toy image read..." << endl;
   
-  dense_rowmat pix ( testpix->rows(), testpix->cols() );
-  dense_rowmat noise ( testpix->rows(), testpix->cols() );
+  dense_rowmat pix ( testimg->rows(), testimg->cols() );
+  dense_rowmat noise ( testimg->rows(), testimg->cols() );
   
   dense_rowmat_view pixview ( pix, mv_range ( 0, pix.size1() ), mv_range ( 0, pix.size2() ) );
   dense_rowmat_view noiseview ( noise, mv_range ( 0, noise.size1() ), mv_range ( 0, noise.size2() ) );
   
-  testpix->read ( 0, 0, pixview );
-  testnoise->read ( 0, 0, noiseview );
+  testimg->read ( 0, 0, pixview );
+  testimg->read_noise ( 0, 0, noiseview );
   
   cerr << "  (PASSED)" << endl;
   
@@ -142,11 +139,11 @@ void harp::test_toy ( string const & datadir ) {
   prof->reg ( "PCG_REMAP", "remap projection matrix" );
   
   size_t nbins = testpsf->nspec() * testpsf->specsize(0);
-  size_t npix = testpix->rows() * testpix->cols();
+  size_t npix = testimg->rows() * testimg->cols();
   
   comp_rowmat projmat ( npix, nbins );
   
-  testpsf->projection ( 0, testpsf->nspec() - 1, 0, testpsf->specsize(0) - 1, (size_t)0, testpix->cols() - 1, (size_t)0, testpix->rows() - 1, projmat );
+  testpsf->projection ( 0, testpsf->nspec() - 1, 0, testpsf->specsize(0) - 1, (size_t)0, testimg->cols() - 1, (size_t)0, testimg->rows() - 1, projmat );
   
   cerr << "  (PASSED)" << endl;
 
@@ -178,13 +175,13 @@ void harp::test_toy ( string const & datadir ) {
   
   boost::numeric::ublas::axpy_prod ( projmat, inspec, measured, true );
   
-  dense_rowmat outmat ( testpix->rows(), testpix->cols() );
+  dense_rowmat outmat ( testimg->rows(), testimg->cols() );
   
-  dense_rowmat_view outview ( outmat, mv_range ( 0, testpix->rows() ), mv_range ( 0, testpix->cols() ) );
+  dense_rowmat_view outview ( outmat, mv_range ( 0, testimg->rows() ), mv_range ( 0, testimg->cols() ) );
   
   size_t pixoff = 0;
-  for ( size_t i = 0; i < testpix->rows(); ++i ) {
-    for ( size_t j = 0; j < testpix->cols(); ++j ) {
+  for ( size_t i = 0; i < testimg->rows(); ++i ) {
+    for ( size_t j = 0; j < testimg->cols(); ++j ) {
       outmat( i, j ) = measured[pixoff];
       ++pixoff;
     }
@@ -193,14 +190,15 @@ void harp::test_toy ( string const & datadir ) {
   
   params.clear();
   
-  params[ "hdu" ] = "1";
+  params[ "signal" ] = "1";
+  params[ "noise" ] = "2";
   
   std::ostringstream o;
-  o << testpix->rows();
+  o << testimg->rows();
   params[ "rows" ] = o.str();
   
   o.str("");
-  o << testpix->cols();
+  o << testimg->cols();
   params[ "cols" ] = o.str();
   
   image_p outsigimage ( image::create ( string("toy"), params ) );
@@ -225,8 +223,8 @@ void harp::test_toy ( string const & datadir ) {
   
   
   pixoff = 0;
-  for ( size_t i = 0; i < testpix->rows(); ++i ) {
-    for ( size_t j = 0; j < testpix->cols(); ++j ) {
+  for ( size_t i = 0; i < testimg->rows(); ++i ) {
+    for ( size_t j = 0; j < testimg->cols(); ++j ) {
       outmat( i, j ) = measured[pixoff];
       ++pixoff;
     }
@@ -235,14 +233,14 @@ void harp::test_toy ( string const & datadir ) {
   
   params.clear();
   
-  params[ "hdu" ] = "4";
+  params[ "signal" ] = "4";
   
   o.str("");
-  o << testpix->rows();
+  o << testimg->rows();
   params[ "rows" ] = o.str();
   
   o.str("");
-  o << testpix->cols();
+  o << testimg->cols();
   params[ "cols" ] = o.str();
   
   image_p outsnimage ( image::create ( string("toy"), params ) );

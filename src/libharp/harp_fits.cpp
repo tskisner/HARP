@@ -73,6 +73,19 @@ void harp::fits::open_readwrite ( fitsfile * & fp, string const & path ) {
 }
 
 
+int harp::fits::nhdus ( fitsfile * fp ) {
+  int nhdu;
+  
+  int ret;
+  int status = 0;
+  
+  ret = fits_get_num_hdus ( fp, &nhdu, &status );
+  fits::check ( status );
+  
+  return nhdu;
+}
+
+
 int harp::fits::img_seek ( fitsfile * fp, string const & extname ) {
   int hdu;
   

@@ -117,7 +117,7 @@ void harp::test_realtoy ( string const & datadir ) {
   params.clear();
   
   params[ "path" ] = datadir + "/realtoy_input_image.fits";
-  params[ "hdu" ] = "1";
+  params[ "signal" ] = "1";
   
   image_p dataimg ( image::create ( string("toy"), params ) );
   
@@ -137,7 +137,7 @@ void harp::test_realtoy ( string const & datadir ) {
   params.clear();
   
   params[ "path" ] = datadir + "/realtoy_input_image.fits";
-  params[ "hdu" ] = "3";
+  params[ "signal" ] = "3";
   
   image_p sigimg ( image::create ( string("toy"), params ) );
   
@@ -165,7 +165,7 @@ void harp::test_realtoy ( string const & datadir ) {
   params.clear();
   
   params[ "path" ] = datadir + "/realtoy_input_image.fits";
-  params[ "hdu" ] = "2";
+  params[ "noise" ] = "2";
   
   image_p nseimg ( image::create ( string("toy"), params ) );
   
@@ -173,7 +173,7 @@ void harp::test_realtoy ( string const & datadir ) {
   
   dense_rowmat_view nseview ( nse, mv_range ( 0, nse.size1() ), mv_range ( 0, nse.size2() ) );
   
-  nseimg->read ( 0, 0, nseview );
+  nseimg->read_noise ( 0, 0, nseview );
   
   data_vec trueinv ( npix );
   
@@ -242,7 +242,7 @@ void harp::test_realtoy ( string const & datadir ) {
   
   params.clear();
   
-  params[ "hdu" ] = "1";
+  params[ "signal" ] = "1";
   
   ostringstream o;
   o << rows;

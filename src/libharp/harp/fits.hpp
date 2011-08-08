@@ -19,6 +19,8 @@ namespace harp { namespace fits {
   
   void close ( fitsfile * fp );
   
+  int nhdus ( fitsfile * fp );
+  
   void img_append ( fitsfile * fp, size_t rows, size_t cols );
   
   void img_write ( fitsfile * fp, size_t frow, size_t fcol, dense_rowmat_view & data );

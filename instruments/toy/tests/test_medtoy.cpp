@@ -131,7 +131,9 @@ void harp::test_medtoy ( string const & datadir ) {
   
   params.clear();
   
-  params[ "hdu" ] = "1";
+  params[ "signal" ] = "1";
+  
+  params[ "noise" ] = "2";
   
   std::ostringstream o;
   o << rows;
@@ -173,7 +175,9 @@ void harp::test_medtoy ( string const & datadir ) {
   
   params.clear();
   
-  params[ "hdu" ] = "2";
+  params[ "signal" ] = "1";
+  
+  params[ "noise" ] = "2";
   
   o.str("");
   o << rows;
@@ -185,7 +189,7 @@ void harp::test_medtoy ( string const & datadir ) {
   
   image_p outsnimage ( image::create ( string("toy"), params ) );
   
-  outsnimage->write ( datadir + "/medtoy_MLE_inputs.fits.out", 0, 0, outview );
+  outsnimage->write_noise ( datadir + "/medtoy_MLE_inputs.fits.out", 0, 0, outview );
   
   
   cerr << "  Computing preconditioner..." << endl;
