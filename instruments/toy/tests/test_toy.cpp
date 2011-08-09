@@ -80,19 +80,18 @@ void harp::test_toy ( string const & datadir ) {
   
   params[ "path" ] = datadir + "/test_spectra.fits";
   params[ "hdu" ] = "1";
-  params[ "pos" ] = "3";
   
-  spectrum_p testspec ( spectrum::create ( string("toy"), params ) );
+  spec_p testspec ( spec::create ( string("toy"), params ) );
   
   cerr << "  (PASSED)" << endl;
   
   
   cerr << "Testing toy spectrum read..." << endl;
   
-  data_vec spec ( testspec->size() );
+  data_vec spec ( testspec->spectrum_size( 3 ) );
   data_vec_view specview ( spec, mv_range ( 0, spec.size() ) );
   
-  testspec->read ( specview );
+  testspec->read_spectrum ( 3, specview );
 
   //for ( size_t i = 0; i < spec.size(); ++i ) {
   //  cout << spec[i] << endl;

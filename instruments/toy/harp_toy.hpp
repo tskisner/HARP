@@ -27,20 +27,25 @@ namespace harp {
   };
   
   
-  class spectrum_toy : public spectrum {
+  class spec_toy : public spec {
     
     public :
-      spectrum_toy ( std::map < std::string, std::string > const & params );
-      ~spectrum_toy ( );
+      spec_toy ( std::map < std::string, std::string > const & params );
+      ~spec_toy ( );
       
       size_t size ( ) { return size_; }
+      size_t nspectrum ( ) { return nspec_; }
+      size_t spectrum_size ( size_t spectrum ) { return specsize_; }
       void read ( harp::data_vec_view & data );
       void write ( std::string const & path, harp::data_vec_view & data );
+      void read_spectrum ( size_t spectrum, harp::data_vec_view & data );
+      void write_spectrum ( size_t spectrum, std::string const & path, harp::data_vec_view & data );
     
     private :
     
       size_t size_;
-      size_t pos_;
+      size_t nspec_;
+      size_t specsize_;
       std::string path_;
       int hdu_;
     

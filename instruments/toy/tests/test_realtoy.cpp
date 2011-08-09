@@ -92,24 +92,16 @@ void harp::test_realtoy ( string const & datadir ) {
   
   data_vec truth ( nbins );
   
-  for ( size_t s = 0; s < nspec; ++s ) {
+  params.clear();
+
+  params[ "path" ] = datadir + "/realtoy_input_spectra.fits";
+  params[ "hdu" ] = "1";
   
-    params.clear();
+  spec_p truthspec ( spec::create ( string("toy"), params ) );
   
-    params[ "path" ] = datadir + "/realtoy_input_spectra.fits";
-    params[ "hdu" ] = "1";
-    
-    ostringstream o;
-    o << s;
-    params[ "pos" ] = o.str();
+  data_vec_view truthview ( truth, mv_range ( 0, truthspec->size() ) );
   
-    spectrum_p truthspec ( spectrum::create ( string("toy"), params ) );
-  
-    data_vec_view truthview ( truth, mv_range ( s * specbins, (s+1) * specbins ) );
-  
-    truthspec->read ( truthview );
-  
-  }
+  truthspec->read ( truthview );
   
   
   cerr << "  Reading data image..." << endl;
@@ -340,36 +332,16 @@ void harp::test_realtoy ( string const & datadir ) {
   
   system( rmcom.c_str() );
   
+  
   params.clear();
-  
-  o.str("");
-  o << specbins;
-
-  fitsfile * fp;
-  fits::open_readwrite ( fp, outspecfile );
-  
-  fits::img_append ( fp, nspec, specbins );
-  
-  fits::close ( fp );
-
-
-  //params[ "path" ] = outspecfile;
   params[ "hdu" ] = "1";
-  params[ "size" ] = o.str();
+  params[ "nspec" ] = nspec;
+  params[ "specsize" ] = specbins;
   
-  for ( size_t s = 0; s < nspec; ++s ) {
+  spec_p solvespec ( spec::create ( string("toy"), params ) );
+  data_vec_view solvespecview ( outspec, mv_range ( 0, nspec * specbins ) );
   
-    o.str("");
-    o << s;
-    params[ "pos" ] = o.str();
-  
-    spectrum_p solvespec ( spectrum::create ( string("toy"), params ) );
-  
-    data_vec_view solvespecview ( outspec, mv_range ( s * specbins, (s+1) * specbins ) );
-  
-    solvespec->write ( outspecfile, solvespecview );
-  
-  }
+  solvespec->write ( outspecfile, solvespecview );
   
   
   outspecfile = datadir + "/realtoy_solved_spectra.out";

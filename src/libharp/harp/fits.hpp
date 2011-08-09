@@ -25,6 +25,8 @@ namespace harp { namespace fits {
   
   void img_write ( fitsfile * fp, size_t frow, size_t fcol, dense_rowmat_view & data );
   
+  void img_write ( fitsfile * fp, data_vec_view & data );
+  
   int img_seek ( fitsfile * fp, std::string const & extname );
   
   int img_seek ( fitsfile * fp, std::string const & keyname, std::string const & keyval );
@@ -34,6 +36,8 @@ namespace harp { namespace fits {
   void img_dims ( fitsfile * fp, size_t & rows, size_t & cols );
   
   void img_read ( fitsfile * fp, size_t frow, size_t fcol, dense_rowmat_view & data );
+  
+  void img_read ( fitsfile * fp, data_vec_view & data );
   
   void img_read_row ( fitsfile * fp, size_t row, data_vec & data );
   

@@ -225,6 +225,22 @@ void harp::fits::img_write ( fitsfile * fp, size_t frow, size_t fcol, dense_rowm
 }
 
 
+void harp::fits::img_write ( fitsfile * fp, data_vec_view & data ) {
+  
+  int ret;
+  int status = 0;
+
+  long fpixel[2];
+  
+  fpixel[0] = 1;
+  fpixel[1] = 1;
+
+  ret = fits_write_pix ( fp, TDOUBLE, fpixel, data.size(), &(data[0]), &status );
+  fits::check ( status );
+  
+  return;
+}
+
 
 void harp::fits::img_dims ( fitsfile * fp, size_t & rows, size_t & cols ) {
   
@@ -291,6 +307,24 @@ void harp::fits::img_read ( fitsfile * fp, size_t frow, size_t fcol, dense_rowma
   free ( buffer );
   
   //cerr << "read complete" << endl;
+  
+  return;
+}
+
+
+void harp::fits::img_read ( fitsfile * fp, data_vec_view & data ) {
+  
+  int ret;
+  int status = 0;
+  int anynul;
+
+  long fpixel[2];
+
+  fpixel[0] = 1;
+  fpixel[1] = 1;
+
+  ret = fits_read_pix ( fp, TDOUBLE, fpixel, data.size(), NULL, &(data[0]), &anynul, &status );
+  fits::check ( status );
   
   return;
 }
