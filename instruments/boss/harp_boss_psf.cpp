@@ -41,7 +41,7 @@ void harp::psf_boss::extent ( size_t firstspec, size_t lastspec, size_t firstbin
 }
 
 
-void harp::psf_boss::projection ( size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t firstX, size_t lastX, size_t firstY, size_t lastY, comp_rowmat & data ) {
+void harp::psf_boss::projection ( string profcalc, string profremap, size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t firstX, size_t lastX, size_t firstY, size_t lastY, comp_rowmat & data ) {
   
   return;
 }

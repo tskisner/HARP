@@ -97,6 +97,22 @@ void harp::image_toy::read ( size_t startrow, size_t startcol, harp::dense_rowma
 }
 
 
+void harp::image_toy::read ( harp::data_vec_view & data ) {
+  
+  fitsfile *fp;
+
+  fits::open_read ( fp, path_ );
+
+  fits::img_seek ( fp, sighdu_ );
+  
+  fits::img_read ( fp, data );
+  
+  fits::close ( fp );
+  
+  return;
+}
+
+
 void harp::image_toy::write ( std::string const & path, size_t startrow, size_t startcol, harp::dense_rowmat_view & data ) {
   
   fitsfile *fp;
@@ -122,6 +138,31 @@ void harp::image_toy::write ( std::string const & path, size_t startrow, size_t 
 }
 
 
+void harp::image_toy::write ( std::string const & path, harp::data_vec_view & data ) {
+  
+  fitsfile *fp;
+  
+  fits::open_readwrite ( fp, path );
+  
+  int nh = fits::nhdus ( fp );
+
+  if ( nh < sighdu_ ) {
+    while ( nh < sighdu_ ) {
+      fits::img_append ( fp, rows_, cols_ );
+      ++nh;
+    }
+  } else {
+    fits::img_seek ( fp, sighdu_ );
+  }
+  
+  fits::img_write ( fp, data );
+  
+  fits::close ( fp );
+  
+  return;
+}
+
+
 void harp::image_toy::read_noise ( size_t startrow, size_t startcol, harp::dense_rowmat_view & data ) {
   
   fitsfile *fp;
@@ -131,6 +172,22 @@ void harp::image_toy::read_noise ( size_t startrow, size_t startcol, harp::dense
   fits::img_seek ( fp, nsehdu_ );
   
   fits::img_read ( fp, startrow, startcol, data );
+  
+  fits::close ( fp );
+  
+  return;
+}
+
+
+void harp::image_toy::read_noise ( harp::data_vec_view & data ) {
+  
+  fitsfile *fp;
+
+  fits::open_read ( fp, path_ );
+
+  fits::img_seek ( fp, nsehdu_ );
+  
+  fits::img_read ( fp, data );
   
   fits::close ( fp );
   
@@ -156,6 +213,31 @@ void harp::image_toy::write_noise ( std::string const & path, size_t startrow, s
   }
   
   fits::img_write ( fp, 0, 0, data );
+  
+  fits::close ( fp );
+  
+  return;
+}
+
+
+void harp::image_toy::write_noise ( std::string const & path, harp::data_vec_view & data ) {
+  
+  fitsfile *fp;
+  
+  fits::open_readwrite ( fp, path );
+  
+  int nh = fits::nhdus ( fp );
+
+  if ( nh < nsehdu_ ) {
+    while ( nh < nsehdu_ ) {
+      fits::img_append ( fp, rows_, cols_ );
+      ++nh;
+    }
+  } else {
+    fits::img_seek ( fp, nsehdu_ );
+  }
+  
+  fits::img_write ( fp, data );
   
   fits::close ( fp );
   

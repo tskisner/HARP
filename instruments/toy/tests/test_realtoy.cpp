@@ -182,7 +182,7 @@ void harp::test_realtoy ( string const & datadir ) {
   
   comp_rowmat projmat ( npix, nbins );
   
-  resp->projection ( 0, nspec - 1, 0, specbins - 1, 0, cols - 1, 0, rows - 1, projmat );
+  resp->projection ( string ( "PCG_PSF" ), string ( "PCG_REMAP" ), 0, nspec - 1, 0, specbins - 1, 0, cols - 1, 0, rows - 1, projmat );
   
   string outpsffile = datadir + "/realtoy_compare_psf.out";
   

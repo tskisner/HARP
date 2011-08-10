@@ -384,7 +384,7 @@ size_t harp::psf_toy::valid_range ( size_t const & firstX, size_t const & lastX,
 }
 
 
-void harp::psf_toy::projection ( size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t firstX, size_t lastX, size_t firstY, size_t lastY, comp_rowmat & data ) {
+void harp::psf_toy::projection ( string profcalc, string profremap, size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t firstX, size_t lastX, size_t firstY, size_t lastY, comp_rowmat & data ) {
   
   size_t nx = lastX - firstX + 1;
   size_t ny = lastY - firstY + 1;
@@ -400,7 +400,9 @@ void harp::psf_toy::projection ( size_t firstspec, size_t lastspec, size_t first
   }
 
   moat::profile * prof = moat::profile::get ( );
-  prof->start ( "PCG_PSF" );
+  if ( profcalc != "" ) {
+    prof->start ( profcalc );
+  }
   
   cache_spec ( firstspec, lastspec );
   
@@ -544,9 +546,13 @@ void harp::psf_toy::projection ( size_t firstspec, size_t lastspec, size_t first
     
   }
   
-  prof->stop ( "PCG_PSF" );
-  
-  prof->start ( "PCG_REMAP" );
+  if ( profcalc != "" ) {
+    prof->stop ( profcalc );
+  }
+
+  if ( profremap != "" ) {
+    prof->start ( profremap );
+  }
   
   // copy to output matrix
   
@@ -592,7 +598,9 @@ void harp::psf_toy::projection ( size_t firstspec, size_t lastspec, size_t first
     lastfrac = progfrac;
   }
   
-  prof->stop ( "PCG_REMAP" );
+  if ( profremap != "" ) {
+    prof->stop ( profremap );
+  }
   
   
   return;

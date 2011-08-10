@@ -11,10 +11,16 @@ namespace harp {
       size_t rows ( ) { return rows_; }
       size_t cols ( ) { return cols_; }
       void rowscols ( size_t & rows, size_t & cols ) { rows = rows_; cols = cols_; return; }
+      
       void read ( size_t startrow, size_t startcol, harp::dense_rowmat_view & data );
       void write ( std::string const & path, size_t startrow, size_t startcol, harp::dense_rowmat_view & data );
+      void read ( harp::data_vec_view & data );
+      void write ( std::string const & path, harp::data_vec_view & data );
+      
       void read_noise ( size_t startrow, size_t startcol, harp::dense_rowmat_view & data );
       void write_noise ( std::string const & path, size_t startrow, size_t startcol, harp::dense_rowmat_view & data );
+      void read_noise ( harp::data_vec_view & data );
+      void write_noise ( std::string const & path, harp::data_vec_view & data );
     
     private :
     
@@ -72,7 +78,7 @@ namespace harp {
       size_t specsize ( size_t specnum ) { return nreduced_; }
       void lambda ( size_t specnum, data_vec & data );
       void extent ( size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t & firstX, size_t & firstY, size_t & lastX, size_t & lastY );
-      void projection ( size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t firstX, size_t lastX, size_t firstY, size_t lastY, comp_rowmat & data );
+      void projection ( std::string profcalc, std::string profremap, size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t firstX, size_t lastX, size_t firstY, size_t lastY, comp_rowmat & data );
       
             
     private :

@@ -15,6 +15,14 @@ using namespace harp;
 namespace popts = boost::program_options;
 
 
+void harp_specstract_profile ( string const & name, string const & desc, double & totaltime, double & opencltime, map < string, long long int > & papi ) {
+  
+  cout << "harp_specstract:   " << desc << ":  " << totaltime << " seconds" << endl;
+  
+  return;
+}
+
+
 void parse_format ( string & input, string & format, map < string, string > & params ) {
   
   params.clear();
@@ -158,13 +166,32 @@ int main ( int argc, char *argv[] ) {
     quiet = true;
   }
   
+  moat::profile * prof = moat::profile::get ( );
+  
+  if ( ! quiet ) {
+
+    prof->reg ( "HARP_PSF", "compute projection matrix" );
+    prof->reg ( "HARP_REMAP", "remap projection matrix" );
+    prof->reg ( "HARP_PRECOND", "compute preconditioner" );
+    prof->reg ( "HARP_READ", "read data" );
+    prof->reg ( "HARP_WRITE", "write data" );
+
+    prof->reg ( "HARP_PCG_PREC", "applying preconditioner" );
+    prof->reg ( "HARP_PCG_PMV", "projection matrix-vector multiply" );
+    prof->reg ( "HARP_PCG_NMV", "N^-1 matrix-vector multiply" );
+    prof->reg ( "HARP_PCG_VEC", "vector ops time" );
+    prof->reg ( "HARP_PCG_TOT", "Total PCG time" );
+    
+  }
+  
+  
   size_t nimages = imagefiles.size();
   
   vector < harp_image_props > images ( nimages );
   
   
   if ( ! quiet ) {
-    cerr << "harp_spectract:  Reading input PSF properties...           ";
+    cout << "harp_specstract:  Reading input PSF properties...             ";
   }
   
   string psftype;
@@ -184,12 +211,12 @@ int main ( int argc, char *argv[] ) {
   size_t nbins = nspec * specbins;
   
   if ( ! quiet ) {
-    cerr << "DONE" << endl;;
+    cout << "DONE" << endl;
   }
 
   
   if ( ! quiet ) {
-    cerr << "harp_spectract:  Reading input image properties...           ";
+    cout << "harp_specstract:  Reading input image properties...             ";
   }
 
   string imagetype;
@@ -213,132 +240,54 @@ int main ( int argc, char *argv[] ) {
   }
   
   if ( ! quiet ) {
-    cerr << "DONE" << endl;;
+    cout << "DONE" << endl;
   }
   
   
-  /*
-  cerr << "  Reading pure signal image..." << endl;
-  
-  params.clear();
-  
-  params[ "path" ] = datadir + "/realtoy_input_image.fits";
-  params[ "hdu" ] = "3";
-  
-  image_p sigimg ( image::create ( string("toy"), params ) );
-  
-  dense_rowmat sig ( sigimg->rows(), sigimg->cols() );
-  
-  dense_rowmat_view sigview ( sig, mv_range ( 0, sig.size1() ), mv_range ( 0, sig.size2() ) );
-  
-  sigimg->read ( 0, 0, sigview );
-  
-  data_vec rms ( npix );
-  data_vec measured ( npix );
-  
-  size_t pixoff = 0;
-  for ( size_t i = 0; i < rows; ++i ) {
-    for ( size_t j = 0; j < cols; ++j ) {
-      rms[i*cols + j] = sqrt( 16.0 + sig(i,j) );
-      measured[pixoff] = img(i,j);
-      ++pixoff;
-    }
-  }
-  
-  
-  cerr << "  Reading noise covariance image..." << endl;
-  
-  params.clear();
-  
-  params[ "path" ] = datadir + "/realtoy_input_image.fits";
-  params[ "hdu" ] = "2";
-  
-  image_p nseimg ( image::create ( string("toy"), params ) );
-  
-  dense_rowmat nse ( sigimg->rows(), sigimg->cols() );
-  
-  dense_rowmat_view nseview ( nse, mv_range ( 0, nse.size1() ), mv_range ( 0, nse.size2() ) );
-  
-  nseimg->read ( 0, 0, nseview );
-  
-  data_vec trueinv ( npix );
-  
-  pixoff = 0;
-  for ( size_t i = 0; i < rows; ++i ) {
-    for ( size_t j = 0; j < cols; ++j ) {
-      trueinv[pixoff] = nse(i,j);
-      ++pixoff;
-    }
-  }
-  
-  
-  
-  
-  cerr << "  Testing PSF convolution..." << endl;
-  
-  data_vec compare ( npix );
-  
-  string outtruthfile = datadir + "/realtoy_compare_truth.out";
-  
-  out.open ( outtruthfile.c_str(), ios::out );
-  
-  for ( size_t i = 0; i < truth.size(); ++i ) {
-    out << i << " " << truth(i) << endl;
+  if ( ! quiet ) {
+    cout << "harp_specstract:  Reading input image and noise covariance...  ";
+    prof->start ( "HARP_READ" );
   }
 
-  out.close();
+  // FIXME:  for now, use only the first image
   
-  boost::numeric::ublas::axpy_prod ( projmat, truth, compare, true );
+  data_vec imgdata ( images[0].npix );
+  data_vec_view imgdataview ( imgdata, mv_range ( 0, images[0].npix ) );
   
-  dense_rowmat tempmat ( rows, cols );
+  data_vec imgnoise ( images[0].npix );
+  data_vec_view imgnoiseview ( imgnoise, mv_range ( 0, images[0].npix ) );
   
-  dense_rowmat_view outview ( tempmat, mv_range ( 0, rows ), mv_range ( 0, cols ) );
+  images[0].handle->read ( imgdataview );
+  images[0].handle->read_noise ( imgnoiseview );
   
-  pixoff = 0;
-  for ( size_t i = 0; i < rows; ++i ) {
-    for ( size_t j = 0; j < cols; ++j ) {
-      outview( i, j ) = compare[pixoff];
-      ++pixoff;
-    }
+  
+  if ( ! quiet ) {
+    prof->stop ( "HARP_READ" );
+    cout << "DONE" << endl;
   }
   
-  params.clear();
   
-  params[ "hdu" ] = "1";
-  
-  ostringstream o;
-  o << rows;
-  params[ "rows" ] = o.str();
-  
-  o.str("");
-  o << cols;
-  params[ "cols" ] = o.str();
-  
-  image_p outsigimage ( image::create ( string("toy"), params ) );
-  
-  outsigimage->write ( "!" + datadir + "/realtoy_psf_convolved.fits.out", 0, 0, outview );
-  
-  string outimgfile = datadir + "/realtoy_compare_sigmap.out";
-  
-  out.open ( outimgfile.c_str(), ios::out );
-  
-  double ratio;
-  pixoff = 0;
-  for ( size_t i = 0; i < rows; ++i ) {
-    for ( size_t j = 0; j < cols; ++j ) {
-      ratio = compare[pixoff] - sig(i,j);
-      out << pixoff << " " << i << " " << j << " " << sig(i,j) << " " << compare[pixoff] << " " << ratio << endl;
-      ++pixoff;
-    }
+  if ( ! quiet ) {
+    cout << "harp_specstract:  Computing PSF...  ";
   }
-
-  out.close();
+  
+  comp_rowmat projmat ( npix, nbins );
+  
+  if ( quiet ) {
+    resp->projection ( string(""), string(""), 0, nspec - 1, 0, specbins - 1, 0, cols - 1, 0, rows - 1, projmat );
+  } else {
+    resp->projection ( string("HARP_PSF"), string("HARP_REMAP"), 0, nspec - 1, 0, specbins - 1, 0, cols - 1, 0, rows - 1, projmat );
+  }
+  
+  if ( ! quiet ) {
+    cout << "DONE";
+  }
   
   
-  
-  cerr << "  Computing preconditioner..." << endl;
-  
-  prof->start ( "PCG_PRECALC" );
+  if ( ! quiet ) {
+    cout << "harp_specstract:  Computing preconditioner...                ";
+    prof->start ( "HARP_PRECOND" );
+  }
   
   data_vec outspec ( nbins );
   int_vec flags ( nbins );
@@ -352,9 +301,7 @@ int main ( int argc, char *argv[] ) {
   data_vec precdata ( nbins );
   
   for ( size_t i = 0; i < npix; ++i ) {
-    invnoise( i, i ) = trueinv[i];
-    //invnoise( i, i ) = 1.0 / ( rms[i] * rms[i] );
-    //cout << measured[i] << endl;
+    invnoise( i, i ) = imgnoise[i];
   }
   
   for ( size_t i = 0; i < nbins; ++i ) {
@@ -366,13 +313,16 @@ int main ( int argc, char *argv[] ) {
   
   for ( size_t i = 0; i < nbins; ++i ) {
     precdata[i] = 1.0 / precdata[i];
-    //cout << precdata[i] << endl;
   }
   
-  prof->stop ( "PCG_PRECALC" );
+  if ( ! quiet ) {
+    cout << "DONE";
+    prof->stop ( "HARP_PRECOND" );
+  }
   
+  /*
   
-  cerr << "  Solving PCG..." << endl;
+  cout << "  Solving PCG..." << endl;
   
   data_vec rhs ( nbins );
   data_vec q ( nbins );
@@ -432,20 +382,26 @@ int main ( int argc, char *argv[] ) {
     solvespec->write ( outspecfile, solvespecview );
   
   }
+  */
   
-  
-  outspecfile = datadir + "/realtoy_solved_spectra.out";
-  
-  out.open ( outspecfile.c_str(), ios::out );
-  
-  for ( size_t i = 0; i < nbins; ++i ) {
-    if ( flags[i] == 0 ) {
-      out << i << " " << truth[i] << " " << outspec[i] << " " << sqrt(precdata[i]) << endl;
-    }
+
+  if ( ! quiet ) {
+    
+    prof->query ( realtoy_pcgmle_profile );
+
+    prof->unreg ( "HARP_PSF" );
+    prof->unreg ( "HARP_REMAP" );
+    prof->unreg ( "HARP_PRECOND" );
+    prof->unreg ( "HARP_READ" );
+    prof->unreg ( "HARP_WRITE" );
+
+    prof->unreg ( "HARP_PCG_PREC" );
+    prof->unreg ( "HARP_PCG_PMV" );
+    prof->unreg ( "HARP_PCG_NMV" );
+    prof->unreg ( "HARP_PCG_VEC" );
+    prof->unreg ( "HARP_PCG_TOT" );
+    
   }
-  
-  out.close();
-*/
   
   return 0;
 }
