@@ -172,7 +172,7 @@ void harp::test_bigtoy ( string const & datadir ) {
   prof->reg ( "PCG_REMAP", "remap projection matrix" );
   prof->reg ( "PCG_PRECALC", "compute preconditioner" );
   
-  resp->projection ( firstspec, lastspec, 0, specbins - 1, Xmin, Xmax, Ymin, Ymax, projmat );
+  resp->projection ( string("PCG_PSF"), string("PCG_REMAP"), firstspec, lastspec, 0, specbins - 1, Xmin, Xmax, Ymin, Ymax, projmat );
   
   
   cerr << "  Computing projected signal image..." << endl;

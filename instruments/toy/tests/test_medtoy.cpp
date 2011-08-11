@@ -108,7 +108,7 @@ void harp::test_medtoy ( string const & datadir ) {
 
   comp_rowmat projmat ( npix, nbins );
   
-  resp->projection ( 0, nspec - 1, 0, specbins - 1, 0, cols - 1, 0, rows - 1, projmat );
+  resp->projection ( string("PCG_PSF"), string("PCG_REMAP"), 0, nspec - 1, 0, specbins - 1, 0, cols - 1, 0, rows - 1, projmat );
   
   
   cerr << "  Computing projected signal image..." << endl;

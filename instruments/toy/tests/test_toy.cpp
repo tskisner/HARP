@@ -142,7 +142,7 @@ void harp::test_toy ( string const & datadir ) {
   
   comp_rowmat projmat ( npix, nbins );
   
-  testpsf->projection ( 0, testpsf->nspec() - 1, 0, testpsf->specsize(0) - 1, (size_t)0, testimg->cols() - 1, (size_t)0, testimg->rows() - 1, projmat );
+  testpsf->projection ( string("PCG_PSF"), string("PCG_REMAP"), 0, testpsf->nspec() - 1, 0, testpsf->specsize(0) - 1, (size_t)0, testimg->cols() - 1, (size_t)0, testimg->rows() - 1, projmat );
   
   cerr << "  (PASSED)" << endl;
 

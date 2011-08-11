@@ -417,7 +417,7 @@ void harp::psf_toy::projection ( string profcalc, string profremap, size_t first
     }
   }
   
-  cerr << "computing number of non-zeros" << endl;
+  //cerr << "computing number of non-zeros" << endl;
   
   size_t nonzeros = 0;
   
@@ -444,7 +444,7 @@ void harp::psf_toy::projection ( string profcalc, string profremap, size_t first
     }
   }
   
-  cerr << "  = " << nonzeros << endl;
+  //cerr << "  = " << nonzeros << endl;
   
   
   // We want to fill the matrix using a mapped matrix, but the output will be a compressed matrix to speed up
@@ -455,7 +455,7 @@ void harp::psf_toy::projection ( string profcalc, string profremap, size_t first
   int lastfrac = 0;
   size_t complete = 0;
 
-  fprintf ( stderr, "  Sampling PSF [          ]\r" );
+  //fprintf ( stderr, "  Sampling PSF [          ]\r" );
   
   for ( b = 0; b < nbins; ++b ) {
     
@@ -532,6 +532,7 @@ void harp::psf_toy::projection ( string profcalc, string profremap, size_t first
 
     char msg[256];
     int progfrac = (int) ( 10 * complete / nbins );
+    /*
     if ( progfrac != lastfrac ) {
       for ( int p = 0; p < progfrac; ++p ) {
         msg[p] = '*';
@@ -542,6 +543,7 @@ void harp::psf_toy::projection ( string profcalc, string profremap, size_t first
       msg[10] = '\0';    
       fprintf ( stderr, "  Sampling PSF [%s]\r", msg );
     }
+    */
     lastfrac = progfrac;
     
   }
@@ -569,7 +571,7 @@ void harp::psf_toy::projection ( string profcalc, string profremap, size_t first
   }
   */
   
-  fprintf ( stderr, "  Memory Remap [          ]\r" );
+  //fprintf ( stderr, "  Memory Remap [          ]\r" );
   
   complete = 0;
   char msg[256];
@@ -585,6 +587,7 @@ void harp::psf_toy::projection ( string profcalc, string profremap, size_t first
 
     progfrac = (int) ( 10 * complete / nonzeros );
     
+    /*
     if ( progfrac != lastfrac ) {
       for ( int p = 0; p < progfrac; ++p ) {
         msg[p] = '*';
@@ -595,6 +598,7 @@ void harp::psf_toy::projection ( string profcalc, string profremap, size_t first
       msg[10] = '\0';    
       fprintf ( stderr, "  Memory Remap [%s]\r", msg );
     }
+    */
     lastfrac = progfrac;
   }
   

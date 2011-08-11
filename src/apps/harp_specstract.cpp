@@ -15,6 +15,41 @@ using namespace harp;
 namespace popts = boost::program_options;
 
 
+static bool harp_specstract_quiet = false;
+
+
+void harp_specstract_prec ( data_vec & in, data_vec & out, int_vec & flags, void * data ) {
+  data_vec * prec = (data_vec *) data;
+  
+  size_t vit;
+  size_t n = in.size();
+  
+  #ifdef _OPENMP
+  #pragma omp parallel for default(none) private(vit) shared(n, flags, in, out, prec) schedule(static)
+  #endif
+  for ( vit = 0; vit < n; ++vit ) {
+    if ( flags[ vit ] == 0 ) {
+      out[ vit ] = (*prec)[ vit ] * in[ vit ];
+    } else {
+      out[ vit ] = 0.0;
+    }
+  }
+  
+  return;
+}
+
+
+void harp_specstract_report ( double const & norm, double const & deltazero, int const & iter, double const & alpha, double const & beta, double const & delta, double const & epsilon ) {
+  
+  double relerr = sqrt ( delta / deltazero );
+  
+  if ( ! harp_specstract_quiet ) {
+    cout << "harp_specstract:  PCG iter " << iter << ": epsilon = " << epsilon << " relative err = " << relerr << endl;
+  }
+  
+  return;
+}
+
 void harp_specstract_profile ( string const & name, string const & desc, double & totaltime, double & opencltime, map < string, long long int > & papi ) {
   
   cout << "harp_specstract:   " << desc << ":  " << totaltime << " seconds" << endl;
@@ -164,6 +199,7 @@ int main ( int argc, char *argv[] ) {
   
   if ( vm.count( "quiet" ) ) {
     quiet = true;
+    harp_specstract_quiet = true;
   }
   
   moat::profile * prof = moat::profile::get ( );
@@ -191,7 +227,7 @@ int main ( int argc, char *argv[] ) {
   
   
   if ( ! quiet ) {
-    cout << "harp_specstract:  Reading input PSF properties...             ";
+    cout << "harp_specstract:  Reading input PSF properties...              ";
   }
   
   string psftype;
@@ -216,7 +252,7 @@ int main ( int argc, char *argv[] ) {
 
   
   if ( ! quiet ) {
-    cout << "harp_specstract:  Reading input image properties...             ";
+    cout << "harp_specstract:  Reading input image properties...            ";
   }
 
   string imagetype;
@@ -268,24 +304,26 @@ int main ( int argc, char *argv[] ) {
   
   
   if ( ! quiet ) {
-    cout << "harp_specstract:  Computing PSF...  ";
+    cout << "harp_specstract:  Computing PSF...                             ";
   }
   
-  comp_rowmat projmat ( npix, nbins );
+  // FIXME:  probably we will have pairs of images and PSFs...
+  
+  comp_rowmat projmat ( images[0].npix, nbins );
   
   if ( quiet ) {
-    resp->projection ( string(""), string(""), 0, nspec - 1, 0, specbins - 1, 0, cols - 1, 0, rows - 1, projmat );
+    resp->projection ( string(""), string(""), 0, nspec - 1, 0, specbins - 1, 0, images[0].cols - 1, 0, images[0].rows - 1, projmat );
   } else {
-    resp->projection ( string("HARP_PSF"), string("HARP_REMAP"), 0, nspec - 1, 0, specbins - 1, 0, cols - 1, 0, rows - 1, projmat );
+    resp->projection ( string("HARP_PSF"), string("HARP_REMAP"), 0, nspec - 1, 0, specbins - 1, 0, images[0].cols - 1, 0, images[0].rows - 1, projmat );
   }
   
   if ( ! quiet ) {
-    cout << "DONE";
+    cout << "DONE" << endl;
   }
   
   
   if ( ! quiet ) {
-    cout << "harp_specstract:  Computing preconditioner...                ";
+    cout << "harp_specstract:  Computing preconditioner...                  ";
     prof->start ( "HARP_PRECOND" );
   }
   
@@ -297,16 +335,16 @@ int main ( int argc, char *argv[] ) {
     outspec[b] = 0.0;
   }
   
-  comp_rowmat invnoise ( npix, npix );
+  comp_rowmat invnoise ( images[0].npix, images[0].npix );
   data_vec precdata ( nbins );
   
-  for ( size_t i = 0; i < npix; ++i ) {
+  for ( size_t i = 0; i < images[0].npix; ++i ) {
     invnoise( i, i ) = imgnoise[i];
   }
   
   for ( size_t i = 0; i < nbins; ++i ) {
     precdata[i] = 0.0;
-    for ( size_t j = 0; j < npix; ++j ) {
+    for ( size_t j = 0; j < images[0].npix; ++j ) {
       precdata[i] += projmat( j, i ) * projmat( j, i ) * invnoise( j, j );
     }
   }
@@ -316,13 +354,14 @@ int main ( int argc, char *argv[] ) {
   }
   
   if ( ! quiet ) {
-    cout << "DONE";
+    cout << "DONE" << endl;
     prof->stop ( "HARP_PRECOND" );
   }
   
-  /*
-  
-  cout << "  Solving PCG..." << endl;
+
+  if ( ! quiet ) {
+    cout << "harp_specstract:  Solving PCG..." << endl;
+  }
   
   data_vec rhs ( nbins );
   data_vec q ( nbins );
@@ -330,64 +369,46 @@ int main ( int argc, char *argv[] ) {
   data_vec s ( nbins );
   data_vec d ( nbins );
   
-  double err = moat::la::pcg_mle < comp_rowmat, comp_rowmat, data_vec, int_vec > ( true, true, projmat, invnoise, measured, outspec, q, r, s, d, flags, rhs, 100, 1.0e-12, realtoy_pcgmle_prec, (void*)&precdata, realtoy_pcgmle_report, "PCG_TOT", "PCG_VEC", "PCG_PMV", "PCG_NMV", "PCG_PREC" );
+  double err;
   
-  prof->stop_all();
-  
-  prof->query ( realtoy_pcgmle_profile );
-  
-  prof->unreg ( "PCG_PREC" );
-  prof->unreg ( "PCG_PMV" );
-  prof->unreg ( "PCG_NMV" );
-  prof->unreg ( "PCG_VEC" );
-  prof->unreg ( "PCG_TOT" );
-  prof->unreg ( "PCG_PSF" );
-  prof->unreg ( "PCG_REMAP" );
-  prof->unreg ( "PCG_PRECALC" );
+  if ( quiet ) {
+    err = moat::la::pcg_mle < comp_rowmat, comp_rowmat, data_vec, int_vec > ( true, true, projmat, invnoise, imgdata, outspec, q, r, s, d, flags, rhs, 100, 1.0e-12, harp_specstract_prec, (void*)&precdata, harp_specstract_report, "", "", "", "", "" );
+  } else {
+    err = moat::la::pcg_mle < comp_rowmat, comp_rowmat, data_vec, int_vec > ( true, true, projmat, invnoise, imgdata, outspec, q, r, s, d, flags, rhs, 100, 1.0e-12, harp_specstract_prec, (void*)&precdata, harp_specstract_report, "HARP_PCG_TOT", "HARP_PCG_VEC", "HARP_PCG_PMV", "HARP_PCG_NMV", "HARP_PCG_PREC" );
+  }
   
   
-  string outspecfile = datadir + "/realtoy_solved_spectra.fits.out";
+  if ( ! quiet ) {
+    cout << "harp_specstract:  Writing output solved spectra...             ";
+    prof->start ( "HARP_WRITE" );
+  }
   
-  string rmcom = "rm -f " + outspecfile;
+  string rmcom = "rm -f " + outfile;
   
   system( rmcom.c_str() );
   
-  params.clear();
+  map < string, string > specparams;
+  specparams[ "hdu" ] = "1";
+  specparams[ "nspec" ] = nspec;
+  specparams[ "specsize" ] = specbins;
   
-  o.str("");
-  o << specbins;
-
-  fitsfile * fp;
-  fits::open_readwrite ( fp, outspecfile );
+  spec_p solvespec ( spec::create ( string("boss"), specparams ) );
+  data_vec_view solvespecview ( outspec, mv_range ( 0, nspec * specbins ) );
   
-  fits::img_append ( fp, nspec, specbins );
+  solvespec->write ( outfile, solvespecview );
   
-  fits::close ( fp );
-
-
-  //params[ "path" ] = outspecfile;
-  params[ "hdu" ] = "1";
-  params[ "size" ] = o.str();
-  
-  for ( size_t s = 0; s < nspec; ++s ) {
-  
-    o.str("");
-    o << s;
-    params[ "pos" ] = o.str();
-  
-    spectrum_p solvespec ( spectrum::create ( string("toy"), params ) );
-  
-    data_vec_view solvespecview ( outspec, mv_range ( s * specbins, (s+1) * specbins ) );
-  
-    solvespec->write ( outspecfile, solvespecview );
-  
+  if ( ! quiet ) {
+    cout << "DONE" << endl;
+    prof->stop ( "HARP_WRITE" );
   }
-  */
-  
 
   if ( ! quiet ) {
     
-    prof->query ( realtoy_pcgmle_profile );
+    cout << "harp_specstract:  Profiling information:" << endl;
+    
+    prof->stop_all();
+    
+    prof->query ( harp_specstract_profile );
 
     prof->unreg ( "HARP_PSF" );
     prof->unreg ( "HARP_REMAP" );
