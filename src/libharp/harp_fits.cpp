@@ -86,6 +86,57 @@ int harp::fits::nhdus ( fitsfile * fp ) {
 }
 
 
+string harp::fits::key_string ( fitsfile * fp, std::string keyname ) {
+  int ret;
+  int status = 0;
+  
+  char keycopy[FLEN_VALUE];
+  strncpy ( keycopy, keyname.c_str(), FLEN_VALUE );
+  
+  char value[FLEN_VALUE];
+  char comment[FLEN_VALUE];
+  
+  ret = fits_read_key ( fp, TSTRING, keycopy, value, comment, &status );
+  fits::check ( status );
+  
+  return string(value);
+}
+
+
+long harp::fits::key_long ( fitsfile * fp, std::string keyname ) {
+  int ret;
+  int status = 0;
+  
+  char keycopy[FLEN_VALUE];
+  strncpy ( keycopy, keyname.c_str(), FLEN_VALUE );
+  
+  long value;
+  char comment[FLEN_VALUE];
+  
+  ret = fits_read_key ( fp, TLONG, keycopy, &value, comment, &status );
+  fits::check ( status );
+  
+  return value;
+}
+
+
+double harp::fits::key_double ( fitsfile * fp, std::string keyname ) {
+  int ret;
+  int status = 0;
+  
+  char keycopy[FLEN_VALUE];
+  strncpy ( keycopy, keyname.c_str(), FLEN_VALUE );
+  
+  double value;
+  char comment[FLEN_VALUE];
+  
+  ret = fits_read_key ( fp, TDOUBLE, keycopy, &value, comment, &status );
+  fits::check ( status );
+  
+  return value;
+}
+
+
 int harp::fits::img_seek ( fitsfile * fp, string const & extname ) {
   int hdu;
   
@@ -449,6 +500,174 @@ void harp::fits::img_write_row ( fitsfile * fp, size_t row, data_vec_view & data
   free ( buffer );
   
   //cerr << "read row complete" << endl;
+  
+  return;
+}
+
+
+int harp::fits::bin_seek ( fitsfile * fp, string const & keyname, string const & keyval ) {
+  int hdu;
+  
+  int ret;
+  int status = 0;
+  
+  char keycopy[FLEN_VALUE];
+  strncpy ( keycopy, keyname.c_str(), FLEN_VALUE );
+  
+  char valcopy[FLEN_VALUE];
+  strncpy ( valcopy, keyval.c_str(), FLEN_VALUE );
+  
+  char valcheck[FLEN_VALUE];
+  char comment[FLEN_VALUE];
+  
+  int nhdu;
+  
+  ret = fits_get_num_hdus ( fp, &nhdu, &status );
+  fits::check ( status );
+  
+  int type;
+  
+  for ( int i = 0; i < nhdu; ++i ) {
+    hdu = 1 + i;
+    
+    ret = fits_movabs_hdu ( fp, hdu, &type, &status );
+    fits::check ( status );
+    
+    if ( type == BINARY_TBL ) {
+      ret = fits_read_key ( fp, TSTRING, keycopy, valcheck, comment, &status );
+      //cerr << "key compare " << keycopy << ": " << valcheck << " =? " << valcopy << endl;
+      if ( status == 0 ) {
+        // keyword exists
+        if ( strncmp ( valcheck, valcopy, strlen ( valcopy ) ) == 0 ) {
+          // a match!
+          return hdu;
+        }
+      }
+      status = 0;
+    }
+  }
+  
+  return -1;
+  
+}
+
+
+vector < int > harp::fits::bin_columns ( fitsfile * fp, vector < string > & names ) {
+  
+  int ret;
+  int status = 0;
+  
+  vector < int > cols;
+  
+  vector < string > :: iterator nit;
+  char namecopy[FLEN_VALUE];
+  int id;
+  
+  for ( nit = names.begin(); nit != names.end(); ++nit ) {
+    strncpy ( namecopy, nit->c_str(), FLEN_VALUE );
+    ret = fits_get_colnum ( fp, CASEINSEN, namecopy, &id, &status );
+    fits::check ( status );
+    cols.push_back ( id );
+  }
+  
+  return cols;
+} 
+
+
+void harp::fits::bin_seek ( fitsfile * fp, int hdu ) {
+  
+  int ret;
+  int status = 0;
+  int type;
+  
+  ret = fits_movabs_hdu ( fp, hdu, &type, &status );
+  fits::check ( status );
+  
+  if ( type != BINARY_TBL ) {
+    ostringstream o;
+    o << "FITS HDU " << hdu << " is not a binary table";
+    MOAT_THROW( o.str().c_str() );
+  }
+  
+  return;
+}
+
+
+void harp::fits::bin_read ( fitsfile * fp, size_t firstrow, size_t lastrow, vector < int > & columns, vector < data_vec > & data ) {
+  
+  int ret;
+  int status = 0;
+  long offset = (long)firstrow;
+  long nread = (long)lastrow - offset + 1;
+  
+  // find optimal rowsize
+  
+  long optimal;  
+  ret = fits_get_rowsize ( fp, &optimal, &status );
+  fits::check ( status );
+  
+  optimal--;  // decrement by one, just to be safe
+  if (optimal < 1) {
+    optimal = 1;
+  }
+  
+  // get table dimensions
+  
+  long nrows;
+  int tfields;
+  char fitsval[FLEN_VALUE];
+  long pcount;
+  
+  ret = fits_read_btblhdr ( fp, 100, &nrows, &tfields, NULL, NULL, NULL, fitsval, &pcount, &status );
+  fits::check ( status );
+  
+  if ( offset + nread > nrows ) {
+    MOAT_THROW( "binary read range is beyond end of table" );
+  } 
+  
+  // check that column numbers are in range
+  
+  vector < int > :: iterator it;
+  
+  int cur = 0;
+  for ( it = columns.begin(); it != columns.end(); ++it ) {
+    if ( ( (*it) >= tfields ) || ( (*it) < 1 ) ) {
+      ostringstream o;
+      o << "cannot read (zero-based) column " << (*it) << " from binary table with " << tfields << " columns";
+      MOAT_THROW( o.str().c_str() );
+    }
+    data[ cur ].resize ( nread );
+    ++cur;
+  }
+    
+  // read data in a buffered way
+  
+  int anynul;
+  long n = optimal;
+  long dataoffset = 0;
+
+  while ( n == optimal ) {
+    if ( dataoffset + optimal > nread ) {
+      n = nrows - dataoffset;
+    }
+    
+    cur = 0;
+    for ( it = columns.begin(); it != columns.end(); ++it ) {
+      ret = fits_read_col_dbl ( fp, (*it) + 1, offset + 1, 1, n, 0, &((data[cur])[dataoffset]), &anynul, &status );
+      fits::check ( status );
+    }
+    
+    offset += optimal;
+    dataoffset += optimal;
+  }
+  
+  return;
+}
+
+
+void harp::fits::bin_write ( fitsfile * fp, size_t firstrow, size_t lastrow, std::vector < int > & columns, std::vector < data_vec > & data ) {
+  
+  MOAT_THROW( "binary FITS table writing not yet implemented" );
   
   return;
 }
