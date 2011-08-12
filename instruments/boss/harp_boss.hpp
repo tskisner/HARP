@@ -61,7 +61,20 @@ namespace harp {
   typedef struct {
     data_vec x;
     data_vec y;
+    data_vec lambda;
+    data_vec amp;
+    data_vec maj;
+    data_vec min;
+    data_vec ang;
   } psf_boss_resp;
+  
+  typedef struct {
+    size_t igroup;
+    double x0;
+    double xscale;
+    double y0;
+    double yscale;
+  } psf_boss_pixscale;
   
   class psf_boss : public psf {
     
@@ -80,14 +93,24 @@ namespace harp {
     
       void cache_spec ( size_t first, size_t last );
       
+      void gauss_sample ( data_vec & vals, data_vec & xrel, data_vec & yrel, double amp, double maj, double min, double ang );
+      
       size_t valid_range ( size_t const & firstX, size_t const & lastX, size_t const & firstY, size_t const & lastY, size_t & startX, size_t & stopX, size_t & startY, size_t & stopY, size_t & spec, size_t & bin );
     
       std::string path_;
       size_t nspec_;
       size_t nbins_;
-      size_t pixcorr_;
+      size_t xpixcorr_;
+      size_t ypixcorr_;
+      size_t ncoeff_;
+      size_t ngroup_;
       std::map < std::string, int > hdus_;
       std::map < size_t, psf_boss_resp > resp_;
+      std::map < size_t, psf_boss_pixscale > xyscale_;
+      data_vec xexp_;
+      data_vec yexp_;
+      std::map < size_t, std::map < size_t, data_vec > > psfimage_;
+      std::string type_;
       
   };
   
