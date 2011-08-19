@@ -100,8 +100,12 @@ namespace harp {
       std::string path_;
       size_t nspec_;
       size_t nbins_;
+      size_t xpix_;
+      size_t ypix_;
       size_t xpixcorr_;
       size_t ypixcorr_;
+      size_t xpixwidth_;
+      size_t ypixwidth_;
       size_t ncoeff_;
       size_t ngroup_;
       std::map < std::string, int > hdus_;

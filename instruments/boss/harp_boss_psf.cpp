@@ -14,6 +14,8 @@ static const char * boss_psf_key_corr = "corr";
 
 static const char * boss_psf_hdu_name = "PSFPARAM";
 static const char * boss_psf_type_name = "PSFTYPE";
+static const char * boss_psf_xpix_name = "NPIX_X";
+static const char * boss_psf_ypix_name = "NPIX_Y";
 
 
 static const char * boss_gausspsf_hdu_x = "X";
@@ -52,7 +54,7 @@ harp::psf_boss::psf_boss ( std::map < std::string, std::string > const & params 
   
   // determine PSF type
   
-  fits::img_seek ( fp, boss_pixpsf_hdu_x );
+  fits::img_seek ( fp, 1 );
   type_ = fits::key_string ( fp, boss_psf_type_name );
   
   if ( type_ == "GAUSS2D" ) {
@@ -65,10 +67,18 @@ harp::psf_boss::psf_boss ( std::map < std::string, std::string > const & params 
 
     xpixcorr_ = atoi ( val->second.c_str() );
     ypixcorr_ = xpixcorr_;
+    
+    xpixwidth_ = 2 * xpixcorr_ + 1;
+    ypixwidth_ = 2 * ypixcorr_ + 1;
   
     hdu = fits::img_seek ( fp, boss_psf_hdu_name, boss_gausspsf_hdu_x );
     hdus_[ boss_gausspsf_hdu_x ] = hdu;
+    
+    // read spectral size
+    
     fits::img_dims ( fp, nspec_, nbins_ );
+    xpix_ = fits::key_long ( fp, boss_psf_xpix_name );
+    ypix_ = fits::key_long ( fp, boss_psf_ypix_name );
   
     hdu = fits::img_seek ( fp, boss_psf_hdu_name, boss_gausspsf_hdu_y );
     hdus_[ boss_gausspsf_hdu_y ] = hdu;
@@ -112,19 +122,26 @@ harp::psf_boss::psf_boss ( std::map < std::string, std::string > const & params 
       MOAT_THROW( "boss_psf: PSF file must have identical dimensions for all HDUs" );
     }
     
-  } else if ( type_ == "PIX_PCA" ) {
+  } else if ( type_ == "PCA-PIX" ) {
     
     // read spectral size
     
+    fits::img_seek ( fp, boss_pixpsf_hdu_x );
+    
     fits::img_dims ( fp, nspec_, nbins_ );
+    xpix_ = fits::key_long ( fp, boss_psf_xpix_name );
+    ypix_ = fits::key_long ( fp, boss_psf_ypix_name );
     
     // read correlation size, PCA coefficients, and number of groups
     
     fits::img_seek ( fp, boss_pixpsf_hdu_psfimage );
-    xpixcorr_ = fits::key_long ( fp, "NAXIS1" );
-    ypixcorr_ = fits::key_long ( fp, "NAXIS2" );
+    xpixwidth_ = fits::key_long ( fp, "NAXIS1" );
+    ypixwidth_ = fits::key_long ( fp, "NAXIS2" );
     ncoeff_ = fits::key_long ( fp, "NAXIS3" );
     ngroup_ = fits::key_long ( fp, "NAXIS4" );
+    
+    xpixcorr_ = (size_t)(xpixwidth_ - 1) / 2;
+    ypixcorr_ = (size_t)(ypixwidth_ - 1) / 2;
     
     int ret;
     int status = 0;
@@ -138,12 +155,12 @@ harp::psf_boss::psf_boss ( std::map < std::string, std::string > const & params 
     fpixel[2] = 1;
     fpixel[3] = 1;
 
-    lpixel[0] = (long)xpixcorr_;
-    lpixel[1] = (long)ypixcorr_;
+    lpixel[0] = (long)xpixwidth_;
+    lpixel[1] = (long)ypixwidth_;
     lpixel[2] = (long)ncoeff_;
     lpixel[3] = (long)ngroup_;
     
-    size_t bufsize = xpixcorr_ * ypixcorr_ * ncoeff_ * ngroup_;
+    size_t bufsize = xpixwidth_ * ypixwidth_ * ncoeff_ * ngroup_;
     
     double * buffer = moat::double_alloc ( bufsize );
 
@@ -151,11 +168,11 @@ harp::psf_boss::psf_boss ( std::map < std::string, std::string > const & params 
     fits::check ( status );
     
     size_t global = 0;
-    for ( size_t i = 0; i < nspec_; ++i ) {
+    for ( size_t i = 0; i < ngroup_; ++i ) {
       map < size_t, data_vec > curimage;
       for ( size_t j = 0; j < ncoeff_; ++j ) {
-        curimage[ j ].resize ( xpixcorr_ * ypixcorr_ );
-        for ( size_t k = 0; k < xpixcorr_ * ypixcorr_; ++k ) {
+        curimage[ j ] = data_vec ( xpixwidth_ * ypixwidth_ );
+        for ( size_t k = 0; k < xpixwidth_ * ypixwidth_; ++k ) {
           (curimage[ j ])[ k ] = buffer[ global ];
           ++global;
         }
@@ -176,7 +193,7 @@ harp::psf_boss::psf_boss ( std::map < std::string, std::string > const & params 
     vector < int > colids = fits::bin_columns ( fp, cols );
     
     vector < data_vec > tempdata ( 2 );
-    fits::bin_read ( fp, 0, ncoeff_, colids, tempdata );
+    fits::bin_read ( fp, 0, ncoeff_-1, colids, tempdata );
     
     xexp_ = tempdata[0];
     yexp_ = tempdata[1];
@@ -193,8 +210,9 @@ harp::psf_boss::psf_boss ( std::map < std::string, std::string > const & params 
     cols.push_back ( "YSCALE" );
     colids = fits::bin_columns ( fp, cols );
     
+    tempdata.clear();
     tempdata.resize ( 5 );
-    fits::bin_read ( fp, 0, nspec_, colids, tempdata );
+    fits::bin_read ( fp, 0, nspec_-1, colids, tempdata );
     
     psf_boss_pixscale scale;
     
@@ -205,6 +223,10 @@ harp::psf_boss::psf_boss ( std::map < std::string, std::string > const & params 
       scale.y0 = (tempdata[3])[i];
       scale.yscale = (tempdata[4])[i];
       xyscale_[ i ] = scale;
+      
+      //char msg[256];
+      //sprintf(msg,"group = %lu  x0 = %0.16e  y0 = %0.16e  xscale = %0.16e  yscale = %0.16e", scale.igroup, scale.x0, scale.y0, scale.xscale, scale.yscale );
+      //cerr << msg << endl;
     }
     
   } else if ( type_ == "GAUSS-HERMITE" ) {
@@ -284,7 +306,7 @@ void harp::psf_boss::cache_spec ( size_t first, size_t last ) {
           //cout << "spec[" << spec << "](" << i << ") = " << resp_[ spec ].x[i] << " " << resp_[ spec ].y[i] << " " << resp_[ spec ].lambda[i] << " " << resp_[ spec ].amp[i] << " " << resp_[ spec ].maj[i] << " " << resp_[ spec ].min[i] << " " << resp_[ spec ].ang[i] << endl;
         //}
       
-      } else if ( type_ == "PIX_PCA" ) { 
+      } else if ( type_ == "PCA-PIX" ) { 
 
         resp_[ spec ].x.resize ( nbins_ );
         resp_[ spec ].y.resize ( nbins_ );
@@ -293,7 +315,7 @@ void harp::psf_boss::cache_spec ( size_t first, size_t last ) {
         fits::img_seek ( fp, boss_pixpsf_hdu_x );      
         fits::img_read_row ( fp, spec, resp_[ spec ].x );
       
-        fits::img_seek ( fp, boss_pixpsf_hdu_x );      
+        fits::img_seek ( fp, boss_pixpsf_hdu_y );      
         fits::img_read_row ( fp, spec, resp_[ spec ].y );
       
         fits::img_seek ( fp, boss_pixpsf_hdu_lambda );      
@@ -545,6 +567,8 @@ void harp::psf_boss::projection ( string profcalc, string profremap, size_t firs
       size_t rowoff;
       data_vec vals ( nvalid );
       
+      //cerr << "spec " << spec << ", bin " << specbin << " has " << nvalid << " nonzeroes" << endl;
+      
       if ( type_ == "GAUSS2D" ) {
       
         double amp = resp_[ spec ].amp[specbin];
@@ -590,7 +614,7 @@ void harp::psf_boss::projection ( string profcalc, string profremap, size_t firs
           }
         }
         
-      } else if ( type_ == "PIX_PCA" ) {
+      } else if ( type_ == "PCA-PIX" ) {
         
         xcenter = resp_[ spec ].x[specbin];
         ycenter = resp_[ spec ].y[specbin];
@@ -604,6 +628,19 @@ void harp::psf_boss::projection ( string profcalc, string profremap, size_t firs
         double xx = xscale * ( xcenter - x0 );
         double yy = yscale * ( ycenter - y0 );
         
+        //if ( ( spec == 50 ) && ( specbin == 50 ) ) {
+        
+          cerr << "PIX_PCA:  spec " << spec << ", bin " << specbin << ":" << endl;
+          cerr << "PIX_PCA:    igroup = " << igroup << endl; 
+          cerr << "PIX_PCA:    x0 = " << x0 << endl;
+          cerr << "PIX_PCA:    xscale = " << xscale << endl;
+          cerr << "PIX_PCA:    y0 = " << y0 << endl;
+          cerr << "PIX_PCA:    yscale = " << yscale << endl;
+          cerr << "PIX_PCA:    xx = " << xx << endl;
+          cerr << "PIX_PCA:    yy = " << yy << endl;
+          
+        //}
+        
         int nx;
         int ny;
         
@@ -615,10 +652,23 @@ void harp::psf_boss::projection ( string profcalc, string profremap, size_t firs
           nx = xexp_[ co ];
           ny = yexp_[ co ];
           
+          //if ( specbin == 0 ) {
+          //  cerr << "PIX_PCA:    nx = " << nx << " ny = " << ny << endl;
+          //}
+          
           for ( pix = 0; pix < nvalid; ++pix ) {
-            vals [ pix ] += pow ( xx, nx ) * pow ( yy, ny ) * ( (psfimage_[ spec ])[ igroup ] )[ xpixcorr_ * ypixcorr_ * co + pix ]; 
+            vals [ pix ] += pow ( xx, nx ) * pow ( yy, ny ) * ( (psfimage_[ igroup ])[ co ] )[ pix ];
+            //if ( specbin == 0 ) {
+              //cerr << "PIX_PCA:     vals[" << pix << "] += " << pow ( xx, nx ) << " * " << pow ( yy, ny ) << " * " << ( (psfimage_[ igroup ])[ co ] )[ pix ] << " => " << vals[pix] << endl;
+            //}
           }
-        }        
+        }
+        
+        //if ( ( spec == 50 ) && ( specbin == 50 ) ) {
+          for ( pix = 0; pix < nvalid; ++pix ) {
+            cerr << "PIX_PCA:     vals[" << pix << "] = " << vals[ pix ] << endl;
+          }
+        //}
     
         pix = 0;
     

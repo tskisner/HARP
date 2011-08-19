@@ -567,7 +567,7 @@ vector < int > harp::fits::bin_columns ( fitsfile * fp, vector < string > & name
     strncpy ( namecopy, nit->c_str(), FLEN_VALUE );
     ret = fits_get_colnum ( fp, CASEINSEN, namecopy, &id, &status );
     fits::check ( status );
-    cols.push_back ( id );
+    cols.push_back ( id-1 );
   }
   
   return cols;
@@ -631,7 +631,7 @@ void harp::fits::bin_read ( fitsfile * fp, size_t firstrow, size_t lastrow, vect
   
   int cur = 0;
   for ( it = columns.begin(); it != columns.end(); ++it ) {
-    if ( ( (*it) >= tfields ) || ( (*it) < 1 ) ) {
+    if ( ( (*it) >= tfields ) || ( (*it) < 0 ) ) {
       ostringstream o;
       o << "cannot read (zero-based) column " << (*it) << " from binary table with " << tfields << " columns";
       MOAT_THROW( o.str().c_str() );
@@ -655,6 +655,8 @@ void harp::fits::bin_read ( fitsfile * fp, size_t firstrow, size_t lastrow, vect
     for ( it = columns.begin(); it != columns.end(); ++it ) {
       ret = fits_read_col_dbl ( fp, (*it) + 1, offset + 1, 1, n, 0, &((data[cur])[dataoffset]), &anynul, &status );
       fits::check ( status );
+      //cerr << "fits::bin_read col " << (*it)+1 << " rows " << offset+1 << "-" << offset+1+n << " = " << (data[cur])[dataoffset] << ", " << (data[cur])[dataoffset+1] << ", " << (data[cur])[dataoffset+2] << endl;
+      ++cur;
     }
     
     offset += optimal;
