@@ -150,7 +150,9 @@ int main ( int argc, char *argv[] ) {
   string outfile = "";
   vector < string > imagefiles;
   
-  bool quiet = false;  
+  bool quiet = false;
+  
+  int threads;
   
   
   // Declare options
@@ -220,6 +222,14 @@ int main ( int argc, char *argv[] ) {
     
   }
   
+  #ifdef _OPENMP
+    threads = omp_get_max_threads();
+  #else
+    threads = 1;
+  #endif
+  
+  fftw_plan_with_nthreads ( threads );
+  
   
   size_t nimages = imagefiles.size();
   
@@ -286,7 +296,7 @@ int main ( int argc, char *argv[] ) {
   }
 
   // FIXME:  for now, use only the first image
-  
+  /*
   data_vec imgdata ( images[0].npix );
   data_vec_view imgdataview ( imgdata, mv_range ( 0, images[0].npix ) );
   
@@ -295,7 +305,7 @@ int main ( int argc, char *argv[] ) {
   
   images[0].handle->read ( imgdataview );
   images[0].handle->read_noise ( imgnoiseview );
-  
+  */
   
   if ( ! quiet ) {
     prof->stop ( "HARP_READ" );
@@ -309,6 +319,7 @@ int main ( int argc, char *argv[] ) {
   
   // FIXME:  probably we will have pairs of images and PSFs...
   
+  /*
   comp_rowmat projmat ( images[0].npix, nbins );
   
   if ( quiet ) {
@@ -320,7 +331,15 @@ int main ( int argc, char *argv[] ) {
   if ( ! quiet ) {
     cout << "DONE" << endl;
   }
+  */
   
+  comp_rowmat projmat ( 4114 * 4128, 1 );
+  
+  resp->projection ( string("HARP_PSF"), string("HARP_REMAP"), 10, 10, 20, 20, 0, 4114 - 1, 0, 4128 - 1, projmat );
+  
+  exit(0);
+  
+  /*
   
   if ( ! quiet ) {
     cout << "harp_specstract:  Computing preconditioner...                  ";
@@ -423,6 +442,9 @@ int main ( int argc, char *argv[] ) {
     prof->unreg ( "HARP_PCG_TOT" );
     
   }
+  */
+  
+  fftw_cleanup_threads();
   
   return 0;
 }

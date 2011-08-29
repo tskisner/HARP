@@ -37,6 +37,9 @@ static const int boss_pixpsf_hdu_psfimage = 6;  // igroup icoeff iy ix
 
 harp::psf_boss::psf_boss ( std::map < std::string, std::string > const & params ) : psf ( format_boss, params ) {
   
+  infft_ = NULL;
+  outfft_ = NULL;
+  
   map < std::string, std::string > :: const_iterator val;
   
   val = params.find( boss_psf_key_path );
@@ -229,6 +232,34 @@ harp::psf_boss::psf_boss ( std::map < std::string, std::string > const & params 
       //cerr << msg << endl;
     }
     
+    // set up fftw plan for sinc shift
+    
+    xpixfft_ = 2;
+    ypixfft_ = 2;
+    
+    while ( xpixfft_ < xpixwidth_ ) {
+      xpixfft_ *= 2;
+    }
+    
+    while ( ypixfft_ < ypixwidth_ ) {
+      ypixfft_ *= 2;
+    }
+    
+    infft_ = (double*) fftw_malloc ( xpixfft_ * ypixfft_ * sizeof(double) );
+    insinc_ = (double*) fftw_malloc ( xpixfft_ * ypixfft_ * sizeof(double) );
+    outfft_ = (fftw_complex*) fftw_malloc ( xpixfft_ * ypixfft_ * sizeof(fftw_complex) );
+    outsinc_ = (fftw_complex*) fftw_malloc ( xpixfft_ * ypixfft_ * sizeof(fftw_complex) );
+    
+    if ( ( ! infft_ ) || ( ! outfft_ ) || ( ! insinc_ ) || ( ! outsinc_ ) ) {
+      MOAT_THROW( "cannot allocate fftw buffers" );
+    } 
+    
+    fpixplan_ = fftw_plan_dft_r2c_2d ( (int)ypixfft_, (int)xpixfft_, infft_, outfft_, FFTW_ESTIMATE );
+
+    fsincplan_ = fftw_plan_dft_r2c_2d ( (int)ypixfft_, (int)xpixfft_, insinc_, outsinc_, FFTW_ESTIMATE );
+    
+    rpixplan_ = fftw_plan_dft_c2r_2d ( (int)ypixfft_, (int)xpixfft_, outfft_, infft_, FFTW_ESTIMATE );
+    
   } else if ( type_ == "GAUSS-HERMITE" ) {
 
     MOAT_THROW( "GAUSS-HERMITE psf not yet supported" );
@@ -243,6 +274,19 @@ harp::psf_boss::psf_boss ( std::map < std::string, std::string > const & params 
 
 
 harp::psf_boss::~psf_boss ( ) {
+  
+  if ( type_ == "PCA-PIX" ) {
+    fftw_destroy_plan ( fpixplan_ );
+    fftw_destroy_plan ( rpixplan_ );
+  }
+  
+  if ( infft_ ) {
+    fftw_free ( infft_ );
+  }
+  
+  if ( outfft_ ) {
+    fftw_free ( outfft_ );
+  }
   
   cleanup();
   
@@ -473,6 +517,123 @@ void harp::psf_boss::gauss_sample ( data_vec & vals, data_vec & xrel, data_vec &
 }
 
 
+void harp::psf_boss::shift_kernel ( data_vec & vals, double delta, data_vec & data ) {
+  double dampfac = 3.25;
+  double invdamp = 1.0 / dampfac;
+
+  for ( size_t i = 0; i < data.size(); ++i ) {
+    double shift = vals[ i ] + delta;
+    if ( fabs ( shift ) < 1.0e-100 ) {
+      data[ i ] = 1.0;
+    } else {
+      data[ i ] = exp ( - ( shift * invdamp ) * ( shift * invdamp ) ) * sin ( moat::PI * shift ) / ( moat::PI * shift );
+    }
+    cerr << "kern: " << data[i] << endl;
+  }
+  cerr << "kern" << endl;
+
+  return;
+}
+
+
+void harp::psf_boss::sshift ( double dx, double dy, size_t xoff, size_t yoff, size_t xsize, size_t ysize ) {
+  
+  size_t radius = 10;
+
+  data_vec shiftvals ( 2 * radius + 1 );
+
+  for ( size_t i = 0; i < 2 * radius + 1; ++i ) {
+    shiftvals[ i ] = (double)i - (double)radius;
+  }
+  
+  // perform forward transform
+  
+  cerr << "PIX_PCA:  forward transform" << endl;
+  fftw_execute ( fpixplan_ );
+  
+  // compute convolution kernel
+
+  //FIXME : check for dy / dx near zero
+
+  data_vec xshift ( 2 * radius + 1 );
+  if ( fabs ( dx ) < moat::EPSILON_DOUBLE ) {
+    for ( size_t i = 0; i < 2 * radius + 1; ++i ) {
+      xshift[i] = 0.0;
+    }
+    xshift[ radius ] = 1.0;
+  } else {
+    cerr << "calling shift X" << endl;
+    shift_kernel ( shiftvals, dx, xshift );
+  }
+
+  data_vec yshift ( 2 * radius + 1 );
+  if ( fabs ( dy ) < moat::EPSILON_DOUBLE ) {
+    for ( size_t i = 0; i < 2 * radius + 1; ++i ) {
+      yshift[i] = 0.0;
+    }
+    yshift[ radius ] = 1.0;
+  } else {
+    cerr << "calling shift y" << endl;
+    shift_kernel ( shiftvals, dy, yshift );
+  }
+  
+  // set 2D kernel to outer product
+  
+  // FIXME!!!
+
+  size_t ykern = radius - (size_t)( ysize / 2 );
+  size_t xkern = radius - (size_t)( xsize / 2 );
+
+
+  cerr << endl;
+  for ( size_t i = 0; i < ysize; ++i ) {
+    cerr << "[ " << i << " ] ";
+    for ( size_t j = 0; j < xsize; ++j ) {
+      insinc_[ (i + yoff) * xpixfft_ + (j + xoff) ] = yshift[i+ykern] * xshift[j+xkern];
+      cerr << insinc_[ (i + yoff) * xpixfft_ + (j + xoff) ] << " ";
+    }
+    cerr << endl;
+  }
+
+  cerr << endl;
+  for ( size_t i = 0; i < ypixfft_; ++i ) {
+    cerr << "[ " << i << " ] ";
+    for ( size_t j = 0; j < xpixfft_; ++j ) {
+      cerr << insinc_[ i * xpixfft_ + j ] << " ";
+    }
+    cerr << endl;
+  }
+
+
+  fftw_execute ( fsincplan_ );
+  
+  // convolve and renormalize
+  
+  double scale = 1.0 / ( (double)ypixfft_ * (double)xpixfft_ );
+  double real;
+  double imag;
+  
+  size_t k = 0;
+  for ( size_t i = 0; i < ypixfft_; ++i ) {
+    for ( size_t j = 0; j < (size_t)(xpixfft_/2) + 1; ++j ) {
+      //(outfft_[ k ])[0] *= scale;
+      //(outfft_[ k ])[1] *= scale;
+      real = scale * ( (outfft_[ k ])[0] * (outsinc_[ k ])[0] - (outfft_[ k ])[1] * (outsinc_[ k ])[1] );
+      imag = scale * ( (outfft_[ k ])[1] * (outsinc_[ k ])[0] + (outfft_[ k ])[0] * (outsinc_[ k ])[1] );
+      (outfft_[ k ])[0] = real;
+      (outfft_[ k ])[1] = imag;
+      ++k;
+    }
+  }
+  
+  // inverse fft
+  
+  fftw_execute ( rpixplan_ );
+  
+  return;
+}
+
+
 void harp::psf_boss::projection ( string profcalc, string profremap, size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t firstX, size_t lastX, size_t firstY, size_t lastY, comp_rowmat & data ) {
   
   size_t nx = lastX - firstX + 1;
@@ -557,6 +718,11 @@ void harp::psf_boss::projection ( string profcalc, string profremap, size_t firs
     size_t stopY;
     
     size_t nvalid = valid_range ( firstX, lastX, firstY, lastY, startX, stopX, startY, stopY, spec, specbin );
+    
+    size_t validx = stopX - startX + 1;
+    size_t validy = stopY - startY + 1;
+
+    cerr << "valid pixel range for spectrum " << spec << ", bin " << specbin << " = [" << startX << " - " << stopX << "] [" << startY << " - " << stopY << "]" << endl;
 
     if ( nvalid > 0 ) {
       
@@ -628,47 +794,60 @@ void harp::psf_boss::projection ( string profcalc, string profremap, size_t firs
         double xx = xscale * ( xcenter - x0 );
         double yy = yscale * ( ycenter - y0 );
         
-        //if ( ( spec == 50 ) && ( specbin == 50 ) ) {
-        
-          cerr << "PIX_PCA:  spec " << spec << ", bin " << specbin << ":" << endl;
-          cerr << "PIX_PCA:    igroup = " << igroup << endl; 
-          cerr << "PIX_PCA:    x0 = " << x0 << endl;
-          cerr << "PIX_PCA:    xscale = " << xscale << endl;
-          cerr << "PIX_PCA:    y0 = " << y0 << endl;
-          cerr << "PIX_PCA:    yscale = " << yscale << endl;
-          cerr << "PIX_PCA:    xx = " << xx << endl;
-          cerr << "PIX_PCA:    yy = " << yy << endl;
+        cerr << "PIX_PCA:  spec " << spec << ", bin " << specbin << ":" << endl;
+        cerr << "PIX_PCA:    igroup = " << igroup << endl; 
+        cerr << "PIX_PCA:    x0 = " << x0 << endl;
+        cerr << "PIX_PCA:    xscale = " << xscale << endl;
+        cerr << "PIX_PCA:    y0 = " << y0 << endl;
+        cerr << "PIX_PCA:    yscale = " << yscale << endl;
+        cerr << "PIX_PCA:    xx = " << xx << endl;
+        cerr << "PIX_PCA:    yy = " << yy << endl;
           
-        //}
-        
         int nx;
         int ny;
         
-        for ( pix = 0; pix < nvalid; ++pix ) {
-          vals [ pix ] = 0.0;
-        }
+        memset ( (void*)infft_, 0, xpixfft_ * ypixfft_ * sizeof(double) );
+        memset ( (void*)insinc_, 0, xpixfft_ * ypixfft_ * sizeof(double) );
+        memset ( (void*)outfft_, 0, ( 1 + (size_t)( (xpixfft_ * ypixfft_) / 2 ) ) * sizeof(fftw_complex) );
+        memset ( (void*)outsinc_, 0, ( 1 + (size_t)( (xpixfft_ * ypixfft_) / 2 ) ) * sizeof(fftw_complex) );
+        
+        size_t yoff = (size_t)( ( ypixfft_ - validy ) / 2 );
+        size_t xoff = (size_t)( ( xpixfft_ - validx ) / 2 );
         
         for ( size_t co = 0; co < ncoeff_; ++co ) {
           nx = xexp_[ co ];
           ny = yexp_[ co ];
           
-          //if ( specbin == 0 ) {
-          //  cerr << "PIX_PCA:    nx = " << nx << " ny = " << ny << endl;
-          //}
-          
-          for ( pix = 0; pix < nvalid; ++pix ) {
-            vals [ pix ] += pow ( xx, nx ) * pow ( yy, ny ) * ( (psfimage_[ igroup ])[ co ] )[ pix ];
-            //if ( specbin == 0 ) {
-              //cerr << "PIX_PCA:     vals[" << pix << "] += " << pow ( xx, nx ) << " * " << pow ( yy, ny ) << " * " << ( (psfimage_[ igroup ])[ co ] )[ pix ] << " => " << vals[pix] << endl;
-            //}
+          for ( size_t i = 0; i < validy; ++i ) {
+            for ( size_t j = 0; j < validx; ++j ) {
+              infft_ [ (yoff + i) * xpixfft_ + (xoff + j) ] += pow ( xx, nx ) * pow ( yy, ny ) * ( (psfimage_[ igroup ])[ co ] )[ i * validx + j ];
+            }
           }
         }
         
-        //if ( ( spec == 50 ) && ( specbin == 50 ) ) {
-          for ( pix = 0; pix < nvalid; ++pix ) {
-            cerr << "PIX_PCA:     vals[" << pix << "] = " << vals[ pix ] << endl;
-          }
+        // sinc shift
+        
+        
+        double dx = floor ( xcenter + 0.5 ) - xcenter;
+        double dy = floor ( ycenter + 0.5 ) - ycenter;
+        dx = 0.0;
+        cerr << "PIX_PCA:    xcenter / dx = " << xcenter << " / " << dx << endl;
+        cerr << "PIX_PCA:    ycenter / dy = " << ycenter << " / " << dy << endl;
+
+        cerr << " xoff = " << xoff << " yoff = " << yoff << " xsize = " << validx << " ysize = " << validy << endl;
+
+        sshift ( dx, dy, xoff, yoff, validx, validy );
+        //fftw_execute ( fpixplan_ );
+        //fftw_execute ( rpixplan_ );
+        //for ( size_t ind = 0; ind < (xpixfft_ * ypixfft_); ++ind ) {
+        //  infft_[ind] /= (xpixfft_ * ypixfft_);
         //}
+        
+        for ( size_t i = 0; i < validy; ++i ) {
+          for ( size_t j = 0; j < validx; ++j ) {
+            cerr << "PIX_PCA:     vals[" << i * validx + j << "] = " << infft_[ (yoff + i) * xpixfft_ + (xoff + j) ] << endl;
+          }
+        }
     
         pix = 0;
     
@@ -679,7 +858,7 @@ void harp::psf_boss::projection ( string profcalc, string profremap, size_t firs
       
             datarow = rowoff + ( imgcol - firstX );
 
-            builder ( datarow, b ) += vals[pix];
+            builder ( datarow, b ) += infft_[ (yoff + imgrow - startY) * xpixfft_ + (xoff + imgcol - startX) ];
         
             ++pix;
           }

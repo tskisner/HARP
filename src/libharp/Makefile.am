@@ -1,6 +1,6 @@
-AM_CPPFLAGS = -I$(top_srcdir)/src/libharp $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS) $(MOAT_CPPFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir)/src/libharp $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS) $(MOAT_CPPFLAGS) $(FFTW_CPPFLAGS)
 AM_LDFLAGS = -L$(top_builddir)/src/libharp
-AM_LIBS = $(CFITSIO) $(MOAT) $(BOOST_LDFLAGS) -lm
+AM_LIBS = $(CFITSIO) $(MOAT) $(FFTW) $(BOOST_LDFLAGS) -lm
 
 noinst_HEADERS = harp_internal.hpp
 include_HEADERS = harp.hpp

@@ -1,7 +1,7 @@
 
-AM_CPPFLAGS = -I$(top_srcdir)/src/libharp -I$(top_srcdir)/src/apps $(MOAT_CPPFLAGS) $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir)/src/libharp -I$(top_srcdir)/src/apps $(MOAT_CPPFLAGS) $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS) $(FFTW_CPPFLAGS)
 AM_LDFLAGS =
-AM_LIBS = $(top_builddir)/src/libharp/libharp.la $(CFITSIO) $(MOAT) $(BOOST_PROGRAM_OPTIONS_LIB) $(BOOST_LDFLAGS) -lm
+AM_LIBS = $(top_builddir)/src/libharp/libharp.la $(CFITSIO) $(MOAT) $(BOOST_PROGRAM_OPTIONS_LIB) $(BOOST_LDFLAGS) $(FFTW) -lm
 
 bin_PROGRAMS = harp_specstract
 

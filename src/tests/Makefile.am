@@ -1,8 +1,8 @@
 EXTRA_DIST = testdata test_instruments.am harp_testcommands.cpp
 
-AM_CPPFLAGS = -I$(top_srcdir)/src/libharp -I$(top_srcdir)/src/tests $(BOOST_CPPFLAGS) $(MOAT_CPPFLAGS) $(CFITSIO_CPPFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir)/src/libharp -I$(top_srcdir)/src/tests $(BOOST_CPPFLAGS) $(MOAT_CPPFLAGS) $(CFITSIO_CPPFLAGS) $(FFTW_CPPFLAGS)
 AM_LDFLAGS =
-AM_LIBS = $(top_builddir)/src/libharp/libharp.la $(MOAT) $(BOOST_LDFLAGS) $(CFITSIO) -lm
+AM_LIBS = $(top_builddir)/src/libharp/libharp.la $(MOAT) $(BOOST_LDFLAGS) $(CFITSIO) $(FFTW) -lm
 
 noinst_HEADERS = harp_test.hpp
 

@@ -20,6 +20,9 @@
 
 #include <moat.hpp>
 
+#include <fftw3.h>
+
+
 namespace harp {
   
   // typedef for sparse mapped row major matrix
@@ -56,6 +59,11 @@ namespace harp {
   
   // typedef for range
   typedef boost::numeric::ublas::range mv_range;
+  
+  // typedefs for aligned data for use with fftw and other simd codes
+  typedef boost::numeric::ublas::unbounded_array < double, moat::simd_allocator < double > > simd_store;
+  typedef boost::numeric::ublas::vector < double, simd_store > simd_vec;
+  
   
 }
 

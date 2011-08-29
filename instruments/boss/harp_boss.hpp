@@ -1,5 +1,6 @@
 // @COPYRIGHT@
 
+
 namespace harp {
   
   class image_boss : public image {
@@ -95,6 +96,10 @@ namespace harp {
       
       void gauss_sample ( data_vec & vals, data_vec & xrel, data_vec & yrel, double amp, double maj, double min, double ang );
       
+      void shift_kernel ( data_vec & vals, double delta, data_vec & data );
+      
+      void sshift ( double dx, double dy, size_t xoff, size_t yoff, size_t xsize, size_t ysize );
+      
       size_t valid_range ( size_t const & firstX, size_t const & lastX, size_t const & firstY, size_t const & lastY, size_t & startX, size_t & stopX, size_t & startY, size_t & stopY, size_t & spec, size_t & bin );
     
       std::string path_;
@@ -102,6 +107,8 @@ namespace harp {
       size_t nbins_;
       size_t xpix_;
       size_t ypix_;
+      size_t xpixfft_;
+      size_t ypixfft_;
       size_t xpixcorr_;
       size_t ypixcorr_;
       size_t xpixwidth_;
@@ -115,6 +122,13 @@ namespace harp {
       data_vec yexp_;
       std::map < size_t, std::map < size_t, data_vec > > psfimage_;
       std::string type_;
+      fftw_plan fsincplan_;
+      fftw_plan fpixplan_;
+      fftw_plan rpixplan_;
+      double * infft_;
+      fftw_complex * outfft_;
+      double * insinc_;
+      fftw_complex * outsinc_;
       
   };
   
