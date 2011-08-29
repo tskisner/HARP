@@ -82,7 +82,7 @@ harp::spec_toy::~spec_toy ( ) {
 }
 
 
-void harp::spec_toy::read ( harp::data_vec_view & data ) {
+void harp::spec_toy::read ( vec_dense & data ) {
   
   fitsfile *fp;
 
@@ -98,7 +98,7 @@ void harp::spec_toy::read ( harp::data_vec_view & data ) {
 }
 
 
-void harp::spec_toy::write ( string const & path, harp::data_vec_view & data ) {
+void harp::spec_toy::write ( string const & path, vec_dense & data ) {
   
   fitsfile *fp;
 
@@ -123,7 +123,7 @@ void harp::spec_toy::write ( string const & path, harp::data_vec_view & data ) {
 }
 
 
-void harp::spec_toy::read_spectrum ( size_t spectrum, harp::data_vec_view & data ) {
+void harp::spec_toy::read_spectrum ( size_t spectrum, vec_dense & data ) {
   
   fitsfile *fp;
 
@@ -139,7 +139,7 @@ void harp::spec_toy::read_spectrum ( size_t spectrum, harp::data_vec_view & data
 }
 
 
-void harp::spec_toy::write_spectrum ( size_t spectrum, string const & path, harp::data_vec_view & data ) {
+void harp::spec_toy::write_spectrum ( size_t spectrum, string const & path, vec_dense & data ) {
   
   fitsfile *fp;
 

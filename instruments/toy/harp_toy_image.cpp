@@ -81,7 +81,7 @@ harp::image_toy::~image_toy ( ) {
 }
 
 
-void harp::image_toy::read ( size_t startrow, size_t startcol, harp::dense_rowmat_view & data ) {
+void harp::image_toy::read ( size_t startrow, size_t startcol, vec_dense & data ) {
   
   fitsfile *fp;
 
@@ -97,7 +97,7 @@ void harp::image_toy::read ( size_t startrow, size_t startcol, harp::dense_rowma
 }
 
 
-void harp::image_toy::read ( harp::data_vec_view & data ) {
+void harp::image_toy::read ( vec_dense & data ) {
   
   fitsfile *fp;
 
@@ -113,7 +113,7 @@ void harp::image_toy::read ( harp::data_vec_view & data ) {
 }
 
 
-void harp::image_toy::write ( std::string const & path, size_t startrow, size_t startcol, harp::dense_rowmat_view & data ) {
+void harp::image_toy::write ( std::string const & path, size_t startrow, size_t startcol, mat_denserow & data ) {
   
   fitsfile *fp;
   
@@ -163,7 +163,7 @@ void harp::image_toy::write ( std::string const & path, harp::data_vec_view & da
 }
 
 
-void harp::image_toy::read_noise ( size_t startrow, size_t startcol, harp::dense_rowmat_view & data ) {
+void harp::image_toy::read_noise ( size_t startrow, size_t startcol, mat_denserow & data ) {
   
   fitsfile *fp;
 
@@ -179,7 +179,7 @@ void harp::image_toy::read_noise ( size_t startrow, size_t startcol, harp::dense
 }
 
 
-void harp::image_toy::read_noise ( harp::data_vec_view & data ) {
+void harp::image_toy::read_noise ( vec_dense & data ) {
   
   fitsfile *fp;
 
@@ -195,7 +195,7 @@ void harp::image_toy::read_noise ( harp::data_vec_view & data ) {
 }
 
 
-void harp::image_toy::write_noise ( std::string const & path, size_t startrow, size_t startcol, harp::dense_rowmat_view & data ) {
+void harp::image_toy::write_noise ( std::string const & path, size_t startrow, size_t startcol, mat_denserow & data ) {
   
   fitsfile *fp;
   
@@ -220,7 +220,7 @@ void harp::image_toy::write_noise ( std::string const & path, size_t startrow, s
 }
 
 
-void harp::image_toy::write_noise ( std::string const & path, harp::data_vec_view & data ) {
+void harp::image_toy::write_noise ( std::string const & path, vec_dense & data ) {
   
   fitsfile *fp;
   

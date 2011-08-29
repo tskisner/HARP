@@ -194,7 +194,7 @@ void harp::psf_toy::cache_spec ( size_t first, size_t last ) {
 }
 
 
-void harp::psf_toy::lambda ( size_t specnum, data_vec & data ) {
+void harp::psf_toy::lambda ( size_t specnum, vec_dense & data ) {
 
   cache_spec ( specnum, specnum );
   
@@ -260,7 +260,7 @@ void harp::psf_toy::extent ( size_t firstspec, size_t lastspec, size_t firstbin,
 }
 
 
-void harp::psf_toy::gauss_sample ( data_vec & vals, data_vec & xrel, data_vec & yrel, double amp, double maj, double min, double ang ) {
+void harp::psf_toy::gauss_sample ( vec_dense & vals, vec_dense & xrel, vec_dense & yrel, double amp, double maj, double min, double ang ) {
   
   amp /= maj * min * moat::TWOPI;
   
@@ -302,7 +302,7 @@ void harp::psf_toy::gauss_sample ( data_vec & vals, data_vec & xrel, data_vec & 
 }
 
 
-void harp::psf_toy::gauss_sample_alt ( data_vec & vals, data_vec & xrel, data_vec & yrel, double amp, double maj, double min, double ang ) {
+void harp::psf_toy::gauss_sample_alt ( vec_dense & vals, vec_dense & xrel, vec_dense & yrel, double amp, double maj, double min, double ang ) {
   
   amp /= maj * min * moat::TWOPI;
   
@@ -384,14 +384,14 @@ size_t harp::psf_toy::valid_range ( size_t const & firstX, size_t const & lastX,
 }
 
 
-void harp::psf_toy::projection ( string profcalc, string profremap, size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t firstX, size_t lastX, size_t firstY, size_t lastY, Eigen::SparseMatrix < double, RowMajor > & data ) {
+void harp::psf_toy::projection ( string profcalc, string profremap, size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t firstX, size_t lastX, size_t firstY, size_t lastY, mat_sparserow & data ) {
   
   size_t nx = lastX - firstX + 1;
   size_t ny = lastY - firstY + 1;
   
-  size_t nbins = data.size2();
+  size_t nbins = data.cols();
   
-  size_t npix = data.size1();
+  size_t npix = data.rows();
   
   if ( ( npix != nx * ny ) || ( nbins != ( lastspec - firstspec + 1 ) * ( lastbin - firstbin + 1 ) ) ) {
     std::ostringstream o;
@@ -450,7 +450,7 @@ void harp::psf_toy::projection ( string profcalc, string profremap, size_t first
   // We want to fill the matrix using a mapped matrix, but the output will be a compressed matrix to speed up
   // axpy_prod computations.  We use a temporary matrix and then assign to the output.
   
-  Eigen::DynamicSparseMatrix < double, RowMajor > builder ( npix, nbins );
+  mat_dynrow builder ( npix, nbins );
 
   int lastfrac = 0;
   size_t complete = 0;
@@ -482,8 +482,8 @@ void harp::psf_toy::projection ( string profcalc, string profremap, size_t first
         double xcenter = resp_[ spec ].x[rawbin];
         double ycenter = resp_[ spec ].y[rawbin];
       
-        data_vec fxdist ( nvalid );
-        data_vec fydist ( nvalid );
+        vec_dense fxdist ( nvalid );
+        vec_dense fydist ( nvalid );
       
         size_t pix = 0;
       
@@ -501,7 +501,7 @@ void harp::psf_toy::projection ( string profcalc, string profremap, size_t first
         
         }
       
-        data_vec vals ( nvalid );
+        vec_dense vals ( nvalid );
 
         gauss_sample ( vals, fxdist, fydist, amp, maj, min, ang );
       
@@ -558,30 +558,15 @@ void harp::psf_toy::projection ( string profcalc, string profremap, size_t first
   
   // copy to output matrix
   
-  data.reserve ( nonzeros );
-  
-  sparse_rowmat :: iterator1 itrow;
-  sparse_rowmat :: iterator2 itcol;
-  
-  /*
-  for ( itcol = builder.begin2(); itcol != builder.end2(); ++itcol ) {
-    for ( itrow = itcol.begin(); itrow != itcol.end(); ++itrow ) {
-      data( itrow.index1(), itcol.index2() ) = (*itrow);
-    }
-  }
-  */
-  
-  //fprintf ( stderr, "  Memory Remap [          ]\r" );
-  
   complete = 0;
   char msg[256];
   int progfrac;
   lastfrac = 0;
 
+  data.reserve ( nonzeros );
 
-  SparseMatrixType mat(rows,cols);
   for ( size_t itrow = 0; itrow < builder.outerSize(); ++itrow ) {
-    for ( Eigen::DynamicSparseMatrix < double, RowMajor >::InnerIterator itcol ( builder, itrow ); itcol; ++itcol )
+    for ( mat_dynrow::InnerIterator itcol ( builder, itrow ); itcol; ++itcol )
     {
       data ( itcol.row(), itcol.col() ) = itcol.value();
       ++complete;

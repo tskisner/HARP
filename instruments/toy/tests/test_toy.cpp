@@ -10,34 +10,9 @@ using namespace std;
 using namespace harp;
 
 
-void toy_pcgmle_prec ( data_vec & in, data_vec & out, int_vec & flags, void * data ) {
-  data_vec * prec = (data_vec *) data;
-  
-  data_vec :: const_iterator vit;
-  for ( vit = in.begin(); vit != in.end(); ++vit ) {
-    size_t pos = vit.index();
-    if ( flags[ pos ] == 0 ) {
-      out[ pos ] = (*prec)[pos] * (*vit);
-    } else {
-      out[ pos ] = 0.0;
-    }
-  }
-  
-  return;
-}
 
 
-void toy_pcgmle_report ( double const & norm, double const & deltazero, int const & iter, double const & alpha, double const & beta, double const & delta, double const & epsilon ) {
-  
-  double relerr = sqrt ( delta / deltazero );
-  
-  cerr << "  PCG iter " << iter << ": alpha = " << alpha << " beta = " << beta << " delta = " << delta << " epsilon = " << epsilon << " rel err = " << relerr << endl;
-  
-  return;
-}
-
-
-void toy_pcgmle_profile ( string const & name, string const & desc, double & totaltime, double & opencltime, map < string, long long int > & papi ) {
+void toy_profile ( string const & name, string const & desc, double & totaltime, double & opencltime, map < string, long long int > & papi ) {
   
   cerr << "Profiling:   " << desc << ":  " << totaltime << " seconds" << endl;
   
@@ -62,14 +37,11 @@ void harp::test_toy ( string const & datadir ) {
   
   cerr << "Testing toy image read..." << endl;
   
-  dense_rowmat pix ( testimg->rows(), testimg->cols() );
-  dense_rowmat noise ( testimg->rows(), testimg->cols() );
+  mat_denserow pix ( testimg->rows(), testimg->cols() );
+  mat_denserow noise ( testimg->rows(), testimg->cols() );
   
-  dense_rowmat_view pixview ( pix, mv_range ( 0, pix.size1() ), mv_range ( 0, pix.size2() ) );
-  dense_rowmat_view noiseview ( noise, mv_range ( 0, noise.size1() ), mv_range ( 0, noise.size2() ) );
-  
-  testimg->read ( 0, 0, pixview );
-  testimg->read_noise ( 0, 0, noiseview );
+  testimg->read ( 0, 0, pix );
+  testimg->read_noise ( 0, 0, noise );
   
   cerr << "  (PASSED)" << endl;
   
@@ -88,10 +60,9 @@ void harp::test_toy ( string const & datadir ) {
   
   cerr << "Testing toy spectrum read..." << endl;
   
-  data_vec spec ( testspec->spectrum_size( 3 ) );
-  data_vec_view specview ( spec, mv_range ( 0, spec.size() ) );
+  vec_dense spec ( testspec->spectrum_size( 3 ) );
   
-  testspec->read_spectrum ( 3, specview );
+  testspec->read_spectrum ( 3, spec );
 
   //for ( size_t i = 0; i < spec.size(); ++i ) {
   //  cout << spec[i] << endl;
@@ -121,7 +92,7 @@ void harp::test_toy ( string const & datadir ) {
   
   cerr << "Testing toy PSF lambda read..." << endl;
   
-  data_vec lambda;
+  vec_dense lambda;
   
   for ( size_t i = 0; i < testpsf->nspec(); ++i ) {
     testpsf->lambda ( i, lambda );
@@ -140,20 +111,22 @@ void harp::test_toy ( string const & datadir ) {
   size_t nbins = testpsf->nspec() * testpsf->specsize(0);
   size_t npix = testimg->rows() * testimg->cols();
   
-  Eigen::SparseMatrix < double, RowMajor > ( npix, nbins );
+  mat_sparserow projmat ( npix, nbins );
 
   testpsf->projection ( string("PCG_PSF"), string("PCG_REMAP"), 0, testpsf->nspec() - 1, 0, testpsf->specsize(0) - 1, (size_t)0, testimg->cols() - 1, (size_t)0, testimg->rows() - 1, projmat );
   
   cerr << "  (PASSED)" << endl;
 
+  exit(0);
+
   
-  cerr << "Testing toy PCG-MLE solve..." << endl;
+  cerr << "Testing toy solve..." << endl;
   
-  data_vec inspec ( nbins );
-  data_vec outspec ( nbins );
-  int_vec flags ( nbins );
+  vec_dense inspec ( nbins );
+  vec_dense outspec ( nbins );
+  vec_flag flags ( nbins );
   
-  data_vec measured ( npix );
+  vec_dense measured ( npix );
   
   for ( size_t b = 0; b < nbins; ++b ) {
     flags[b] = 0;
@@ -171,7 +144,7 @@ void harp::test_toy ( string const & datadir ) {
   
   // write input spectra
   
-  
+  /*
   boost::numeric::ublas::axpy_prod ( projmat, inspec, measured, true );
   
   dense_rowmat outmat ( testimg->rows(), testimg->cols() );
@@ -185,8 +158,9 @@ void harp::test_toy ( string const & datadir ) {
       ++pixoff;
     }
   }
+  */
   
-  
+  /*
   params.clear();
   
   params[ "signal" ] = "1";
@@ -203,12 +177,13 @@ void harp::test_toy ( string const & datadir ) {
   image_p outsigimage ( image::create ( string("toy"), params ) );
   
   outsigimage->write ( "!" + datadir + "/toy_MLE_inputs.fits.out", 0, 0, outview );
+  */
   
-  
+  /*
   typedef boost::ecuyer1988 base_generator_type;
   base_generator_type generator(42u);
   
-  data_vec rms ( npix );
+  vec_dense rms ( npix );
   
   for ( size_t i = 0; i < npix; ++i ) {
     rms[i] = sqrt( 16.0 + measured[i] );
@@ -220,7 +195,6 @@ void harp::test_toy ( string const & datadir ) {
     measured[i] += gauss();
   }
   
-  
   pixoff = 0;
   for ( size_t i = 0; i < testimg->rows(); ++i ) {
     for ( size_t j = 0; j < testimg->cols(); ++j ) {
@@ -228,8 +202,9 @@ void harp::test_toy ( string const & datadir ) {
       ++pixoff;
     }
   }
+  */
   
-  
+  /*
   params.clear();
   
   params[ "signal" ] = "4";
@@ -245,10 +220,12 @@ void harp::test_toy ( string const & datadir ) {
   image_p outsnimage ( image::create ( string("toy"), params ) );
   
   outsnimage->write ( datadir + "/toy_MLE_inputs.fits.out", 0, 0, outview );
+  */
+
   
   // construct inverse noise covariance and preconditioner
   
-
+  /*
   comp_rowmat invnoise ( npix, npix );
   data_vec precdata ( nbins );
   
@@ -270,34 +247,9 @@ void harp::test_toy ( string const & datadir ) {
       precdata[i] = 1.0;
     }
   }
-  
-   
-  prof->reg ( "PCG_PREC", "applying preconditioner" );
-  prof->reg ( "PCG_PMV", "projection matrix-vector multiply" );
-  prof->reg ( "PCG_NMV", "N^-1 matrix-vector multiply" );
-  prof->reg ( "PCG_VEC", "vector ops time" );
-  prof->reg ( "PCG_TOT", "Total PCG time" );
-  
-  
-  data_vec rhs ( nbins );
-  data_vec q ( nbins );
-  data_vec r ( nbins );
-  data_vec s ( nbins );
-  data_vec d ( nbins );
-  
-  double err = moat::la::pcg_mle < comp_rowmat, comp_rowmat, data_vec, int_vec > ( true, true, projmat, invnoise, measured, outspec, q, r, s, d, flags, rhs, 100, 1.0e-12, toy_pcgmle_prec, (void*)&precdata, toy_pcgmle_report, "PCG_TOT", "PCG_VEC", "PCG_PMV", "PCG_NMV", "PCG_PREC" );
-  
-  prof->stop_all();
-  
-  prof->query ( toy_pcgmle_profile );
-  
-  prof->unreg ( "PCG_PREC" );
-  prof->unreg ( "PCG_PMV" );
-  prof->unreg ( "PCG_NMV" );
-  prof->unreg ( "PCG_VEC" );
-  prof->unreg ( "PCG_TOT" );
-  prof->unreg ( "PCG_PSF" );
-  prof->unreg ( "PCG_REMAP" );
+  */
+
+  /*
   
   string outdata = datadir + "/toy_MLE_spectra.out";
   
@@ -313,6 +265,8 @@ void harp::test_toy ( string const & datadir ) {
   out.close();
   
   cerr << "  (PASSED)" << endl;
+
+  */
   
   return;
 }

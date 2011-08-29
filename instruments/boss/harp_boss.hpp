@@ -13,15 +13,15 @@ namespace harp {
       size_t cols ( ) { return cols_; }
       void rowscols ( size_t & rows, size_t & cols ) { rows = rows_; cols = cols_; return; }
       
-      void read ( size_t startrow, size_t startcol, harp::dense_rowmat_view & data );
-      void write ( std::string const & path, size_t startrow, size_t startcol, harp::dense_rowmat_view & data );
-      void read ( harp::data_vec_view & data );
-      void write ( std::string const & path, harp::data_vec_view & data );
+      void read ( size_t startrow, size_t startcol, mat_denserow & data );
+      void write ( std::string const & path, size_t startrow, size_t startcol, mat_denserow & data );
+      void read ( vec_dense & data );
+      void write ( std::string const & path, vec_dense & data );
       
-      void read_noise ( size_t startrow, size_t startcol, harp::dense_rowmat_view & data );
-      void write_noise ( std::string const & path, size_t startrow, size_t startcol, harp::dense_rowmat_view & data );
-      void read_noise ( harp::data_vec_view & data );
-      void write_noise ( std::string const & path, harp::data_vec_view & data );
+      void read_noise ( size_t startrow, size_t startcol, mat_denserow & data );
+      void write_noise ( std::string const & path, size_t startrow, size_t startcol, mat_denserow & data );
+      void read_noise ( vec_dense & data );
+      void write_noise ( std::string const & path, vec_dense & data );
     
     private :
     
@@ -43,10 +43,10 @@ namespace harp {
       size_t size ( ) { return size_; }
       size_t nspectrum ( ) { return nspec_; }
       size_t spectrum_size ( size_t spectrum ) { return specsize_; }
-      void read ( harp::data_vec_view & data );
-      void write ( std::string const & path, harp::data_vec_view & data );
-      void read_spectrum ( size_t spectrum, harp::data_vec_view & data );
-      void write_spectrum ( size_t spectrum, std::string const & path, harp::data_vec_view & data );
+      void read ( vec_dense & data );
+      void write ( std::string const & path, vec_dense & data );
+      void read_spectrum ( size_t spectrum, vec_dense & data );
+      void write_spectrum ( size_t spectrum, std::string const & path, vec_dense & data );
     
     private :
     
@@ -60,13 +60,13 @@ namespace harp {
   
   
   typedef struct {
-    data_vec x;
-    data_vec y;
-    data_vec lambda;
-    data_vec amp;
-    data_vec maj;
-    data_vec min;
-    data_vec ang;
+    vec_dense x;
+    vec_dense y;
+    vec_dense lambda;
+    vec_dense amp;
+    vec_dense maj;
+    vec_dense min;
+    vec_dense ang;
   } psf_boss_resp;
   
   typedef struct {
@@ -85,18 +85,18 @@ namespace harp {
       
       size_t nspec ( ) { return nspec_; }
       size_t specsize ( size_t specnum ) { return nbins_; }
-      void lambda ( size_t specnum, data_vec & data );
+      void lambda ( size_t specnum, vec_dense & data );
       void extent ( size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t & firstX, size_t & firstY, size_t & lastX, size_t & lastY );
-      void projection ( std::string profcalc, std::string profremap, size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t firstX, size_t lastX, size_t firstY, size_t lastY, comp_rowmat & data );
+      void projection ( std::string profcalc, std::string profremap, size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t firstX, size_t lastX, size_t firstY, size_t lastY, mat_sparserow & data );
       
             
     private :
     
       void cache_spec ( size_t first, size_t last );
       
-      void gauss_sample ( data_vec & vals, data_vec & xrel, data_vec & yrel, double amp, double maj, double min, double ang );
+      void gauss_sample ( vec_dense & vals, vec_dense & xrel, vec_dense & yrel, double amp, double maj, double min, double ang );
       
-      void shift_kernel ( data_vec & vals, double delta, data_vec & data );
+      void shift_kernel ( vec_dense & vals, double delta, vec_dense & data );
       
       void sshift ( double dx, double dy, size_t xoff, size_t yoff, size_t xsize, size_t ysize );
       
@@ -118,9 +118,9 @@ namespace harp {
       std::map < std::string, int > hdus_;
       std::map < size_t, psf_boss_resp > resp_;
       std::map < size_t, psf_boss_pixscale > xyscale_;
-      data_vec xexp_;
-      data_vec yexp_;
-      std::map < size_t, std::map < size_t, data_vec > > psfimage_;
+      vec_dense xexp_;
+      vec_dense yexp_;
+      std::map < size_t, std::map < size_t, vec_dense > > psfimage_;
       std::string type_;
       fftw_plan fsincplan_;
       fftw_plan fpixplan_;
