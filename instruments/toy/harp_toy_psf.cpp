@@ -384,7 +384,7 @@ size_t harp::psf_toy::valid_range ( size_t const & firstX, size_t const & lastX,
 }
 
 
-void harp::psf_toy::projection ( string profcalc, string profremap, size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t firstX, size_t lastX, size_t firstY, size_t lastY, comp_rowmat & data ) {
+void harp::psf_toy::projection ( string profcalc, string profremap, size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t firstX, size_t lastX, size_t firstY, size_t lastY, Eigen::SparseMatrix < double, RowMajor > & data ) {
   
   size_t nx = lastX - firstX + 1;
   size_t ny = lastY - firstY + 1;
@@ -450,8 +450,8 @@ void harp::psf_toy::projection ( string profcalc, string profremap, size_t first
   // We want to fill the matrix using a mapped matrix, but the output will be a compressed matrix to speed up
   // axpy_prod computations.  We use a temporary matrix and then assign to the output.
   
-  sparse_rowmat builder ( npix, nbins );
-  
+  Eigen::DynamicSparseMatrix < double, RowMajor > builder ( npix, nbins );
+
   int lastfrac = 0;
   size_t complete = 0;
 
@@ -577,14 +577,15 @@ void harp::psf_toy::projection ( string profcalc, string profremap, size_t first
   char msg[256];
   int progfrac;
   lastfrac = 0;
-  
-  for ( itrow = builder.begin1(); itrow != builder.end1(); ++itrow ) {
-    for ( itcol = itrow.begin(); itcol != itrow.end(); ++itcol ) {
-      data( itrow.index1(), itcol.index2() ) = (*itcol);
-      ++complete;
-      //cout << "data[ " << itrow.index1() << ", " << itcol.index2() << " ] = " << (*itcol) << endl;
-    }
 
+
+  SparseMatrixType mat(rows,cols);
+  for ( size_t itrow = 0; itrow < builder.outerSize(); ++itrow ) {
+    for ( Eigen::DynamicSparseMatrix < double, RowMajor >::InnerIterator itcol ( builder, itrow ); itcol; ++itcol )
+    {
+      data ( itcol.row(), itcol.col() ) = itcol.value();
+      ++complete;
+    }
     progfrac = (int) ( 10 * complete / nonzeros );
     
     /*
@@ -601,6 +602,7 @@ void harp::psf_toy::projection ( string profcalc, string profremap, size_t first
     */
     lastfrac = progfrac;
   }
+  
   
   if ( profremap != "" ) {
     prof->stop ( profremap );

@@ -140,8 +140,8 @@ void harp::test_toy ( string const & datadir ) {
   size_t nbins = testpsf->nspec() * testpsf->specsize(0);
   size_t npix = testimg->rows() * testimg->cols();
   
-  comp_rowmat projmat ( npix, nbins );
-  
+  Eigen::SparseMatrix < double, RowMajor > ( npix, nbins );
+
   testpsf->projection ( string("PCG_PSF"), string("PCG_REMAP"), 0, testpsf->nspec() - 1, 0, testpsf->specsize(0) - 1, (size_t)0, testimg->cols() - 1, (size_t)0, testimg->rows() - 1, projmat );
   
   cerr << "  (PASSED)" << endl;

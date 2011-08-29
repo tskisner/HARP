@@ -17,10 +17,10 @@ namespace harp {
       virtual size_t nspectrum ( ) { return 0; }
       virtual size_t spectrum_size ( size_t spectrum ) { return 0; }
       
-      virtual void read ( harp::data_vec_view & data ) { return; }
-      virtual void write ( std::string const & path, harp::data_vec_view & data ) { return; }
-      virtual void read_spectrum ( size_t spectrum, harp::data_vec_view & data ) { return; }
-      virtual void write_spectrum ( size_t spectrum, std::string const & path, harp::data_vec_view & data ) { return; }
+      virtual void read ( vec_dense & data ) { return; }
+      virtual void write ( std::string const & path, vec_dense & data ) { return; }
+      virtual void read_spectrum ( size_t spectrum, vec_dense & data ) { return; }
+      virtual void write_spectrum ( size_t spectrum, std::string const & path, vec_dense & data ) { return; }
 
       std::string format ( );
       

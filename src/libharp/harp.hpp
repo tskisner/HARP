@@ -12,58 +12,26 @@
 #include <boost/smart_ptr/shared_ptr.hpp>
 #include <boost/smart_ptr/weak_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
-#include <boost/numeric/ublas/vector.hpp>
-#include <boost/numeric/ublas/vector_proxy.hpp>
-#include <boost/numeric/ublas/matrix.hpp>
-#include <boost/numeric/ublas/matrix_proxy.hpp>
-#include <boost/numeric/ublas/matrix_sparse.hpp>
 
 #include <moat.hpp>
 
 #include <fftw3.h>
 
+#include <eigen3/Eigen/Sparse>
+#include <eigen3/Eigen/Dense>
+#include <eigen3/Eigen/Eigenvalues>
 
 namespace harp {
   
-  // typedef for sparse mapped row major matrix
-  typedef boost::numeric::ublas::mapped_matrix < double, boost::numeric::ublas::row_major > sparse_rowmat;
-  typedef boost::numeric::ublas::matrix_range < sparse_rowmat > sparse_rowmat_view;
+  typedef Eigen::SparseMatrix < double, RowMajor > mat_comprow;
+  typedef Eigen::DynamicSparseMatrix < double, RowMajor > mat_dynrow;
+  typedef Eigen::DiagonalMatrix < double, Dynamic > mat_diag;
+  typedef Eigen::Matrix < double, Dynamic, Dynamic > mat_denserow;
   
-  // typedef for sparse mapped column major matrix
-  typedef boost::numeric::ublas::mapped_matrix < double, boost::numeric::ublas::column_major > sparse_colmat;
-  typedef boost::numeric::ublas::matrix_range < sparse_colmat > sparse_colmat_view;
-  
-  // typedef for compressed row major matrix
-  typedef boost::numeric::ublas::compressed_matrix < double, boost::numeric::ublas::row_major > comp_rowmat;
-  typedef boost::numeric::ublas::matrix_range < comp_rowmat > comp_rowmat_view;
-  
-  // typedef for compressed column major matrix
-  typedef boost::numeric::ublas::compressed_matrix < double, boost::numeric::ublas::column_major > comp_colmat;
-  typedef boost::numeric::ublas::matrix_range < comp_colmat > comp_colmat_view;
-  
-  // typedef for dense row major matrix
-  typedef boost::numeric::ublas::matrix < double, boost::numeric::ublas::row_major > dense_rowmat;
-  typedef boost::numeric::ublas::matrix_range < dense_rowmat > dense_rowmat_view;
-  
-  // typedef for dense column major matrix
-  typedef boost::numeric::ublas::matrix < double, boost::numeric::ublas::column_major > dense_colmat;
-  typedef boost::numeric::ublas::matrix_range < dense_colmat > dense_colmat_view;
-  
-  // typedef for dense vector
-  typedef boost::numeric::ublas::vector < double > data_vec;
-  typedef boost::numeric::ublas::vector_range < data_vec > data_vec_view;
-  
-  // typedef for int vector
-  typedef boost::numeric::ublas::vector < int > int_vec;
-  typedef boost::numeric::ublas::vector_range < int_vec > int_vec_view;
-  
-  // typedef for range
-  typedef boost::numeric::ublas::range mv_range;
-  
-  // typedefs for aligned data for use with fftw and other simd codes
-  typedef boost::numeric::ublas::unbounded_array < double, moat::simd_allocator < double > > simd_store;
-  typedef boost::numeric::ublas::vector < double, simd_store > simd_vec;
-  
+  typedef Eigen::SparseVector < double > vec_sparse;
+  typedef Eigen::Matrix < double, Dynamic, 1 > vec_dense;
+  typedef Eigen::Matrix < uint8_t, Dynamic, 1 > vec_flag;
+  typedef Eigen::Matrix < int, Dynamic, 1 > vec_int;
   
 }
 
