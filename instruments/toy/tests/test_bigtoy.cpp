@@ -14,38 +14,7 @@ using namespace std;
 using namespace harp;
 
 
-void bigtoy_pcgmle_prec ( data_vec & in, data_vec & out, int_vec & flags, void * data ) {
-  data_vec * prec = (data_vec *) data;
-  
-  size_t vit;
-  size_t n = in.size();
-  
-  #ifdef _OPENMP
-  #pragma omp parallel for default(none) private(vit) shared(n, flags, in, out, prec) schedule(static)
-  #endif
-  for ( vit = 0; vit < n; ++vit ) {
-    if ( flags[ vit ] == 0 ) {
-      out[ vit ] = (*prec)[ vit ] * in[ vit ];
-    } else {
-      out[ vit ] = 0.0;
-    }
-  }
-  
-  return;
-}
-
-
-void bigtoy_pcgmle_report ( double const & norm, double const & deltazero, int const & iter, double const & alpha, double const & beta, double const & delta, double const & epsilon ) {
-  
-  double relerr = sqrt ( delta / deltazero );
-  
-  cerr << "  PCG iter " << iter << ": alpha = " << alpha << " beta = " << beta << " delta = " << delta << " epsilon = " << epsilon << " relative err = " << relerr << endl;
-  
-  return;
-}
-
-
-void bigtoy_pcgmle_profile ( string const & name, string const & desc, double & totaltime, double & opencltime, map < string, long long int > & papi ) {
+void bigtoy_profile ( string const & name, string const & desc, double & totaltime, double & opencltime, map < string, long long int > & papi ) {
   
   cerr << "Profiling:   " << desc << ":  " << totaltime << " seconds" << endl;
   
@@ -76,6 +45,7 @@ void harp::test_bigtoy ( string const & datadir ) {
 
   }
   
+  /*
   cerr << "  Reading input PSF..." << endl;
   
   std::map < std::string, std::string > params;
@@ -131,6 +101,7 @@ void harp::test_bigtoy ( string const & datadir ) {
       ++b;
     }
   }
+  */
   
   /*
   fitsfile *fp;
@@ -161,7 +132,7 @@ void harp::test_bigtoy ( string const & datadir ) {
   }
   */
   
-  
+  /*
   cerr << "  Sampling PSF to build sparse projection matrix..." << endl;
   
   moat::profile * prof = moat::profile::get ( );
@@ -335,6 +306,7 @@ void harp::test_bigtoy ( string const & datadir ) {
   out.close();
   
   cerr << "  (PASSED)" << endl;
+  */
   
   return;
 }

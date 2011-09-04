@@ -23,15 +23,15 @@
 
 namespace harp {
   
-  typedef Eigen::SparseMatrix < double, RowMajor > mat_comprow;
-  typedef Eigen::DynamicSparseMatrix < double, RowMajor > mat_dynrow;
-  typedef Eigen::DiagonalMatrix < double, Dynamic > mat_diag;
-  typedef Eigen::Matrix < double, Dynamic, Dynamic > mat_denserow;
+  typedef Eigen::SparseMatrix < double, Eigen::RowMajor > mat_comprow;
+  typedef Eigen::DynamicSparseMatrix < double, Eigen::RowMajor > mat_dynrow;
+  typedef Eigen::DiagonalMatrix < double, Eigen::Dynamic > mat_diag;
+  typedef Eigen::Matrix < double, Eigen::Dynamic, Eigen::Dynamic > mat_denserow;
   
   typedef Eigen::SparseVector < double > vec_sparse;
-  typedef Eigen::Matrix < double, Dynamic, 1 > vec_dense;
-  typedef Eigen::Matrix < uint8_t, Dynamic, 1 > vec_flag;
-  typedef Eigen::Matrix < int, Dynamic, 1 > vec_int;
+  typedef Eigen::Matrix < double, Eigen::Dynamic, 1 > vec_dense;
+  typedef Eigen::Matrix < uint8_t, Eigen::Dynamic, 1 > vec_flag;
+  typedef Eigen::Matrix < int, Eigen::Dynamic, 1 > vec_int;
   
 }
 

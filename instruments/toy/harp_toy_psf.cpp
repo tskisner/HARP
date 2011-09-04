@@ -384,7 +384,7 @@ size_t harp::psf_toy::valid_range ( size_t const & firstX, size_t const & lastX,
 }
 
 
-void harp::psf_toy::projection ( string profcalc, string profremap, size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t firstX, size_t lastX, size_t firstY, size_t lastY, mat_sparserow & data ) {
+void harp::psf_toy::projection ( string profcalc, string profremap, size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t firstX, size_t lastX, size_t firstY, size_t lastY, mat_comprow & data ) {
   
   size_t nx = lastX - firstX + 1;
   size_t ny = lastY - firstY + 1;
@@ -518,7 +518,7 @@ void harp::psf_toy::projection ( string profcalc, string profremap, size_t first
         
             datarow = rowoff + ( imgcol - firstX );
 
-            builder ( datarow, b ) += vals[pix];
+            builder.coeffRef ( datarow, b ) += vals[pix];
           
             ++pix;
           }
@@ -568,7 +568,7 @@ void harp::psf_toy::projection ( string profcalc, string profremap, size_t first
   for ( size_t itrow = 0; itrow < builder.outerSize(); ++itrow ) {
     for ( mat_dynrow::InnerIterator itcol ( builder, itrow ); itcol; ++itcol )
     {
-      data ( itcol.row(), itcol.col() ) = itcol.value();
+      data.insert ( itcol.row(), itcol.col() ) = itcol.value();
       ++complete;
     }
     progfrac = (int) ( 10 * complete / nonzeros );
@@ -593,6 +593,7 @@ void harp::psf_toy::projection ( string profcalc, string profremap, size_t first
     prof->stop ( profremap );
   }
   
+  data.finalize();
   
   return;
 }

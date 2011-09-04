@@ -58,6 +58,11 @@ AX_BOOST_BASE([], [acx_have_boost=yes], [])
 AM_CONDITIONAL([HAVE_AM_BOOST], [test $acx_have_boost = yes])
 AX_BOOST_PROGRAM_OPTIONS
 dnl +------------------------------------------------
+dnl | Check for Eigen3
+dnl +------------------------------------------------
+CPPFLAGS="${CPPFLAGS} -DEIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET"
+AC_CHECK_HEADERS([eigen3/Eigen/Sparse], [], [AC_MSG_ERROR([Could not find the Eigen3 headers!])])
+dnl +------------------------------------------------
 dnl | Check for FFTW
 dnl +------------------------------------------------
 ACX_FFTW([], [AC_MSG_ERROR([Could not find the FFTW3 library!])])

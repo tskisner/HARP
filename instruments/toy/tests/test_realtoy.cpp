@@ -11,38 +11,7 @@ using namespace std;
 using namespace harp;
 
 
-void realtoy_pcgmle_prec ( data_vec & in, data_vec & out, int_vec & flags, void * data ) {
-  data_vec * prec = (data_vec *) data;
-  
-  size_t vit;
-  size_t n = in.size();
-  
-  #ifdef _OPENMP
-  #pragma omp parallel for default(none) private(vit) shared(n, flags, in, out, prec) schedule(static)
-  #endif
-  for ( vit = 0; vit < n; ++vit ) {
-    if ( flags[ vit ] == 0 ) {
-      out[ vit ] = (*prec)[ vit ] * in[ vit ];
-    } else {
-      out[ vit ] = 0.0;
-    }
-  }
-  
-  return;
-}
-
-
-void realtoy_pcgmle_report ( double const & norm, double const & deltazero, int const & iter, double const & alpha, double const & beta, double const & delta, double const & epsilon ) {
-  
-  double relerr = sqrt ( delta / deltazero );
-  
-  cerr << "  PCG iter " << iter << ": alpha = " << alpha << " beta = " << beta << " delta = " << delta << " epsilon = " << epsilon << " relative err = " << relerr << endl;
-  
-  return;
-}
-
-
-void realtoy_pcgmle_profile ( string const & name, string const & desc, double & totaltime, double & opencltime, map < string, long long int > & papi ) {
+void realtoy_profile ( string const & name, string const & desc, double & totaltime, double & opencltime, map < string, long long int > & papi ) {
   
   cerr << "Profiling:   " << desc << ":  " << totaltime << " seconds" << endl;
   
@@ -53,6 +22,8 @@ void realtoy_pcgmle_profile ( string const & name, string const & desc, double &
 void harp::test_realtoy ( string const & datadir ) {
   
   moat::profile * prof = moat::profile::get ( );
+
+  /*
   
   prof->reg ( "PCG_PSF", "compute projection matrix" );
   prof->reg ( "PCG_REMAP", "remap projection matrix" );
@@ -187,6 +158,8 @@ void harp::test_realtoy ( string const & datadir ) {
   string outpsffile = datadir + "/realtoy_compare_psf.out";
   
   fstream out;
+
+  */
   
   /*
   out.open ( outpsffile.c_str(), ios::out );
@@ -203,7 +176,7 @@ void harp::test_realtoy ( string const & datadir ) {
   out.close();
   */
   
-  
+  /*
   cerr << "  Testing PSF convolution..." << endl;
   
   data_vec compare ( npix );
@@ -358,6 +331,8 @@ void harp::test_realtoy ( string const & datadir ) {
   
   
   cerr << "  (PASSED)" << endl;
+
+  */
   
   return;
 }

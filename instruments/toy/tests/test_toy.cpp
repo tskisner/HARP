@@ -111,13 +111,11 @@ void harp::test_toy ( string const & datadir ) {
   size_t nbins = testpsf->nspec() * testpsf->specsize(0);
   size_t npix = testimg->rows() * testimg->cols();
   
-  mat_sparserow projmat ( npix, nbins );
+  mat_comprow projmat ( npix, nbins );
 
   testpsf->projection ( string("PCG_PSF"), string("PCG_REMAP"), 0, testpsf->nspec() - 1, 0, testpsf->specsize(0) - 1, (size_t)0, testimg->cols() - 1, (size_t)0, testimg->rows() - 1, projmat );
   
   cerr << "  (PASSED)" << endl;
-
-  exit(0);
 
   
   cerr << "Testing toy solve..." << endl;
@@ -143,24 +141,9 @@ void harp::test_toy ( string const & datadir ) {
   }
   
   // write input spectra
+
+  measured = projmat * inspec;
   
-  /*
-  boost::numeric::ublas::axpy_prod ( projmat, inspec, measured, true );
-  
-  dense_rowmat outmat ( testimg->rows(), testimg->cols() );
-  
-  dense_rowmat_view outview ( outmat, mv_range ( 0, testimg->rows() ), mv_range ( 0, testimg->cols() ) );
-  
-  size_t pixoff = 0;
-  for ( size_t i = 0; i < testimg->rows(); ++i ) {
-    for ( size_t j = 0; j < testimg->cols(); ++j ) {
-      outmat( i, j ) = measured[pixoff];
-      ++pixoff;
-    }
-  }
-  */
-  
-  /*
   params.clear();
   
   params[ "signal" ] = "1";
@@ -176,10 +159,9 @@ void harp::test_toy ( string const & datadir ) {
   
   image_p outsigimage ( image::create ( string("toy"), params ) );
   
-  outsigimage->write ( "!" + datadir + "/toy_MLE_inputs.fits.out", 0, 0, outview );
-  */
+  outsigimage->write ( "!" + datadir + "/toy_MLE_inputs.fits.out", measured );
   
-  /*
+  
   typedef boost::ecuyer1988 base_generator_type;
   base_generator_type generator(42u);
   
@@ -194,17 +176,8 @@ void harp::test_toy ( string const & datadir ) {
     
     measured[i] += gauss();
   }
+
   
-  pixoff = 0;
-  for ( size_t i = 0; i < testimg->rows(); ++i ) {
-    for ( size_t j = 0; j < testimg->cols(); ++j ) {
-      outmat( i, j ) = measured[pixoff];
-      ++pixoff;
-    }
-  }
-  */
-  
-  /*
   params.clear();
   
   params[ "signal" ] = "4";
@@ -219,55 +192,50 @@ void harp::test_toy ( string const & datadir ) {
   
   image_p outsnimage ( image::create ( string("toy"), params ) );
   
-  outsnimage->write ( datadir + "/toy_MLE_inputs.fits.out", 0, 0, outview );
-  */
+  outsnimage->write ( datadir + "/toy_MLE_inputs.fits.out", measured );
+
 
   
-  // construct inverse noise covariance and preconditioner
+  // construct inverse pixel noise covariance
   
-  /*
-  comp_rowmat invnoise ( npix, npix );
-  data_vec precdata ( nbins );
-  
+  mat_comprow invnoise ( npix, npix );
+
   for ( size_t i = 0; i < npix; ++i ) {
-    invnoise( i, i ) = 1.0 / ( rms[i] * rms[i] );
+    invnoise.insert ( i, i ) = 1.0 / ( rms[i] * rms[i] );
   }
   
-  for ( size_t i = 0; i < nbins; ++i ) {
-    precdata[i] = 0.0;
-    for ( size_t j = 0; j < npix; ++j ) {
-      precdata[i] += projmat( j, i ) * projmat( j, i ) * invnoise( j, j );
-    }
-  }
+
+  // construct the inverse spectral covariance matrix
+
+  mat_comprow invcov ( nbins, nbins );
+
+  mat_comprow temp ( npix, npix );
+
+  temp = invnoise * projmat;
+
+  invcov = projmat.transpose() * temp;
+
   
-  for ( size_t i = 0; i < nbins; ++i ) {
-    if ( precdata[i] > 0.0 ) {
-      precdata[i] = 1.0 / precdata[i];
-    } else {
-      precdata[i] = 1.0;
-    }
-  }
-  */
+  // eigendecompose inverse covariance
+  
+  Eigen::SelfAdjointEigenSolver < mat_comprow > solver ( nbins );
 
   /*
-  
-  string outdata = datadir + "/toy_MLE_spectra.out";
-  
-  fstream out;
-  out.open ( outdata.c_str(), ios::out );
-  
-  for ( size_t i = 0; i < nbins; ++i ) {
-    if ( flags[i] == 0 ) {
-      out << i << " " << inspec[i] << " " << outspec[i] << " " << sqrt(precdata[i]) << endl;
-    }
-  }
-  
-  out.close();
-  
-  cerr << "  (PASSED)" << endl;
+  solver.compute ( invcov );
 
+  Eigen::ComputationInfo sinfo = solver.info();
+
+  cerr << "solver status = ";
+
+  if ( info == Eigen::Success) {
+    cerr << "SUCCESS" << endl;
+  } else if ( info == Eigen::NumericalIssue ) {
+    cerr << "Numerical Issue" << endl;
+  } else if ( info == Eigen::NoConvergence ) {
+    cerr << "No Convergence" << endl;
+  }
   */
-  
+     
   return;
 }
 

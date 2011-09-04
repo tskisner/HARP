@@ -246,7 +246,7 @@ void harp::fits::img_write ( fitsfile * fp, size_t frow, size_t fcol, mat_denser
   
   fpixel[0] = (long)fcol + 1;
   
-  long width = data.size2();
+  long width = data.cols();
   
   lpixel[0] = (fpixel[0] + width - 1) + 1;
   
@@ -254,13 +254,13 @@ void harp::fits::img_write ( fitsfile * fp, size_t frow, size_t fcol, mat_denser
   
   //cerr << "FITS writing image from columns " << fpixel[0]-1 << " to " << lpixel[0]-1 << endl;
   
-  for ( size_t i = 0; i < data.size1(); ++i ) {
+  for ( size_t i = 0; i < data.rows(); ++i ) {
     fpixel[1] = (long)( frow + i ) + 1;
     lpixel[1] = fpixel[1];
     
     //cerr << "FITS writing row " << i << "(" << fpixel[1] << ")" << endl;
 
-    for ( size_t j = 0; j < data.size2(); ++j ) {
+    for ( size_t j = 0; j < data.cols(); ++j ) {
       buffer[j] = data( i, j );
     }
 
@@ -331,7 +331,7 @@ void harp::fits::img_read ( fitsfile * fp, size_t frow, size_t fcol, mat_densero
   
   fpixel[0] = (long)fcol + 1;
   
-  long width = data.size2();
+  long width = data.cols();
   
   lpixel[0] = fpixel[0] + width - 1;
   
@@ -341,7 +341,7 @@ void harp::fits::img_read ( fitsfile * fp, size_t frow, size_t fcol, mat_densero
   
   //cerr << "FITS reading image from columns " << fpixel[0]-1 << " to " << lpixel[0]-1 << endl;
 
-  for ( size_t i = 0; i < data.size1(); ++i ) {
+  for ( size_t i = 0; i < data.rows(); ++i ) {
     fpixel[1] = (long)( frow + i ) + 1;
     lpixel[1] = fpixel[1];
     
@@ -350,7 +350,7 @@ void harp::fits::img_read ( fitsfile * fp, size_t frow, size_t fcol, mat_densero
     ret = fits_read_subset ( fp, TDOUBLE, fpixel, lpixel, inc, 0, buffer, &anynul, &status );
     fits::check ( status );
     
-    for ( size_t j = 0; j < data.size2(); ++j ) {
+    for ( size_t j = 0; j < data.cols(); ++j ) {
       data( i, j ) = buffer[j];
     }
   }
