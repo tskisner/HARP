@@ -76,7 +76,7 @@ void harp::test_medtoy ( string const & datadir ) {
   prof->reg ( "PCG_REMAP", "remap projection matrix" );
   prof->reg ( "PCG_PRECALC", "compute preconditioner" );
 
-  mat_comprow projmat ( npix, nbins );
+  mat_compcol projmat ( npix, nbins );
   
   resp->projection ( string("PCG_PSF"), string("PCG_REMAP"), 0, nspec - 1, 0, specbins - 1, 0, cols - 1, 0, rows - 1, projmat );
   

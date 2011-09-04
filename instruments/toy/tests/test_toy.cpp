@@ -111,7 +111,7 @@ void harp::test_toy ( string const & datadir ) {
   size_t nbins = testpsf->nspec() * testpsf->specsize(0);
   size_t npix = testimg->rows() * testimg->cols();
   
-  mat_comprow projmat ( npix, nbins );
+  mat_compcol projmat ( npix, nbins );
 
   testpsf->projection ( string("PCG_PSF"), string("PCG_REMAP"), 0, testpsf->nspec() - 1, 0, testpsf->specsize(0) - 1, (size_t)0, testimg->cols() - 1, (size_t)0, testimg->rows() - 1, projmat );
   
@@ -139,8 +139,12 @@ void harp::test_toy ( string const & datadir ) {
     }
     outspec[b] = 0.0;
   }
+
+  cerr << "  (PASSED)" << endl;
   
   // write input spectra
+
+  cerr << "Write input signal spectra..." << endl;
 
   boost::numeric::ublas::axpy_prod ( projmat, inspec, measured, true );
   
@@ -160,8 +164,12 @@ void harp::test_toy ( string const & datadir ) {
   image_p outsigimage ( image::create ( string("toy"), params ) );
   
   outsigimage->write ( "!" + datadir + "/toy_MLE_inputs.fits.out", measured );
+
+  cerr << "  (PASSED)" << endl;
   
   
+  cerr << "Adding noise to input spectra..." << endl;
+
   typedef boost::ecuyer1988 base_generator_type;
   base_generator_type generator(42u);
   
@@ -177,6 +185,10 @@ void harp::test_toy ( string const & datadir ) {
     measured[i] += gauss();
   }
 
+  cerr << "  (PASSED)" << endl;
+
+
+  cerr << "Write input measured spectra..." << endl;
   
   params.clear();
   
@@ -194,30 +206,51 @@ void harp::test_toy ( string const & datadir ) {
   
   outsnimage->write ( datadir + "/toy_MLE_inputs.fits.out", measured );
 
+  cerr << "  (PASSED)" << endl;
 
   
   // construct inverse pixel noise covariance
+
+  cerr << "Construct pixel noise covariance..." << endl;
   
-  mat_diag invnoise ( npix, npix );
+  mat_comprow invnoise ( npix, npix, npix );
 
   for ( size_t i = 0; i < npix; ++i ) {
     invnoise ( i, i ) = 1.0 / ( rms[i] * rms[i] );
   }
   
+  cerr << "  (PASSED)" << endl;
+
 
   // construct the inverse spectral covariance matrix
 
   mat_comprow invcov ( nbins, nbins );
 
-  mat_comprow temp ( npix, npix );
+  mat_compcol temp ( npix, nbins );
+
+  cerr << "Multiply N^-1 A..." << endl;
 
   boost::numeric::ublas::axpy_prod ( invnoise, projmat, temp, true );
 
+  cerr << "  (PASSED)" << endl;
+
+
+  cerr << "Multiply A^T (N^-1 A)..." << endl;
+
   boost::numeric::ublas::axpy_prod ( boost::numeric::ublas::trans ( projmat ), temp, invcov, true );
+
+  cerr << "  (PASSED)" << endl;
 
   
   // SVD
   
+  cerr << "SVD" << endl;
+
+  vec_dense eigen ( nbins );
+
+  svd < mat_comprow > ( invcov, eigen );
+
+  cerr << "  (PASSED)" << endl;
 
      
   return;

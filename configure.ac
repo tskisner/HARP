@@ -51,12 +51,24 @@ dnl | Check for MOAT
 dnl +------------------------------------------------
 ACX_MOAT([], [AC_MSG_ERROR([Could not find the MOAT library!])])
 dnl +------------------------------------------------
+dnl | Check for BLAS / LAPACK
+dnl +------------------------------------------------
+ACX_BLAS([], [AC_MSG_ERROR([Could not find a Blas library!])])
+ACX_LAPACK([], [AC_MSG_ERROR([Could not find a Lapack library!])])
+dnl +------------------------------------------------
 dnl | Check for BOOST
 dnl +------------------------------------------------
 acx_have_boost=no
 AX_BOOST_BASE([], [acx_have_boost=yes], [])
 AM_CONDITIONAL([HAVE_AM_BOOST], [test $acx_have_boost = yes])
 AX_BOOST_PROGRAM_OPTIONS
+dnl +------------------------------------------------
+dnl | Check for IETL
+dnl +------------------------------------------------
+save_CPPFLAGS=$CPPFLAGS
+CPPFLAGS="$CPPFLAGS $BOOST_CPPFLAGS"
+AC_CHECK_HEADERS([ietl/traits.h], [], [AC_MSG_ERROR([Could not find IETL headers!])])
+CPPFLAGS="$save_CPPFLAGS"
 dnl +------------------------------------------------
 dnl | Check for FFTW
 dnl +------------------------------------------------

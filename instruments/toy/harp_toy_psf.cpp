@@ -384,7 +384,7 @@ size_t harp::psf_toy::valid_range ( size_t const & firstX, size_t const & lastX,
 }
 
 
-void harp::psf_toy::projection ( string profcalc, string profremap, size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t firstX, size_t lastX, size_t firstY, size_t lastY, mat_comprow & data ) {
+void harp::psf_toy::projection ( string profcalc, string profremap, size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t firstX, size_t lastX, size_t firstY, size_t lastY, mat_compcol & data ) {
   
   size_t nx = lastX - firstX + 1;
   size_t ny = lastY - firstY + 1;
@@ -450,7 +450,7 @@ void harp::psf_toy::projection ( string profcalc, string profremap, size_t first
   // We want to fill the matrix using a mapped matrix, but the output will be a compressed matrix to speed up
   // axpy_prod computations.  We use a temporary matrix and then assign to the output.
   
-  mat_dynrow builder ( npix, nbins );
+  mat_dyncol builder ( npix, nbins );
 
   int lastfrac = 0;
   size_t complete = 0;
@@ -565,12 +565,12 @@ void harp::psf_toy::projection ( string profcalc, string profremap, size_t first
 
   data.reserve ( nonzeros );
 
-  mat_dynrow::iterator1 itrow;
-  mat_dynrow::iterator2 itcol;
+  mat_dyncol::iterator2 itcol;
+  mat_dyncol::iterator1 itrow;
 
-  for ( itrow = builder.begin1(); itrow != builder.end1(); ++itrow ) {
-    for ( itcol = itrow.begin(); itcol != itrow.end(); ++itcol ) {
-      data ( itcol.index1(), itcol.index2() ) = (*itcol);
+  for ( itcol = builder.begin2(); itcol != builder.end2(); ++itcol ) {
+    for ( itrow = itcol.begin(); itrow != itcol.end(); ++itrow ) {
+      data ( itrow.index1(), itrow.index2() ) = (*itrow);
       ++complete;
     }
     progfrac = (int) ( 10 * complete / nonzeros );

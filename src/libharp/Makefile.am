@@ -9,7 +9,7 @@ lib_LTLIBRARIES = libharp.la
 
 libharp_la_includedir = $(includedir)/harp
 
-libharp_la_include_HEADERS = harp/fits.hpp harp/image.hpp harp/spec.hpp harp/psf.hpp
+libharp_la_include_HEADERS = harp/fits.hpp harp/image.hpp harp/spec.hpp harp/psf.hpp harp/eigen.hpp
 
 libharp_la_SOURCES = harp_image.cpp harp_spec.cpp harp_psf.cpp harp_fits.cpp
 
