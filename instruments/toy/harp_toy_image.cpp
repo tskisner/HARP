@@ -123,7 +123,7 @@ void harp::image_toy::write ( std::string const & path, size_t startrow, size_t 
 
   if ( nh < sighdu_ ) {
     while ( nh < sighdu_ ) {
-      fits::img_append ( fp, data.rows(), data.cols() );
+      fits::img_append ( fp, data.size1(), data.size2() );
       ++nh;
     }
   } else {
@@ -205,7 +205,7 @@ void harp::image_toy::write_noise ( std::string const & path, size_t startrow, s
 
   if ( nh < nsehdu_ ) {
     while ( nh < nsehdu_ ) {
-      fits::img_append ( fp, data.rows(), data.cols() );
+      fits::img_append ( fp, data.size1(), data.size2() );
       ++nh;
     }
   } else {

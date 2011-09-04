@@ -389,9 +389,9 @@ void harp::psf_toy::projection ( string profcalc, string profremap, size_t first
   size_t nx = lastX - firstX + 1;
   size_t ny = lastY - firstY + 1;
   
-  size_t nbins = data.cols();
+  size_t nbins = data.size2();
   
-  size_t npix = data.rows();
+  size_t npix = data.size1();
   
   if ( ( npix != nx * ny ) || ( nbins != ( lastspec - firstspec + 1 ) * ( lastbin - firstbin + 1 ) ) ) {
     std::ostringstream o;
@@ -518,7 +518,7 @@ void harp::psf_toy::projection ( string profcalc, string profremap, size_t first
         
             datarow = rowoff + ( imgcol - firstX );
 
-            builder.coeffRef ( datarow, b ) += vals[pix];
+            builder ( datarow, b ) += vals[pix];
           
             ++pix;
           }
@@ -565,10 +565,12 @@ void harp::psf_toy::projection ( string profcalc, string profremap, size_t first
 
   data.reserve ( nonzeros );
 
-  for ( size_t itrow = 0; itrow < builder.outerSize(); ++itrow ) {
-    for ( mat_dynrow::InnerIterator itcol ( builder, itrow ); itcol; ++itcol )
-    {
-      data.insert ( itcol.row(), itcol.col() ) = itcol.value();
+  mat_dynrow::iterator1 itrow;
+  mat_dynrow::iterator2 itcol;
+
+  for ( itrow = builder.begin1(); itrow != builder.end1(); ++itrow ) {
+    for ( itcol = itrow.begin(); itcol != itrow.end(); ++itcol ) {
+      data ( itcol.index1(), itcol.index2() ) = (*itcol);
       ++complete;
     }
     progfrac = (int) ( 10 * complete / nonzeros );
@@ -592,8 +594,6 @@ void harp::psf_toy::projection ( string profcalc, string profremap, size_t first
   if ( profremap != "" ) {
     prof->stop ( profremap );
   }
-  
-  data.finalize();
   
   return;
 }

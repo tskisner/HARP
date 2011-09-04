@@ -246,7 +246,7 @@ void harp::fits::img_write ( fitsfile * fp, size_t frow, size_t fcol, mat_denser
   
   fpixel[0] = (long)fcol + 1;
   
-  long width = data.cols();
+  long width = data.size2();
   
   lpixel[0] = (fpixel[0] + width - 1) + 1;
   
@@ -254,13 +254,13 @@ void harp::fits::img_write ( fitsfile * fp, size_t frow, size_t fcol, mat_denser
   
   //cerr << "FITS writing image from columns " << fpixel[0]-1 << " to " << lpixel[0]-1 << endl;
   
-  for ( size_t i = 0; i < data.rows(); ++i ) {
+  for ( size_t i = 0; i < data.size1(); ++i ) {
     fpixel[1] = (long)( frow + i ) + 1;
     lpixel[1] = fpixel[1];
     
     //cerr << "FITS writing row " << i << "(" << fpixel[1] << ")" << endl;
 
-    for ( size_t j = 0; j < data.cols(); ++j ) {
+    for ( size_t j = 0; j < data.size2(); ++j ) {
       buffer[j] = data( i, j );
     }
 
@@ -331,7 +331,7 @@ void harp::fits::img_read ( fitsfile * fp, size_t frow, size_t fcol, mat_densero
   
   fpixel[0] = (long)fcol + 1;
   
-  long width = data.cols();
+  long width = data.size2();
   
   lpixel[0] = fpixel[0] + width - 1;
   
@@ -341,7 +341,7 @@ void harp::fits::img_read ( fitsfile * fp, size_t frow, size_t fcol, mat_densero
   
   //cerr << "FITS reading image from columns " << fpixel[0]-1 << " to " << lpixel[0]-1 << endl;
 
-  for ( size_t i = 0; i < data.rows(); ++i ) {
+  for ( size_t i = 0; i < data.size1(); ++i ) {
     fpixel[1] = (long)( frow + i ) + 1;
     lpixel[1] = fpixel[1];
     
@@ -350,7 +350,7 @@ void harp::fits::img_read ( fitsfile * fp, size_t frow, size_t fcol, mat_densero
     ret = fits_read_subset ( fp, TDOUBLE, fpixel, lpixel, inc, 0, buffer, &anynul, &status );
     fits::check ( status );
     
-    for ( size_t j = 0; j < data.cols(); ++j ) {
+    for ( size_t j = 0; j < data.size2(); ++j ) {
       data( i, j ) = buffer[j];
     }
   }
@@ -417,7 +417,7 @@ void harp::fits::img_read_row ( fitsfile * fp, size_t row, vec_dense & data ) {
 }
 
 
-void harp::fits::img_read_row_int ( fitsfile * fp, size_t row, vec_int & data ) {
+void harp::fits::img_read_row_int ( fitsfile * fp, size_t row, vec_denseint & data ) {
   
   int ret;
   int status = 0;
@@ -460,7 +460,7 @@ void harp::fits::img_write_row ( fitsfile * fp, size_t row, vec_dense & data ) {
 
   long fpixel[2];
   long lpixel[2];
-  long inc[2] = {1, 1};
+  //long inc[2] = {1, 1};
   
   fpixel[0] = 1;
   fpixel[1] = (long)row + 1;
@@ -714,7 +714,7 @@ void harp::fits::test ( string const & datadir ) {
   }
   
   vec_dense checkrow ( cols );
-  vec_int checkrowint ( cols );
+  vec_denseint checkrowint ( cols );
   
   for ( size_t i = 0; i < rows; ++i ) {
     

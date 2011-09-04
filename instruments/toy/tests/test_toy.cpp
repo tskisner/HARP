@@ -142,7 +142,7 @@ void harp::test_toy ( string const & datadir ) {
   
   // write input spectra
 
-  measured = projmat * inspec;
+  boost::numeric::ublas::axpy_prod ( projmat, inspec, measured, true );
   
   params.clear();
   
@@ -198,10 +198,10 @@ void harp::test_toy ( string const & datadir ) {
   
   // construct inverse pixel noise covariance
   
-  mat_comprow invnoise ( npix, npix );
+  mat_diag invnoise ( npix, npix );
 
   for ( size_t i = 0; i < npix; ++i ) {
-    invnoise.insert ( i, i ) = 1.0 / ( rms[i] * rms[i] );
+    invnoise ( i, i ) = 1.0 / ( rms[i] * rms[i] );
   }
   
 
@@ -211,30 +211,14 @@ void harp::test_toy ( string const & datadir ) {
 
   mat_comprow temp ( npix, npix );
 
-  temp = invnoise * projmat;
+  boost::numeric::ublas::axpy_prod ( invnoise, projmat, temp, true );
 
-  invcov = projmat.transpose() * temp;
+  boost::numeric::ublas::axpy_prod ( boost::numeric::ublas::trans ( projmat ), temp, invcov, true );
 
   
-  // eigendecompose inverse covariance
+  // SVD
   
-  Eigen::SelfAdjointEigenSolver < mat_comprow > solver ( nbins );
 
-  /*
-  solver.compute ( invcov );
-
-  Eigen::ComputationInfo sinfo = solver.info();
-
-  cerr << "solver status = ";
-
-  if ( info == Eigen::Success) {
-    cerr << "SUCCESS" << endl;
-  } else if ( info == Eigen::NumericalIssue ) {
-    cerr << "Numerical Issue" << endl;
-  } else if ( info == Eigen::NoConvergence ) {
-    cerr << "No Convergence" << endl;
-  }
-  */
      
   return;
 }

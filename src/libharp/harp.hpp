@@ -12,26 +12,34 @@
 #include <boost/smart_ptr/shared_ptr.hpp>
 #include <boost/smart_ptr/weak_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/numeric/ublas/matrix.hpp>
+#include <boost/numeric/ublas/vector.hpp>
+#include <boost/numeric/ublas/banded.hpp>
+#include <boost/numeric/ublas/matrix_sparse.hpp>
+
 
 #include <moat.hpp>
 
 #include <fftw3.h>
 
-#include <eigen3/Eigen/Sparse>
-#include <eigen3/Eigen/Dense>
-#include <eigen3/Eigen/Eigenvalues>
 
 namespace harp {
   
-  typedef Eigen::SparseMatrix < double, Eigen::RowMajor > mat_comprow;
-  typedef Eigen::DynamicSparseMatrix < double, Eigen::RowMajor > mat_dynrow;
-  typedef Eigen::DiagonalMatrix < double, Eigen::Dynamic > mat_diag;
-  typedef Eigen::Matrix < double, Eigen::Dynamic, Eigen::Dynamic > mat_denserow;
+  typedef boost::numeric::ublas::compressed_matrix < double, boost::numeric::ublas::row_major > mat_comprow;
+  typedef boost::numeric::ublas::compressed_matrix < double, boost::numeric::ublas::column_major > mat_compcol;
+
+  typedef boost::numeric::ublas::mapped_matrix < double, boost::numeric::ublas::row_major > mat_dynrow;
+  typedef boost::numeric::ublas::mapped_matrix < double, boost::numeric::ublas::column_major > mat_dyncol;
+
+  typedef boost::numeric::ublas::diagonal_matrix < double > mat_diag;
   
-  typedef Eigen::SparseVector < double > vec_sparse;
-  typedef Eigen::Matrix < double, Eigen::Dynamic, 1 > vec_dense;
-  typedef Eigen::Matrix < uint8_t, Eigen::Dynamic, 1 > vec_flag;
-  typedef Eigen::Matrix < int, Eigen::Dynamic, 1 > vec_int;
+  typedef boost::numeric::ublas::matrix < double, boost::numeric::ublas::row_major > mat_denserow;
+  typedef boost::numeric::ublas::matrix < double, boost::numeric::ublas::column_major > mat_densecol;
+
+  typedef boost::numeric::ublas::mapped_vector < double > vec_sparse;
+  typedef boost::numeric::ublas::vector < double > vec_dense;
+  typedef boost::numeric::ublas::mapped_vector < uint8_t > vec_flag;
+  typedef boost::numeric::ublas::vector < int > vec_denseint;
   
 }
 

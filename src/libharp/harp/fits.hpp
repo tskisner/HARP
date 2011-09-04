@@ -49,7 +49,7 @@ namespace harp { namespace fits {
   
   void img_write_row ( fitsfile * fp, size_t row, vec_dense & data );
   
-  void img_read_row_int ( fitsfile * fp, size_t row, vec_int & data );
+  void img_read_row_int ( fitsfile * fp, size_t row, vec_denseint & data );
   
   std::vector < int > bin_columns ( fitsfile * fp, std::vector < std::string > & names );
   
