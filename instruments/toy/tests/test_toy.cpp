@@ -241,17 +241,107 @@ void harp::test_toy ( string const & datadir ) {
 
   cerr << "  (PASSED)" << endl;
 
+
+  // remap to row-major?
+
+
   
   // SVD
   
   cerr << "SVD" << endl;
 
-  vec_dense eigen ( nbins );
+  vec_dense eigenvals ( nbins );
+  vector < vec_dense > eigenvecs ( nbins );
 
-  svd < mat_comprow > ( invcov, eigen );
+  svd < mat_comprow > ( invcov, eigenvals, eigenvecs );
+
+  size_t firsteigen = eigenvecs.size() - eigenvals.size();
+  size_t neigen = eigenvals.size() - firsteigen;
 
   cerr << "  (PASSED)" << endl;
 
+
+  // noise weighted spectra
+
+  cerr << "compute Z" << endl;
+
+  vec_dense z ( nbins );
+  vec_dense ztemp ( npix );
+
+  boost::numeric::ublas::axpy_prod ( invnoise, measured, ztemp, true );
+
+  boost::numeric::ublas::axpy_prod ( ztemp, projmat, z, true ); 
+  
+  cerr << "  (PASSED)" << endl; 
+
+
+  // compute norm vector
+
+  cerr << "compute norm" << endl;
+
+  vec_dense norm ( neigen );
+
+  vec_dense sqrtvals ( neigen );
+
+  moat::sf::sqrt ( neigen, &(eigenvals[0]), &(sqrtvals[0]) );
+
+  size_t i, j, k;
+
+  for ( i = 0; i < neigen; ++i ) {
+    norm[i] = 0.0;
+    for ( j = 0; j < neigen; ++j ) {
+      for ( k = 0; k < neigen; ++k ) {
+        norm[i] += sqrtvals[k] * (eigenvecs[i])[k] * (eigenvecs[j])[k];
+      }
+    }
+    norm[i] = 1.0 / norm[i];
+  }
+
+  for ( i = 0; i < neigen; ++i ) {
+    sqrtvals[i] = 1.0 / sqrtvals[i];
+  }
+
+  cerr << "  (PASSED)" << endl;
+
+
+  // compute the RC product
+
+  cerr << "compute RC" << endl;
+
+  mat_comprow rc ( nbins, nbins, neigen * neigen );
+
+  for ( i = 0; i < neigen; ++i ) {
+    for ( j = 0; j < neigen; ++j ) {
+      rc ( i, j ) = 0.0;
+      for ( k = 0; k < neigen; ++k ) {
+        rc ( i, j ) += sqrtvals[k] * (eigenvecs[i])[k] * (eigenvecs[j])[k];
+      }
+      rc ( i, j ) *= norm[i];
+    }
+  }
+
+  cerr << "  (PASSED)" << endl;
+
+
+  cerr << "final spectra" << endl;
+
+  boost::numeric::ublas::axpy_prod ( rc, z, outspec, true );
+
+  string outdata = datadir + "/toy_MLE_spectra.out";
+
+  fstream out;
+  out.open ( outdata.c_str(), ios::out );
+  
+  for ( size_t i = 0; i < nbins; ++i ) {
+    if ( flags[i] == 0 ) {
+      out << i << " " << inspec[i] << " " << outspec[i] << endl;
+    }
+  }
+  
+  out.close();
+
+
+  cerr << "  (PASSED)" << endl;
      
   return;
 }
