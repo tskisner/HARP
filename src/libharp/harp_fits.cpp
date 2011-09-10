@@ -179,6 +179,7 @@ int harp::fits::img_seek ( fitsfile * fp, std::string const & keyname, std::stri
   
   for ( int i = 0; i < nhdu; ++i ) {
     hdu = 1 + i;
+    //cerr << "image seek, looking for " << valcopy << endl;
     
     ret = fits_movabs_hdu ( fp, hdu, &type, &status );
     fits::check ( status );

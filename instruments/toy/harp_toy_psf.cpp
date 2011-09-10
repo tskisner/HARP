@@ -59,11 +59,17 @@ harp::psf_toy::psf_toy ( std::map < std::string, std::string > const & params ) 
   
   fitsfile *fp;
 
+  //cerr << "calling open on " << path_ << endl;
+
   fits::open_read ( fp, path_ );
+
+  //cerr << "calling img_seek " << endl;
   
   int hdu = fits::img_seek ( fp, toy_psf_key_name, toy_psf_hdu_x );
   hdus_[ toy_psf_hdu_x ] = hdu;
   fits::img_dims ( fp, nspec_, nbins_ );
+
+  //cerr << "seek to " << toy_psf_hdu_x << endl;
   
   size_t rows, cols;
   
@@ -73,6 +79,8 @@ harp::psf_toy::psf_toy ( std::map < std::string, std::string > const & params ) 
   if ( ( rows != nspec_ ) || ( cols != nbins_ ) ) {
     MOAT_THROW( "toy_psf: PSF file must have identical dimensions for all HDUs" );
   }
+
+  //cerr << "seek to " << toy_psf_hdu_y << endl;
   
   hdu = fits::img_seek ( fp, toy_psf_key_name, toy_psf_hdu_lambda );
   hdus_[ toy_psf_hdu_lambda ] = hdu;
@@ -80,6 +88,8 @@ harp::psf_toy::psf_toy ( std::map < std::string, std::string > const & params ) 
   if ( ( rows != nspec_ ) || ( cols != nbins_ ) ) {
     MOAT_THROW( "toy_psf: PSF file must have identical dimensions for all HDUs" );
   }
+
+  //cerr << "seek to " << toy_psf_hdu_lambda << endl;
   
   hdu = fits::img_seek ( fp, toy_psf_key_name, toy_psf_hdu_amp );
   hdus_[ toy_psf_hdu_amp ] = hdu;
