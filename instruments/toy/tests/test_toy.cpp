@@ -17,7 +17,7 @@ using namespace harp;
 
 extern "C" void dgesdd_ ( char *, int *, int *, double *, int *, double *, double *, int *, double *, int *, double *, int *, int *, int * );
 
-extern "C" void dsyevd_ ( char *, char *, int *, double *, int *, double *, double *, int *, int *, int *, int * );
+
 
 
 void lapack_svd ( int dim, double * mat, double * eigen ) {
@@ -44,28 +44,7 @@ void lapack_svd ( int dim, double * mat, double * eigen ) {
 }
 
 
-int lapack_ev ( int dim, double * mat, double * eigen ) {
-  char jobz = 'V';
-  char uplo = 'L';
-  int lwork;
-  int liwork;
-  double * work;
-  int * iwork;
-  int info;
 
-  lwork = 1 + 6 * dim + 2 * dim * dim;
-  work = moat::double_alloc ( lwork );
-
-  liwork = 3 + 5 * dim;
-  iwork = moat::int_alloc ( liwork );
-
-  dsyevd_ ( &jobz, &uplo, &dim, mat, &dim, eigen, work, &lwork, iwork, &liwork, &info );
-
-  free ( iwork );
-  free ( work );
-
-  return info;
-}
 
 
 
@@ -311,72 +290,6 @@ void harp::test_toy ( string const & datadir ) {
 
   cerr << "  (PASSED)" << endl;
 
-
-  // remap to row-major?
-
-  size_t i, j, k;
-
-
-
-  
-  // SVD
-  
-  cerr << "SVD" << endl;
-
-  vec_dense eigenvals ( nbins );
-  vector < vec_dense > eigenvecs ( nbins );
-
-  vec_dense finvcov ( nbins * nbins );
-  for ( j = 0; j < nbins; ++j ) {
-    for ( i = 0; i < nbins; ++i ) {
-      finvcov[ j * nbins + i ] = invcov ( i, j );
-    }
-  }
-
-  int fret = lapack_ev ( (int)nbins, &(finvcov(0)), &(eigenvals[0]) );
-
-  mat_densecol W ( nbins, nbins );
-  for ( j = 0; j < nbins; ++j ) {
-    for ( i = 0; i < nbins; ++i ) {
-      W ( j, i ) = finvcov[ j * nbins + i ];
-    }
-  }
-
-
-  string outdata = datadir + "/test_output_W.out";
-
-  fstream out;
-  out.open ( outdata.c_str(), ios::out );   
-
-  for ( i = 0; i < nbins; ++i ) {
-    for ( j = 0; j < 6; ++j ) {
-      out << W(i,j) << " ";
-    }
-    out << " .... " << endl;
-  }
-
-  out.close();
-
-
-  size_t neigen = (size_t)( nbins );
-
-  cerr << "Condition number = " << eigenvals[neigen-1] / eigenvals[0] << endl;
-
-  for ( i = 0; i < nbins; ++i ) {
-    cerr << i << ": " << eigenvals[i] << " => " << W(0,i) << " " << W(1,i) << " " << W(2,i) << " ..." << endl;
-  }
-
-  /*
-  svd < mat_comprow > ( invcov, eigenvals, eigenvecs );
-
-  size_t firsteigen = eigenvecs.size() - eigenvals.size();
-  size_t neigen = eigenvals.size() - firsteigen;
-  */
-  
-
-  cerr << "  (PASSED)" << endl;
-
-
   // noise weighted spectra
 
   cerr << "compute Z" << endl;
@@ -388,150 +301,43 @@ void harp::test_toy ( string const & datadir ) {
 
   boost::numeric::ublas::axpy_prod ( ztemp, projmat, z, true ); 
   
-  cerr << "  (PASSED)" << endl; 
-
-
-  // compute norm vector
-
-  cerr << "compute norm" << endl;
-
-  vec_dense norm ( nbins );
-
-  vec_dense sqrtvals ( nbins );
-
-  moat::sf::sqrt ( neigen, &(eigenvals[0]), &(sqrtvals[0]) );
-
-  mat_comprow diag ( nbins, nbins, nbins );
-  for ( i = 0; i < neigen; ++i ) {
-    diag ( i, i ) = sqrtvals[i];
-  }
-  for ( i = neigen; i < nbins; ++i ) {
-    diag ( i, i ) = 0.0;
-  }
-
-  vec_dense vtemp1 ( nbins );
-  vec_dense vtemp2 ( nbins );
-  mat_denserow res ( nbins, nbins );
-  mat_denserow cov ( nbins, nbins );
-  mat_denserow mtemp1 ( nbins, nbins );
-  //mat_denserow mtemp2 ( nbins, nbins );
-  vec_dense rc ( nbins );
-  vec_dense ones ( nbins );
-
-  for ( i = 0; i < nbins; ++i ) {
-    ones[i] = 1.0;
-  }
-
-  boost::numeric::ublas::axpy_prod ( W, ones, vtemp1, true );
-
-  boost::numeric::ublas::axpy_prod ( diag, vtemp1, vtemp2, true );
-
-  boost::numeric::ublas::axpy_prod ( vtemp2, W, norm, true );
-  
-  outdata = datadir + "/test_output_norm.out";
-
-  out.open ( outdata.c_str(), ios::out );
-
-  for ( i = 0; i < neigen; ++i ) {
-    out << eigenvals[i] << " " << norm[i] << endl;
-  }
-
-  out.close(); 
-
   cerr << "  (PASSED)" << endl;
 
-  // compute R explicitly
 
-  boost::numeric::ublas::axpy_prod ( diag, W, mtemp1, true );
+  // remap to row-major?
 
-  boost::numeric::ublas::axpy_prod ( boost::numeric::ublas::trans ( W ), mtemp1, res, true );
+  size_t i, j, k;
 
-  outdata = datadir + "/test_output_R.out";
 
-  out.open ( outdata.c_str(), ios::out );   
 
-  for ( i = 0; i < nbins; ++i ) {
-    for ( j = 0; j < nbins; ++j ) {
-      res ( i, j ) /= norm[i];
-      if ( j < 6 ) {
-        out << res(i,j) << " ";
-      }
-    }
-    out << " .... " << endl;
-  }
+  
+  // extraction
+  
+  mat_denserow res ( nbins, nbins );
+  vec_dense errors ( nbins );
 
-  out.close();
+  vector < size_t > rblocks ( 1 );
+  rblocks[0] = nbins;  
+
+  extract < mat_comprow, vec_dense, mat_denserow > ( invcov, z, outspec, errors, res, rblocks );
+  
 
   vec_dense Rinspec ( nbins );
 
   boost::numeric::ublas::axpy_prod ( res, inspec, Rinspec, true );
 
-  // compute C explicity
 
-  for ( i = 0; i < neigen; ++i ) {
-    diag ( i, i ) = 1.0 / eigenvals[i];
-  }
-  for ( i = neigen; i < nbins; ++i ) {
-    diag ( i, i ) = 0.0;
-  }
-
-  boost::numeric::ublas::axpy_prod ( diag, W, mtemp1, true );
-
-  boost::numeric::ublas::axpy_prod ( boost::numeric::ublas::trans ( W ), mtemp1, cov, true );
-
-  outdata = datadir + "/test_output_cov.out";
-
-  out.open ( outdata.c_str(), ios::out );
-
-  for ( i = 0; i < nbins; ++i ) {
-    for ( j = 0; j < 6; ++j ) {
-      out << cov(i,j) << " ";
-    }
-    out << " .... " << endl;
-  }
-
-  out.close();
-
-
-  /*
-  // compute the RC product
-
-  cerr << "compute RC" << endl;
-
-  for ( i = 0; i < neigen; ++i ) {
-    //diag ( i, i ) = 1.0 / eigenvals[i];
-    diag ( i, i ) = 1.0 / sqrt ( eigenvals[i] );
-  }
-  for ( i = neigen; i < nbins; ++i ) {
-    diag ( i, i ) = 0.0;
-  }
-
-  boost::numeric::ublas::axpy_prod ( finvcov, z, vtemp1, true );
-
-  boost::numeric::ublas::axpy_prod ( diag, vtemp1, vtemp2, true );
-
-  boost::numeric::ublas::axpy_prod ( vtemp2, finvcov, rc, true );
-  */
-
-  cerr << "  (PASSED)" << endl;
 
 
   cerr << "final spectra" << endl;
 
-  boost::numeric::ublas::axpy_prod ( res, cov, mtemp1, true );
-
-  boost::numeric::ublas::axpy_prod ( mtemp1, z, outspec, true );
 
   outdata = datadir + "/test_output_spectra.out";
 
   out.open ( outdata.c_str(), ios::out );
   
   for ( size_t i = 0; i < nbins; ++i ) {
-    //outspec[i] = rc[i] / norm[i];
-    //outspec[i] = rc[i];
-    if ( flags[i] == 0 ) {
-      out << i << " " << Rinspec[i] << " " << outspec[i] << " " << 1.0/norm[i] << " " << norm[i] * (Rinspec[i] - outspec[i]) << endl;
-    }
+    out << i << " " << Rinspec[i] << " " << outspec[i] << " " << errors[i] << " " << (Rinspec[i] - outspec[i]) / errors[i] << endl;
   }
   
   out.close();
