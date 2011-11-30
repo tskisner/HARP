@@ -6,6 +6,8 @@
 
 #include <boost/random.hpp>
 
+#include <moat.hpp>
+
 extern "C" {
 #include <unistd.h>
 }
@@ -275,18 +277,31 @@ void harp::test_toy ( string const & datadir ) {
 
   mat_comprow invcov ( nbins, nbins );
 
+  mat_dynrow builder ( nbins, nbins );
+
   mat_compcol temp ( npix, nbins );
 
   cerr << "Multiply N^-1 A..." << endl;
 
-  boost::numeric::ublas::axpy_prod ( invnoise, projmat, temp, true );
+  moat::la::multiply_mm < mat_comprow, mat_compcol, mat_compcol > ( invnoise, projmat, temp, false, true, true, "" );
+
+  //boost::numeric::ublas::axpy_prod ( invnoise, projmat, temp, true );
 
   cerr << "  (PASSED)" << endl;
 
 
   cerr << "Multiply A^T (N^-1 A)..." << endl;
 
-  boost::numeric::ublas::axpy_prod ( boost::numeric::ublas::trans ( projmat ), temp, invcov, true );
+  boost::numeric::ublas::axpy_prod ( boost::numeric::ublas::trans ( projmat ), temp, builder, true );
+
+  mat_dynrow::iterator2 itcol;
+  mat_dynrow::iterator1 itrow;
+
+  for ( itcol = builder.begin2(); itcol != builder.end2(); ++itcol ) {
+    for ( itrow = itcol.begin(); itrow != itcol.end(); ++itrow ) {
+      invcov ( itrow.index1(), itrow.index2() ) = (*itrow);
+    }
+  }
 
   cerr << "  (PASSED)" << endl;
 
@@ -313,31 +328,27 @@ void harp::test_toy ( string const & datadir ) {
   
   // extraction
   
-  mat_denserow res ( nbins, nbins );
   vec_dense errors ( nbins );
+  vector < vec_dense > vrinspec ( 1 );
+  vector < vec_dense > vinspec ( 1 );
+  vinspec[0].resize ( nbins );
+  vrinspec[0].resize ( nbins );
 
-  vector < size_t > rblocks ( 1 );
-  rblocks[0] = nbins;  
+  vinspec[0] = inspec;
 
-  extract < mat_comprow, vec_dense, mat_denserow > ( invcov, z, outspec, errors, res, rblocks );
+  extract < mat_comprow, vec_dense > ( invcov, z, outspec, errors, vinspec, vrinspec );
   
-
-  vec_dense Rinspec ( nbins );
-
-  boost::numeric::ublas::axpy_prod ( res, inspec, Rinspec, true );
-
-
-
 
   cerr << "final spectra" << endl;
 
 
-  outdata = datadir + "/test_output_spectra.out";
+  string outdata = datadir + "/test_medium_output.out";
 
+  fstream out;
   out.open ( outdata.c_str(), ios::out );
   
   for ( size_t i = 0; i < nbins; ++i ) {
-    out << i << " " << Rinspec[i] << " " << outspec[i] << " " << errors[i] << " " << (Rinspec[i] - outspec[i]) / errors[i] << endl;
+    out << i << " " << (vrinspec[0])[i] << " " << outspec[i] << " " << errors[i] << " " << ((vrinspec[0])[i] - outspec[i]) / errors[i] << endl;
   }
   
   out.close();

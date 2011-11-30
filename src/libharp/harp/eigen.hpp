@@ -3,15 +3,18 @@
 #ifndef HARP_EIGEN_HPP
 #define HARP_EIGEN_HPP
 
+#include <iostream>
+#include <fstream>
 #include <climits>
 
 #include <boost/random.hpp>
+
+#include <moat.hpp>
 
 #include <ietl/interface/ublas.h>
 #include <ietl/vectorspace.h>
 #include <ietl/lanczos.h>
 #include <ietl/iteration.h>
-
 
 
 namespace harp {
@@ -21,17 +24,13 @@ namespace harp {
   typedef ietl::wrapper_vectorspace < vec_dense > vs_dense;
   typedef boost::lagged_fibonacci607 svd_gen;
 
-  template < typename M, typename V, typename R >
-  void extract ( M & inout, V & z, V & spectra, V & errors, R & resolution, std::vector < size_t > & Rblocks ) {
+  template < typename M, typename V >
+  void extract ( M & inout, V & z, V & spectra, V & errors, std::vector < V > & intestspec, std::vector < V > & outtestspec ) {
 
     size_t dim = inout.size1();
 
     if ( inout.size2() != dim ) {
       MOAT_THROW( "input/output matrix must be square" );
-    }
-
-    if ( ( resolution.size1() != dim ) || ( resolution.size2() != dim ) ) {
-      MOAT_THROW( "resolution matrix must be the same size as the input matrix" );
     }
 
     if ( z.size() != dim ) {
@@ -44,27 +43,27 @@ namespace harp {
     errors.clear();
     errors.resize ( dim );
 
-    size_t blocktotal = 0;
-    std::vector < size_t > :: iterator blit;
-    for ( blit = Rblocks.begin(); blit != Rblocks.end(); ++blit ) {
-      blocktotal += (*blit);
+    size_t ntest = intestspec.size();
+    outtestspec.clear();
+
+    size_t i, j, k, m;
+
+    for ( i = 0; i < ntest; ++i ) {
+      if ( intestspec[i].size() != dim ) {
+        MOAT_THROW( "input test spectra must have same size as dimensions of the inverse covariance ");
+      }
+      V tempvec ( dim );
+      outtestspec.push_back ( tempvec );
     }
 
-    if ( blocktotal != dim ) {
-      MOAT_THROW( "sum of all resolution blocksizes must match matrix dimensions" );
-    }
-
-    V eigenvals ( dim );
+    //V eigenvals ( dim );
+    size_t neigen = dim;
 
 
+    /*
     // Dense LAPACK implementation
 
-
-    size_t i, j, k;
-
     // eigendecompose
-
-
     
     vec_dense finvcov ( dim * dim );
     mat_densecol W ( dim, dim );
@@ -82,23 +81,222 @@ namespace harp {
         W ( j, i ) = finvcov[ j * dim + i ];
       }
     }
+    */
+    
+    // sparse eigen decomposition
 
-    size_t neigen = (size_t)( dim );
- 
-    std::cerr << "Condition number = " << eigenvals[neigen-1] / eigenvals[0] << std::endl;
+
+    int idim = (int)dim;
+    vs_dense vs ( idim );
+    svd_gen gen;
+
+    ietl::lanczos < M, vs_dense > lanczos ( inout, vs );
+
+    // compute eigenvalues
+
+    std::vector < double > eigen;
+    std::vector < double > err;
+    std::vector < int > multiplicity;
+
+    // create iterator
+
+    int max_iter = 2 * dim;
+
+    double rel_tol = 100 * std::numeric_limits < double > :: epsilon();
+    double abs_tol = rel_tol; //std::pow ( std::numeric_limits < double > :: epsilon(), 2.0 / 3.0 );
+
+    ietl::lanczos_iteration_nhighest < double > iter ( max_iter, dim, rel_tol, abs_tol );
+
+    //ietl::fixed_lanczos_iteration < double > iter ( max_iter );
+
+    lanczos.calculate_eigenvalues ( iter, gen );
+
+    std::cout << "relative error = " << iter.relative_tolerance() << std::endl;
+    std::cout << "absolute error = " << iter.absolute_tolerance() << std::endl;
+    std::cout << "number of iterations: " << iter.iterations() << std::endl;
+
+    eigen = lanczos.eigenvalues();
+    err = lanczos.errors();
+    multiplicity = lanczos.multiplicities();
+
+    neigen = eigen.size();
+
+    // Printing eigenvalues with error & multiplicities:  
+    std::cout << "#        eigenvalue            error         multiplicity\n";
+    std::cout.precision(10);
+    for (int i=0;i<eigen.size();++i)
+      std::cout << i << "  " << eigen[i] << "  " << err[i] << "  " << multiplicity[i] << "\n";
+
+    // determine the truncation threshold
+
+    double largest = eigen[ neigen - 1 ];
+    double thresh = largest * std::numeric_limits < double > :: epsilon();
+    std::cerr << "threshold = " << thresh << std::endl;
+
+    // set iterator bounds
+
+    std::vector < double > :: reverse_iterator firsteigen = eigen.rbegin();
+    std::vector < double > :: reverse_iterator lasteigen = eigen.rend();
+
+    /*
+    size_t nonsing = eigen.size();
+
+    while ( (*firsteigen) < thresh ) {
+      ++firsteigen;
+      --nonsing;
+    }
+    */
+
+    // scroll through eigenvectors
+
+    ietl::Info < double > info; // (m1, m2, ma, eigenvalue, residual, status).
+
+    std::vector < vec_dense > eigenvecs;
+
+    std::cerr << "fetching eigenvectors..." << std::endl;
+    
+    while ( firsteigen != lasteigen ) {
+
+      lanczos.eigenvectors ( firsteigen, firsteigen-1, std::back_inserter ( eigenvecs ), info, gen );
+
+      for ( int i = 0; i < info.size(); i++ ) {
+        std::cout << " m1(" << i+1 << "): " << info.m1(i) << ", m2(" << i+1 << "): "
+                << info.m2(i) << ", ma(" << i+1 << "): " << info.ma(i) << " eigenvalue("
+                << i+1 << "): " << info.eigenvalue(i) << " residual(" << i+1 << "): "
+                << info.residual(i) << " error_info(" << i+1 << "): "
+                << info.error_info(i) << std::endl;
+      }
+
+      ++firsteigen;
+    }
+
+
+
+    vec_dense sqrtvals ( neigen );
+
+    moat::sf::sqrt ( neigen, &(eigen[0]), &(sqrtvals[0]) );
 
     
+ 
+    std::cerr << "Condition number = " << eigen[neigen-1] / eigen[0] << std::endl;
 
 
+
+    // Using one eigenvector at a time, perform computation of normalization vector,
+    // application of resolution matrix on test spectra, and solution of final spectra.
+    
+    V norm ( dim );
+    V norm_temp1 ( dim );
+    V norm_temp2 ( dim );
+
+    V rc ( dim );
+    V rc_temp1 ( dim );
+    V rc_temp2 ( dim );
+
+    std::vector < V > test_temp1 ( ntest );
+    std::vector < V > test_temp2 ( ntest );
+
+    for ( i = 0; i < ntest; ++i ) {
+      test_temp1[i].resize ( dim );
+      test_temp2[i].resize ( dim );
+    }
+
+    double * evec;
+
+    // eigenvectors row-major
+
+    size_t cur;
+
+    for ( cur = 0; cur < dim; ++cur ) {
+      norm_temp1[cur] = 0.0;
+      rc_temp1[cur] = 0.0;
+      for ( k = 0; k < ntest; ++k ) {
+        ( test_temp1[k] )[cur] = 0.0;
+      }
+    }
+    cur = 0;
+
+    for ( i = 0; i < neigen; ++i ) {
+      
+      //evec = &( finvcov [ i * dim ] );
+      evec = &( (eigenvecs[i])[0] );
+
+      for ( m = 0; m < (size_t)multiplicity[i]; ++m ) {
+
+        for ( j = 0; j < dim; ++j ) {
+
+          norm_temp1[cur] += evec[j];
+
+          rc_temp1[cur] += evec[j] * z[j];
+
+          for ( k = 0; k < ntest; ++k ) {
+            ( test_temp1[k] )[cur] += evec[j] * ( intestspec[k] )[j];
+          }
+
+        }
+
+        ++cur;
+      }
+    }
+
+    cur = 0;
+
+    for ( i = 0; i < neigen; ++i ) { 
+
+      for ( m = 0; m < (size_t)multiplicity[i]; ++m ) {
+
+        norm_temp2[cur] = norm_temp1[cur] * sqrtvals[i];
+      
+        rc_temp2[cur] = rc_temp1[cur] / sqrtvals[i];
+      
+        for ( k = 0; k < ntest; ++k ) {
+          ( test_temp2[k] )[cur] = ( test_temp1[k] )[cur] * sqrtvals[i];
+          ( outtestspec[k] )[cur] = 0.0;
+        }
+
+        norm[cur] = 0.0;
+        rc[cur] = 0.0;
+
+        ++cur;
+
+      }
+
+    }
+
+    cur = 0;
+
+    for ( i = 0; i < neigen; ++i ) {
+      
+      //evec = &( finvcov [ i * dim ] );
+      evec = &( (eigenvecs[i])[0] );
+
+      for ( m = 0; m < (size_t)multiplicity[i]; ++m ) {
+
+        for ( j = 0; j < dim; ++j ) {
+
+          norm[cur] += evec[j] * norm_temp2[cur];
+
+          rc[cur] += evec[j] * rc_temp2[cur];
+
+          for ( k = 0; k < ntest; ++k ) {
+            ( outtestspec[k] )[cur] += evec[j] * ( test_temp2[k] )[cur];
+          }
+        }
+
+        ++cur;
+
+      }
+
+    }
+
+
+    /*
     // compute norm
 
     std::cerr << "compute norm" << std::endl;
 
-    vec_dense norm ( dim );
-
-    vec_dense sqrtvals ( dim );
-
-    moat::sf::sqrt ( neigen, &(eigenvals[0]), &(sqrtvals[0]) );
+    vec_dense testnorm ( dim );
+    
 
     mat_comprow diag ( dim, dim, dim );
     for ( i = 0; i < neigen; ++i ) {
@@ -113,8 +311,9 @@ namespace harp {
     
     mat_denserow mtemp1 ( dim, dim );
 
-    vec_dense rc ( dim );
     vec_dense ones ( dim );
+
+    vec_dense testspectra ( dim );
 
     for ( i = 0; i < dim; ++i ) {
       ones[i] = 1.0;
@@ -124,11 +323,15 @@ namespace harp {
 
     boost::numeric::ublas::axpy_prod ( diag, vtemp1, vtemp2, true );
 
-    boost::numeric::ublas::axpy_prod ( vtemp2, W, norm, true );
+    boost::numeric::ublas::axpy_prod ( vtemp2, W, testnorm, true );
+
+
 
     // compute R explicitly
 
     std::cerr << "compute R" << std::endl;
+
+    mat_denserow resolution ( dim, dim );
 
     boost::numeric::ublas::axpy_prod ( diag, W, mtemp1, true );
 
@@ -136,19 +339,25 @@ namespace harp {
 
     for ( i = 0; i < dim; ++i ) {
       for ( j = 0; j < dim; ++j ) {
-        resolution ( i, j ) /= norm[i];
+        resolution ( i, j ) /= testnorm[i];
       }
     }
 
 
+    // apply resolution to test spectra
+
+    for ( i = 0; i < ntest; ++i ) {
+      boost::numeric::ublas::axpy_prod ( resolution, intestspec[i], outtestspec[i], true );
+    }
+
     // compute C explicity
 
-    std::cerr << "compute C" << std::endl;
+    std::cerr << "compute RC" << std::endl;
 
-    mat_denserow cov ( dim, dim );
+    mat_denserow testrc ( dim, dim );
 
     for ( i = 0; i < neigen; ++i ) {
-      diag ( i, i ) = 1.0 / eigenvals[i];
+      diag ( i, i ) = 1.0 / sqrtvals[i];
     }
     for ( i = neigen; i < dim; ++i ) {
       diag ( i, i ) = 0.0;
@@ -156,67 +365,53 @@ namespace harp {
 
     boost::numeric::ublas::axpy_prod ( diag, W, mtemp1, true );
 
-    boost::numeric::ublas::axpy_prod ( boost::numeric::ublas::trans ( W ), mtemp1, cov, true );
+    boost::numeric::ublas::axpy_prod ( boost::numeric::ublas::trans ( W ), mtemp1, testrc, true );
 
-    boost::numeric::ublas::axpy_prod ( resolution, cov, mtemp1, true );
 
-    boost::numeric::ublas::axpy_prod ( mtemp1, z, spectra, true );
+    vec_dense unnorm ( dim );
+    boost::numeric::ublas::axpy_prod ( testrc, z, unnorm, true );
 
-    for ( size_t i = 0; i < dim; ++i ) {
-      errors[i] = 1.0 / norm[i];
+
+    std::string outdata = "testdata/test_medium_debug_norm.out";
+
+    std::fstream out;
+    out.open ( outdata.c_str(), std::ios::out );
+  
+    for ( i = 0; i < dim; ++i ) {
+      out << i << " " << rc[i] << " " << unnorm[i] << std::endl;
+    }
+  
+    out.close();
+
+    for ( i = 0; i < dim; ++i ) {
+      for ( j = 0; j < dim; ++j ) {
+        testrc ( i, j ) /= testnorm[i];
+      }
     }
 
+    boost::numeric::ublas::axpy_prod ( testrc, z, testspectra, true );
+    */
+
+    /*
+    for ( size_t i = 0; i < dim; ++i ) {
+      norm[i] = 1.0 / norm[i];
+      spectra[i] = rc[i] * norm[i];
+      errors[i] = norm[i];
+    }
+
+    for ( k = 0; k < ntest; ++k ) {
+      for ( j = 0; j < dim; ++j ) {
+        ( outtestspec[k] )[j] *= norm[j];
+      }
+    }
+    */
 
     /*
     // IETL Lanczos specific code
 
-    int idim = (int)dim;
-    vs_dense vs ( idim );
-    svd_gen gen;
-
-    ietl::lanczos < M, vs_dense > lanczos ( inout, vs );
-
-    // create iterator
-
-    int max_iter = 3 * dim;
-    ietl::fixed_lanczos_iteration < double > iter ( max_iter );
-
-    // compute eigenvalues
-
-    std::vector < double > eigen;
-    std::vector < double > err;
-    std::vector < int > multiplicity;  
     
-    lanczos.calculate_eigenvalues ( iter, gen );
 
-    eigen = lanczos.eigenvalues();
-    err = lanczos.errors();
-    multiplicity = lanczos.multiplicities();
-
-    // determine the truncation threshold
-
-    double largest = eigen[ eigen.size() - 1 ];
-    double thresh = largest * std::numeric_limits < double > :: epsilon();
-
-    // set iterators from largest eigenvalue to smallest
-
-    std::vector < double > :: iterator firsteigen = eigen.begin();
-    std::vector < double > :: iterator lasteigen = eigen.end();
-
-    size_t nonsing = dim;
-
-    while ( (*firsteigen) < thresh ) {
-      ++firsteigen;
-      --nonsing;
-    }
-
-    // For now, get ALL eigenvectors
-
-    ietl::Info < double > info; // (m1, m2, ma, eigenvalue, residual, status).
-
-    std::vector < vec_dense > eigenvecs;
-    
-    lanczos.eigenvectors ( firsteigen, lasteigen, std::back_inserter ( eigenvecs ), info, gen ); 
+     
     
     std::cout << "Printing eigen Vectors:" << std::endl << std::endl; 
     
@@ -238,102 +433,6 @@ namespace harp {
     }
 
     */
-
-    return;
-  }
-
-
-  template < typename M, typename E >
-  void svd ( M & mat, vec_dense & eigenvals, E & W ) {
-
-    int N = eigenvals.size();
-
-    std::cerr << "SVD using matrix size " << N << std::endl;
-
-    vs_dense vec ( eigenvals.size() );
-    svd_gen gen;
-
-    std::cerr << "constructing lanczos" << std::endl;
-
-    ietl::lanczos < M, vs_dense > lanczos ( mat, vec );
-
-    // Creation of an iteration object: 
-       
-    int max_iter = 2 * N;
-    
-    std::cerr << "fixed iterations" << std::endl;
-
-    std::vector < double > eigen;
-    std::vector < double > err;
-    std::vector < int > multiplicity;
-    ietl::fixed_lanczos_iteration < double > iter ( max_iter );
-    
-    lanczos.calculate_eigenvalues ( iter, gen );
-    eigen = lanczos.eigenvalues();
-    err = lanczos.errors();
-    multiplicity = lanczos.multiplicities();
-    
-    // Printing eigenvalues with error & multiplicities:  
-    std::cout << "#        eigenvalue            error         multiplicity\n";
-    std::cout.precision(10);
-    
-    for ( int i = 0; i < eigen.size(); ++i ) {
-      eigenvals[i] = eigen[i];
-      std::cout << i << "\t" << eigen[i] << "\t" << err[i] << "\t" << multiplicity[i] << "\n";
-    }
-
-    double largest = eigenvals[ eigenvals.size() - 1 ];
-    double thresh = largest * std::numeric_limits < double > :: epsilon();
-
-    std::vector < double > :: iterator start = eigen.begin();
-    std::vector < double > :: iterator end = eigen.end();
-
-    size_t nvec = eigenvals.size();
-
-    /*
-    while ( (*start) < thresh ) {
-      ++start;
-      --nvec;
-    }
-    */
-
-    ietl::Info < double > info; // (m1, m2, ma, eigenvalue, residual, status).
-
-    std::vector < vec_dense > eigenvecs;
-    
-    lanczos.eigenvectors ( start, end, std::back_inserter ( eigenvecs ), info, gen ); 
-    
-    std::cout << "Printing eigen Vectors:" << std::endl << std::endl;
-    
-    /*
-    std::cout << " Information about the eigen vectors computations:\n\n";
-    for ( int i = 0; i < info.size(); i++ ) {
-      std::cout << " m1(" << i+1 << "): " << info.m1(i) << ", m2(" << i+1 << "): "
-                << info.m2(i) << ", ma(" << i+1 << "): " << info.ma(i) << " eigenvalue("
-                << i+1 << "): " << info.eigenvalue(i) << " residual(" << i+1 << "): "
-                << info.residual(i) << " error_info(" << i+1 << "): "
-                << info.error_info(i) << std::endl;
-    }
-
-    std::vector < double > :: iterator it;
-
-    int cur = 0;
-    for ( it = start; it != end; ++it ) {
-
-      std::cout << (*it) << ":  " << (eigenvecs[cur])[0] << " " << (eigenvecs[cur])[1] << " " << (eigenvecs[cur])[2] << " ..." << std::endl;
-      ++cur;
-    }
-
-    */
-
-    int i;
-    int j;
-    for ( int j = 0; j < N; ++j ) {
-      for ( i = 0; i < N; ++i ) {
-        W ( i, j ) = (eigenvecs[j])[i];
-      }
-    }
-
 
     return;
   }
