@@ -6,50 +6,29 @@
 using namespace std;
 using namespace harp;
 
-static const char * format_toy = "toy";
+static const char * format_sandbox = "sandbox";
 
-static const char * toy_spec_key_path = "path";
-static const char * toy_spec_key_hdu = "hdu";
-static const char * toy_spec_key_nspec = "nspec";
-static const char * toy_spec_key_specsize = "specsize";
+static const char * sandbox_spec_key_path = "path";
+static const char * sandbox_spec_key_hdu = "hdu";
+static const char * sandbox_spec_key_nspec = "nspec";
+static const char * sandbox_spec_key_specsize = "specsize";
 
 
-harp::spec_toy::spec_toy ( std::map < std::string, std::string > const & params ) : spec ( format_toy, params ) {
+harp::spec_sandbox::spec_sandbox ( boost::ptree const & params ) : spec ( format_sandbox, params ) {
   
-  map < std::string, std::string > :: const_iterator val;
-  
-  val = params.find( toy_spec_key_hdu );
-  if ( val == params.end() ) {
-    hdu_ = 1;
+  hdu_ = props.get ( sandbox_spec_key_hdu, 1 );
+
+  path_ = props.get ( sandbox_spec_key_path, "" );
+
+  if ( path_ == "" ) {
+
+    // no path specified- must specify spectra size
+
+    nspec_ = props.get < size_t > ( sandbox_spec_key_nspec );
+
+    specsize_ = props.get < size_t > ( sandbox_spec_key_specsize );
+
   } else {
-    hdu_ = atoi ( val->second.c_str() );
-  }
-    
-  val = params.find( toy_spec_key_path );
-  
-  if ( val == params.end() ) {
-    
-    // no path specified- must specify number of spectra
-    
-    val = params.find( toy_spec_key_nspec );
-    if ( val == params.end() ) {
-      MOAT_THROW( "toy_spec: must specify number of spectra if no path is given" );
-    }
-    
-    nspec_ = (size_t) atoll ( val->second.c_str() );
-    
-    // no path specified- must specify spectrum size
-    
-    val = params.find( toy_spec_key_specsize );
-    if ( val == params.end() ) {
-      MOAT_THROW( "toy_spec: must specify spectrum size if no path is given" );
-    }
-    
-    specsize_ = (size_t) atoll ( val->second.c_str() );
-    
-  } else {
-    
-    path_ = val->second;
     
     // read size from the FITS header
     
@@ -75,14 +54,34 @@ harp::spec_toy::spec_toy ( std::map < std::string, std::string > const & params 
 }
 
 
-harp::spec_toy::~spec_toy ( ) {
+harp::spec_sandbox::~spec_sandbox ( ) {
   
   cleanup();
   
 }
 
 
-void harp::spec_toy::read ( vec_dense & data ) {
+boost::ptree harp::spec_sandbox::serialize ( ) {
+  boost::ptree ret;
+
+  ret.put ( "format", spec::format() );
+
+  if ( hdu_ != 1 ) {
+    ret.put ( sandbox_spec_key_hdu, hdu_ );
+  }
+
+  if ( path_ == "" ) {
+    ret.put ( sandbox_spec_key_nspec, nspec_ );
+    ret.put ( sandbox_spec_key_specsize, specsize_ );
+  } else {
+    ret.put ( sandbox_spec_key_path, path_ );
+  }
+
+  return ret;
+}
+
+
+void harp::spec_sandbox::read ( vec_dense & data ) {
   
   fitsfile *fp;
 
@@ -98,7 +97,7 @@ void harp::spec_toy::read ( vec_dense & data ) {
 }
 
 
-void harp::spec_toy::write ( string const & path, vec_dense & data ) {
+void harp::spec_sandbox::write ( string const & path, vec_dense & data ) {
   
   fitsfile *fp;
 
@@ -123,7 +122,7 @@ void harp::spec_toy::write ( string const & path, vec_dense & data ) {
 }
 
 
-void harp::spec_toy::read_spectrum ( size_t spectrum, vec_dense & data ) {
+void harp::spec_sandbox::read_spectrum ( size_t spectrum, vec_dense & data ) {
   
   fitsfile *fp;
 
@@ -139,7 +138,7 @@ void harp::spec_toy::read_spectrum ( size_t spectrum, vec_dense & data ) {
 }
 
 
-void harp::spec_toy::write_spectrum ( size_t spectrum, string const & path, vec_dense & data ) {
+void harp::spec_sandbox::write_spectrum ( size_t spectrum, string const & path, vec_dense & data ) {
   
   fitsfile *fp;
 

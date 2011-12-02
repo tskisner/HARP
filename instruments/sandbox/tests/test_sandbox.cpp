@@ -1,5 +1,4 @@
 #include <iostream>
-
 #include <fstream>
 
 #include <harp_test.hpp>
@@ -51,7 +50,7 @@ void lapack_svd ( int dim, double * mat, double * eigen ) {
 
 
 
-void toy_profile ( string const & name, string const & desc, double & totaltime, double & opencltime, map < string, long long int > & papi ) {
+void sandbox_profile ( string const & name, string const & desc, double & totaltime, double & opencltime, map < string, long long int > & papi ) {
   
   cerr << "Profiling:   " << desc << ":  " << totaltime << " seconds" << endl;
   
@@ -59,20 +58,20 @@ void toy_profile ( string const & name, string const & desc, double & totaltime,
 }
 
 
-void harp::test_toy ( string const & datadir ) {
+void harp::test_sandbox ( string const & datadir ) {
   
-  cerr << "Testing toy image construction..." << endl;
+  cerr << "Testing sandbox image construction..." << endl;
   
   std::map < std::string, std::string > params;
   params[ "path" ] = datadir + "/test_medium_input_image.fits";
   params[ "signal" ] = "1";
   params[ "noise" ] = "2";
-  image_p testimg ( image::create ( string("toy"), params ) );
+  image_p testimg ( image::create ( string("sandbox"), params ) );
   
   cerr << "  (PASSED)" << endl;
   
   
-  cerr << "Testing toy image read..." << endl;
+  cerr << "Testing sandbox image read..." << endl;
   
   mat_denserow pix ( testimg->rows(), testimg->cols() );
   mat_denserow noise ( testimg->rows(), testimg->cols() );
@@ -83,17 +82,17 @@ void harp::test_toy ( string const & datadir ) {
   cerr << "  (PASSED)" << endl;
   
   
-  cerr << "Testing toy spectrum construction..." << endl;
+  cerr << "Testing sandbox spectrum construction..." << endl;
   
   params.clear();
   params[ "path" ] = datadir + "/test_medium_input_spectra.fits";
   params[ "hdu" ] = "1";
-  spec_p testspec ( spec::create ( string("toy"), params ) );
+  spec_p testspec ( spec::create ( string("sandbox"), params ) );
   
   cerr << "  (PASSED)" << endl;
   
   
-  cerr << "Testing toy spectrum read..." << endl;
+  cerr << "Testing sandbox spectrum read..." << endl;
   
   vec_dense spec ( testspec->spectrum_size( 3 ) );
   
@@ -106,12 +105,12 @@ void harp::test_toy ( string const & datadir ) {
   cerr << "  (PASSED)" << endl;
   
   
-  cerr << "Testing toy PSF construction..." << endl;
+  cerr << "Testing sandbox PSF construction..." << endl;
   
   params.clear();
   params[ "path" ] = datadir + "/test_medium_psf.fits";
   params[ "corr" ] = "10";
-  psf_p testpsf ( psf::create ( string("toy"), params ) );
+  psf_p testpsf ( psf::create ( string("sandbox"), params ) );
   
   cerr << "  found " << testpsf->nspec() << " spectra" << endl;
   
@@ -120,7 +119,7 @@ void harp::test_toy ( string const & datadir ) {
   cerr << "  (PASSED)" << endl;
   
   
-  cerr << "Testing toy PSF lambda read..." << endl;
+  cerr << "Testing sandbox PSF lambda read..." << endl;
   
   vec_dense lambda;
   
@@ -131,24 +130,24 @@ void harp::test_toy ( string const & datadir ) {
   cerr << "  (PASSED)" << endl;
   
   
-  cerr << "Testing toy PSF calculation of sparse projection matrix..." << endl;
+  cerr << "Testing sandbox PSF calculation of sparse projection matrix..." << endl;
   
   moat::profile * prof = moat::profile::get ( );
 
-  prof->reg ( "PCG_PSF", "compute projection matrix" );
-  prof->reg ( "PCG_REMAP", "remap projection matrix" );
+  prof->reg ( "SANDBOX_PSF", "compute projection matrix" );
+  prof->reg ( "SANDBOX_REMAP", "remap projection matrix" );
   
   size_t nbins = testpsf->nspec() * testpsf->specsize(0);
   size_t npix = testimg->rows() * testimg->cols();
   
   mat_compcol projmat ( npix, nbins );
 
-  testpsf->projection ( string("PCG_PSF"), string("PCG_REMAP"), 0, testpsf->nspec() - 1, 0, testpsf->specsize(0) - 1, (size_t)0, testimg->cols() - 1, (size_t)0, testimg->rows() - 1, projmat );
+  testpsf->projection ( string("SANDBOX_PSF"), string("SANDBOX_REMAP"), 0, testpsf->nspec() - 1, 0, testpsf->specsize(0) - 1, (size_t)0, testimg->cols() - 1, (size_t)0, testimg->rows() - 1, projmat );
   
   cerr << "  (PASSED)" << endl;
 
   
-  cerr << "Testing toy solve..." << endl << endl;
+  cerr << "Testing sandbox solve..." << endl << endl;
   
   vec_dense inspec ( nbins );
   vec_dense outspec ( nbins );
@@ -200,7 +199,7 @@ void harp::test_toy ( string const & datadir ) {
   o.str("");
   o << testpsf->specsize(0);
   params[ "specsize" ] = o.str();
-  spec_p specinput ( spec::create ( string("toy"), params ) );
+  spec_p specinput ( spec::create ( string("sandbox"), params ) );
 
   specinput->write ( datadir + "/test_input_spectra.fits.out", inspec );
 
@@ -251,7 +250,7 @@ void harp::test_toy ( string const & datadir ) {
   o << testimg->cols();
   params[ "cols" ] = o.str();
   
-  image_p outimage ( image::create ( string("toy"), params ) );
+  image_p outimage ( image::create ( string("sandbox"), params ) );
   
   outimage->write ( datadir + "/test_input_image.fits.out", measured );
   outimage->write_noise ( datadir + "/test_input_image.fits.out", imgnoise );
@@ -328,6 +327,7 @@ void harp::test_toy ( string const & datadir ) {
   
   // extraction
   
+  /*
   vec_dense errors ( nbins );
   vector < vec_dense > vrinspec ( 1 );
   vector < vec_dense > vinspec ( 1 );
@@ -352,6 +352,7 @@ void harp::test_toy ( string const & datadir ) {
   }
   
   out.close();
+  */
 
 
   cerr << "  (PASSED)" << endl;

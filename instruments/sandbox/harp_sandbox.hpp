@@ -81,7 +81,7 @@ namespace harp {
       boost::ptree serialize ( );
       
       size_t nspec ( ) { return nspec_; }
-      size_t specsize ( size_t specnum ) { return nreduced_; }
+      size_t specsize ( size_t specnum ) { return specsize_; }
       void lambda ( size_t specnum, vec_dense & data );
       void extent ( size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t & firstX, size_t & firstY, size_t & lastX, size_t & lastY );
       void projection ( std::string profcalc, std::string profremap, size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t firstX, size_t lastX, size_t firstY, size_t lastY, mat_compcol & data );
@@ -98,10 +98,9 @@ namespace harp {
       void gauss_sample_alt ( vec_dense & vals, vec_dense & xrel, vec_dense & yrel, double amp, double maj, double min, double ang );
     
       std::string path_;
-      size_t binning_;
       size_t nspec_;
-      size_t nbins_;
-      size_t nreduced_;
+      size_t specsize_;
+      size_t nglobal_;
       size_t pixcorr_;
       std::map < std::string, int > hdus_;
       std::map < size_t, psf_sandbox_resp > resp_;

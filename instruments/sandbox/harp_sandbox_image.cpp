@@ -16,46 +16,22 @@ static const char * sandbox_image_key_cols = "cols";
 
 
 harp::image_sandbox::image_sandbox ( boost::ptree const & props ) : image ( format_sandbox, props ) {
-  
-  map < std::string, std::string > :: const_iterator val;
-  
-  val = params.find( sandbox_image_key_signal );
-  if ( val == params.end() ) {
-    sighdu_ = 1;
-  } else {
-    sighdu_ = atoi ( val->second.c_str() );
-  }
-  
-  val = params.find( sandbox_image_key_noise );
-  if ( val == params.end() ) {
-    nsehdu_ = 2;
-  } else {
-    nsehdu_ = atoi ( val->second.c_str() );
-  }
-  
-  val = params.find( sandbox_image_key_path );
-  
-  if ( val == params.end() ) {
-    
+
+  sighdu_ = props.get ( sandbox_image_key_signal, 1 );
+
+  nsehdu_ = props.get ( sandbox_image_key_noise, 2 );
+
+  path_ = props.get ( sandbox_image_key_path, "" );
+
+  if ( path_ == "" ) {
+
     // no path specified- must specify rows / cols
-    
-    val = params.find( sandbox_image_key_rows );
-    if ( val == params.end() ) {
-      MOAT_THROW( "sandbox_image: must specify rows if no path is given" );
-    }
-    
-    rows_ = (size_t) atoll ( val->second.c_str() );
-    
-    val = params.find( sandbox_image_key_cols );
-    if ( val == params.end() ) {
-      MOAT_THROW( "sandbox_image: must specify cols if no path is given" );
-    }
-    
-    cols_ = (size_t) atoll ( val->second.c_str() );
-    
+
+    rows_ = props.get < size_t > ( sandbox_image_key_rows );
+
+    cols_ = props.get < size_t > ( sandbox_image_key_cols );
+
   } else {
-    
-    path_ = val->second;
     
     // read rows / cols from the FITS header
     
@@ -78,6 +54,30 @@ harp::image_sandbox::~image_sandbox ( ) {
   
   cleanup();
   
+}
+
+
+boost::ptree harp::image_sandbox::serialize ( ) {
+  boost::ptree ret;
+
+  ret.put ( "format", image::format() );
+
+  if ( sighdu_ != 1 ) {
+    ret.put ( sandbox_image_key_signal, sighdu_ );
+  }
+
+  if ( nsehdu_ != 2 ) {
+    ret.put ( sandbox_image_key_noise, nsehdu_ );
+  }
+
+  if ( path_ == "" ) {
+    ret.put ( sandbox_image_key_rows, rows_ );
+    ret.put ( sandbox_image_key_cols, cols_ );
+  } else {
+    ret.put ( sandbox_image_key_path, path_ );
+  }
+
+  return ret;
 }
 
 

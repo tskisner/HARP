@@ -6,143 +6,116 @@
 using namespace std;
 using namespace harp;
 
-static const char * format_toy = "toy";
+static const char * format_sandbox = "sandbox";
 
-static const char * toy_psf_key_path = "path";
+static const char * sandbox_psf_key_path = "path";
+static const char * sandbox_psf_key_corr = "corr";
 
-static const char * toy_psf_key_name = "PSFPARAM";
+static const char * sandbox_psf_key_name = "PSFPARAM";
 
-static const char * toy_psf_key_binning = "binning";
-
-static const char * toy_psf_key_res = "res";
-
-static const char * toy_psf_hdu_x = "X";
-static const char * toy_psf_hdu_y = "Y";
-static const char * toy_psf_hdu_lambda = "Wavelength";
-static const char * toy_psf_hdu_amp = "Amplitude";
-static const char * toy_psf_hdu_maj = "MajorAxis";
-static const char * toy_psf_hdu_min = "MinorAxis";
-static const char * toy_psf_hdu_ang = "Angle";
-
-static const char * toy_psf_key_corr = "corr";
+static const char * sandbox_psf_hdu_x = "X";
+static const char * sandbox_psf_hdu_y = "Y";
+static const char * sandbox_psf_hdu_lambda = "Wavelength";
+static const char * sandbox_psf_hdu_amp = "Amplitude";
+static const char * sandbox_psf_hdu_maj = "MajorAxis";
+static const char * sandbox_psf_hdu_min = "MinorAxis";
+static const char * sandbox_psf_hdu_ang = "Angle";
 
 
-harp::psf_toy::psf_toy ( std::map < std::string, std::string > const & params ) : psf ( format_toy, params ) {
+
+
+harp::psf_sandbox::psf_sandbox ( boost::ptree const & props ) : psf ( format_sandbox, props ) {
   
-  map < std::string, std::string > :: const_iterator val;
-  
-  val = params.find( toy_psf_key_path );
-  
-  if ( val == params.end() ) {
-    MOAT_THROW( "toy_psf: must specify path to PSF file" );
-  }
-    
-  path_ = val->second;
-  
-  val = params.find( toy_psf_key_corr );
-  
-  if ( val == params.end() ) {
-    MOAT_THROW( "toy_psf: must specify pixel space correlation length" );
-  }
-  
-  pixcorr_ = atoi ( val->second.c_str() );
-  
-  
-  binning_ = 1;
-  
-  val = params.find( toy_psf_key_binning );
-  
-  if ( val != params.end() ) {
-    binning_ = atoi ( val->second.c_str() );
-  }
-  
+  path_ = props.get < string > ( sandbox_psf_key_path );
+
+  pixcorr_ = props.get < int > ( sandbox_psf_key_corr );
+
   
   fitsfile *fp;
 
-  //cerr << "calling open on " << path_ << endl;
-
   fits::open_read ( fp, path_ );
 
-  //cerr << "calling img_seek " << endl;
-  
-  int hdu = fits::img_seek ( fp, toy_psf_key_name, toy_psf_hdu_x );
-  hdus_[ toy_psf_hdu_x ] = hdu;
-  fits::img_dims ( fp, nspec_, nbins_ );
+  int hdu = fits::img_seek ( fp, sandbox_psf_key_name, sandbox_psf_hdu_x );
+  hdus_[ sandbox_psf_hdu_x ] = hdu;
+  fits::img_dims ( fp, nspec_, specsize_ );
 
-  //cerr << "seek to " << toy_psf_hdu_x << endl;
-  
   size_t rows, cols;
   
-  hdu = fits::img_seek ( fp, toy_psf_key_name, toy_psf_hdu_y );
-  hdus_[ toy_psf_hdu_y ] = hdu;
+  hdu = fits::img_seek ( fp, sandbox_psf_key_name, sandbox_psf_hdu_y );
+  hdus_[ sandbox_psf_hdu_y ] = hdu;
   fits::img_dims ( fp, rows, cols );
-  if ( ( rows != nspec_ ) || ( cols != nbins_ ) ) {
-    MOAT_THROW( "toy_psf: PSF file must have identical dimensions for all HDUs" );
+  if ( ( rows != nspec_ ) || ( cols != specsize_ ) ) {
+    MOAT_THROW( "sandbox_psf: PSF file must have identical dimensions for all HDUs" );
   }
 
-  //cerr << "seek to " << toy_psf_hdu_y << endl;
-  
-  hdu = fits::img_seek ( fp, toy_psf_key_name, toy_psf_hdu_lambda );
-  hdus_[ toy_psf_hdu_lambda ] = hdu;
+  hdu = fits::img_seek ( fp, sandbox_psf_key_name, sandbox_psf_hdu_lambda );
+  hdus_[ sandbox_psf_hdu_lambda ] = hdu;
   fits::img_dims ( fp, rows, cols );
-  if ( ( rows != nspec_ ) || ( cols != nbins_ ) ) {
-    MOAT_THROW( "toy_psf: PSF file must have identical dimensions for all HDUs" );
+  if ( ( rows != nspec_ ) || ( cols != specsize_ ) ) {
+    MOAT_THROW( "sandbox_psf: PSF file must have identical dimensions for all HDUs" );
   }
 
-  //cerr << "seek to " << toy_psf_hdu_lambda << endl;
-  
-  hdu = fits::img_seek ( fp, toy_psf_key_name, toy_psf_hdu_amp );
-  hdus_[ toy_psf_hdu_amp ] = hdu;
+  hdu = fits::img_seek ( fp, sandbox_psf_key_name, sandbox_psf_hdu_amp );
+  hdus_[ sandbox_psf_hdu_amp ] = hdu;
   fits::img_dims ( fp, rows, cols );
-  if ( ( rows != nspec_ ) || ( cols != nbins_ ) ) {
-    MOAT_THROW( "toy_psf: PSF file must have identical dimensions for all HDUs" );
+  if ( ( rows != nspec_ ) || ( cols != specsize_ ) ) {
+    MOAT_THROW( "sandbox_psf: PSF file must have identical dimensions for all HDUs" );
   }
   
-  hdu = fits::img_seek ( fp, toy_psf_key_name, toy_psf_hdu_maj );
-  hdus_[ toy_psf_hdu_maj ] = hdu;
+  hdu = fits::img_seek ( fp, sandbox_psf_key_name, sandbox_psf_hdu_maj );
+  hdus_[ sandbox_psf_hdu_maj ] = hdu;
   fits::img_dims ( fp, rows, cols );
-  if ( ( rows != nspec_ ) || ( cols != nbins_ ) ) {
-    MOAT_THROW( "toy_psf: PSF file must have identical dimensions for all HDUs" );
+  if ( ( rows != nspec_ ) || ( cols != specsize_ ) ) {
+    MOAT_THROW( "sandbox_psf: PSF file must have identical dimensions for all HDUs" );
   }
   
-  hdu = fits::img_seek ( fp, toy_psf_key_name, toy_psf_hdu_min );
-  hdus_[ toy_psf_hdu_min ] = hdu;
+  hdu = fits::img_seek ( fp, sandbox_psf_key_name, sandbox_psf_hdu_min );
+  hdus_[ sandbox_psf_hdu_min ] = hdu;
   fits::img_dims ( fp, rows, cols );
-  if ( ( rows != nspec_ ) || ( cols != nbins_ ) ) {
-    MOAT_THROW( "toy_psf: PSF file must have identical dimensions for all HDUs" );
+  if ( ( rows != nspec_ ) || ( cols != specsize_ ) ) {
+    MOAT_THROW( "sandbox_psf: PSF file must have identical dimensions for all HDUs" );
   }
   
-  hdu = fits::img_seek ( fp, toy_psf_key_name, toy_psf_hdu_ang );
-  hdus_[ toy_psf_hdu_ang ] = hdu;
+  hdu = fits::img_seek ( fp, sandbox_psf_key_name, sandbox_psf_hdu_ang );
+  hdus_[ sandbox_psf_hdu_ang ] = hdu;
   fits::img_dims ( fp, rows, cols );
-  if ( ( rows != nspec_ ) || ( cols != nbins_ ) ) {
-    MOAT_THROW( "toy_psf: PSF file must have identical dimensions for all HDUs" );
+  if ( ( rows != nspec_ ) || ( cols != specsize_ ) ) {
+    MOAT_THROW( "sandbox_psf: PSF file must have identical dimensions for all HDUs" );
   }
   
   fits::close ( fp );
-  
-  if ( nbins_ % binning_ != 0 ) {
-    MOAT_THROW( "toy_psf: PSF binning must divide evenly into high resolution bins" );
-  }
-  
-  nreduced_ = (size_t)( nbins_ / binning_ );
+
+  nglobal_ = nspec_ * specsize_;
   
 }
 
 
-harp::psf_toy::~psf_toy ( ) {
+harp::psf_sandbox::~psf_sandbox ( ) {
   
   cleanup();
   
 }
 
 
-void harp::psf_toy::cache_spec ( size_t first, size_t last ) {
+boost::ptree harp::psf_sandbox::serialize ( ) {
+  boost::ptree ret;
+
+  ret.put ( "format", psf::format() );
+
+  ret.put ( sandbox_psf_key_path, path_ );
+
+  ret.put ( sandbox_psf_key_corr, pixcorr_ );
+
+  return ret;
+}
+
+
+void harp::psf_sandbox::cache_spec ( size_t first, size_t last ) {
   
   fitsfile *fp = NULL;
 
   for ( size_t spec = first; spec <= last; ++spec ) {
-    map < size_t, psf_toy_resp > :: iterator check;
+    map < size_t, psf_sandbox_resp > :: iterator check;
     
     check = resp_.find ( spec );
 
@@ -153,45 +126,43 @@ void harp::psf_toy::cache_spec ( size_t first, size_t last ) {
         fits::open_read ( fp, path_ );
       }
       
-      psf_toy_resp temp;
+      psf_sandbox_resp temp;
       resp_[ spec ] = temp;
       
-      //cerr << "cache_spec resizing vectors to " << nbins_ << " elements" << endl;
+      //cerr << "cache_spec resizing vectors to " << specsize_ << " elements" << endl;
       
-      resp_[ spec ].x.resize ( nbins_ );
-      resp_[ spec ].y.resize ( nbins_ );
-      resp_[ spec ].lambda.resize ( nbins_ );
-      resp_[ spec ].amp.resize ( nbins_ );
-      resp_[ spec ].maj.resize ( nbins_ );
-      resp_[ spec ].min.resize ( nbins_ );
-      resp_[ spec ].ang.resize ( nbins_ );
+      resp_[ spec ].x.resize ( specsize_ );
+      resp_[ spec ].y.resize ( specsize_ );
+      resp_[ spec ].lambda.resize ( specsize_ );
+      resp_[ spec ].amp.resize ( specsize_ );
+      resp_[ spec ].maj.resize ( specsize_ );
+      resp_[ spec ].min.resize ( specsize_ );
+      resp_[ spec ].ang.resize ( specsize_ );
       
-      fits::img_seek ( fp, hdus_[ toy_psf_hdu_x ] );      
+      fits::img_seek ( fp, hdus_[ sandbox_psf_hdu_x ] );      
       fits::img_read_row ( fp, spec, resp_[ spec ].x );
       
-      fits::img_seek ( fp, hdus_[ toy_psf_hdu_y ] );      
+      fits::img_seek ( fp, hdus_[ sandbox_psf_hdu_y ] );      
       fits::img_read_row ( fp, spec, resp_[ spec ].y );
       
-      fits::img_seek ( fp, hdus_[ toy_psf_hdu_lambda ] );      
+      fits::img_seek ( fp, hdus_[ sandbox_psf_hdu_lambda ] );      
       fits::img_read_row ( fp, spec, resp_[ spec ].lambda );
       
-      fits::img_seek ( fp, hdus_[ toy_psf_hdu_amp ] );      
+      fits::img_seek ( fp, hdus_[ sandbox_psf_hdu_amp ] );      
       fits::img_read_row ( fp, spec, resp_[ spec ].amp );
       
-      fits::img_seek ( fp, hdus_[ toy_psf_hdu_maj ] );      
+      fits::img_seek ( fp, hdus_[ sandbox_psf_hdu_maj ] );      
       fits::img_read_row ( fp, spec, resp_[ spec ].maj );
       
-      fits::img_seek ( fp, hdus_[ toy_psf_hdu_min ] );      
+      fits::img_seek ( fp, hdus_[ sandbox_psf_hdu_min ] );      
       fits::img_read_row ( fp, spec, resp_[ spec ].min );
       
-      fits::img_seek ( fp, hdus_[ toy_psf_hdu_ang ] );      
+      fits::img_seek ( fp, hdus_[ sandbox_psf_hdu_ang ] );      
       fits::img_read_row ( fp, spec, resp_[ spec ].ang );
       
-      
-      //for ( size_t i = 0; i < nbins_; ++i ) {
+      //for ( size_t i = 0; i < specsize_; ++i ) {
         //cout << "spec[" << spec << "](" << i << ") = " << resp_[ spec ].x[i] << " " << resp_[ spec ].y[i] << " " << resp_[ spec ].lambda[i] << " " << resp_[ spec ].amp[i] << " " << resp_[ spec ].maj[i] << " " << resp_[ spec ].min[i] << " " << resp_[ spec ].ang[i] << endl;
       //}
-      
       
     }
   }
@@ -204,30 +175,23 @@ void harp::psf_toy::cache_spec ( size_t first, size_t last ) {
 }
 
 
-void harp::psf_toy::lambda ( size_t specnum, vec_dense & data ) {
+void harp::psf_sandbox::lambda ( size_t specnum, vec_dense & data ) {
 
   cache_spec ( specnum, specnum );
   
-  data.resize ( nreduced_ );
+  data.resize ( specsize_ );
   
-  for ( size_t i = 0; i < nreduced_; ++i ) {
-    data[ i ] = 0.0;
-    for ( size_t j = 0; j < binning_; ++j ) {
-      data[ i ] += resp_[ specnum ].lambda[ i * binning_ + j ];
-    }
-    data[ i ] /= (double)binning_;
+  for ( size_t i = 0; i < specsize_; ++i ) {
+    data[ i ] = resp_[ specnum ].lambda[ i ];
   }
   
   return;
 }
 
 
-void harp::psf_toy::extent ( size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t & firstX, size_t & firstY, size_t & lastX, size_t & lastY ) {
+void harp::psf_sandbox::extent ( size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t & firstX, size_t & firstY, size_t & lastX, size_t & lastY ) {
   
   cache_spec ( firstspec, lastspec );
-  
-  size_t firstrawbin = firstbin * binning_;
-  size_t lastrawbin = lastbin * binning_ + ( binning_ - 1 );
   
   double minX = 1000000000.0;
   double minY = 1000000000.0;
@@ -235,7 +199,7 @@ void harp::psf_toy::extent ( size_t firstspec, size_t lastspec, size_t firstbin,
   double maxY = 0.0;
   
   for ( size_t curspec = firstspec; curspec <= lastspec; ++curspec ) {
-    for ( size_t curbin = firstrawbin; curbin <= lastrawbin; ++curbin ) {
+    for ( size_t curbin = firstbin; curbin <= lastbin; ++curbin ) {
       if ( resp_[ curspec ].x[ curbin ] < minX ) {
         minX = resp_[ curspec ].x[ curbin ];
       }
@@ -270,7 +234,7 @@ void harp::psf_toy::extent ( size_t firstspec, size_t lastspec, size_t firstbin,
 }
 
 
-void harp::psf_toy::gauss_sample ( vec_dense & vals, vec_dense & xrel, vec_dense & yrel, double amp, double maj, double min, double ang ) {
+void harp::psf_sandbox::gauss_sample ( vec_dense & vals, vec_dense & xrel, vec_dense & yrel, double amp, double maj, double min, double ang ) {
   
   amp /= maj * min * moat::TWOPI;
   
@@ -312,7 +276,7 @@ void harp::psf_toy::gauss_sample ( vec_dense & vals, vec_dense & xrel, vec_dense
 }
 
 
-void harp::psf_toy::gauss_sample_alt ( vec_dense & vals, vec_dense & xrel, vec_dense & yrel, double amp, double maj, double min, double ang ) {
+void harp::psf_sandbox::gauss_sample_alt ( vec_dense & vals, vec_dense & xrel, vec_dense & yrel, double amp, double maj, double min, double ang ) {
   
   amp /= maj * min * moat::TWOPI;
   
@@ -355,7 +319,7 @@ void harp::psf_toy::gauss_sample_alt ( vec_dense & vals, vec_dense & xrel, vec_d
 }
 
 
-size_t harp::psf_toy::valid_range ( size_t const & firstX, size_t const & lastX, size_t const & firstY, size_t const & lastY, size_t & startX, size_t & stopX, size_t & startY, size_t & stopY, size_t & spec, size_t & bin ) {
+size_t harp::psf_sandbox::valid_range ( size_t const & firstX, size_t const & lastX, size_t const & firstY, size_t const & lastY, size_t & startX, size_t & stopX, size_t & startY, size_t & stopY, size_t & spec, size_t & bin ) {
 
   bool valid = true;
   
@@ -394,18 +358,18 @@ size_t harp::psf_toy::valid_range ( size_t const & firstX, size_t const & lastX,
 }
 
 
-void harp::psf_toy::projection ( string profcalc, string profremap, size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t firstX, size_t lastX, size_t firstY, size_t lastY, mat_compcol & data ) {
+void harp::psf_sandbox::projection ( string profcalc, string profremap, size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t firstX, size_t lastX, size_t firstY, size_t lastY, mat_compcol & data ) {
   
   size_t nx = lastX - firstX + 1;
   size_t ny = lastY - firstY + 1;
   
-  size_t nbins = data.size2();
+  size_t specsize = data.size2();
   
   size_t npix = data.size1();
   
-  if ( ( npix != nx * ny ) || ( nbins != ( lastspec - firstspec + 1 ) * ( lastbin - firstbin + 1 ) ) ) {
+  if ( ( npix != nx * ny ) || ( specsize != ( lastspec - firstspec + 1 ) * ( lastbin - firstbin + 1 ) ) ) {
     std::ostringstream o;
-    o << "toy_psf: PSF projection ranges must match dimensions of projection data (" << npix << " x " << nbins << ")";
+    o << "sandbox_psf: PSF projection ranges must match dimensions of projection data (" << npix << " x " << specsize << ")";
     MOAT_THROW( o.str().c_str() );
   }
 
@@ -416,13 +380,12 @@ void harp::psf_toy::projection ( string profcalc, string profremap, size_t first
   
   cache_spec ( firstspec, lastspec );
   
-  vector < size_t > binlist ( nbins );
+  vector < size_t > binlist ( specsize );
   
   size_t b = 0;
   for ( size_t i = firstspec; i <= lastspec; ++i ) {
     for ( size_t j = firstbin; j <= lastbin; ++j ) {
-      binlist[b] = i * nreduced_ + j;
-      //cerr << "binlist[" << b << "] = " << binlist[b] << endl;
+      binlist[b] = i * specsize_ + j;
       ++b;
     }
   }
@@ -432,12 +395,12 @@ void harp::psf_toy::projection ( string profcalc, string profremap, size_t first
   size_t nonzeros = 0;
   
   #ifdef _OPENMP
-  #pragma omp parallel for default(none) private(b) shared(nbins, binlist, firstX, firstY, lastX, lastY, nonzeros) schedule(static)
+  #pragma omp parallel for default(none) private(b) shared(specsize, binlist, firstX, firstY, lastX, lastY, nonzeros) schedule(static)
   #endif
-  for ( b = 0; b < nbins; ++b ) {
+  for ( b = 0; b < specsize; ++b ) {
     
-    size_t specbin = binlist[b] % nreduced_;
-    size_t spec = (size_t)(binlist[b] / nreduced_);
+    size_t specbin = binlist[b] % specsize_;
+    size_t spec = (size_t)(binlist[b] / specsize_);
     
     size_t startX;
     size_t stopX;
@@ -457,21 +420,22 @@ void harp::psf_toy::projection ( string profcalc, string profremap, size_t first
   //cerr << "  = " << nonzeros << endl;
   
   
-  // We want to fill the matrix using a mapped matrix, but the output will be a compressed matrix to speed up
-  // axpy_prod computations.  We use a temporary matrix and then assign to the output.
+  // We want to fill the matrix using a mapped matrix, but the output will be a 
+  // compressed matrix to speed up axpy_prod computations.  We use a temporary 
+  // matrix and then assign to the output.
   
-  mat_dyncol builder ( npix, nbins );
+  mat_dyncol builder ( npix, specsize );
 
   int lastfrac = 0;
   size_t complete = 0;
 
   //fprintf ( stderr, "  Sampling PSF [          ]\r" );
   
-  for ( b = 0; b < nbins; ++b ) {
+  for ( b = 0; b < specsize; ++b ) {
     
-    size_t specbin = binlist[b] % nreduced_;
+    size_t specbin = binlist[b] % specsize_;
     
-    size_t spec = (size_t)(binlist[b] / nreduced_);
+    size_t spec = (size_t)(binlist[b] / specsize_);
     
     size_t startX;
     size_t stopX;
@@ -482,58 +446,53 @@ void harp::psf_toy::projection ( string profcalc, string profremap, size_t first
 
     if ( nvalid > 0 ) {
       
-      for ( size_t j = 0; j < binning_; ++j ) {
-        size_t rawbin = specbin * binning_ + j;
+      double amp = resp_[ spec ].amp[ specbin ];
+      double maj = resp_[ spec ].maj[ specbin ];
+      double min = resp_[ spec ].min[ specbin ];
+      double ang = resp_[ spec ].ang[ specbin ];
+      double xcenter = resp_[ spec ].x[ specbin ];
+      double ycenter = resp_[ spec ].y[ specbin ];
+    
+      vec_dense fxdist ( nvalid );
+      vec_dense fydist ( nvalid );
+    
+      size_t pix = 0;
+    
+      //cerr << "  computing distances" << endl;
+    
+      for ( size_t imgrow = startY; imgrow <= stopY; ++imgrow ) {
       
-        double amp = resp_[ spec ].amp[rawbin];
-        double maj = resp_[ spec ].maj[rawbin];
-        double min = resp_[ spec ].min[rawbin];
-        double ang = resp_[ spec ].ang[rawbin];
-        double xcenter = resp_[ spec ].x[rawbin];
-        double ycenter = resp_[ spec ].y[rawbin];
+        for ( size_t imgcol = startX; imgcol <= stopX; ++imgcol ) {
       
-        vec_dense fxdist ( nvalid );
-        vec_dense fydist ( nvalid );
-      
-        size_t pix = 0;
-      
-        //cerr << "  computing distances" << endl;
-      
-        for ( size_t imgrow = startY; imgrow <= stopY; ++imgrow ) {
+          fxdist[pix] = (double)imgcol - xcenter;
+          fydist[pix] = (double)imgrow - ycenter;
         
-          for ( size_t imgcol = startX; imgcol <= stopX; ++imgcol ) {
-        
-            fxdist[pix] = (double)imgcol - xcenter;
-            fydist[pix] = (double)imgrow - ycenter;
-          
-            ++pix;
-          }
-        
+          ++pix;
         }
       
-        vec_dense vals ( nvalid );
+      }
+    
+      vec_dense vals ( nvalid );
 
-        gauss_sample ( vals, fxdist, fydist, amp, maj, min, ang );
+      gauss_sample ( vals, fxdist, fydist, amp, maj, min, ang );
+    
+      size_t datarow;
+    
+      pix = 0;
+    
+      size_t rowoff;
+    
+      for ( size_t imgrow = startY; imgrow <= stopY; ++imgrow ) {
+        rowoff = ( imgrow - firstY ) * ( lastX - firstX + 1 );
+    
+        for ( size_t imgcol = startX; imgcol <= stopX; ++imgcol ) {
       
-        size_t datarow;
-      
-        pix = 0;
-      
-        size_t rowoff;
-      
-        for ( size_t imgrow = startY; imgrow <= stopY; ++imgrow ) {
-          rowoff = ( imgrow - firstY ) * ( lastX - firstX + 1 );
-      
-          for ( size_t imgcol = startX; imgcol <= stopX; ++imgcol ) {
+          datarow = rowoff + ( imgcol - firstX );
+
+          builder ( datarow, b ) += vals[pix];
         
-            datarow = rowoff + ( imgcol - firstX );
-
-            builder ( datarow, b ) += vals[pix];
-          
-            ++pix;
-          }
+          ++pix;
         }
-        
       }
       
     }
@@ -541,7 +500,7 @@ void harp::psf_toy::projection ( string profcalc, string profremap, size_t first
     ++complete;
 
     char msg[256];
-    int progfrac = (int) ( 10 * complete / nbins );
+    int progfrac = (int) ( 10 * complete / specsize );
     /*
     if ( progfrac != lastfrac ) {
       for ( int p = 0; p < progfrac; ++p ) {
