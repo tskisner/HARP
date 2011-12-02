@@ -4,6 +4,8 @@
 #include <cstdio>
 
 #include <boost/program_options.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
 
 #include <harp.hpp>
 
@@ -58,74 +60,6 @@ void harp_specstract_profile ( string const & name, string const & desc, double 
 }
 
 
-void parse_format ( string & input, string & format, map < string, string > & params ) {
-  
-  params.clear();
-  
-  size_t stroff = 0;
-  size_t strend;
-  
-  string formatsep = ":";
-  string paramsep = ",";
-  string keysep = "=";
-  
-  // read format type
-  
-  strend = input.find ( formatsep, stroff );
-  if ( strend == string::npos ) {
-    format = input;
-    //cerr << "dbg:  format = " << format << endl;
-    return;
-  } 
-  
-  format = input.substr ( stroff, strend - stroff );
-  //cerr << "dbg:  format = " << format << endl;
-  stroff = strend + 1;
-  
-  if ( input.find ( formatsep, stroff ) != string::npos ) {
-    MOAT_THROW( "only one format type allowed in format string" );
-  }
-  
-  // read format params
-  
-  size_t parend;
-  
-  strend = 0;
-  while ( strend != string::npos ) {
-    strend = input.find ( paramsep, stroff );
-    if ( strend == string::npos ) {
-      parend = input.size();
-    } else {
-      parend = strend;
-    }
-    
-    // parse this key/value
-    
-    string key;
-    string val;
-    string par = input.substr ( stroff, parend - stroff );
-    
-    //cerr << "dbg:  parsing parameter \"" << par << "\"" << endl;
-    
-    size_t keyend = par.find ( keysep );
-    
-    if ( keyend == string::npos ) {
-      key = par;
-      val = "TRUE";
-    } else {
-      key = par.substr ( 0, keyend );
-      val = par.substr ( keyend + 1, par.size() - (keyend + 1) );
-    }
-    
-    params[ key ] = val;
-    //cerr << "dbg:  key " << key << " = " << params[key] << endl;
-    
-    stroff = parend + 1;
-  }
-  
-  return;
-}
-
 
 typedef struct {
   image_p handle;
@@ -144,11 +78,7 @@ int main ( int argc, char *argv[] ) {
   cout.precision ( 16 );
   cerr.precision ( 16 );
   
-  string imageformat = "";
-  string psfformat = "";
-  string psffile = "";
-  string outfile = "";
-  vector < string > imagefiles;
+  string jsonconf = "";
   
   bool quiet = false;
   
@@ -161,16 +91,12 @@ int main ( int argc, char *argv[] ) {
   
   desc.add_options()
   ( "help,h", "Display usage information" )
-  ( "psfformat", popts::value < string > ( &psfformat ), "format parameters of the PSF file" )
-  ( "psf", popts::value < string > ( &psffile ), "path to PSF file" )
-  ( "imageformat", popts::value < string > ( &imageformat ), "format parameters of the image files" )
-  ( "output", popts::value < string > ( &outfile ), "path to output spectra file" )
   ( "quiet,q", "supress information printing" )
   ;
   
   popts::options_description hidden;
   hidden.add_options()
-  ("positional", popts::value < vector < string > >(&imagefiles))
+  ("positional", popts::value < vector < string > >(&jsonconf))
   ;
 
   popts::options_description all_options;
@@ -188,14 +114,14 @@ int main ( int argc, char *argv[] ) {
   if ( ( argc < 2 ) || vm.count( "help" ) ) {
     cerr << endl;
     cerr << desc << endl;
-    cerr << "  <image file 1> [ <image file 2> ... ]" << endl << endl; 
+    cerr << "  <JSON configuration file>" << endl << endl; 
     return 0;
   }
   
   if ( vm.count( "positional" ) ) {
-    imagefiles = vm["positional"].as < vector < string > > ();
+    jsonconf = vm["positional"].as < vector < string > > ();
   } else {
-    cerr << "you must specify at least one image file" << endl;
+    cerr << "you must specify the JSON configuration file" << endl;
     return 0;
   }
   
@@ -214,12 +140,6 @@ int main ( int argc, char *argv[] ) {
     prof->reg ( "HARP_READ", "read data" );
     prof->reg ( "HARP_WRITE", "write data" );
 
-    prof->reg ( "HARP_PCG_PREC", "applying preconditioner" );
-    prof->reg ( "HARP_PCG_PMV", "projection matrix-vector multiply" );
-    prof->reg ( "HARP_PCG_NMV", "N^-1 matrix-vector multiply" );
-    prof->reg ( "HARP_PCG_VEC", "vector ops time" );
-    prof->reg ( "HARP_PCG_TOT", "Total PCG time" );
-    
   }
   
   #ifdef _OPENMP
@@ -228,7 +148,6 @@ int main ( int argc, char *argv[] ) {
     threads = 1;
   #endif
   
-  fftw_plan_with_nthreads ( threads );
   
   
   size_t nimages = imagefiles.size();

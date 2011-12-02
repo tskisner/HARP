@@ -17,10 +17,11 @@
 #include <boost/numeric/ublas/banded.hpp>
 #include <boost/numeric/ublas/matrix_sparse.hpp>
 
+#include <boost/property_tree/ptree.hpp>
+
 
 #include <moat.hpp>
 
-#include <fftw3.h>
 
 
 namespace harp {
@@ -50,6 +51,8 @@ namespace harp {
 #include <harp/image.hpp>
 #include <harp/spec.hpp>
 #include <harp/psf.hpp>
+
+#include <harp/metadata.hpp>
 
 #endif
 
