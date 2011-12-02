@@ -6,49 +6,49 @@
 using namespace std;
 using namespace harp;
 
-static const char * format_toy = "toy";
+static const char * format_sandbox = "sandbox";
 
-static const char * toy_image_key_path = "path";
-static const char * toy_image_key_signal = "signal";
-static const char * toy_image_key_noise = "noise";
-static const char * toy_image_key_rows = "rows";
-static const char * toy_image_key_cols = "cols";
+static const char * sandbox_image_key_path = "path";
+static const char * sandbox_image_key_signal = "signal";
+static const char * sandbox_image_key_noise = "noise";
+static const char * sandbox_image_key_rows = "rows";
+static const char * sandbox_image_key_cols = "cols";
 
 
-harp::image_toy::image_toy ( std::map < std::string, std::string > const & params ) : image ( format_toy, params ) {
+harp::image_sandbox::image_sandbox ( boost::ptree const & props ) : image ( format_sandbox, props ) {
   
   map < std::string, std::string > :: const_iterator val;
   
-  val = params.find( toy_image_key_signal );
+  val = params.find( sandbox_image_key_signal );
   if ( val == params.end() ) {
     sighdu_ = 1;
   } else {
     sighdu_ = atoi ( val->second.c_str() );
   }
   
-  val = params.find( toy_image_key_noise );
+  val = params.find( sandbox_image_key_noise );
   if ( val == params.end() ) {
     nsehdu_ = 2;
   } else {
     nsehdu_ = atoi ( val->second.c_str() );
   }
   
-  val = params.find( toy_image_key_path );
+  val = params.find( sandbox_image_key_path );
   
   if ( val == params.end() ) {
     
     // no path specified- must specify rows / cols
     
-    val = params.find( toy_image_key_rows );
+    val = params.find( sandbox_image_key_rows );
     if ( val == params.end() ) {
-      MOAT_THROW( "toy_image: must specify rows if no path is given" );
+      MOAT_THROW( "sandbox_image: must specify rows if no path is given" );
     }
     
     rows_ = (size_t) atoll ( val->second.c_str() );
     
-    val = params.find( toy_image_key_cols );
+    val = params.find( sandbox_image_key_cols );
     if ( val == params.end() ) {
-      MOAT_THROW( "toy_image: must specify cols if no path is given" );
+      MOAT_THROW( "sandbox_image: must specify cols if no path is given" );
     }
     
     cols_ = (size_t) atoll ( val->second.c_str() );
@@ -74,14 +74,14 @@ harp::image_toy::image_toy ( std::map < std::string, std::string > const & param
 }
 
 
-harp::image_toy::~image_toy ( ) {
+harp::image_sandbox::~image_sandbox ( ) {
   
   cleanup();
   
 }
 
 
-void harp::image_toy::read ( size_t startrow, size_t startcol, mat_denserow & data ) {
+void harp::image_sandbox::read ( size_t startrow, size_t startcol, mat_denserow & data ) {
   
   fitsfile *fp;
 
@@ -97,7 +97,7 @@ void harp::image_toy::read ( size_t startrow, size_t startcol, mat_denserow & da
 }
 
 
-void harp::image_toy::read ( vec_dense & data ) {
+void harp::image_sandbox::read ( vec_dense & data ) {
   
   fitsfile *fp;
 
@@ -113,7 +113,7 @@ void harp::image_toy::read ( vec_dense & data ) {
 }
 
 
-void harp::image_toy::write ( std::string const & path, size_t startrow, size_t startcol, mat_denserow & data ) {
+void harp::image_sandbox::write ( std::string const & path, size_t startrow, size_t startcol, mat_denserow & data ) {
   
   fitsfile *fp;
   
@@ -138,7 +138,7 @@ void harp::image_toy::write ( std::string const & path, size_t startrow, size_t 
 }
 
 
-void harp::image_toy::write ( std::string const & path, vec_dense & data ) {
+void harp::image_sandbox::write ( std::string const & path, vec_dense & data ) {
   
   fitsfile *fp;
   
@@ -163,7 +163,7 @@ void harp::image_toy::write ( std::string const & path, vec_dense & data ) {
 }
 
 
-void harp::image_toy::read_noise ( size_t startrow, size_t startcol, mat_denserow & data ) {
+void harp::image_sandbox::read_noise ( size_t startrow, size_t startcol, mat_denserow & data ) {
   
   fitsfile *fp;
 
@@ -179,7 +179,7 @@ void harp::image_toy::read_noise ( size_t startrow, size_t startcol, mat_densero
 }
 
 
-void harp::image_toy::read_noise ( vec_dense & data ) {
+void harp::image_sandbox::read_noise ( vec_dense & data ) {
   
   fitsfile *fp;
 
@@ -195,7 +195,7 @@ void harp::image_toy::read_noise ( vec_dense & data ) {
 }
 
 
-void harp::image_toy::write_noise ( std::string const & path, size_t startrow, size_t startcol, mat_denserow & data ) {
+void harp::image_sandbox::write_noise ( std::string const & path, size_t startrow, size_t startcol, mat_denserow & data ) {
   
   fitsfile *fp;
   
@@ -220,7 +220,7 @@ void harp::image_toy::write_noise ( std::string const & path, size_t startrow, s
 }
 
 
-void harp::image_toy::write_noise ( std::string const & path, vec_dense & data ) {
+void harp::image_sandbox::write_noise ( std::string const & path, vec_dense & data ) {
   
   fitsfile *fp;
   

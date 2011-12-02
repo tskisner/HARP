@@ -6,21 +6,8 @@
 using namespace std;
 using namespace harp;
 
-image_p harp::meta::parse_image ( boost::ptree & tree ) {
-  
-  image_p ret = 
 
-}
-
-  boost::ptree serialize_image ( image_p img );
-
-  psf_p parse_psf ( boost::ptree & tree );
-
-  boost::ptree serialize_psf ( psf_p pf );
-
-  spec_p parse_spec ( boost::ptree & tree );
-
-  boost::ptree serialize_spec ( spec_p sp );
+harp::meta::psfgroup
 
 
   class psfgroup {

@@ -4,8 +4,7 @@
 #include <cstdio>
 
 #include <boost/program_options.hpp>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
+
 
 #include <harp.hpp>
 
@@ -71,6 +70,9 @@ typedef struct {
   size_t cols;
   size_t npix;
 } harp_image_props;
+
+
+typedef struct {}
 
 
 int main ( int argc, char *argv[] ) {

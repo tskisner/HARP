@@ -2,11 +2,13 @@
 
 namespace harp {
   
-  class image_toy : public image {
+  class image_sandbox : public image {
     
     public :
-      image_toy ( std::map < std::string, std::string > const & params );
-      ~image_toy ( );
+      image_sandbox ( boost::ptree const & props );
+      ~image_sandbox ( );
+
+      boost::ptree serialize ( );
       
       size_t rows ( ) { return rows_; }
       size_t cols ( ) { return cols_; }
@@ -33,11 +35,13 @@ namespace harp {
   };
   
   
-  class spec_toy : public spec {
+  class spec_sandbox : public spec {
     
     public :
-      spec_toy ( std::map < std::string, std::string > const & params );
-      ~spec_toy ( );
+      spec_sandbox ( boost::ptree const & props );
+      ~spec_sandbox ( );
+
+      boost::ptree serialize ( );
       
       size_t size ( ) { return size_; }
       size_t nspectrum ( ) { return nspec_; }
@@ -66,13 +70,15 @@ namespace harp {
     vec_dense maj;
     vec_dense min;
     vec_dense ang;
-  } psf_toy_resp;
+  } psf_sandbox_resp;
   
-  class psf_toy : public psf {
+  class psf_sandbox : public psf {
     
     public :
-      psf_toy ( std::map < std::string, std::string > const & params );
-      ~psf_toy ( );
+      psf_sandbox ( boost::ptree const & props );
+      ~psf_sandbox ( );
+
+      boost::ptree serialize ( );
       
       size_t nspec ( ) { return nspec_; }
       size_t specsize ( size_t specnum ) { return nreduced_; }
@@ -98,7 +104,7 @@ namespace harp {
       size_t nreduced_;
       size_t pixcorr_;
       std::map < std::string, int > hdus_;
-      std::map < size_t, psf_toy_resp > resp_;
+      std::map < size_t, psf_sandbox_resp > resp_;
       
   };
   
