@@ -46,7 +46,6 @@ namespace harp {
 
 
 #include <harp/fits.hpp>
-#include <harp/eigen.hpp>
 
 #include <harp/image.hpp>
 #include <harp/spec.hpp>

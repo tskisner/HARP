@@ -6,6 +6,8 @@
 #include <config.h>
 #include <harp.hpp>
 
+//#include <harp/matrix.hpp>
+
 namespace harp {
   
   

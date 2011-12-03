@@ -1071,7 +1071,7 @@ cd "$START_PATH"
 initialize
 
 # Customization by T. S. Kisner.
-# Find all the experiment directories and generate files
+# Find all the instrument directories and generate files
 
 gitcommit=`git rev-parse HEAD`
 
@@ -1131,7 +1131,7 @@ for inst in ${instruments}; do
 	if [ -e "${START_PATH}/instruments/${inst}/harp_${inst}_${typ}.cpp" ]; then
 	    echo "#ifdef ENABLE_${ucinst}" >> ${START_PATH}/src/libharp/harp_${typ}_formats.cpp
 	    echo "  if ( format == \"${inst}\" ) {" >> ${START_PATH}/src/libharp/harp_${typ}_formats.cpp
-	    echo "    return new harp::${typ}_${inst}( params );" >> ${START_PATH}/src/libharp/harp_${typ}_formats.cpp
+	    echo "    return new harp::${typ}_${inst}( props );" >> ${START_PATH}/src/libharp/harp_${typ}_formats.cpp
 	    echo "  }" >> ${START_PATH}/src/libharp/harp_${typ}_formats.cpp
 	    echo "#endif" >> ${START_PATH}/src/libharp/harp_${typ}_formats.cpp
 	    echo "  " >> ${START_PATH}/src/libharp/harp_${typ}_formats.cpp

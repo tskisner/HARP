@@ -29,6 +29,22 @@ AC_CANONICAL_HOST
 AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_LIBTOOL
+dnl +-------------------------
+dnl | F77 Support.  If we do not have an F77 compiler, then we cannot
+dnl | link to some fortran system libraries like ACML.
+dnl +-------------------------
+moat_fortran=yes
+AC_ARG_ENABLE([fortran], [AC_HELP_STRING([--disable-fortran], [disable linking to fortran-based libraries.])])
+if test x"$enable_fortran" = x"no"; then
+   moat_fortran=no
+fi
+AM_CONDITIONAL([USE_AM_FORTRAN], [test "$moat_fortran" = "yes"])
+if test x"$moat_fortran" = x"yes"; then
+  AC_PROG_F77
+  AC_PROG_F77_C_O
+  AC_F77_LIBRARY_LDFLAGS
+  AC_F77_WRAPPERS
+fi
 AC_PROG_CXX
 AC_LANG([C++])
 AC_CHECK_HEADERS([iostream iostream.h])
