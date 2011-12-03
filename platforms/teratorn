@@ -1,3 +1,3 @@
 #!/bin/sh
 
-CXX=g++ CC=gcc CXXFLAGS="-O3 -march=native -Wall -DNDEBUG" CFLAGS="-O3 -march=native -Wall -DNDEBUG" CPPFLAGS='-I/usr/local/include' ./configure --prefix=/data/software --with-fftw-cpp='-I/ports/include' --with-fftw-libs='-L/ports/lib -lfftw3_threads -lfftw3' --with-cfitsio-cpp="-I/ports/include" --with-cfitsio-libs="-L/ports/lib -lcfitsio" --prefix=/data/software --disable-shared --with-boost=/ports --without-boss-format
+CXX=g++ CC=gcc CXXFLAGS="-O3 -march=native -Wall -DNDEBUG" CFLAGS="-O3 -march=native -Wall -DNDEBUG" CPPFLAGS='-I/usr/local/include' ./configure --prefix=/data/software --with-cfitsio-cpp="-I/ports/include" --with-cfitsio-libs="-L/ports/lib -lcfitsio" --prefix=/data/software --disable-shared --with-boost=/ports

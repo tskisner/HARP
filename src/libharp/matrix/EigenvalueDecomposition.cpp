@@ -18,7 +18,7 @@
 #include <cmath>
 #include <limits>
 #include <boost/math/special_functions/hypot.hpp>
-#include "EigenvalueDecomposition.hpp"
+#include <harp/EigenvalueDecomposition.hpp>
 
 namespace boost { namespace numeric { namespace ublas {
 

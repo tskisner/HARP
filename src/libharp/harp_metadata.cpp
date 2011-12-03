@@ -14,11 +14,11 @@ harp::meta::psfgroup
 
     public :
       psfgroup ( );
-      psfgroup ( boost::ptree & tree );
+      psfgroup ( boost::property_tree::ptree & tree );
       ~psfgroup ( ) { }
 
-      void load ( boost::ptree & tree );
-      boost::ptree dump ( );
+      void load ( boost::property_tree::ptree & tree );
+      boost::property_tree::ptree dump ( );
 
       psf_p psf ( ) { return handle_; }
       std::list < image_p > images ( ) { return imgs_; }

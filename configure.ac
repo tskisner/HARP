@@ -29,22 +29,6 @@ AC_CANONICAL_HOST
 AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_LIBTOOL
-dnl +-------------------------
-dnl | F77 Support.  If we do not have an F77 compiler, then we cannot
-dnl | link to some fortran system libraries like ACML.
-dnl +-------------------------
-moat_fortran=yes
-AC_ARG_ENABLE([fortran], [AC_HELP_STRING([--disable-fortran], [disable linking to fortran-based libraries.])])
-if test x"$enable_fortran" = x"no"; then
-   moat_fortran=no
-fi
-AM_CONDITIONAL([USE_AM_FORTRAN], [test "$moat_fortran" = "yes"])
-if test x"$moat_fortran" = x"yes"; then
-  AC_PROG_F77
-  AC_PROG_F77_C_O
-  AC_F77_LIBRARY_LDFLAGS
-  AC_F77_WRAPPERS
-fi
 AC_PROG_CXX
 AC_LANG([C++])
 AC_CHECK_HEADERS([iostream iostream.h])
@@ -66,11 +50,6 @@ dnl +------------------------------------------------
 dnl | Check for MOAT
 dnl +------------------------------------------------
 ACX_MOAT([], [AC_MSG_ERROR([Could not find the MOAT library!])])
-dnl +------------------------------------------------
-dnl | Check for BLAS / LAPACK
-dnl +------------------------------------------------
-ACX_BLAS([], [AC_MSG_ERROR([Could not find a Blas library!])])
-ACX_LAPACK([], [AC_MSG_ERROR([Could not find a Lapack library!])])
 dnl +------------------------------------------------
 dnl | Check for BOOST
 dnl +------------------------------------------------
@@ -115,6 +94,7 @@ dnl +------------------------------------------------
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([src/Makefile])
 AC_CONFIG_FILES([src/libharp/Makefile])
+AC_CONFIG_FILES([src/libharp/matrix/Makefile])
 AC_CONFIG_FILES([src/tests/Makefile])
 AC_CONFIG_FILES([src/apps/Makefile])
 dnl AC_CONFIG_FILES([src/python/Makefile])

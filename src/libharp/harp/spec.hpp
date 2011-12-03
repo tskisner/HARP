@@ -9,11 +9,11 @@ namespace harp {
   class spec : public boost::enable_shared_from_this < spec > {
     
     public :
-      spec ( std::string const & format, boost::ptree const & props );
+      spec ( std::string const & format, boost::property_tree::ptree const & props );
       virtual ~spec ( ) { }
       void cleanup ( );
 
-      virtual boost::ptree serialize ( ) { return boost::ptree(); }
+      virtual boost::property_tree::ptree serialize ( ) { return boost::property_tree::ptree(); }
       
       virtual size_t size ( ) { return 0; }
       virtual size_t nspectrum ( ) { return 0; }
@@ -26,7 +26,7 @@ namespace harp {
 
       std::string format ( );
       
-      static spec * create ( std::string const & format, boost::ptree const & props );
+      static spec * create ( std::string const & format, boost::property_tree::ptree const & props );
       
       spec * clone ( );
       
@@ -44,7 +44,7 @@ namespace harp {
     private :
     
       std::string format_;
-      boost::ptree props_;
+      boost::property_tree::ptree props_;
       
       
   };

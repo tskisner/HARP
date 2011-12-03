@@ -14,7 +14,7 @@
 #include <algorithm>
 #include <cmath>
 #include <boost/math/special_functions/hypot.hpp>
-#include "QRDecomposition.hpp"
+#include <harp/QRDecomposition.hpp>
 
 namespace boost { namespace numeric { namespace ublas {
 

@@ -10,7 +10,7 @@
 
 #include <algorithm>
 #include <cmath>
-#include "CholeskyDecomposition.hpp"
+#include <harp/CholeskyDecomposition.hpp>
 
 namespace boost { namespace numeric { namespace ublas {
     

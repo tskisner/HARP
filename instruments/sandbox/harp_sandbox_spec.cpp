@@ -14,7 +14,7 @@ static const char * sandbox_spec_key_nspec = "nspec";
 static const char * sandbox_spec_key_specsize = "specsize";
 
 
-harp::spec_sandbox::spec_sandbox ( boost::ptree const & params ) : spec ( format_sandbox, params ) {
+harp::spec_sandbox::spec_sandbox ( boost::property_tree::ptree const & props ) : spec ( format_sandbox, props ) {
   
   hdu_ = props.get ( sandbox_spec_key_hdu, 1 );
 
@@ -61,8 +61,8 @@ harp::spec_sandbox::~spec_sandbox ( ) {
 }
 
 
-boost::ptree harp::spec_sandbox::serialize ( ) {
-  boost::ptree ret;
+boost::property_tree::ptree harp::spec_sandbox::serialize ( ) {
+  boost::property_tree::ptree ret;
 
   ret.put ( "format", spec::format() );
 

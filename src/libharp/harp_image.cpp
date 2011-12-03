@@ -7,7 +7,7 @@ using namespace std;
 using namespace harp;
 
 
-harp::image::image ( string const & format, boost::ptree const & props ) {
+harp::image::image ( string const & format, boost::property_tree::ptree const & props ) {
   format_ = format;
   props_ = props;
 }
@@ -29,7 +29,7 @@ image * harp::image::clone ( ) {
 }
 
 
-image * harp::image::create ( std::string const & format, boost::ptree const & props ) {
+image * harp::image::create ( std::string const & format, boost::property_tree::ptree const & props ) {
   
   #include "harp_image_formats.cpp"
   

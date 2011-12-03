@@ -14,7 +14,7 @@
 #include <algorithm>
 #include <cmath>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
-#include "LUDecomposition.hpp"
+#include <harp/LUDecomposition.hpp>
 
 namespace boost { namespace numeric { namespace ublas {
 

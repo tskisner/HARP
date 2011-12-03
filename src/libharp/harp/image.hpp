@@ -10,11 +10,11 @@ namespace harp {
   class image : public boost::enable_shared_from_this < image > {
     
     public :
-      image ( std::string const & format, boost::ptree const & props );
+      image ( std::string const & format, boost::property_tree::ptree const & props );
       virtual ~image ( ) { }
       void cleanup ( );
 
-      virtual boost::ptree serialize ( ) { return boost::ptree(); }
+      virtual boost::property_tree::ptree serialize ( ) { return boost::property_tree::ptree(); }
       
       virtual size_t rows ( ) { return 0; }
       virtual size_t cols ( ) { return 0; }
@@ -32,7 +32,7 @@ namespace harp {
 
       std::string format ( );
       
-      static image * create ( std::string const & format, boost::ptree const & props );
+      static image * create ( std::string const & format, boost::property_tree::ptree const & props );
       
       image * clone ( );
       
@@ -50,7 +50,7 @@ namespace harp {
     private :
     
       std::string format_;
-      boost::ptree props_;
+      boost::property_tree::ptree props_;
       
       
   };

@@ -24,7 +24,7 @@ static const char * sandbox_psf_hdu_ang = "Angle";
 
 
 
-harp::psf_sandbox::psf_sandbox ( boost::ptree const & props ) : psf ( format_sandbox, props ) {
+harp::psf_sandbox::psf_sandbox ( boost::property_tree::ptree const & props ) : psf ( format_sandbox, props ) {
   
   path_ = props.get < string > ( sandbox_psf_key_path );
 
@@ -97,8 +97,8 @@ harp::psf_sandbox::~psf_sandbox ( ) {
 }
 
 
-boost::ptree harp::psf_sandbox::serialize ( ) {
-  boost::ptree ret;
+boost::property_tree::ptree harp::psf_sandbox::serialize ( ) {
+  boost::property_tree::ptree ret;
 
   ret.put ( "format", psf::format() );
 

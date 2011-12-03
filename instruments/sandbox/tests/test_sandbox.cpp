@@ -16,38 +16,6 @@ using namespace harp;
 
 
 
-extern "C" void dgesdd_ ( char *, int *, int *, double *, int *, double *, double *, int *, double *, int *, double *, int *, int *, int * );
-
-
-
-
-void lapack_svd ( int dim, double * mat, double * eigen ) {
-  char jobz = 'O';
-  int lda = dim;
-  int ldu = dim;
-  double * U = NULL;
-  double * VT = moat::double_alloc ( dim * dim );
-  int lwork;
-  double * work;
-  int * iwork = moat::int_alloc ( 8 * dim );
-  int info;
-
-  lwork = dim * ( 5 * dim + 7 );
-  work = moat::double_alloc ( lwork );
-
-  dgesdd_ ( &jobz, &dim, &dim, mat, &lda, eigen, U, &ldu, VT, &dim, work, &lwork, iwork, &info );
-
-  free ( iwork );
-  free ( work );
-  free ( VT );
-
-  return;
-}
-
-
-
-
-
 
 
 void sandbox_profile ( string const & name, string const & desc, double & totaltime, double & opencltime, map < string, long long int > & papi ) {
@@ -62,11 +30,11 @@ void harp::test_sandbox ( string const & datadir ) {
   
   cerr << "Testing sandbox image construction..." << endl;
   
-  std::map < std::string, std::string > params;
-  params[ "path" ] = datadir + "/test_medium_input_image.fits";
-  params[ "signal" ] = "1";
-  params[ "noise" ] = "2";
-  image_p testimg ( image::create ( string("sandbox"), params ) );
+  boost::property_tree::ptree props;
+  props.put ( "path", datadir + "/test_medium_input_image.fits" );
+  props.put ( "signal", 1 );
+  props.put ( "noise", 2 );
+  image_p testimg ( image::create ( string("sandbox"), props ) );
   
   cerr << "  (PASSED)" << endl;
   
@@ -84,10 +52,10 @@ void harp::test_sandbox ( string const & datadir ) {
   
   cerr << "Testing sandbox spectrum construction..." << endl;
   
-  params.clear();
-  params[ "path" ] = datadir + "/test_medium_input_spectra.fits";
-  params[ "hdu" ] = "1";
-  spec_p testspec ( spec::create ( string("sandbox"), params ) );
+  props.clear();
+  props.put ( "path", datadir + "/test_medium_input_spectra.fits" );
+  props.put ( "hdu", 1 );
+  spec_p testspec ( spec::create ( string("sandbox"), props ) );
   
   cerr << "  (PASSED)" << endl;
   
@@ -107,10 +75,10 @@ void harp::test_sandbox ( string const & datadir ) {
   
   cerr << "Testing sandbox PSF construction..." << endl;
   
-  params.clear();
-  params[ "path" ] = datadir + "/test_medium_psf.fits";
-  params[ "corr" ] = "10";
-  psf_p testpsf ( psf::create ( string("sandbox"), params ) );
+  props.clear();
+  props.put ( "path", datadir + "/test_medium_psf.fits" );
+  props.put ( "corr", 10 );
+  psf_p testpsf ( psf::create ( string("sandbox"), props ) );
   
   cerr << "  found " << testpsf->nspec() << " spectra" << endl;
   

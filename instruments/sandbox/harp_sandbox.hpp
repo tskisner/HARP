@@ -5,10 +5,10 @@ namespace harp {
   class image_sandbox : public image {
     
     public :
-      image_sandbox ( boost::ptree const & props );
+      image_sandbox ( boost::property_tree::ptree const & props );
       ~image_sandbox ( );
 
-      boost::ptree serialize ( );
+      boost::property_tree::ptree serialize ( );
       
       size_t rows ( ) { return rows_; }
       size_t cols ( ) { return cols_; }
@@ -38,10 +38,10 @@ namespace harp {
   class spec_sandbox : public spec {
     
     public :
-      spec_sandbox ( boost::ptree const & props );
+      spec_sandbox ( boost::property_tree::ptree const & props );
       ~spec_sandbox ( );
 
-      boost::ptree serialize ( );
+      boost::property_tree::ptree serialize ( );
       
       size_t size ( ) { return size_; }
       size_t nspectrum ( ) { return nspec_; }
@@ -75,10 +75,10 @@ namespace harp {
   class psf_sandbox : public psf {
     
     public :
-      psf_sandbox ( boost::ptree const & props );
+      psf_sandbox ( boost::property_tree::ptree const & props );
       ~psf_sandbox ( );
 
-      boost::ptree serialize ( );
+      boost::property_tree::ptree serialize ( );
       
       size_t nspec ( ) { return nspec_; }
       size_t specsize ( size_t specnum ) { return specsize_; }

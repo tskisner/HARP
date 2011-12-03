@@ -7,7 +7,7 @@ using namespace std;
 using namespace harp;
 
 
-harp::spec::spec ( string const & format, boost::ptree const & props ) {
+harp::spec::spec ( string const & format, boost::property_tree::ptree const & props ) {
   format_ = format;
   props_ = props;
 }
@@ -29,7 +29,7 @@ spec * harp::spec::clone ( ) {
 }
 
 
-spec * harp::spec::create ( std::string const & format, boost::ptree const & props ) {
+spec * harp::spec::create ( std::string const & format, boost::property_tree::ptree const & props ) {
   
   #include "harp_spec_formats.cpp"
   

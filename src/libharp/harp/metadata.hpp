@@ -3,6 +3,8 @@
 #ifndef HARP_METADATA_HPP
 #define HARP_METADATA_HPP
 
+#include <list>
+
 
 #include <boost/property_tree/json_parser.hpp>
 
@@ -12,11 +14,11 @@ namespace harp { namespace meta {
 
     public :
       psfgroup ( );
-      psfgroup ( boost::ptree & tree );
+      psfgroup ( boost::property_tree::ptree & tree );
       ~psfgroup ( ) { }
 
-      void load ( boost::ptree & tree );
-      boost::ptree dump ( );
+      void load ( boost::property_tree::ptree & tree );
+      boost::property_tree::ptree dump ( );
 
       psf_p psf ( ) { return handle_; }
       std::list < image_p > images ( ) { return imgs_; }
