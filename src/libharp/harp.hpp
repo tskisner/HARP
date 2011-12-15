@@ -53,6 +53,8 @@ namespace harp {
 
 #include <harp/metadata.hpp>
 
+#include <harp/extract.hpp>
+
 #endif
 
 
