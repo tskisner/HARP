@@ -19,9 +19,9 @@
 
 #include <boost/property_tree/ptree.hpp>
 
-
 #include <moat.hpp>
 
+#include <harp/matrix.hpp>
 
 
 namespace harp {

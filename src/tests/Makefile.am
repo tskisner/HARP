@@ -1,6 +1,6 @@
 EXTRA_DIST = testdata test_instruments.am harp_testcommands.cpp
 
-AM_CPPFLAGS = -I$(top_srcdir)/src/libharp -I$(top_srcdir)/src/tests $(BOOST_CPPFLAGS) $(MOAT_CPPFLAGS) $(CFITSIO_CPPFLAGS) $(FFTW_CPPFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir)/src/libharp -I$(top_srcdir)/src/libharp/matrix -I$(top_srcdir)/src/tests $(BOOST_CPPFLAGS) $(MOAT_CPPFLAGS) $(CFITSIO_CPPFLAGS) $(FFTW_CPPFLAGS)
 AM_LDFLAGS =
 AM_LIBS = $(top_builddir)/src/libharp/libharp.la $(MOAT) $(BOOST_LDFLAGS) $(CFITSIO) $(FFTW) -lm
 
@@ -8,7 +8,7 @@ noinst_HEADERS = harp_test.hpp
 
 bin_PROGRAMS = harp_test
 TESTS = harp_test
-harp_test_SOURCES = harp_test.cpp
+harp_test_SOURCES = harp_test.cpp harp_test_eigen.cpp
 harp_test_LDADD = $(AM_LIBS)
 
 # Manual dependency on the data directory

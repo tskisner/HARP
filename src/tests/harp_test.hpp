@@ -9,6 +9,8 @@
 
 namespace harp {
 
+  void test_eigen ( std::string const & datadir );
+
 
   
 }
