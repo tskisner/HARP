@@ -239,6 +239,19 @@ void harp::test_sandbox ( string const & datadir ) {
   
   cerr << "  (PASSED)" << endl;
 
+  // noise weighted spectra
+
+  cerr << "compute Z" << endl;
+
+  vec_dense z ( nbins );
+
+  noise_weighted_spec < mat_compcol, mat_comprow, vec_dense > ( projmat, invnoise, measured, z );
+
+  //boost::numeric::ublas::axpy_prod ( invnoise, measured, ztemp, true );
+  //boost::numeric::ublas::axpy_prod ( ztemp, projmat, z, true ); 
+  
+  cerr << "  (PASSED)" << endl;
+
 
   // construct the inverse spectral covariance matrix
 
@@ -259,7 +272,9 @@ void harp::test_sandbox ( string const & datadir ) {
 
   cerr << "Multiply A^T (N^-1 A)..." << endl;
 
-  boost::numeric::ublas::axpy_prod ( boost::numeric::ublas::trans ( projmat ), temp, builder, true );
+  moat::la::multiply_mm < mat_compcol, mat_compcol, mat_dynrow > ( projmat, temp, builder, true, true, true, std::string("") );
+  
+  //boost::numeric::ublas::axpy_prod ( boost::numeric::ublas::trans ( projmat ), temp, builder, true );
 
   mat_dynrow::iterator2 itcol;
   mat_dynrow::iterator1 itrow;
@@ -272,43 +287,13 @@ void harp::test_sandbox ( string const & datadir ) {
 
   cerr << "  (PASSED)" << endl;
 
-  // noise weighted spectra
-
-  cerr << "compute Z" << endl;
-
-  vec_dense z ( nbins );
-  vec_dense ztemp ( npix );
-
-  boost::numeric::ublas::axpy_prod ( invnoise, measured, ztemp, true );
-
-  boost::numeric::ublas::axpy_prod ( ztemp, projmat, z, true ); 
-  
-  cerr << "  (PASSED)" << endl;
-
-
-  // remap to row-major?
-
-  size_t i, j, k;
-
-
-
   
   // extraction
-  
-  /*
-  vec_dense errors ( nbins );
-  vector < vec_dense > vrinspec ( 1 );
-  vector < vec_dense > vinspec ( 1 );
-  vinspec[0].resize ( nbins );
-  vrinspec[0].resize ( nbins );
 
-  vinspec[0] = inspec;
+  extract_dense < mat_comprow > ( invcov, z, outspec );
 
-  extract < mat_comprow, vec_dense > ( invcov, z, outspec, errors, vinspec, vrinspec );
-  
 
-  cerr << "final spectra" << endl;
-
+  // write output  
 
   string outdata = datadir + "/test_medium_output.out";
 
@@ -316,11 +301,10 @@ void harp::test_sandbox ( string const & datadir ) {
   out.open ( outdata.c_str(), ios::out );
   
   for ( size_t i = 0; i < nbins; ++i ) {
-    out << i << " " << (vrinspec[0])[i] << " " << outspec[i] << " " << errors[i] << " " << ((vrinspec[0])[i] - outspec[i]) / errors[i] << endl;
+    out << i << " " << outspec[i] << endl;
   }
   
   out.close();
-  */
 
 
   cerr << "  (PASSED)" << endl;
