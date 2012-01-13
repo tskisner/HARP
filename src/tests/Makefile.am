@@ -8,7 +8,7 @@ noinst_HEADERS = harp_test.hpp
 
 bin_PROGRAMS = harp_test
 TESTS = harp_test
-harp_test_SOURCES = harp_test.cpp harp_test_eigen.cpp
+harp_test_SOURCES = harp_test.cpp harp_test_eigen.cpp harp_test_tinyKLT.cpp
 harp_test_LDADD = $(AM_LIBS)
 
 # Manual dependency on the data directory

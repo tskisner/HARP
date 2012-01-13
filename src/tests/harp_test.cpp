@@ -16,6 +16,8 @@ int main ( int argc, char *argv[] ) {
   fits::test ( datadir );
 
   test_eigen ( datadir );
+
+  test_tinyKLT ( datadir );
   
   cerr << endl;
   

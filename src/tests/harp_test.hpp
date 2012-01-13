@@ -11,6 +11,7 @@ namespace harp {
 
   void test_eigen ( std::string const & datadir );
 
+  void test_tinyKLT ( std::string const & datadir );
 
   
 }

@@ -151,35 +151,34 @@ void harp::test_sandbox ( string const & datadir ) {
   }
 
   // write input spectra
-  /*
-  cerr << "Write input spectra..." << endl;
+
+  cerr << "Write input check spectra..." << endl;
 
   std::ostringstream o;
 
-  string delpath = datadir + "/test_input_spectra.fits.out";
+  string delpath = datadir + "/test_medium_input_spectra_check.fits.out";
   int ret = unlink ( delpath.c_str() );
 
-  params.clear();
-  params[ "hdu" ] = "1";
-  o.str("");
-  o << testpsf->nspec();
-  params[ "nspec" ] = o.str();
-  o.str("");
-  o << testpsf->specsize(0);
-  params[ "specsize" ] = o.str();
-  spec_p specinput ( spec::create ( string("sandbox"), params ) );
+  props.clear();
+  props.put ( "hdu", 1 );
+  props.put ( "nspec", testpsf->nspec() );
+  props.put ( "specsize", testpsf->specsize(0) );
 
-  specinput->write ( datadir + "/test_input_spectra.fits.out", inspec );
+  spec_p specinput ( spec::create ( string("sandbox"), props ) );
+
+  specinput->write ( datadir + "/test_medium_input_spectra_check.fits.out", inspec );
 
   cerr << "  (PASSED)" << endl;
 
   // construct signal image
 
-  cerr << "Construct input noisy image..." << endl;
+  vec_dense imgcheck ( npix );
 
-  boost::numeric::ublas::axpy_prod ( projmat, inspec, measured, true );
+  cerr << "Check input noisy image..." << endl;
 
-  // add noise to image
+  boost::numeric::ublas::axpy_prod ( projmat, inspec, imgcheck, true );
+
+  // add noise to image check
 
   typedef boost::ecuyer1988 base_generator_type;
   base_generator_type generator(42u);
@@ -188,43 +187,39 @@ void harp::test_sandbox ( string const & datadir ) {
   
   for ( size_t i = 0; i < npix; ++i ) {
     //rms[i] = sqrt( 16.0 + measured[i] );
-    rms[i] = sqrt( measured[i] / 16.0 );
+    rms[i] = 1.0 / sqrt ( imgnoise[i] );
     
     boost::normal_distribution < double > dist ( 0.0, rms[i] );
     
     boost::variate_generator < base_generator_type&, boost::normal_distribution < double > > gauss ( generator, dist );
     
-    measured[i] += gauss();
-    imgnoise[i] = 1.0 / (rms[i] * rms[i]);
+    imgcheck[i] += gauss();
+    
+    //imgnoise[i] = 1.0 / (rms[i] * rms[i]);
   }
 
   cerr << "  (PASSED)" << endl;
 
+
   // write out image
 
-  cerr << "Write input image and noise variance..." << endl;
+  cerr << "Write input check image and noise variance..." << endl;
 
-  delpath = datadir + "/test_input_image.fits.out";
+  delpath = datadir + "/test_medium_input_image_check.fits.out";
   ret = unlink ( delpath.c_str() );
 
-  params.clear();
+  props.clear();
+  props.put ( "signal", 1 );
+  props.put ( "noise", 2 );
+  props.put ( "rows", testimg->rows() );
+  props.put ( "cols", testimg->cols() );
 
-  params[ "signal" ] = "1";
-  params[ "noise" ] = "2";  
-  o.str("");
-  o << testimg->rows();
-  params[ "rows" ] = o.str();
-  o.str("");
-  o << testimg->cols();
-  params[ "cols" ] = o.str();
+  image_p outimage ( image::create ( string("sandbox"), props ) );
   
-  image_p outimage ( image::create ( string("sandbox"), params ) );
-  
-  outimage->write ( datadir + "/test_input_image.fits.out", measured );
-  outimage->write_noise ( datadir + "/test_input_image.fits.out", imgnoise );
+  outimage->write ( datadir + "/test_medium_input_image_check.fits.out", imgcheck );
+  outimage->write_noise ( datadir + "/test_medium_input_image_check.fits.out", imgnoise );
 
   cerr << "  (PASSED)" << endl;
-  */
 
   
   // construct inverse pixel noise covariance
@@ -241,15 +236,27 @@ void harp::test_sandbox ( string const & datadir ) {
 
   // noise weighted spectra
 
-  cerr << "compute Z" << endl;
+  cerr << "Compute Z" << endl;
 
   vec_dense z ( nbins );
 
   noise_weighted_spec < mat_compcol, mat_comprow, vec_dense > ( projmat, invnoise, measured, z );
 
+  //vec_dense ztemp ( npix );
   //boost::numeric::ublas::axpy_prod ( invnoise, measured, ztemp, true );
   //boost::numeric::ublas::axpy_prod ( ztemp, projmat, z, true ); 
   
+  delpath = datadir + "/test_medium_Z_spectra.fits.out";
+  ret = unlink ( delpath.c_str() );
+
+  props.clear();
+  props.put ( "hdu", 1 );
+  props.put ( "nspec", testpsf->nspec() );
+  props.put ( "specsize", testpsf->specsize(0) );
+
+  spec_p zspec ( spec::create ( string("sandbox"), props ) );
+  zspec->write ( datadir + "/test_medium_Z_spectra.fits.out", z );
+
   cerr << "  (PASSED)" << endl;
 
 
@@ -285,12 +292,29 @@ void harp::test_sandbox ( string const & datadir ) {
     }
   }
 
+  delpath = datadir + "/test_medium_invC.fits.out";
+  ret = unlink ( delpath.c_str() );
+
+  props.clear();
+  props.put ( "signal", 1 );
+  props.put ( "noise", 2 );
+  props.put ( "rows", nbins );
+  props.put ( "cols", nbins );
+
+  image_p invcimage ( image::create ( string("sandbox"), props ) );
+  
+  invcimage->write ( datadir + "/test_medium_invC.fits.out", imgcheck );
+
   cerr << "  (PASSED)" << endl;
 
   
   // extraction
 
+  cerr << "Doing extraction..." << endl;
+
   extract_dense < mat_comprow > ( invcov, z, outspec );
+
+  cerr << "  (PASSED)" << endl;
 
 
   // write output  
@@ -301,7 +325,7 @@ void harp::test_sandbox ( string const & datadir ) {
   out.open ( outdata.c_str(), ios::out );
   
   for ( size_t i = 0; i < nbins; ++i ) {
-    out << i << " " << outspec[i] << endl;
+    out << i << " " << inspec[i] << " " << outspec[i] << endl;
   }
   
   out.close();

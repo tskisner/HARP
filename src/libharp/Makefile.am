@@ -1,7 +1,7 @@
 SUBDIRS = matrix
 
 AM_CPPFLAGS = -I$(top_srcdir)/src/libharp -I$(top_srcdir)/src/libharp/matrix $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS) $(MOAT_CPPFLAGS)
-AM_LDFLAGS = -L$(top_builddir)/src/libharp -L$(top_builddir)/src/libharp/matrix
+AM_LDFLAGS =
 AM_LIBS = $(CFITSIO) $(MOAT) $(BOOST_LDFLAGS) -lm
 
 noinst_HEADERS = harp_internal.hpp
