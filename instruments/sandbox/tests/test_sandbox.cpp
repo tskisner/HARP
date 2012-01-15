@@ -325,7 +325,7 @@ void harp::test_sandbox ( string const & datadir ) {
   out.open ( outdata.c_str(), ios::out );
   
   for ( size_t i = 0; i < nbins; ++i ) {
-    out << i << " " << inspec[i] << " " << outspec[i] << endl;
+    out << i << " " << inspec[i] << " " << outspec[i] << " " << 1.0 / sqrt( invcov(i,i) )<< endl;
   }
   
   out.close();
