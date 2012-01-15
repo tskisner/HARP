@@ -89,6 +89,7 @@ namespace harp {
 
     // DEBUG, test eigen-recomposition
 
+    /*
     for ( size_t i = 0; i < nbins; ++i ) {
       eigdiag( i, i ) = eigval(i,i);
     }
@@ -108,11 +109,12 @@ namespace harp {
     for ( rowit = resmat.begin1(); rowit != resmat.end1(); ++rowit ) {
       for ( colit = rowit.begin(); colit != rowit.end(); ++colit ) {
         checkval = invcov ( colit.index1(), colit.index2() );
-        if ( ( fabs ( checkval ) > moat::EPSILON_DOUBLE ) && fabs ( (*colit) - checkval ) / checkval > 1.0e-6 ) {
+        if ( ( fabs ( checkval ) > moat::EPSILON_SINGLE ) && fabs ( (*colit) - checkval ) / checkval > 1.0e-10 ) {
           std::cerr << "recompose error on (" << colit.index1() << ", " << colit.index2() << ") " << (*colit) << " != " << checkval << std::endl;
         }
       }
     }
+    */
 
     for ( size_t i = 0; i < nbins; ++i ) {
       eigdiag( i, i ) = sqrt ( eigval(i,i) );
@@ -132,6 +134,9 @@ namespace harp {
     //moat::la::multiply_mm < mat_densecol, mat_diag, mat_densecol > ( eigvec, eigdiag, tempmat1, true, true, true, std::string("") );
 
     //moat::la::multiply_mm < mat_densecol, mat_densecol, mat_densecol > ( tempmat1, eigvec, resmat, false, true, true, std::string("") );
+
+    mat_denserow :: iterator1 rowit;
+    mat_denserow :: iterator2 colit;
 
     temp1.clear();
     for ( rowit = resmat.begin1(); rowit != resmat.end1(); ++rowit ) {
