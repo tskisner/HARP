@@ -32,9 +32,13 @@ namespace harp {
     z.resize ( nbins );
     vec_dense temp ( npix );
 
-    moat::la::multiply_mv < N, V, vec_dense > ( invnoise, img, temp, false, true, true, std::string("") );
+    boost::numeric::ublas::axpy_prod ( invnoise, img, temp, true );
 
-    moat::la::multiply_mv < P, vec_dense, vec_dense > ( psf, temp, z, true, true, true, std::string("") );
+    boost::numeric::ublas::axpy_prod ( boost::numeric::ublas::trans ( psf ), temp, z, true );
+
+    //moat::la::multiply_mv < N, V, vec_dense > ( invnoise, img, temp, false, true, true, std::string("") );
+
+    //moat::la::multiply_mv < P, vec_dense, vec_dense > ( psf, temp, z, true, true, true, std::string("") );
 
     return;
   }
@@ -62,10 +66,11 @@ namespace harp {
     vec_dense sqrteig ( nbins );
     vec_dense temp1 ( nbins );
 
-    mat_densecol tempmat1 ( nbins, nbins );
-    mat_densecol resmat ( nbins, nbins );
+    mat_denserow tempmat1 ( nbins, nbins );
+    mat_denserow resmat ( nbins, nbins );
 
-    // eigendecompose the inverse covariance
+    // eigendecompose the inverse covariance.  Note that the *rows*
+    // of this matrix are the eigenvectors.
 
     boost::numeric::ublas::EigenvalueDecomposition eig ( invcov );
 
@@ -88,19 +93,23 @@ namespace harp {
       eigdiag( i, i ) = eigval(i,i);
     }
 
-    moat::la::multiply_mm < mat_denserow, mat_diag, mat_densecol > ( eigvec, eigdiag, tempmat1, true, true, true, std::string("") );
+    boost::numeric::ublas::axpy_prod ( eigdiag, boost::numeric::ublas::trans ( eigvec ), tempmat1, true );
 
-    moat::la::multiply_mm < mat_densecol, mat_denserow, mat_densecol > ( tempmat1, eigvec, resmat, false, true, true, std::string("") );
+    boost::numeric::ublas::axpy_prod ( eigvec, tempmat1, resmat, true );
+    
+    //moat::la::multiply_mm < mat_denserow, mat_diag, mat_densecol > ( eigvec, eigdiag, tempmat1, true, true, true, std::string("") );
 
-    mat_densecol :: iterator2 rowit;
-    mat_densecol :: iterator1 colit;
+    //moat::la::multiply_mm < mat_densecol, mat_denserow, mat_densecol > ( tempmat1, eigvec, resmat, false, true, true, std::string("") );
+
+    mat_denserow :: iterator1 rowit;
+    mat_denserow :: iterator2 colit;
 
     double checkval;
-    for ( colit = resmat.begin1(); colit != resmat.end1(); ++colit ) {
-      for ( rowit = colit.begin(); rowit != colit.end(); ++rowit ) {
-        checkval = invcov ( rowit.index1(), rowit.index2() );
-        if ( fabs ( (*rowit) - checkval ) / checkval > 1.0e-6 ) {
-          std::cerr << "recompose error on (" << rowit.index1() << ", " << rowit.index2() << ") " << (*rowit) << " != " << checkval << std::endl;
+    for ( rowit = resmat.begin1(); rowit != resmat.end1(); ++rowit ) {
+      for ( colit = rowit.begin(); colit != rowit.end(); ++colit ) {
+        checkval = invcov ( colit.index1(), colit.index2() );
+        if ( ( fabs ( checkval ) > moat::EPSILON_DOUBLE ) && fabs ( (*colit) - checkval ) / checkval > 1.0e-6 ) {
+          std::cerr << "recompose error on (" << colit.index1() << ", " << colit.index2() << ") " << (*colit) << " != " << checkval << std::endl;
         }
       }
     }
@@ -112,20 +121,28 @@ namespace harp {
 
     // compute the resolution matrix
 
-    moat::la::multiply_mm < mat_densecol, mat_diag, mat_densecol > ( eigvec, eigdiag, tempmat1, true, true, true, std::string("") );
+    boost::numeric::ublas::axpy_prod ( eigdiag, boost::numeric::ublas::trans ( eigvec ), tempmat1, true );
 
-    moat::la::multiply_mm < mat_densecol, mat_densecol, mat_densecol > ( tempmat1, eigvec, resmat, false, true, true, std::string("") );
+    boost::numeric::ublas::axpy_prod ( eigvec, tempmat1, resmat, true );
+
+    //boost::numeric::ublas::axpy_prod ( boost::numeric::ublas::trans ( eigvec ), eigdiag, tempmat1, true );
+
+    //boost::numeric::ublas::axpy_prod ( tempmat1, eigvec, resmat, true );
+
+    //moat::la::multiply_mm < mat_densecol, mat_diag, mat_densecol > ( eigvec, eigdiag, tempmat1, true, true, true, std::string("") );
+
+    //moat::la::multiply_mm < mat_densecol, mat_densecol, mat_densecol > ( tempmat1, eigvec, resmat, false, true, true, std::string("") );
 
     temp1.clear();
-    for ( colit = resmat.begin1(); colit != resmat.end1(); ++colit ) {
-      for ( rowit = colit.begin(); rowit != colit.end(); ++rowit ) {
-        temp1 [ rowit.index2() ] += (*rowit);
+    for ( rowit = resmat.begin1(); rowit != resmat.end1(); ++rowit ) {
+      for ( colit = rowit.begin(); colit != rowit.end(); ++colit ) {
+        temp1 [ colit.index1() ] += (*colit);
       }
     }
 
-    for ( colit = resmat.begin1(); colit != resmat.end1(); ++colit ) {
-      for ( rowit = colit.begin(); rowit != colit.end(); ++rowit ) {
-        (*rowit) /= temp1 [ rowit.index2() ];
+    for ( rowit = resmat.begin1(); rowit != resmat.end1(); ++rowit ) {
+      for ( colit = rowit.begin(); colit != rowit.end(); ++colit ) {
+        (*colit) /= temp1 [ colit.index1() ];
       }
     }
 
@@ -134,19 +151,31 @@ namespace harp {
     mat_densecol covmat ( nbins, nbins );
 
     for ( size_t i = 0; i < nbins; ++i ) {
-      eigdiag( i, i ) = 1.0 / eigdiag(i,i);
+      eigdiag( i, i ) = 1.0 / eigval(i,i);
     }
 
-    moat::la::multiply_mm < mat_densecol, mat_diag, mat_densecol > ( eigvec, eigdiag, tempmat1, true, true, true, std::string("") );
+    boost::numeric::ublas::axpy_prod ( eigdiag, boost::numeric::ublas::trans ( eigvec ), tempmat1, true );
 
-    moat::la::multiply_mm < mat_densecol, mat_densecol, mat_densecol > ( tempmat1, eigvec, covmat, false, true, true, std::string("") );
+    boost::numeric::ublas::axpy_prod ( eigvec, tempmat1, covmat, true );
+
+    //boost::numeric::ublas::axpy_prod ( boost::numeric::ublas::trans ( eigvec ), eigdiag, tempmat1, true );
+
+    //boost::numeric::ublas::axpy_prod ( tempmat1, eigvec, covmat, true );
+
+    //moat::la::multiply_mm < mat_densecol, mat_diag, mat_densecol > ( eigvec, eigdiag, tempmat1, true, true, true, std::string("") );
+
+    //moat::la::multiply_mm < mat_densecol, mat_densecol, mat_densecol > ( tempmat1, eigvec, covmat, false, true, true, std::string("") );
 
     // compute the resolution-convolved spectra
     // Rf = RCZ
 
-    moat::la::multiply_mv < mat_densecol, vec_dense, vec_dense > ( covmat, z, temp1, false, true, true, std::string("") );
+    boost::numeric::ublas::axpy_prod ( covmat, z, temp1, true );
 
-    moat::la::multiply_mv < mat_densecol, vec_dense, vec_dense > ( resmat, temp1, f, false, true, true, std::string("") );
+    boost::numeric::ublas::axpy_prod ( resmat, temp1, f, true );
+
+    //moat::la::multiply_mv < mat_densecol, vec_dense, vec_dense > ( covmat, z, temp1, false, true, true, std::string("") );
+
+    //moat::la::multiply_mv < mat_densecol, vec_dense, vec_dense > ( resmat, temp1, f, false, true, true, std::string("") );
     
 
     return;

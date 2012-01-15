@@ -118,11 +118,37 @@ void harp::test_tinyKLT ( string const & datadir ) {
 
   extract_dense < mat_comprow > ( invcov, z, outspec );
 
+  /*
   for ( size_t i = 0; i < 5; ++i ) {
     for ( size_t j = 0; j < 5; ++j ) {
       cerr << "(" << i << "," << j << ") " << truespec( 5 * i + j ) << " " << outspec( 5 * i + j) << " +/- " << 1.0 / sqrt( invcov(5*i+j, 5*i+j) ) << endl;
     }
   }
+  */
+
+  string kltspecout = datadir + "/test_klt_spec.out";
+  string kltimgout = datadir + "/test_klt_img.out";
+
+  fstream out;
+  out.precision(16);
+
+  out.open ( kltimgout.c_str(), ios::out );
+  out.precision(16);
+
+  for ( int64_t i = 0; i < npix; ++i ) {
+    out << noiseless[i] << " " << imgnoise[i] << " " << measured[i] << endl;
+  }
+
+  out.close();
+
+  out.open ( kltspecout.c_str(), ios::out );
+  out.precision(16);
+
+  for ( int64_t i = 0; i < nbins; ++i ) {
+    out << truespec[i] << " " << outspec[i] << " " << 1.0 / sqrt( invcov(i,i) ) << endl;
+  }
+
+  out.close();
   
   cerr << "  (PASSED)" << endl;
 
