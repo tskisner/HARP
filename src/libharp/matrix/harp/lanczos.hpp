@@ -7,7 +7,9 @@
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/exception.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
-#include <boost/numeric/ublas/bindings/lapack/lapack.hpp>
+#include <boost/numeric/bindings/lapack.hpp>
+
+#include <moat.hpp>
 
 namespace boost { namespace numeric { namespace ublas {
 
@@ -366,6 +368,238 @@ namespace boost { namespace numeric { namespace ublas {
       std::vector<magnitude_type> residuum_;
       std::vector<errorinfo> status_;
   };
+
+
+  // iteration classes
+
+  template <class T>
+  class basic_iteration {
+    public:       
+      basic_iteration(unsigned int max_iter, T reltol = 0., T abstol = 0.) : error(0), i(0), max_iter_(max_iter), rtol_(reltol), atol_(abstol) { }        
+      bool finished(T r,T lambda) {
+        if (converged(r,lambda))
+          return true;
+        else if (i < max_iter_)
+          return false;
+        else {
+          fail(1,"maximum number of iterations exceeded");
+          return true;
+        }
+      }
+    
+      inline bool converged(T r, T lambda) {
+        return (r <= rtol_ * std::fabs(lambda) || r < atol_); // relative or absolute tolerance.
+      }    
+      
+      inline void operator++() { ++i; }  
+      inline bool first() { return i == 0; }    
+      inline int error_code() { return error; }    
+      inline unsigned int iterations() { return i; }    
+      inline T relative_tolerance() { return rtol_; }
+      inline T absolute_tolerance() { return atol_; }
+      inline unsigned int max_iterations() { return max_iter_; }    
+      inline void fail(int err_code) { error = err_code; }  
+      inline void fail(int err_code, const std::string& msg) { error = err_code; err_msg = msg; }
+    
+    protected:
+      int error;
+      unsigned int i;    
+      unsigned int max_iter_;
+      T rtol_;
+      T atol_;
+      std::string err_msg;
+  };
+  
+  template <class T, class Derived>
+  class basic_lanczos_iteration {
+    public:         
+      basic_lanczos_iteration(unsigned int max_iter, T r = 0., T a = 0.) : error(0), i(0), 
+      max_iter_(max_iter), rtol_(r), atol_(a) { }   
+    
+      template <class Tmatrix>
+      bool finished(const Tmatrix& tmatrix) {
+        if (static_cast<const Derived&>(*this).converged(tmatrix))
+          return true;
+        else if (i < max_iter_)
+          return false;
+        else {
+          fail (1, "maximum number of iterations exceeded");
+          return true;
+        }
+      }
+    
+      bool converged() const { return false;}
+      void operator++() { ++i; }    
+      bool first() const { return i == 0; }
+      int error_code() const { return error; }  
+      unsigned int iterations() const { return i; }  
+      inline unsigned int max_iterations() { return max_iter_; }    
+      T relative_tolerance() const { return rtol_; }
+      T absolute_tolerance() const { return atol_; }   
+      inline void fail(int err_code){ error = err_code; }  
+      inline void fail(int err_code, const std::string& msg) { error = err_code; err_msg = msg; }
+    
+    protected:
+      int error;
+      unsigned int i;    
+      unsigned int max_iter_;
+      T rtol_;
+      T atol_;
+      std::string err_msg;
+  };
+  
+  template <class T>
+  class lanczos_iteration_nlowest : public basic_lanczos_iteration<T,lanczos_iteration_nlowest<T> > {
+    typedef basic_lanczos_iteration<T,lanczos_iteration_nlowest<T> > super_type;
+    public:         
+      lanczos_iteration_nlowest(unsigned int max_iter, unsigned int n= 1, 
+      T r = 100.*std::numeric_limits<T>::epsilon(), 
+      T a = 100.*std::numeric_limits<T>::epsilon())
+      : basic_lanczos_iteration<T,lanczos_iteration_nlowest<T> >(max_iter,r,a), n_(n) { }   
+        
+      template <class Tmatrix>
+      bool converged(const Tmatrix& tmatrix) const { 
+        if(super_type::iterations()>1) {
+          const std::vector<T>& errs = tmatrix.errors();
+          const std::vector<T>& vals = tmatrix.eigenvalues();      
+          if(vals.size()<n_)
+            return false;
+          else { 
+            for(unsigned int i = 0; i < n_; i++)
+              if (errs[i] > std::max(super_type::absolute_tolerance(),super_type::relative_tolerance()*std::abs(vals[i])))
+                return false;
+              return true;
+          }
+        }
+        return false;
+      }    
+    
+    private:
+      unsigned int n_; 
+  };
+  
+
+  template <class T>
+  class lanczos_iteration_nhighest : public basic_lanczos_iteration<T,lanczos_iteration_nhighest<T> > {
+    typedef basic_lanczos_iteration<T,lanczos_iteration_nhighest<T> > super_type;
+    public:     
+    
+      lanczos_iteration_nhighest(unsigned int max_iter, unsigned int n= 1,
+        T r = 100.*std::numeric_limits<T>::epsilon(), 
+        T a = 100.*std::numeric_limits<T>::epsilon())
+        : basic_lanczos_iteration<T,lanczos_iteration_nhighest<T> >(max_iter,r,a), n_(n){}
+    
+      template <class Tmatrix>
+      bool converged(const Tmatrix& tmatrix) const {
+        if(super_type::iterations()>1) { 
+          const std::vector<T>& errs = tmatrix.errors();
+          const std::vector<T>& vals = tmatrix.eigenvalues();
+  
+          if(errs.size()<n_)
+            return false;
+          else { 
+            for(int i = 0; i < n_; i++)
+              if (errs[errs.size()-i - 1] > std::max(super_type::absolute_tolerance(),
+                 super_type::relative_tolerance()*std::abs(vals[vals.size()-i-1])))
+                return false;
+              return true;
+          }
+        } 
+        return false;
+      }   
+        
+    private:
+      unsigned int n_; 
+  };
+  
+  
+  template <class T>
+  class fixed_lanczos_iteration : public basic_lanczos_iteration<T,fixed_lanczos_iteration<T> > {
+    public:         
+      fixed_lanczos_iteration(unsigned int max_iter)
+      : basic_lanczos_iteration<T,fixed_lanczos_iteration<T> >(max_iter,0.,0.) { }   
+        
+      template <class Tmatrix>
+      bool converged(const Tmatrix& ) const { return false;}    
+  };
+
+
+  template <class T>
+  class bandlanczos_iteration_nlowest {
+    public:
+      bandlanczos_iteration_nlowest(unsigned int max_iter,T def_tol, 
+        T dep_tol,T ghost_tol,
+        bool ghost_discarding,unsigned int evs)
+        : max_iter_(max_iter), def_tol_(def_tol),
+        dep_tol_(dep_tol), ghost_tol_(ghost_tol),
+        ghost_discarding_(ghost_discarding), evs_(evs) {
+        i=0;
+      };
+
+      bool finished() const {
+        if ( i < max_iter_ )
+          return false;
+        else
+          return true;
+      }
+      inline void operator++() { ++i; };
+      inline void operator--() { --i; };
+      inline bool first() { return i == 0; };
+      inline unsigned int iterations() { return i; };
+      inline unsigned int evs() { return evs_; };
+      inline unsigned int max_iter() { return max_iter_; };
+      inline T def_tol() { return def_tol_; };
+      inline T dep_tol() { return dep_tol_; };
+      inline T ghost_tol() { return ghost_tol_; };
+      inline bool ghost_discarding() { return ghost_discarding_; };
+      inline bool low() { return true; };
+    private:
+      unsigned int i;
+      unsigned int max_iter_;
+      unsigned int evs_;
+      T def_tol_;
+      T dep_tol_;
+      T ghost_tol_;
+      bool ghost_discarding_;
+  };
+
+  template <class T>
+  class bandlanczos_iteration_nhighest {
+    public:
+      bandlanczos_iteration_nhighest(unsigned int max_iter,T def_tol,
+        T dep_tol,T ghost_tol,
+        bool ghost_discarding, unsigned int evs)
+        : max_iter_(max_iter), def_tol_(def_tol),
+        dep_tol_(dep_tol), ghost_tol_(ghost_tol),
+        ghost_discarding_(ghost_discarding), evs_(evs) {
+        i=0;
+      };
+      bool finished() const {
+        if ( i < max_iter_ )
+          return false;
+        else
+          return true;
+      }
+      inline void operator++() { ++i; };
+      inline void operator--() { --i; };
+      inline bool first() { return i == 0; };
+      inline unsigned int iterations() { return i; };
+      inline unsigned int evs() { return evs_; };
+      inline unsigned int max_iter() { return max_iter_; };
+      inline T def_tol() { return def_tol_; };
+      inline T dep_tol() { return dep_tol_; };
+      inline T ghost_tol() { return ghost_tol_; };
+      inline bool ghost_discarding() { return ghost_discarding_; };
+      inline bool low() { return false; };
+    private:
+      unsigned int i;
+      unsigned int max_iter_;
+      unsigned int evs_;
+      T def_tol_;
+      T dep_tol_;
+      T ghost_tol_;
+      bool ghost_discarding_;
+  };
   
   // class lanczos starts:
   template <class MATRIX, class VS>
@@ -492,9 +726,9 @@ namespace boost { namespace numeric { namespace ublas {
           eval = super_type::alpha;
           etemp = super_type::beta;
 
-          info = boost::numeric::bindings::lapack::stev ( 'V', ma, &(eval[0]), &(etemp[0]), z.data() );
+          int lapack_info = boost::numeric::bindings::lapack::stev ( 'V', ma, &(eval[0]), &(etemp[0]), z.data() );
 
-          if (info > 0)
+          if (lapack_info > 0)
             throw std::runtime_error("LAPACK error, stev function failed.");
           
           // search for the value of nth starts, where nth is the nth eigen vector in z.            
@@ -584,11 +818,11 @@ namespace boost { namespace numeric { namespace ublas {
         eigenvectors_itr != eigvectors.end(); eigenvectors_itr++) {
       *eig_vectors = *eigenvectors_itr;
       eig_vectors++;
-      ietl::mult(matrix_, *eigenvectors_itr, vec3);
+      moat::la::prod ( matrix_, *eigenvectors_itr, vec3 );
       vec3-=eigenval_a[i++]*(*eigenvectors_itr);
       
       // now vec3 is (A*v - eigenval_a*v); *eigenvectors_itr) is being added in vec3.
-      residuum.push_back(ietl::two_norm(vec3));
+      residuum.push_back(norm_2(vec3));
     } // copying to the output iterator ends.    
     inf =  Info<magnitude_type>(M1, M2, Ma, eigenval_a,residuum, status);
   } // end of void eigenvector(....).
@@ -683,11 +917,11 @@ namespace boost { namespace numeric { namespace ublas {
     magnitude_type a, b;
     generate(startvector,gen);      
     project(startvector,vecspace_);
-    startvector/=ietl::two_norm(startvector); // normalization of startvector.
-    ietl::mult(matrix_,startvector,vec2);
-    a =  ietl::real(ietl::dot(startvector,vec2));
+    startvector/=norm_2(startvector); // normalization of startvector.
+    moat::la::prod ( matrix_, startvector, vec2 );
+    a = static_cast < magnitude_type > ( moat::la::dot ( startvector, vec2 ) );
     vec2 -= a*startvector;
-    b =  ietl::two_norm(vec2);   
+    b = norm_2(vec2);   
     vec2 /= b;
     return std::make_pair(a,b);
   }  
@@ -697,16 +931,18 @@ namespace boost { namespace numeric { namespace ublas {
   lanczos<MATRIX, VS>::make_step(int j,vector_type& vec3) {
     magnitude_type a, b;
     b = super_type::beta[j-1];
-    ietl::mult(matrix_,vec2,vec3);
-    a = ietl::real(ietl::dot(vec2,vec3));
+    moat::la::prod ( matrix_, vec2, vec3 );
+    a = static_cast < magnitude_type > ( moat::la::dot ( vec2, vec3 ) );
     vec3-=a*vec2;
     vec3-=b*startvector;
-    b = ietl::two_norm(vec3);
+    b = norm_2(vec3);
     vec3/=b;
     std::swap(vec2,startvector); 
     std::swap(vec3,vec2);
     return std::make_pair(a,b);
   }
+
+
 
 
 }}}

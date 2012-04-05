@@ -10,6 +10,8 @@
 #include <harp/QRDecomposition.hpp>
 #include <harp/SingularValueDecomposition.hpp>
 
+#include <harp/lanczos.hpp>
+
 
 #endif
 

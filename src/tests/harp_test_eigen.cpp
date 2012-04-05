@@ -80,18 +80,20 @@ void harp::test_eigen ( string const & datadir ) {
 
   cerr << "Testing Lanczos eigendecomposition..." << endl;
 
-  /*
+  typedef boost::numeric::ublas::vector < double > lan_vector;
+
+  typedef boost::numeric::ublas::wrapper_vectorspace < lan_vector > lan_vs;
+
   // get eigenvectors and eigenvalues
 
-  boost::numeric::ublas::EigenvalueDecomposition eig ( sym );
+  lan_vs vs ( SIZE );
+  boost::numeric::ublas::lanczos < mat_denserow, lan_vs > lcz ( sym, vs );
 
-  boost::numeric::ublas::matrix < double > eigval = eig.getD();
-  boost::numeric::ublas::matrix < double > eigvec = eig.getV();
+  /*
+  //boost::numeric::ublas::matrix < double > eigval = eig.getD();
+  //boost::numeric::ublas::matrix < double > eigvec = eig.getV();
 
   // Test for solution to eigenvalue equation
-
-  mat_denserow symprod ( SIZE, SIZE );
-  mat_denserow eprod ( SIZE, SIZE );
 
   boost::numeric::ublas::axpy_prod ( sym, eigvec, symprod, true );
   boost::numeric::ublas::axpy_prod ( eigvec, eigval, eprod, true );
