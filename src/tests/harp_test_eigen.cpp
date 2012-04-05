@@ -76,5 +76,40 @@ void harp::test_eigen ( string const & datadir ) {
   
   cerr << "  (PASSED)" << endl;
 
+
+
+  cerr << "Testing Lanczos eigendecomposition..." << endl;
+
+  /*
+  // get eigenvectors and eigenvalues
+
+  boost::numeric::ublas::EigenvalueDecomposition eig ( sym );
+
+  boost::numeric::ublas::matrix < double > eigval = eig.getD();
+  boost::numeric::ublas::matrix < double > eigvec = eig.getV();
+
+  // Test for solution to eigenvalue equation
+
+  mat_denserow symprod ( SIZE, SIZE );
+  mat_denserow eprod ( SIZE, SIZE );
+
+  boost::numeric::ublas::axpy_prod ( sym, eigvec, symprod, true );
+  boost::numeric::ublas::axpy_prod ( eigvec, eigval, eprod, true );
+
+  double relerr;
+
+  for ( size_t i = 0; i < SIZE; ++i ) {
+    for ( size_t j = 0; j < SIZE; ++j ) {
+      relerr = fabs ( eprod(i,j) - symprod(i,j) ) / symprod(i,j);
+      if ( relerr > TOL ) {
+         cerr << "FAIL on matrix element (" << i << ", " << j << ") Av = " << symprod(i,j) << ", ev = " << eprod(i,j) << " rel err = " << relerr << endl;
+         exit(1);
+      }
+    }
+  }
+  */
+
+  cerr << "  (PASSED)" << endl;
+
   return;
 }

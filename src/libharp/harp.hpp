@@ -41,6 +41,8 @@ namespace harp {
   typedef boost::numeric::ublas::vector < double > vec_dense;
   typedef boost::numeric::ublas::mapped_vector < uint8_t > vec_flag;
   typedef boost::numeric::ublas::vector < int > vec_denseint;
+
+  typedef boost::numeric::ublas::range mv_range;
   
 }
 

@@ -133,36 +133,15 @@ void harp::test_sandbox_sky ( string const & datadir ) {
 
   vec_dense z ( nbins );
 
-  noise_weighted_spec < mat_compcol, mat_comprow, vec_dense > ( projmat, invnoise, measured, z );
+  noise_weighted_spec ( projmat, invnoise, measured, z );
 
 
   // construct the inverse spectral covariance matrix
 
   mat_comprow invcov ( nbins, nbins );
 
-  mat_dynrow builder ( nbins, nbins );
+  inverse_covariance ( projmat, invnoise, invcov );
 
-  mat_compcol temp ( npix, nbins );
-
-  cerr << "  multiply N^-1 A..." << endl;
-
-  moat::la::multiply_mm < mat_comprow, mat_compcol, mat_compcol > ( invnoise, projmat, temp, false, true, true, "" );
-
-  //boost::numeric::ublas::axpy_prod ( invnoise, projmat, temp, true );
-
-  cerr << "  multiply A^T N^-1..." << endl;
-  moat::la::multiply_mm < mat_compcol, mat_compcol, mat_dynrow > ( projmat, temp, builder, true, true, true, std::string("") );
-  
-  //boost::numeric::ublas::axpy_prod ( boost::numeric::ublas::trans ( projmat ), temp, builder, true );
-
-  mat_dynrow::iterator2 itcol;
-  mat_dynrow::iterator1 itrow;
-
-  for ( itcol = builder.begin2(); itcol != builder.end2(); ++itcol ) {
-    for ( itrow = itcol.begin(); itrow != itcol.end(); ++itrow ) {
-      invcov ( itrow.index1(), itrow.index2() ) = (*itrow);
-    }
-  }
 
   // extraction
 
@@ -170,7 +149,7 @@ void harp::test_sandbox_sky ( string const & datadir ) {
 
   cerr << "  extract..." << endl;
 
-  extract_dense < mat_comprow > ( invcov, z, outspec );
+  extract_dense ( invcov, z, outspec );
 
   // write output  
 
@@ -185,21 +164,44 @@ void harp::test_sandbox_sky ( string const & datadir ) {
   
   out.close();
 
-  // compute mean sky signal
+  // compute PCA of sky fibers as starting point for sky subtraction
 
   // we use 3 spectra as "sky fibers"
-  
-  vec_dense meansky ( specsize );
-  vec_dense meanskyhits ( specsize );
 
+  mat_denserow skydata ( 3, specsize );
+  
+  size_t k = 0;
   for ( size_t i = 0; i < nspec; ++i ) {
     for ( size_t j = 0; j < specsize; ++j ) {
       if ( (i + 1) % 3 == 0 ) {
-        meansky[ j ] += outspec[ specsize * i + j ];
-        meanskyhits[ j ] += 1.0;
+        skydata ( j, k ) = outspec[ specsize * i + j ];
+        ++k;
       }
     }
   }
+
+  boost::numeric::ublas::SingularValueDecomposition < double > svd ( skydata, false, true, true );
+
+  mat_denserow pcomp = svd.getV();
+
+  // restrict to just 2 components and use as the starting point for iterative
+  // sky subtraction.  build component-appended design matrix.
+
+  typedef boost::numeric::ublas::matrix_range < mat_denserow > mdr_view;
+
+  mdr_view skycomp ( pcomp, mv_range ( 0, 2 ), mv_range ( 0, specsize ) );
+
+  mat_compcol projmat_skycomp;
+
+  append_sky_comp ( projmat, skycomp, nspec, projmat_skycomp );
+
+
+  // do extraction to 
+
+
+
+
+  /*
 
   outdata = datadir + "/test_skysub_est-sky0.out";
 
@@ -227,7 +229,9 @@ void harp::test_sandbox_sky ( string const & datadir ) {
 
   // Iterative sky subtraction
 
-  
+  mat_dense 
+
+  */
 
 
 

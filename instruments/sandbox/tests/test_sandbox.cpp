@@ -270,7 +270,7 @@ void harp::test_sandbox ( string const & datadir ) {
 
   cerr << "Multiply N^-1 A..." << endl;
 
-  moat::la::multiply_mm < mat_comprow, mat_compcol, mat_compcol > ( invnoise, projmat, temp, false, true, true, "" );
+  moat::la::prod ( invnoise, projmat, temp );
 
   //boost::numeric::ublas::axpy_prod ( invnoise, projmat, temp, true );
 
@@ -279,7 +279,7 @@ void harp::test_sandbox ( string const & datadir ) {
 
   cerr << "Multiply A^T (N^-1 A)..." << endl;
 
-  moat::la::multiply_mm < mat_compcol, mat_compcol, mat_dynrow > ( projmat, temp, builder, true, true, true, std::string("") );
+  moat::la::prod ( projmat, temp, builder );
   
   //boost::numeric::ublas::axpy_prod ( boost::numeric::ublas::trans ( projmat ), temp, builder, true );
 

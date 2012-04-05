@@ -89,7 +89,8 @@ void harp::test_tinyKLT ( string const & datadir ) {
 
   vec_dense z ( nbins );
 
-  noise_weighted_spec < mat_compcol, mat_comprow, vec_dense > ( projmat, invnoise, measured, z );
+  noise_weighted_spec ( projmat, invnoise, measured, z );
+  //noise_weighted_spec < mat_compcol, mat_comprow, vec_dense > ( projmat, invnoise, measured, z );
 
   // construct the inverse spectral covariance matrix
 
@@ -116,7 +117,7 @@ void harp::test_tinyKLT ( string const & datadir ) {
 
   vec_dense outspec ( nbins );
 
-  extract_dense < mat_comprow > ( invcov, z, outspec );
+  extract_dense ( invcov, z, outspec );
 
   /*
   for ( size_t i = 0; i < 5; ++i ) {

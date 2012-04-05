@@ -3,23 +3,31 @@
 #ifndef HARP_EXTRACT_HPP
 #define HARP_EXTRACT_HPP
 
+#include <boost/numeric/ublas/matrix_proxy.hpp>
+
 
 namespace harp {
 
-  template < class P, class N, class V >
-  void noise_weighted_spec ( P & psf, N & invnoise, V & img, vec_dense & z ) {
-    size_t npix = psf.size1();
-    size_t nbins = psf.size2();
+  template < class P, class N, class V, class W >
+  void noise_weighted_spec ( boost::numeric::ublas::matrix_expression < P > const & psf, boost::numeric::ublas::matrix_expression < N > const & invnoise, V & img, W & z ) {
 
-    if ( invnoise.size1() != npix ) {
+    typedef V img_type;
+    typedef W z_type;
+
+//  template < class P, class N, class V >
+//  void noise_weighted_spec ( P & psf, N & invnoise, V & img, vec_dense & z ) {
+    size_t npix = psf().size1();
+    size_t nbins = psf().size2();
+
+    if ( invnoise().size1() != npix ) {
       std::ostringstream o;
-      o << "number of rows in inverse noise covariance (" << invnoise.size1() << ") does not match number of pixels in PSF (" << npix << ")";
+      o << "number of rows in inverse noise covariance (" << invnoise().size1() << ") does not match number of pixels in PSF (" << npix << ")";
       MOAT_THROW( o.str().c_str() );
     }
 
-    if ( invnoise.size2() != npix ) {
+    if ( invnoise().size2() != npix ) {
       std::ostringstream o;
-      o << "number of columns in inverse noise covariance (" << invnoise.size2() << ") does not match number of pixels in PSF (" << npix << ")";
+      o << "number of columns in inverse noise covariance (" << invnoise().size2() << ") does not match number of pixels in PSF (" << npix << ")";
       MOAT_THROW( o.str().c_str() );
     }
 
@@ -30,11 +38,12 @@ namespace harp {
     }
 
     z.resize ( nbins );
-    vec_dense temp ( npix );
-
+    z_type temp ( npix );
+    
     boost::numeric::ublas::axpy_prod ( invnoise, img, temp, true );
 
     boost::numeric::ublas::axpy_prod ( boost::numeric::ublas::trans ( psf ), temp, z, true );
+    
 
     //moat::la::multiply_mv < N, V, vec_dense > ( invnoise, img, temp, false, true, true, std::string("") );
 
@@ -44,12 +53,64 @@ namespace harp {
   }
 
 
-  template < class C >
-  void extract_dense ( C & invcov, vec_dense & z, vec_dense & f ) {
+  template < class P, class N, class R >
+  void inverse_covariance ( boost::numeric::ublas::matrix_expression < P > const & psf, boost::numeric::ublas::matrix_expression < N > const & invnoise, boost::numeric::ublas::matrix_expression < R > & output ) {
 
-    size_t nbins = invcov.size1();
+    // check consistent sizes
 
-    if ( invcov.size2() != nbins ) {
+    if ( invnoise().size1() != invnoise().size2() ) {
+      MOAT_THROW( "inverse noise covariance must be square" );
+    }
+
+    if ( output().size1() != output().size2() ) {
+      MOAT_THROW( "output inverse spectral covariance must be square" );
+    }
+
+    if ( invnoise().size1() != psf().size1() ) {
+      std::ostringstream o;
+      o << "number of rows in inverse noise covariance (" << invnoise().size1() << ") does not match number of pixels in PSF (" << psf().size1() << ")";
+      MOAT_THROW( o.str().c_str() );
+    }
+
+    if ( output().size1() != psf().size2() ) {
+      std::ostringstream o;
+      o << "dimension of output spectral covariance (" << output().size2() << ") does not match number of bins in PSF (" << psf().size2() << ")";
+      MOAT_THROW( o.str().c_str() );
+    }
+
+    size_t nbins = psf().size2();
+    size_t npix = psf().size1();
+
+    // construct the inverse spectral covariance matrix
+
+    mat_dynrow builder ( nbins, nbins );
+
+    mat_dynrow temp ( npix, nbins );
+
+    std::cerr << "  multiply N^-1 A..." << std::endl;
+
+    boost::numeric::ublas::axpy_prod ( invnoise, psf, temp, true );
+
+    std::cerr << "  multiply A^T N^-1..." << std::endl;
+    
+    boost::numeric::ublas::axpy_prod ( boost::numeric::ublas::trans ( psf ), temp, builder, true );
+
+    output().assign ( builder );
+
+    return;
+  }
+
+
+
+  template < class C, class V, class W >
+  void extract_dense ( boost::numeric::ublas::matrix_expression < C > const & invcov, V & z, W & f ) {
+
+    typedef V z_type;
+    typedef W f_type;
+
+    size_t nbins = invcov().size1();
+
+    if ( invcov().size2() != nbins ) {
       std::ostringstream o;
       o << "inverse spectral covariance must be square";
       MOAT_THROW( o.str().c_str() );
@@ -83,7 +144,7 @@ namespace harp {
 
     // find D^1/2
 
-    mat_diag eigdiag ( nbins, nbins );
+    mat_densecol eigdiag ( nbins, nbins );
 
     vec_dense :: iterator vit;
 
@@ -127,13 +188,9 @@ namespace harp {
 
     boost::numeric::ublas::axpy_prod ( eigvec, tempmat1, resmat, true );
 
-    //boost::numeric::ublas::axpy_prod ( boost::numeric::ublas::trans ( eigvec ), eigdiag, tempmat1, true );
+    //moat::la::multiply_mm < mat_densecol, mat_densecol, mat_densecol > ( eigdiag, boost::numeric::ublas::trans ( eigvec ), tempmat1, false, true, true, std::string("") );
 
-    //boost::numeric::ublas::axpy_prod ( tempmat1, eigvec, resmat, true );
-
-    //moat::la::multiply_mm < mat_densecol, mat_diag, mat_densecol > ( eigvec, eigdiag, tempmat1, true, true, true, std::string("") );
-
-    //moat::la::multiply_mm < mat_densecol, mat_densecol, mat_densecol > ( tempmat1, eigvec, resmat, false, true, true, std::string("") );
+    //moat::la::multiply_mm < mat_densecol, mat_densecol, mat_densecol > ( eigvec, tempmat1, resmat, false, true, true, std::string("") );
 
     mat_denserow :: iterator1 rowit;
     mat_denserow :: iterator2 colit;
@@ -163,13 +220,9 @@ namespace harp {
 
     boost::numeric::ublas::axpy_prod ( eigvec, tempmat1, covmat, true );
 
-    //boost::numeric::ublas::axpy_prod ( boost::numeric::ublas::trans ( eigvec ), eigdiag, tempmat1, true );
+    //moat::la::multiply_mm < mat_densecol, mat_densecol, mat_densecol > ( eigdiag, boost::numeric::ublas::trans ( eigvec ), tempmat1, false, true, true, std::string("") );
 
-    //boost::numeric::ublas::axpy_prod ( tempmat1, eigvec, covmat, true );
-
-    //moat::la::multiply_mm < mat_densecol, mat_diag, mat_densecol > ( eigvec, eigdiag, tempmat1, true, true, true, std::string("") );
-
-    //moat::la::multiply_mm < mat_densecol, mat_densecol, mat_densecol > ( tempmat1, eigvec, covmat, false, true, true, std::string("") );
+    //moat::la::multiply_mm < mat_densecol, mat_densecol, mat_densecol > ( eigvec, tempmat1, covmat, false, true, true, std::string("") );
 
     // compute the resolution-convolved spectra
     // Rf = RCZ
@@ -185,6 +238,63 @@ namespace harp {
 
     return;
   }
+
+
+  template < class P, class S, class R >
+  void append_sky_comp ( boost::numeric::ublas::matrix_expression < P > const & psf, boost::numeric::ublas::matrix_expression < S > const & sky, size_t nspec, boost::numeric::ublas::matrix_expression < R > & output ) {
+
+    typedef boost::numeric::ublas::matrix_range < R > R_view;
+
+
+    // verify that length of sky components equals number of columns in design matrix
+
+    size_t npix = psf().size1();
+    size_t nbins = psf().size2();
+    size_t ncomp = sky().size1();
+    size_t nspecbins = (size_t) ( nbins / nspec );
+
+    if ( sky().size2() != nspecbins ) {
+      std::ostringstream o;
+      o << "number of columns in sky component matrix (" << sky().size2() << ") does not match number of bins per spectrum in PSF (" << nspecbins << ")";
+      MOAT_THROW( o.str().c_str() );
+    }
+
+    if ( ncomp > nspecbins ) {
+      std::ostringstream o;
+      o << "number of sky components (" << ncomp << ") exceeds the number of flux bins per spectrum (" << nbins << ")";
+      MOAT_THROW( o.str().c_str() );
+    }
+
+    // resize output matrix and copy the original design matrix into the
+    // first column block
+
+    output().resize ( npix, nbins + ncomp * nspecbins );
+
+    R_view original ( output(), mv_range( 0, npix ), mv_range( 0, nbins ) );
+
+    original.assign ( psf() );
+
+    // construct component matrix
+
+    mat_compcol compmat ( nbins, ncomp * nspec, ncomp * nbins );
+
+    for ( size_t i = 0; i < nspec; ++i ) {
+      for ( size_t j = 0; j < ncomp; ++j ) {
+        for ( size_t k = 0; k < nspecbins; ++k ) {
+          compmat ( i * nspecbins + k, i * ncomp + j ) = sky() ( j, k );
+        }
+      }
+    }
+
+    // fill in sky portion of output design matrix
+
+    R_view skyblock ( output(), mv_range ( 0, npix ), mv_range ( nbins, nbins + ncomp * nspecbins ) );
+
+    boost::numeric::ublas::axpy_prod ( psf(), compmat, skyblock, true );
+
+    return;
+  }
+
 
 
 
