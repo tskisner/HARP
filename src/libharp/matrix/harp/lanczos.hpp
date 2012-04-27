@@ -248,7 +248,9 @@ namespace boost { namespace numeric { namespace ublas {
     etemp = beta;
     FortranMatrix<magnitude_type> z2(n,n);
 
-    info = boost::numeric::bindings::lapack::stev ( 'V', n, &(eval[0]), &(etemp[0]), z2.data() );
+    double * zdata = z2.data();
+
+    info = boost::numeric::bindings::lapack::stev ( 'V', n, &(eval[0]), &(etemp[0]), zdata );
 
     if (info > 0)
       throw std::runtime_error("LAPACK error, stev function failed.");
@@ -725,8 +727,9 @@ namespace boost { namespace numeric { namespace ublas {
 
           eval = super_type::alpha;
           etemp = super_type::beta;
+          double * zdata = z.data();
 
-          int lapack_info = boost::numeric::bindings::lapack::stev ( 'V', ma, &(eval[0]), &(etemp[0]), z.data() );
+          int lapack_info = boost::numeric::bindings::lapack::stev ( 'V', ma, &(eval[0]), &(etemp[0]), zdata );
 
           if (lapack_info > 0)
             throw std::runtime_error("LAPACK error, stev function failed.");
@@ -787,8 +790,8 @@ namespace boost { namespace numeric { namespace ublas {
     
     while(eigenvectors_itr !=  eigvectors.end()) {
       if(!Tvectors_itr->empty()) {
-        *eigenvectors_itr = (*Tvectors_itr)[0]*startvector;
-        *eigenvectors_itr += (*Tvectors_itr)[1]*vec2; 
+        *eigenvectors_itr = (*Tvectors_itr)[0] * startvector;
+        *eigenvectors_itr += (*Tvectors_itr)[1] * vec2; 
       }
       eigenvectors_itr++;
       Tvectors_itr++;
