@@ -4,6 +4,10 @@
 
 #include <boost/random.hpp>
 
+#include "Teuchos_LAPACK.hpp"
+#include "Teuchos_SerialDenseMatrix.hpp"
+#include "Teuchos_SerialDenseVector.hpp"
+
 #include "AnasaziConfigDefs.hpp"
 #include "AnasaziBasicEigenproblem.hpp"
 #include "AnasaziSimpleLOBPCGSolMgr.hpp"
@@ -15,6 +19,12 @@
 #include "EpetraExt_RowMatrixOut.h"
 #include "EpetraExt_MatrixMatrix.h"
 #include "Teuchos_CommandLineProcessor.hpp"
+
+#include <ietl/interface/epetra.h>
+#include <ietl/interface/lapack.h>
+#include <ietl/vectorspace.h>
+#include <ietl/iteration.h>
+#include <ietl/lanczos.h>
 
 #ifdef HAVE_MPI
 #include "Epetra_MpiComm.h"
@@ -87,7 +97,9 @@ int main(int argc, char *argv[]) {
   double time_build_A;
   double time_build_rhs;
   double time_build_invC;
-  double time_eigen;
+  double time_lobpcg;
+  double time_syev;
+  double time_ietl;
 
 #ifdef HAVE_MPI
   // Initialize MPI
@@ -128,8 +140,8 @@ int main(int argc, char *argv[]) {
   // testcase:  20 traces of 100 flux bins each.  One bin per pixel in wavelength, 
   // 4 pixels in between traces, 2 pixels on either side of frame.
 
-  int n_trace = 20;
-  int n_flux_trace = 100;
+  int n_trace = 2;
+  int n_flux_trace = 10;
   int n_flux = n_trace * n_flux_trace;
 
   int n_pix_margin = 2;
@@ -593,7 +605,7 @@ int main(int argc, char *argv[]) {
   info = EpetraExt::RowMatrixToMatrixMarketFile ( "invC.out", (*invC), NULL, NULL, true );
   assert( info==0 );
 
-  
+
   //************************************
   // Call the LOBPCG solver manager
   //***********************************
@@ -606,9 +618,9 @@ int main(int argc, char *argv[]) {
   start_time = MPI_Wtime();
   #endif
 
-
-  const int    nev       = 100;
-  const int    blockSize = 10;
+  
+  const int    nev       = n_flux;
+  const int    blockSize = n_flux;
   const int    maxIters  = 1000;
   const double tol       = 1.0e-8;
 
@@ -667,12 +679,6 @@ int main(int argc, char *argv[]) {
   std::vector < Value < double > > evals = sol.Evals;
   Teuchos::RCP < MV > evecs = sol.Evecs;
 
-  #ifdef HAVE_MPI
-  MPI_Barrier( MPI_COMM_WORLD );
-  stop_time = MPI_Wtime();
-  time_eigen = stop_time - start_time;
-  #endif
-
   // Compute residuals.
   
   std::vector < double > normR ( sol.numVecs );
@@ -692,7 +698,7 @@ int main(int argc, char *argv[]) {
 
   std::ostringstream os;
   os.setf ( std::ios_base::right, std::ios_base::adjustfield );
-  os << "Solver manager returned " << ( returnCode == Converged ? "converged." : "unconverged." ) << std::endl;
+  os << "LOBPCG Solver manager returned " << ( returnCode == Converged ? "converged." : "unconverged." ) << std::endl;
   os << std::endl;
   os << "------------------------------------------------------" << endl;
   os << std::setw(16) << "Eigenvalue"
@@ -706,7 +712,165 @@ int main(int argc, char *argv[]) {
   }
   os << "------------------------------------------------------" << endl;
   printer.print ( Errors, os.str() );
+
+  std::cout << endl << endl;
+
+  #ifdef HAVE_MPI
+  MPI_Barrier( MPI_COMM_WORLD );
+  stop_time = MPI_Wtime();
+  time_lobpcg = stop_time - start_time;
+  #endif
+
+
+
+  // Dense LAPACK version...
+
+  #ifdef HAVE_MPI
+  MPI_Barrier( MPI_COMM_WORLD );
+  start_time = MPI_Wtime();
+  #endif
+
+  if ( myp == 0 ) {
+    Teuchos::LAPACK<int, double> lapack;
+
+    Teuchos::SerialDenseMatrix<int, double> s_invC ( n_flux, n_flux );
+
+    double rowview[ n_flux ];
+    int rowindx[ n_flux ];
+
+    for ( int i = 0; i < n_flux; ++i ) {
+      int n;
+      info = (*invC).ExtractGlobalRowCopy (i, n_flux, n, rowview, rowindx);
+      for ( int j = 0; j < n; ++j ) {
+        s_invC( i, rowindx[j] ) = rowview[ rowindx[j] ];
+      }
+    }
+
+    int lwork = 3 * n_flux - 1;
+    double work[ lwork ];
+    double s_eigen[ n_flux ];
+
+    lapack.SYEV( 'N', 'L', n_flux, s_invC.values(), n_flux, s_eigen, work, lwork, &info );
+
+    std::cout << std::endl << "SYEV:" << std::endl;
+    for ( int i = 0; i < n_flux; ++i ) {
+      std::cout << "  " << s_eigen[i] << std::endl;
+    }
+    std::cout << std::endl;
+
+    // simple IETL case
+
+    typedef ietl::vectorspace < ietl::lapack_vector > Vecspace;
+    typedef boost::lagged_fibonacci607 Gen;
+
+    Vecspace vec( n_flux );
+    Gen mygen;
+
+    ietl::lapack_matrix invL ( n_flux, n_flux );
+    for ( int i = 0; i < n_flux; ++i ) {
+      int n;
+      info = (*invC).ExtractGlobalRowCopy (i, n_flux, n, rowview, rowindx);
+      for ( int j = 0; j < n; ++j ) {
+        invL( i, rowindx[j] ) = rowview[ rowindx[j] ];
+      }
+    }
+
+    ietl::lanczos < ietl::lapack_matrix, Vecspace > lanczos ( invL, vec );
+
+
+    int max_iter = 2 * n_flux;  
+    std::cout << "Computation of eigenvalues with fixed size of T-matrix\n\n";
+    std::cout << "-----------------------------------\n\n";
+
+    std::vector < double > eigen;
+    std::vector < double > err;
+    std::vector < int > multiplicity;
+    //ietl::lanczos_iteration_nhighest < double > iter ( max_iter, n_flux );
+    ietl::fixed_lanczos_iteration < double > iter ( max_iter );  
+    try {
+      lanczos.calculate_eigenvalues ( iter, mygen );
+      eigen = lanczos.eigenvalues();
+      err = lanczos.errors();
+      multiplicity = lanczos.multiplicities();
+    }
+    catch (std::runtime_error & e) {
+      std::cout << e.what() << std::endl;
+    } 
+
+    // Printing eigenvalues with error & multiplicities:  
+    std::cout << "#         eigenvalue         error         multiplicity\n";  
+    std::cout.precision(10);
+    for (size_t i=0;i<eigen.size();++i)
+      std::cout << i << "\t" << eigen[i] << "\t" << err[i] << "\t" 
+          << multiplicity[i] << "\n";
+
+
+  }
+
+  #ifdef HAVE_MPI
+  MPI_Barrier( MPI_COMM_WORLD );
+  stop_time = MPI_Wtime();
+  time_syev = stop_time - start_time;
+  #endif
+
+
+
+  // USE IETL to do the same...
+
+  #ifdef HAVE_MPI
+  MPI_Barrier( MPI_COMM_WORLD );
+  start_time = MPI_Wtime();
+  #endif  
+
+  ietl::ept_matrix invCwrap ( invC );
+
+  typedef ietl::vectorspace < ietl::ept_vector > Vecspace;
+  typedef boost::lagged_fibonacci607 Gen;
+
+  Vecspace vec( n_flux );
+  Gen mygen;
+
+  ietl::lanczos < ietl::ept_matrix, Vecspace > lanczos ( invCwrap, vec );
+
+
+  int max_iter = 2 * n_flux;  
+  std::cout << "Computation of eigenvalues with fixed size of T-matrix\n\n";
+  std::cout << "-----------------------------------\n\n";
+
+  std::vector < double > eigen;
+  std::vector < double > err;
+  std::vector < int > multiplicity;
+  //ietl::lanczos_iteration_nhighest < double > iter ( max_iter, n_flux );
+  ietl::fixed_lanczos_iteration < double > iter ( max_iter );  
+  try {
+    lanczos.calculate_eigenvalues ( iter, mygen );
+    eigen = lanczos.eigenvalues();
+    err = lanczos.errors();
+    multiplicity = lanczos.multiplicities();
+  }
+  catch (std::runtime_error & e) {
+    std::cout << e.what() << std::endl;
+  } 
+
+  // Printing eigenvalues with error & multiplicities:  
+  std::cout << "#         eigenvalue         error         multiplicity\n";  
+  std::cout.precision(10);
+  for (size_t i=0;i<eigen.size();++i)
+    std::cout << i << "\t" << eigen[i] << "\t" << err[i] << "\t" 
+        << multiplicity[i] << "\n";
+
   
+  
+
+  #ifdef HAVE_MPI
+  MPI_Barrier( MPI_COMM_WORLD );
+  stop_time = MPI_Wtime();
+  time_ietl = stop_time - start_time;
+  #endif
+
+
+
+  // timing dump
 
   #ifdef HAVE_MPI
   if ( myp == 0 ) {
@@ -715,7 +879,9 @@ int main(int argc, char *argv[]) {
     std::cout << "  Building A matrix:     " << time_build_A << " seconds" << std::endl;
     std::cout << "  Building RHS vector:   " << time_build_rhs << " seconds" << std::endl;
     std::cout << "  Building C^-1 matrix:  " << time_build_invC << " seconds" << std::endl;
-    std::cout << "  Compute " << nev << "/" << n_flux << " eigenpairs:  " << time_eigen << " seconds" << std::endl;
+    std::cout << "  LOBPCG Compute eigenpairs:  " << time_lobpcg << " seconds" << std::endl;
+    std::cout << "  SYEV Compute eigenpairs:  " << time_syev << " seconds" << std::endl;
+    std::cout << "  IETL Compute eigenpairs:  " << time_ietl << " seconds" << std::endl;
     std::cout << std::endl;
   }
   #endif

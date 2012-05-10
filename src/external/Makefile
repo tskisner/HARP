@@ -4,8 +4,8 @@ include /usr/local/trilinos/include/Makefile.export.Anasazi
 CXX = $(Anasazi_CXX_COMPILER)
 CXXFLAGS = -O0 -g -Wall
 
-INCLUDE = -I/usr/local/trilinos/include -I/ports/include
-LINK = -L/usr/local/trilinos/lib $(Anasazi_LIBRARIES) -lepetraext -framework vecLib
+INCLUDE = -I/usr/local/trilinos/include -I/ports/include -I/data/software/include
+LINK = -L/usr/local/trilinos/lib -L/data/software/lib $(Anasazi_LIBRARIES) -lepetraext -framework vecLib
 
 
 
