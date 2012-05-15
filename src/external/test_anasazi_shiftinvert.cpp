@@ -2,13 +2,19 @@
 
 #include "AnasaziBlockKrylovSchurSolMgr.hpp"
 #include "Epetra_LinearProblem.h"
+#include "Epetra_InvOperator.h"
 
 // Include header for AztecOO solver and solver interface for Epetra_Operator
 #include "AztecOO.h"
 #include "AztecOO_Operator.h"
 
-// Include header for Ifpack incomplete Cholesky preconditioner
-#include "Ifpack_CrsIct.h"
+// Include header for Belos solver and solver interface for Epetra_Operator
+#include "BelosEpetraOperator.h"
+#include "BelosEpetraAdapter.hpp"
+
+// Ifpack
+#include "Ifpack.h"
+#include "Ifpack_AdditiveSchwarz.h"
 
 using namespace Anasazi;
 
@@ -265,48 +271,90 @@ int main(int argc, char *argv[]) {
   }
 
 
-  Teuchos::RCP<Ifpack_CrsIct> ICT;
 
-  int Lfill = 0;
-  int Overlap = 1;
-  double Athresh = 0.0;
-  double Rthresh = 1.0e-8;
-  double dropTol = 1.0e-8;
+  // =============================================================== //
+  // B E G I N N I N G   O F   I F P A C K   C O N S T R U C T I O N //
+  // =============================================================== //
 
-  // compute preconditioner
+  Teuchos::ParameterList List;
 
-  ICT = Teuchos::rcp( new Ifpack_CrsIct(*invCshift, dropTol, Lfill) );
-  ICT->SetAbsoluteThreshold(Athresh);
-  ICT->SetRelativeThreshold(Rthresh);
-  int initerr = ICT->InitValues(*invCshift);
-  if (initerr != 0) std::cerr << "InitValues error = " << initerr;
-  info = ICT->Factor();
-  assert( info==0 );
-  
-  bool transA = false;
-  double Cond_Est;
-  ICT->Condest(transA, Cond_Est);
-  if (myp == 0) {
-    std::cout << "Condition number estimate for this preconditoner = " << Cond_Est << std::endl;
-    std::cout << std::endl;
-  } 
+  // Allocate an IFPACK factory.  The object contains no data, only
+  // the Create() method for creating preconditioners.
+  Ifpack Factory;
 
-  // *******************************************************
-  // Set up AztecOO CG operator for inner iteration
-  // *******************************************************
+  // Create the preconditioner.  For the list of PrecType values that
+  // Create() accepts, please check the IFPACK documentation.
+  string PrecType = "ILU"; // incomplete LU
+  int OverlapLevel = 1; // must be >= 0. If Comm.NumProc() == 1,
+                        // it is ignored.
+
+  Teuchos::RCP<Ifpack_Preconditioner> Prec = 
+    Teuchos::rcp (Factory.Create (PrecType, &*invCshift, OverlapLevel));
+  TEST_FOR_EXCEPTION(Prec == Teuchos::null, std::runtime_error,
+                     "IFPACK failed to create a preconditioner of type \"" 
+                     << PrecType << "\" with overlap level " 
+                     << OverlapLevel << ".");
+
+  // Specify parameters for ILU.  ILU is local to each MPI process.
+  List.set("fact: drop tolerance", 1e-10);
+  List.set("fact: level-of-fill", 1);
+
+  // IFPACK uses overlapping Schwarz domain decomposition over all
+  // participating processes to combine the results of ILU on each
+  // process.  IFPACK's Schwarz method can use any of the following
+  // combine modes to combine overlapping results:
   //
-  // Create Epetra linear problem class to solve "Ax = b"
-  Epetra_LinearProblem precProblem;
-  precProblem.SetOperator(invCshift.get());
-  
-  // Create AztecOO solver for solving "Ax = b" using an incomplete cholesky preconditioner
-  AztecOO precSolver(precProblem);
-  precSolver.SetPrecOperator(ICT.get());
-  precSolver.SetAztecOption(AZ_output, AZ_none);
-  precSolver.SetAztecOption(AZ_solver, AZ_cg);
-  
-  // Use AztecOO solver to create the AztecOO_Operator
-  Teuchos::RCP<AztecOO_Operator> precOperator = Teuchos::rcp( new AztecOO_Operator(&precSolver, invCshift->NumGlobalRows(), 1e-15) );
+  // "Add", "Zero", "Insert", "InsertAdd", "Average", "AbsMax"
+  //
+  // The Epetra_CombineMode.h header file defines their meaning.
+  List.set("schwarz: combine mode", "Add");
+  // Set the parameters.
+  IFPACK_CHK_ERR(Prec->SetParameters(List));
+
+  // Initialize the preconditioner. At this point the matrix must have
+  // been FillComplete()'d, but actual values are ignored.
+  IFPACK_CHK_ERR(Prec->Initialize());
+
+  // Build the preconditioner, by looking at the values of the matrix.
+  IFPACK_CHK_ERR(Prec->Compute());
+
+  // Create the Belos preconditioned operator from the Ifpack preconditioner.
+  // NOTE:  This is necessary because Belos expects an operator to apply the
+  //        preconditioner with Apply() NOT ApplyInverse().
+  Teuchos::RCP<Belos::EpetraPrecOp> belosPrec = Teuchos::rcp (new Belos::EpetraPrecOp (Prec));
+
+  // =================================================== //
+  // E N D   O F   I F P A C K   C O N S T R U C T I O N //
+  // =================================================== //
+
+
+  // ******************************************************
+  // Set up Belos Block GMRES operator for inner iteration
+  // ******************************************************
+  //
+  int belosblockSize = 3; // block size used by linear solver and eigensolver [ not required to be the same ]
+  int maxits = invCshift->NumGlobalRows(); // maximum number of iterations to run
+  //
+  // Create the Belos::LinearProblem
+  //
+  Teuchos::RCP<Belos::LinearProblem<double,Epetra_MultiVector,Epetra_Operator> > My_LP = Teuchos::rcp( new Belos::LinearProblem<double,Epetra_MultiVector,Epetra_Operator>() );
+
+  My_LP->setOperator( invCshift );
+  My_LP->setRightPrec( belosPrec );
+
+  //
+  // Create the ParameterList for the Belos Operator
+  // 
+  Teuchos::RCP<Teuchos::ParameterList> My_List = Teuchos::rcp( new Teuchos::ParameterList() );
+  My_List->set( "Solver", "BlockCG" );
+  My_List->set( "Maximum Iterations", maxits );
+  My_List->set( "Block Size", belosblockSize );
+  My_List->set( "Convergence Tolerance", 1e-13 );
+  //
+  // Create the Belos::EpetraOperator
+  //
+  Teuchos::RCP<Belos::EpetraOperator> BelosOp = Teuchos::rcp( new Belos::EpetraOperator( My_LP, My_List ));
+
 
   // ************************************
   // Start the block Arnoldi iteration
@@ -315,8 +363,8 @@ int main(int argc, char *argv[]) {
   //  Variables used for the Block Arnoldi Method
   //
   double tol = 1.0e-12;
-  int nev = 4;
-  int blockSize = 2;  
+  int nev = 3;
+  int blockSize = 3;  
   int numBlocks = 3*nev / blockSize;
   int maxRestarts = 20;
   //int step = 5;
@@ -328,7 +376,7 @@ int main(int argc, char *argv[]) {
   Teuchos::ParameterList MyPL;
   MyPL.set( "Verbosity", verbosity );
   MyPL.set( "Which", which );
-  MyPL.set( "Extra NEV Blocks", Overlap );
+  //MyPL.set( "Extra NEV Blocks", Overlap );
   MyPL.set( "Block Size", blockSize );
   MyPL.set( "Num Blocks", numBlocks );
   MyPL.set( "Maximum Restarts", maxRestarts );
@@ -350,7 +398,7 @@ int main(int argc, char *argv[]) {
   
   //Teuchos::RCP<Anasazi::BasicEigenproblem<double,MV,OP> > MyProblem = Teuchos::rcp( new Anasazi::BasicEigenproblem<double,MV,OP>(Aop, M, ivec) );
 
-  Teuchos::RCP<Anasazi::BasicEigenproblem<double,MV,OP> > MyProblem = Teuchos::rcp( new Anasazi::BasicEigenproblem<double,MV,OP>(precOperator, ivec) );
+  Teuchos::RCP<Anasazi::BasicEigenproblem<double,MV,OP> > MyProblem = Teuchos::rcp( new Anasazi::BasicEigenproblem<double,MV,OP>(BelosOp, ivec) );
 
   //Teuchos::RCP<Anasazi::BasicEigenproblem<double,MV,OP> > MyProblem = Teuchos::rcp( new Anasazi::BasicEigenproblem<double,MV,OP>(invC, ivec) );
   
