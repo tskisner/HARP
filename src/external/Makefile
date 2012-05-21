@@ -12,7 +12,7 @@ LINK = -L/usr/local/trilinos/lib -L/data/software/lib $(Anasazi_LIBRARIES) $(Azt
 
 
 
-all : test_anasazi test_anasazi_shiftinvert
+all : test_anasazi_shiftinvert
 
 test_anasazi_shiftinvert : test_anasazi_shiftinvert.o test_anasazi_tools.o
 	$(CXX) -o test_anasazi_shiftinvert test_anasazi_shiftinvert.o test_anasazi_tools.o $(LINK)

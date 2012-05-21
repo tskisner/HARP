@@ -21,7 +21,7 @@ plt.matshow(invCdense)
 plt.savefig ( invCpng )
 plt.clf()
 
-for pix in ['signal', 'noise', 'measured']:
+for pix in ['signal']: #, 'noise', 'data']:
     datafile = pix + '.out'
     data = sio.mmread(datafile)
     png = pix + '.png'

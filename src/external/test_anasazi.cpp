@@ -11,8 +11,6 @@ using namespace Anasazi;
 
 int main(int argc, char *argv[]) {
 
-  int np = 1;
-  int myp = 1;
   double start_time;
   double stop_time;
   double time_build_A;
@@ -26,8 +24,6 @@ int main(int argc, char *argv[]) {
   // Initialize MPI
   //
   MPI_Init ( &argc, &argv );
-  MPI_Comm_size ( MPI_COMM_WORLD, &np );
-  MPI_Comm_rank ( MPI_COMM_WORLD, &myp );
 #endif
 
   // Create an Epetra communicator
@@ -354,7 +350,7 @@ int main(int argc, char *argv[]) {
   start_time = MPI_Wtime();
   #endif
 
-  if ( myp == 0 ) {
+  if ( par.myp == 0 ) {
     Teuchos::LAPACK<int, double> lapack;
 
     Teuchos::SerialDenseMatrix<int, double> s_invC ( par.n_flux, par.n_flux );
@@ -438,7 +434,6 @@ int main(int argc, char *argv[]) {
   #endif
 
 
-/*
   // USE IETL to do the same...
 
   #ifdef HAVE_MPI
@@ -483,21 +478,19 @@ int main(int argc, char *argv[]) {
     std::cout << i << "\t" << eigen[i] << "\t" << err[i] << "\t" 
         << multiplicity[i] << "\n";
 
-  
-  
 
   #ifdef HAVE_MPI
   MPI_Barrier( MPI_COMM_WORLD );
   stop_time = MPI_Wtime();
   time_ietl = stop_time - start_time;
   #endif
-*/
+
 
 
   // timing dump
 
   #ifdef HAVE_MPI
-  if ( myp == 0 ) {
+  if ( par.myp == 0 ) {
     std::cout << std::endl;
     std::cout << "Timing information:" << std::endl;
     std::cout << "  Building A matrix:     " << time_build_A << " seconds" << std::endl;

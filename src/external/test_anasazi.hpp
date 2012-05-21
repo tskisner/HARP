@@ -43,6 +43,9 @@ class test_params {
     test_params ( );
     ~test_params ( ) { }
 
+    int np;
+    int myp;
+
     int n_trace;
     int n_flux_trace;
     int n_flux;
@@ -67,16 +70,22 @@ class test_params {
 };
 
 
+void block_dist ( int n, int myp, int np, std::vector < int > & my_elems );
+
+
 void gauss_sample ( std::vector < double > & vals, std::vector < double > & xrel, std::vector < double > & yrel, double amp, double maj, double min, double ang );
 
 
-Teuchos::RCP < Epetra_CrsMatrix > build_design_matrix ( test_params & par, Epetra_Map & pixmap, Epetra_Map & fluxmap, double & timing );
+Teuchos::RCP < Epetra_CrsMatrix > build_design_matrix ( test_params & par, Epetra_Map & fluxmap, Epetra_Map & pixmap, double & timing );
 
 
-Teuchos::RCP < Epetra_Vector > simulate_signal ( test_params & par, Teuchos::RCP < Epetra_CrsMatrix > A, double & timing );
+Teuchos::RCP < Epetra_Vector > simulate_signal ( test_params & par, Teuchos::RCP < Epetra_CrsMatrix > AT, double & timing );
 
 
-Teuchos::RCP < Epetra_CrsMatrix > noise_covariance ( test_params & par, Epetra_Map const & map, Epetra_Vector & signal, Epetra_Vector & noise, double & timing );
+Teuchos::RCP < Epetra_CrsMatrix > noise_covariance ( test_params & par, Epetra_Map const & pixmap, Epetra_Vector & signal, Epetra_Vector & noise, double & timing );
+
+
+void write_frame ( test_params & par, Epetra_Vector & frame, std::string const & filename );
 
 
 #endif
