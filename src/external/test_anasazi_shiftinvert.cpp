@@ -89,13 +89,6 @@ int main(int argc, char *argv[]) {
   std::vector < int > my_flux ( my_n_flux );
   fluxmap.MyGlobalElements( &(my_flux[0]) );
 
-  // construct a map which includes all flux bins overlapping
-
-  //Epetra_Map allfluxmap ( par.n_flux, par.n_flux, 0, comm );
-
-  // construct a map for outputing images
-
-  Epetra_Map outpixmap ( par.n_pix_lambda, 0, comm );
 
   #ifdef HAVE_MPI
   MPI_Barrier( MPI_COMM_WORLD );
@@ -142,8 +135,6 @@ int main(int argc, char *argv[]) {
   */
 
   Teuchos::RCP < Epetra_Vector > pixel_data = Teuchos::rcp( new Epetra_Vector ( (*pixel_signal) ) );
-
-  std::vector < int > :: const_iterator pit;
 
   for ( int i = 0; i < my_n_pix; ++i ) {
     pixel_data->SumIntoGlobalValues ( 1, &((*pixel_noise)[ i ]), &(my_pix[i]) );
@@ -243,6 +234,7 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
+  /*
   int test_n_flux = (invC->RangeMap()).NumMyElements();
   std::vector < int > test_flux ( test_n_flux );
   (invC->RangeMap()).MyGlobalElements( &(test_flux[0]) );
@@ -268,6 +260,7 @@ int main(int argc, char *argv[]) {
     MPI_Barrier( MPI_COMM_WORLD );
     #endif
   }
+  */
 
   #ifdef HAVE_MPI
   MPI_Barrier( MPI_COMM_WORLD );
@@ -281,15 +274,11 @@ int main(int argc, char *argv[]) {
   AT = Teuchos::null;
   invpixcov = Teuchos::null;
 
-  
-  
-  
 
   // Now we finally have the RHS (Z) vector, and the inverse spectral covariance...
 
   info = EpetraExt::RowMatrixToMatrixMarketFile ( "invC.out", (*invC), NULL, NULL, true );
   assert( info==0 );
-
 
 
   // Use Block Krylov iteration with inner loop solving for shifted eigenproblem

@@ -56,89 +56,54 @@ int main(int argc, char *argv[]) {
   test_params par;
 
 
-  // We distribute the data by flux bin.  In this case, the design matrix
-  // on each process contains all pixels, though many of these rows have
-  // no non-zeros.
+  Epetra_Map pixmap ( par.n_pix, 0, comm );
 
-  
-  // construct a row map which includes all pixels
-
-  Epetra_Map pixmap ( par.n_pix, par.n_pix, 0, comm );
-
-  // construct a column map which distributes the flux bins uniformly
+  int my_n_pix = pixmap.NumMyElements();
+  std::vector < int > my_pix ( my_n_pix );
+  pixmap.MyGlobalElements( &(my_pix[0]) );
 
   Epetra_Map fluxmap ( par.n_flux, 0, comm );
 
-  // build design matrix
+  int my_n_flux = fluxmap.NumMyElements();
+  std::vector < int > my_flux ( my_n_flux );
+  fluxmap.MyGlobalElements( &(my_flux[0]) );
 
-  Teuchos::RCP < Epetra_CrsMatrix > A = build_design_matrix ( par, pixmap, fluxmap, time_build_A );
+
+  // build transpose of the design matrix
+
+  Teuchos::RCP < Epetra_CrsMatrix > AT = build_design_matrix ( par, fluxmap, pixmap, time_build_A );
 
   // create input signal spectra
 
-  Teuchos::RCP < Epetra_Vector > truth = simulate_signal ( par, A, time_build_rhs );
+  Teuchos::RCP < Epetra_Vector > truth = simulate_signal ( par, AT, time_build_rhs );
 
   // project to get signal image
 
-  Teuchos::RCP < Epetra_Vector > pixel_signal = Teuchos::rcp( new Epetra_Vector ( A->RangeMap() ) );
+  Teuchos::RCP < Epetra_Vector > pixel_signal = Teuchos::rcp( new Epetra_Vector ( pixmap ) );
 
-  A->Multiply ( false, (*truth), (*pixel_signal) );
+  AT->Multiply ( true, (*truth), (*pixel_signal) );
 
-  Epetra_Map outpixmap ( par.n_pix_lambda, par.n_pix_lambda, 0, comm );
-  Teuchos::RCP < Epetra_MultiVector > outpix = Teuchos::rcp( new Epetra_MultiVector ( outpixmap, par.n_pix_trace ) );
-
-  int pix_elem;
-  for ( int j = 0; j < par.n_pix_lambda; ++j ) {
-    for ( int k = 0; k < par.n_pix_trace; ++k ) {
-      pix_elem = ( j * par.n_pix_trace ) + k;
-      outpix->ReplaceGlobalValue ( j, k, (*pixel_signal)[ pix_elem ] );
-    }
-  }
-
-  info = EpetraExt::MultiVectorToMatrixMarketFile ( "signal.out", (*outpix), NULL, NULL, true );
-  assert( info==0 );
 
   // construct noise vector
 
-  Teuchos::RCP < Epetra_Vector > pixel_noise = Teuchos::rcp( new Epetra_Vector ( A->RangeMap() ) );
+  Teuchos::RCP < Epetra_Vector > pixel_noise = Teuchos::rcp( new Epetra_Vector ( pixmap ) );
 
   // populate noise and pixel noise covariance
 
-  Teuchos::RCP < Epetra_CrsMatrix > invpixcov = noise_covariance ( par, A->RangeMap(), (*pixel_signal), (*pixel_noise), time_build_invC );
-
-  for ( int j = 0; j < par.n_pix_lambda; ++j ) {
-    for ( int k = 0; k < par.n_pix_trace; ++k ) {
-      pix_elem = ( j * par.n_pix_trace ) + k;
-      outpix->ReplaceGlobalValue ( j, k, (*pixel_noise)[ pix_elem ] );
-    }
-  }
-
-  info = EpetraExt::MultiVectorToMatrixMarketFile ( "noise.out", (*outpix), NULL, NULL, true );
-  assert( info==0 );
+  Teuchos::RCP < Epetra_CrsMatrix > invpixcov = noise_covariance ( par, pixmap, (*pixel_signal), (*pixel_noise), time_build_invC );
 
   Teuchos::RCP < Epetra_Vector > pixel_data = Teuchos::rcp( new Epetra_Vector ( (*pixel_signal) ) );
 
-  for ( int j = 0; j < par.n_pix; ++j ) {
-    pixel_data->SumIntoGlobalValues ( 1, &((*pixel_noise)[j]), &j );
+  for ( int i = 0; i < my_n_pix; ++i ) {
+    pixel_data->SumIntoGlobalValues ( 1, &((*pixel_noise)[ i ]), &(my_pix[i]) );
   }
 
-  // write out S + N
-
-  for ( int j = 0; j < par.n_pix_lambda; ++j ) {
-    for ( int k = 0; k < par.n_pix_trace; ++k ) {
-      pix_elem = ( j * par.n_pix_trace ) + k;
-      outpix->ReplaceGlobalValue ( j, k, (*pixel_data)[ pix_elem ] );
-    }
-  }
-
-  info = EpetraExt::MultiVectorToMatrixMarketFile ( "data.out", (*outpix), NULL, NULL, true );
-  assert( info==0 );
 
   // Free up memory
 
   pixel_noise = Teuchos::null;
   pixel_signal = Teuchos::null;
   truth = Teuchos::null;
-  outpix = Teuchos::null;
 
   // Compute RHS of GLS equation
 
@@ -147,13 +112,13 @@ int main(int argc, char *argv[]) {
   start_time = MPI_Wtime();
   #endif
 
-  Teuchos::RCP < Epetra_Vector > rhs = Teuchos::rcp( new Epetra_Vector ( A->DomainMap() ) );
+  Teuchos::RCP < Epetra_Vector > rhs = Teuchos::rcp( new Epetra_Vector ( fluxmap ) );
 
-  Teuchos::RCP < Epetra_Vector > pixtemp = Teuchos::rcp( new Epetra_Vector ( A->RangeMap() ) );
+  Teuchos::RCP < Epetra_Vector > pixtemp = Teuchos::rcp( new Epetra_Vector ( pixmap ) );
 
   invpixcov->Multiply ( false, (*pixel_data), (*pixtemp) );
 
-  A->Multiply ( true, (*pixtemp), (*rhs) );
+  AT->Multiply ( false, (*pixtemp), (*rhs) );
 
   #ifdef HAVE_MPI
   MPI_Barrier( MPI_COMM_WORLD );
@@ -166,6 +131,7 @@ int main(int argc, char *argv[]) {
   pixel_data = Teuchos::null;
   pixtemp = Teuchos::null;
 
+
   // Compute LHS ( inverse flux bin covariance )
 
   #ifdef HAVE_MPI
@@ -174,10 +140,11 @@ int main(int argc, char *argv[]) {
   #endif
 
   // This is a temporary matrix for the N^-1 x A product...
-  Teuchos::RCP < Epetra_CrsMatrix > NA = Teuchos::rcp( new Epetra_CrsMatrix ( Copy, (*A).Graph() ) );
+
+  Teuchos::RCP < Epetra_CrsMatrix > NA = Teuchos::rcp( new Epetra_CrsMatrix ( Copy, pixmap, 0 ) );
 
   // First Multiply
-  info = EpetraExt::MatrixMatrix::Multiply ( (*invpixcov), false, (*A), false, (*NA), true );
+  info = EpetraExt::MatrixMatrix::Multiply ( (*invpixcov), false, (*AT), true, (*NA) );
   if ( info != 0 ) {
     std::cerr << "NA MatrixMatrix error = " << info << std::endl;
     #ifdef HAVE_MPI
@@ -188,18 +155,10 @@ int main(int argc, char *argv[]) {
 
   // Create matrix for final inverse flux covariance
 
-  // Create communication graph with an estimate of the number of non-zeros, based on
-  // the pixel-space correlation distance and spacing of the flux bins.
-
-  int approx_nz = ( 2 * par.psf_corr ) * ( 2 * (int)( par.psf_corr / ( par.n_pix_gap + 1 ) ) );
-
-  //Teuchos::RCP < Epetra_CrsGraph > Cgraph = Teuchos::rcp( new Epetra_CrsGraph ( Copy, fluxmap, fluxmap, 0, false ) );
-
-  // create the matrix
-  Teuchos::RCP < Epetra_CrsMatrix > invC = Teuchos::rcp( new Epetra_CrsMatrix ( Copy, fluxmap, fluxmap, approx_nz, false ) );
-
+  Teuchos::RCP < Epetra_CrsMatrix > invC = Teuchos::rcp( new Epetra_CrsMatrix ( Copy, fluxmap, 0 ) );
+  
   // second multiply
-  info = EpetraExt::MatrixMatrix::Multiply ( (*A), true, (*NA), false, (*invC), true );
+  info = EpetraExt::MatrixMatrix::Multiply ( (*AT), false, (*NA), false, (*invC) );
   if ( info != 0 ) {
     std::cerr << "A^TNA MatrixMatrix error = " << info << std::endl;
     #ifdef HAVE_MPI
@@ -217,8 +176,9 @@ int main(int argc, char *argv[]) {
   // Free up memory
 
   NA = Teuchos::null;
-  A = Teuchos::null;
+  AT = Teuchos::null;
   invpixcov = Teuchos::null;
+
 
   // Now we finally have the RHS (Z) vector, and the inverse spectral covariance...
 
@@ -345,6 +305,8 @@ int main(int argc, char *argv[]) {
 
   // Dense LAPACK version...
 
+  /*
+
   #ifdef HAVE_MPI
   MPI_Barrier( MPI_COMM_WORLD );
   start_time = MPI_Wtime();
@@ -433,6 +395,8 @@ int main(int argc, char *argv[]) {
   time_syev = stop_time - start_time;
   #endif
 
+  */
+
 
   // USE IETL to do the same...
 
@@ -452,9 +416,11 @@ int main(int argc, char *argv[]) {
   ietl::lanczos < ietl::ept_matrix, Vecspace > lanczos ( invCwrap, vec );
 
 
-  int max_iter = 2 * par.n_flux;  
-  std::cout << "Computation of eigenvalues with fixed size of T-matrix\n\n";
-  std::cout << "-----------------------------------\n\n";
+  int max_iter = 10 * par.n_flux;  
+  if ( par.myp == 0 ) {
+    std::cout << "Computation of eigenvalues with fixed size of T-matrix\n\n";
+    std::cout << "-----------------------------------\n\n";
+  }
 
   std::vector < double > eigen;
   std::vector < double > err;
@@ -472,12 +438,13 @@ int main(int argc, char *argv[]) {
   } 
 
   // Printing eigenvalues with error & multiplicities:  
-  std::cout << "#         eigenvalue         error         multiplicity\n";  
-  std::cout.precision(10);
-  for (size_t i=0;i<eigen.size();++i)
-    std::cout << i << "\t" << eigen[i] << "\t" << err[i] << "\t" 
-        << multiplicity[i] << "\n";
-
+  if ( par.myp == 0 ) {
+    std::cout << "#         eigenvalue         error         multiplicity\n";  
+    std::cout.precision(10);
+    for (size_t i=0;i<eigen.size();++i)
+      std::cout << i << "\t" << eigen[i] << "\t" << err[i] << "\t" 
+          << multiplicity[i] << "\n";
+  }
 
   #ifdef HAVE_MPI
   MPI_Barrier( MPI_COMM_WORLD );
