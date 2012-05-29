@@ -1,20 +1,6 @@
 #include <test_anasazi.hpp>
 
-#include "AnasaziBlockKrylovSchurSolMgr.hpp"
-#include "Epetra_LinearProblem.h"
-#include "Epetra_InvOperator.h"
 
-// Include header for AztecOO solver and solver interface for Epetra_Operator
-#include "AztecOO.h"
-#include "AztecOO_Operator.h"
-
-// Include header for Belos solver and solver interface for Epetra_Operator
-#include "BelosEpetraOperator.h"
-#include "BelosEpetraAdapter.hpp"
-
-// Ifpack
-#include "Ifpack.h"
-#include "Ifpack_AdditiveSchwarz.h"
 
 using namespace Anasazi;
 
@@ -185,6 +171,9 @@ int main(int argc, char *argv[]) {
   start_time = MPI_Wtime();
   #endif
 
+  //Teuchos::RCP < gls_operator > invC = Teuchos::rcp( new gls_operator ( AT, invpixcov ) );
+
+  
   // This is a temporary matrix for the N^-1 x A product...
 
   Teuchos::RCP < Epetra_CrsMatrix > NA = Teuchos::rcp( new Epetra_CrsMatrix ( Copy, pixmap, 0 ) );
@@ -198,6 +187,7 @@ int main(int argc, char *argv[]) {
     #endif
     return -1;
   }
+  
 
   /*
   for ( int p = 0; p < par.np; ++p ) {
@@ -220,6 +210,7 @@ int main(int argc, char *argv[]) {
   }
   */
 
+  
   // Create matrix for final inverse flux covariance
 
   Teuchos::RCP < Epetra_CrsMatrix > invC = Teuchos::rcp( new Epetra_CrsMatrix ( Copy, fluxmap, 0 ) );
@@ -233,6 +224,7 @@ int main(int argc, char *argv[]) {
     #endif
     return -1;
   }
+  
 
   /*
   int test_n_flux = (invC->RangeMap()).NumMyElements();
@@ -270,15 +262,15 @@ int main(int argc, char *argv[]) {
 
   // Free up memory
 
-  NA = Teuchos::null;
-  AT = Teuchos::null;
-  invpixcov = Teuchos::null;
+  //NA = Teuchos::null;
+  //AT = Teuchos::null;
+  //invpixcov = Teuchos::null;
 
 
   // Now we finally have the RHS (Z) vector, and the inverse spectral covariance...
 
-  info = EpetraExt::RowMatrixToMatrixMarketFile ( "invC.out", (*invC), NULL, NULL, true );
-  assert( info==0 );
+  //info = EpetraExt::RowMatrixToMatrixMarketFile ( "invC.out", (*invC), NULL, NULL, true );
+  //assert( info==0 );
 
 
   // Use Block Krylov iteration with inner loop solving for shifted eigenproblem

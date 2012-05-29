@@ -39,17 +39,6 @@ int main(int argc, char *argv[]) {
   BasicOutputManager < double > printer;
   printer.stream ( Errors ) << Anasazi_Version() << endl << endl;
 
-  // Get the sorting string from the command line
-  
-  std::string which("LM");
-  Teuchos::CommandLineProcessor cmdp ( false, true );
-  cmdp.setOption ( "sort", &which, "Targetted eigenvalues (SM or LM)." );
-  if ( cmdp.parse(argc,argv) != Teuchos::CommandLineProcessor::PARSE_SUCCESSFUL ) {
-#ifdef HAVE_MPI
-    MPI_Finalize();
-#endif
-    return -1;
-  }
 
   int info = 0;
 
@@ -139,6 +128,7 @@ int main(int argc, char *argv[]) {
   start_time = MPI_Wtime();
   #endif
 
+  
   // This is a temporary matrix for the N^-1 x A product...
 
   Teuchos::RCP < Epetra_CrsMatrix > NA = Teuchos::rcp( new Epetra_CrsMatrix ( Copy, pixmap, 0 ) );
@@ -167,11 +157,33 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
+  //Teuchos::RCP < gls_operator > invC = Teuchos::rcp( new gls_operator ( AT, invpixcov ) );
+
   #ifdef HAVE_MPI
   MPI_Barrier( MPI_COMM_WORLD );
   stop_time = MPI_Wtime();
   time_build_invC = stop_time - start_time;
   #endif
+
+
+  // Compare operators
+
+  /*
+  Teuchos::RCP < Epetra_Vector > testinput = Teuchos::rcp( new Epetra_Vector ( fluxmap ) );
+  Teuchos::RCP < Epetra_Vector > testoutput = Teuchos::rcp( new Epetra_Vector ( fluxmap ) );
+  Teuchos::RCP < Epetra_Vector > testfull = Teuchos::rcp( new Epetra_Vector ( fluxmap ) );
+
+  testinput->PutScalar ( 1.0 );
+
+  info = invC->Apply ( (*testinput), (*testoutput) );
+  info = invCfull->Apply ( (*testinput), (*testfull) );
+
+  info = EpetraExt::VectorToMatrixMarketFile ( "test_op.out", (*testoutput), NULL, NULL, true );
+  assert( info==0 );
+
+  info = EpetraExt::VectorToMatrixMarketFile ( "test_full.out", (*testfull), NULL, NULL, true );
+  assert( info==0 );
+  */
 
   // Free up memory
 
@@ -185,128 +197,14 @@ int main(int argc, char *argv[]) {
   info = EpetraExt::RowMatrixToMatrixMarketFile ( "invC.out", (*invC), NULL, NULL, true );
   assert( info==0 );
 
+  //std::vector < double > evals;
 
-  //************************************
-  // Call the LOBPCG solver manager
-  //***********************************
-  //
-  //  Variables used for the LOBPCG Method
-  //
-
-  #ifdef HAVE_MPI
-  MPI_Barrier( MPI_COMM_WORLD );
-  start_time = MPI_Wtime();
-  #endif
-
-  
-  const int    nev       = par.n_flux;
-  const int    blockSize = par.n_flux;
-  const int    maxIters  = 1000;
-  const double tol       = 1.0e-8;
-
-  typedef Epetra_MultiVector MV;
-  typedef Epetra_Operator OP;
-  typedef MultiVecTraits < double, Epetra_MultiVector > MVT;
-
-  // Create an Epetra_MultiVector for an initial vector to start the solver.
-  // Note:  This needs to have the same number of columns as the blocksize.
-
-  Teuchos::RCP < Epetra_MultiVector > ivec = Teuchos::rcp ( new Epetra_MultiVector ( fluxmap, blockSize ) );
-  ivec->Random();
-
-  // Create the eigenproblem.
-  
-  Teuchos::RCP<BasicEigenproblem < double, MV, OP > > MyProblem =
-    Teuchos::rcp( new BasicEigenproblem < double, MV, OP > ( invC, ivec ) );
-
-  // Inform the eigenproblem that the operator A is symmetric
-  
-  MyProblem->setHermitian(true);
-
-  // Set the number of eigenvalues requested
-  
-  MyProblem->setNEV( nev );
-
-  // Inform the eigenproblem that you are finishing passing it information
-
-  bool boolret = MyProblem->setProblem();
-  if (boolret != true) {
-    printer.print(Errors,"Anasazi::BasicEigenproblem::setProblem() returned an error.\n");
-#ifdef HAVE_MPI
-    MPI_Finalize();
-#endif
-    return -1;
-  }
-
-  // Create parameter list to pass into the solver manager
-
-  Teuchos::ParameterList MyPL;
-  MyPL.set( "Which", which );
-  MyPL.set( "Block Size", blockSize );
-  MyPL.set( "Maximum Iterations", maxIters );
-  MyPL.set( "Convergence Tolerance", tol );
-  
-  // Create the solver manager
-  SimpleLOBPCGSolMgr < double, MV, OP > MySolverMan ( MyProblem, MyPL );
-
-  // Solve the problem
-
-  ReturnType returnCode = MySolverMan.solve();
-
-  // Get the eigenvalues and eigenvectors from the eigenproblem
-
-  Eigensolution < double, MV > sol = MyProblem->getSolution();
-  std::vector < Value < double > > evals = sol.Evals;
-  Teuchos::RCP < MV > evecs = sol.Evecs;
-
-  // Compute residuals.
-  
-  std::vector < double > normR ( sol.numVecs );
-  if ( sol.numVecs > 0 ) {
-    Teuchos::SerialDenseMatrix < int,double > T ( sol.numVecs, sol.numVecs );
-    Epetra_MultiVector tempAevec ( fluxmap, sol.numVecs );
-    T.putScalar ( 0.0 ); 
-    for ( int i = 0; i < sol.numVecs; i++ ) {
-      T ( i, i ) = evals[i].realpart;
-    }
-    invC->Apply ( *evecs, tempAevec );
-    MVT::MvTimesMatAddMv ( -1.0, *evecs, T, 1.0, tempAevec );
-    MVT::MvNorm ( tempAevec, normR );
-  }
-
-  // Print the results
-
-  std::ostringstream os;
-  os.setf ( std::ios_base::right, std::ios_base::adjustfield );
-  os << "LOBPCG Solver manager returned " << ( returnCode == Converged ? "converged." : "unconverged." ) << std::endl;
-  os << std::endl;
-  os << "------------------------------------------------------" << endl;
-  os << std::setw(16) << "Eigenvalue"
-    << std::setw(18) << "Direct Residual"
-    << std::endl;
-  os << "------------------------------------------------------" << endl;
-  for ( int i = 0; i < sol.numVecs; i++ ) {
-    os << std::setw(16) << evals[i].realpart
-      << std::setw(18) << ( normR[i] / evals[i].realpart )
-      << std::endl;
-  }
-  os << "------------------------------------------------------" << endl;
-  printer.print ( Errors, os.str() );
-
-  std::cout << endl << endl;
-
-  #ifdef HAVE_MPI
-  MPI_Barrier( MPI_COMM_WORLD );
-  stop_time = MPI_Wtime();
-  time_lobpcg = stop_time - start_time;
-  #endif
-
+  //eigenvals ( par, invC, evals, time_lobpcg );
 
 
   // Dense LAPACK version...
 
   /*
-
   #ifdef HAVE_MPI
   MPI_Barrier( MPI_COMM_WORLD );
   start_time = MPI_Wtime();
@@ -394,12 +292,11 @@ int main(int argc, char *argv[]) {
   stop_time = MPI_Wtime();
   time_syev = stop_time - start_time;
   #endif
-
   */
-
 
   // USE IETL to do the same...
 
+  /*
   #ifdef HAVE_MPI
   MPI_Barrier( MPI_COMM_WORLD );
   start_time = MPI_Wtime();
@@ -416,7 +313,7 @@ int main(int argc, char *argv[]) {
   ietl::lanczos < ietl::ept_matrix, Vecspace > lanczos ( invCwrap, vec );
 
 
-  int max_iter = 10 * par.n_flux;  
+  int max_iter = 12 * par.n_flux;  
   if ( par.myp == 0 ) {
     std::cout << "Computation of eigenvalues with fixed size of T-matrix\n\n";
     std::cout << "-----------------------------------\n\n";
@@ -451,6 +348,11 @@ int main(int argc, char *argv[]) {
   stop_time = MPI_Wtime();
   time_ietl = stop_time - start_time;
   #endif
+  */
+
+  std::vector < double > vals;
+
+  eigenvals_lapack ( par, invC, vals, time_syev );
 
 
 
@@ -463,9 +365,9 @@ int main(int argc, char *argv[]) {
     std::cout << "  Building A matrix:     " << time_build_A << " seconds" << std::endl;
     std::cout << "  Building RHS vector:   " << time_build_rhs << " seconds" << std::endl;
     std::cout << "  Building C^-1 matrix:  " << time_build_invC << " seconds" << std::endl;
-    std::cout << "  LOBPCG Compute eigenpairs:  " << time_lobpcg << " seconds" << std::endl;
+    //std::cout << "  LOBPCG Compute eigenpairs:  " << time_lobpcg << " seconds" << std::endl;
     std::cout << "  SYEV Compute eigenpairs:  " << time_syev << " seconds" << std::endl;
-    std::cout << "  IETL Compute eigenpairs:  " << time_ietl << " seconds" << std::endl;
+    //std::cout << "  IETL Compute eigenpairs:  " << time_ietl << " seconds" << std::endl;
     std::cout << std::endl;
   }
   #endif
