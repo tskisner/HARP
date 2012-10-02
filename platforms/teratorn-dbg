@@ -1,3 +1,0 @@
-#!/bin/sh
-
-CXX=g++ CC=gcc LDFLAGS="-framework Accelerate" CXXFLAGS="-O0 -g -Wall" CFLAGS="-O0 -g -Wall" CPPFLAGS='-I/usr/local/include -I/usr/local/include/boost-numeric-bindings' ./configure --prefix=/data/software --with-cfitsio-cpp="-I/ports/include" --with-cfitsio-libs="-L/ports/lib -lcfitsio" --prefix=/data/software --disable-shared --with-boost=/ports

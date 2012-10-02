@@ -1,6 +1,0 @@
-#!/bin/sh
-
-fitsinc=`cmbconfig -I cfitsio`
-fitslnk=`cmbconfig -L cfitsio`
-
-CXX=g++ CC=gcc CXXFLAGS="-O3 -march=native -DNDEBUG" CFLAGS="-O3 -march=native -DNDEBUG" ./configure --with-cfitsio-cpp="${fitsinc}" --with-cfitsio-libs="${fitslnk}" --prefix=/global/homes/k/kisner/hpc_carver --with-boost=/global/homes/k/kisner/software_carver --disable-shared --disable-python

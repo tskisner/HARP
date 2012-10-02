@@ -26,7 +26,6 @@ if test x"${CXXFLAGS}" = x; then
    CXXFLAGS="-O3"
 fi
 AC_CANONICAL_HOST
-AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_LIBTOOL
 AC_PROG_CXX
@@ -44,25 +43,7 @@ AM_CONDITIONAL([HAVE_AM_OPENMP], [test $ax_have_openmp = yes])
 dnl +------------------------------------------------
 dnl | Check for MPI
 dnl +------------------------------------------------
-ACX_MPI
-AM_CONDITIONAL([HAVE_AM_MPI], [test "$acx_have_mpi" = 1])
-dnl +------------------------------------------------
-dnl | Check for MOAT
-dnl +------------------------------------------------
-ACX_MOAT([], [AC_MSG_ERROR([Could not find the MOAT library!])])
-dnl +------------------------------------------------
-dnl | Check for BOOST
-dnl +------------------------------------------------
-acx_have_boost=no
-AX_BOOST_BASE([], [acx_have_boost=yes], [])
-AM_CONDITIONAL([HAVE_AM_BOOST], [test $acx_have_boost = yes])
-AX_BOOST_PROGRAM_OPTIONS
-dnl +------------------------------------------------
-dnl | Check for CFITSIO
-dnl +------------------------------------------------
-AC_LANG_PUSH([C])
-ACX_CFITSIO([], [AC_MSG_WARN([Could not find the CFITSIO library!])])
-AC_LANG_POP([C])
+ACX_MPI([], [AC_MSG_ERROR([Could not find the MPI C++ compiler])])
 dnl +------------------------------------------------
 dnl | Check for Python
 dnl +------------------------------------------------
@@ -74,6 +55,19 @@ if test x"$harp_python" != xno; then
   ACX_NUMPY
 fi
 AM_CONDITIONAL([HAVE_AM_PYTHON], [test "x$PYTHON_VERSION" != x])
+dnl +------------------------------------------------
+dnl | Check for BOOST
+dnl +------------------------------------------------
+AX_BOOST_BASE([], [], [AC_MSG_ERROR([Could not find the BOOOST library])])
+AX_BOOST_PROGRAM_OPTIONS
+dnl +------------------------------------------------
+dnl | Check for Elemental and any dependencies
+dnl +------------------------------------------------
+ACX_ELEMENTAL([], [AC_MSG_ERROR([Could not find the Elemental library!])])
+dnl +------------------------------------------------
+dnl | Check for CFITSIO
+dnl +------------------------------------------------
+ACX_CFITSIO([], [AC_MSG_ERROR([Could not find the CFITSIO library!])])
 dnl +------------------------------------------------
 dnl | Check for Doxygen
 dnl +------------------------------------------------
@@ -94,7 +88,6 @@ dnl +------------------------------------------------
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([src/Makefile])
 AC_CONFIG_FILES([src/libharp/Makefile])
-AC_CONFIG_FILES([src/libharp/matrix/Makefile])
 AC_CONFIG_FILES([src/tests/Makefile])
 AC_CONFIG_FILES([src/apps/Makefile])
 dnl AC_CONFIG_FILES([src/python/Makefile])
@@ -111,20 +104,18 @@ dnl +------------------------------------------------
 AC_MSG_NOTICE([                                           ])
 AC_MSG_NOTICE([=========== Build Configuration ===========])
 AC_MSG_NOTICE([                                           ])
-AC_MSG_NOTICE([  C++ Compiler              : $CXX])
+AC_MSG_NOTICE([  MPICXX Compiler           : $MPICXX])
 AC_MSG_NOTICE([  C++ Compile flags         : $CXXFLAGS])
-if test x"${MPICXX}" = x; then
-  AC_MSG_NOTICE([  MPICXX Compiler           : Not found])
-else
-  AC_MSG_NOTICE([  MPICXX Compiler           : $MPICXX])
-fi
 if test x"${ax_have_openmp}" = xyes; then
   AC_MSG_NOTICE([  OpenMP                    : Detected ($OPENMP_CXXFLAGS)])
 else
   AC_MSG_NOTICE([  OpenMP                    : Disabled])
 fi
-AC_MSG_NOTICE([  MOAT Compile              : $MOAT_CPPFLAGS])
-AC_MSG_NOTICE([  MOAT Link                 : $MOAT])
+AC_MSG_NOTICE([  Boost Compile             : $BOOST_CPPFLAGS])
+AC_MSG_NOTICE([  Boost Link Flags          : $BOOST_LDFLAGS])
+AC_MSG_NOTICE([  Boost Program Options     : $BOOST_PROGRAM_OPTIONS_LIB])
+AC_MSG_NOTICE([  Elemental Compile         : $ELEMENTAL_CPPFLAGS])
+AC_MSG_NOTICE([  Elemental Link            : $ELEMENTAL])
 AC_MSG_NOTICE([  CFITSIO Compile           : $CFITSIO_CPPFLAGS])
 AC_MSG_NOTICE([  CFITSIO Link              : $CFITSIO])
 if test x"${PYTHON_VERSION}" != x; then
@@ -132,9 +123,6 @@ if test x"${PYTHON_VERSION}" != x; then
 else
   AC_MSG_NOTICE([  Python                    : Disabled])
 fi
-AC_MSG_NOTICE([  Boost Compile             : $BOOST_CPPFLAGS])
-AC_MSG_NOTICE([  Boost Link Flags          : $BOOST_LDFLAGS])
-AC_MSG_NOTICE([  Boost Program Options     : $BOOST_PROGRAM_OPTIONS_LIB])
 AC_MSG_NOTICE([                                           ])
 AC_MSG_NOTICE([============== Format Status ==============])
 AC_MSG_NOTICE([                                           ])

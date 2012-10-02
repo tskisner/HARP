@@ -1,8 +1,8 @@
-SUBDIRS = matrix
+CXX = @MPICXX@
 
-AM_CPPFLAGS = -I$(top_srcdir)/src/libharp -I$(top_srcdir)/src/libharp/matrix $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS) $(MOAT_CPPFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir)/src/libharp $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS) $(ELEMENTAL_CPPFLAGS)
 AM_LDFLAGS =
-AM_LIBS = $(CFITSIO) $(MOAT) $(BOOST_LDFLAGS) -lm
+AM_LIBS = $(CFITSIO) $(BOOST_LDFLAGS) $(ELEMENTAL) -lm
 
 noinst_HEADERS = harp_internal.hpp
 include_HEADERS = harp.hpp
@@ -14,8 +14,6 @@ libharp_la_includedir = $(includedir)/harp
 libharp_la_include_HEADERS = harp/fits.hpp harp/image.hpp harp/spec.hpp harp/psf.hpp harp/metadata.hpp harp/extract.hpp
 
 libharp_la_SOURCES = harp_image.cpp harp_spec.cpp harp_psf.cpp harp_fits.cpp
-
-libharp_la_LIBADD = $(top_builddir)/src/libharp/matrix/libharpmatrix.la $(AM_LIBS)
 
 
 include instruments.am
