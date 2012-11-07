@@ -17,7 +17,7 @@ void harp::fits::check ( int status ) {
 
     ostringstream o;
     o << "cfitsio library error: " << msg;
-    MOAT_THROW( o.str().c_str() );
+    HARP_THROW( o.str().c_str() );
   }
   return;
 }
@@ -214,7 +214,7 @@ void harp::fits::img_seek ( fitsfile * fp, int hdu ) {
   if ( type != IMAGE_HDU ) {
     ostringstream o;
     o << "FITS HDU " << hdu << " is not an image";
-    MOAT_THROW( o.str().c_str() );
+    HARP_THROW( o.str().c_str() );
   }
   
   return;
@@ -237,47 +237,7 @@ void harp::fits::img_append ( fitsfile * fp, size_t rows, size_t cols ) {
 }
 
 
-void harp::fits::img_write ( fitsfile * fp, size_t frow, size_t fcol, mat_denserow & data ) {
-  
-  int ret;
-  int status = 0;
-
-  long fpixel[2];
-  long lpixel[2];
-  
-  fpixel[0] = (long)fcol + 1;
-  
-  long width = data.size2();
-  
-  lpixel[0] = (fpixel[0] + width - 1) + 1;
-  
-  double * buffer = moat::double_alloc ( width );
-  
-  //cerr << "FITS writing image from columns " << fpixel[0]-1 << " to " << lpixel[0]-1 << endl;
-  
-  for ( size_t i = 0; i < data.size1(); ++i ) {
-    fpixel[1] = (long)( frow + i ) + 1;
-    lpixel[1] = fpixel[1];
-    
-    //cerr << "FITS writing row " << i << "(" << fpixel[1] << ")" << endl;
-
-    for ( size_t j = 0; j < data.size2(); ++j ) {
-      buffer[j] = data( i, j );
-    }
-
-    ret = fits_write_subset ( fp, TDOUBLE, fpixel, lpixel, buffer, &status );
-    fits::check ( status );
-  }
-  
-  free ( buffer );
-  
-  //cerr << "write complete" << endl;
-  
-  return;
-}
-
-
-void harp::fits::img_write ( fitsfile * fp, vec_dense & data ) {
+void harp::fits::img_write ( fitsfile * fp, matrix_local & data ) {
   
   int ret;
   int status = 0;
@@ -287,7 +247,7 @@ void harp::fits::img_write ( fitsfile * fp, vec_dense & data ) {
   fpixel[0] = 1;
   fpixel[1] = 1;
 
-  ret = fits_write_pix ( fp, TDOUBLE, fpixel, data.size(), &(data[0]), &status );
+  ret = fits_write_pix ( fp, TDOUBLE, fpixel, data.MemorySize(), data.Buffer(), &status );
   fits::check ( status );
   
   return;
@@ -306,7 +266,7 @@ void harp::fits::img_dims ( fitsfile * fp, size_t & rows, size_t & cols ) {
   if ( naxis != 2 ) {
     ostringstream o;
     o << "FITS image has " << naxis << " dimensions instead of 2";
-    MOAT_THROW( o.str().c_str() );
+    HARP_THROW( o.str().c_str() );
   }
   
   long naxes[2];
@@ -321,50 +281,7 @@ void harp::fits::img_dims ( fitsfile * fp, size_t & rows, size_t & cols ) {
 }
 
 
-void harp::fits::img_read ( fitsfile * fp, size_t frow, size_t fcol, mat_denserow & data ) {
-  
-  int ret;
-  int status = 0;
-
-  long fpixel[2];
-  long lpixel[2];
-  long inc[2] = {1, 1};
-  
-  fpixel[0] = (long)fcol + 1;
-  
-  long width = data.size2();
-  
-  lpixel[0] = fpixel[0] + width - 1;
-  
-  int anynul;
-  
-  double * buffer = moat::double_alloc ( width );
-  
-  //cerr << "FITS reading image from columns " << fpixel[0]-1 << " to " << lpixel[0]-1 << endl;
-
-  for ( size_t i = 0; i < data.size1(); ++i ) {
-    fpixel[1] = (long)( frow + i ) + 1;
-    lpixel[1] = fpixel[1];
-    
-    //cerr << "FITS reading row " << i << "(" << fpixel[1] << ")" << endl;
-    
-    ret = fits_read_subset ( fp, TDOUBLE, fpixel, lpixel, inc, 0, buffer, &anynul, &status );
-    fits::check ( status );
-    
-    for ( size_t j = 0; j < data.size2(); ++j ) {
-      data( i, j ) = buffer[j];
-    }
-  }
-  
-  free ( buffer );
-  
-  //cerr << "read complete" << endl;
-  
-  return;
-}
-
-
-void harp::fits::img_read ( fitsfile * fp, vec_dense & data ) {
+void harp::fits::img_read ( fitsfile * fp, matrix_local & data ) {
   
   int ret;
   int status = 0;
@@ -375,114 +292,8 @@ void harp::fits::img_read ( fitsfile * fp, vec_dense & data ) {
   fpixel[0] = 1;
   fpixel[1] = 1;
 
-  ret = fits_read_pix ( fp, TDOUBLE, fpixel, data.size(), NULL, &(data[0]), &anynul, &status );
+  ret = fits_read_pix ( fp, TDOUBLE, fpixel, data.MemorySize(), NULL, data.Buffer(), &anynul, &status );
   fits::check ( status );
-  
-  return;
-}
-
-
-void harp::fits::img_read_row ( fitsfile * fp, size_t row, vec_dense & data ) {
-  
-  int ret;
-  int status = 0;
-
-  long fpixel[2];
-  long lpixel[2];
-  long inc[2] = {1, 1};
-  
-  fpixel[0] = 1;
-  fpixel[1] = (long)row + 1;
-  
-  lpixel[0] = (long)data.size();
-  lpixel[1] = fpixel[1];
-  
-  int anynul;
-  
-  double * buffer = moat::double_alloc ( data.size() );
-  
-  //cerr << "FITS reading image row " << fpixel[1]-1 << " from columns " << fpixel[0]-1 << " to " << lpixel[0]-1 << endl;
-  
-  ret = fits_read_subset ( fp, TDOUBLE, fpixel, lpixel, inc, 0, buffer, &anynul, &status );
-  fits::check ( status );
-  
-  for ( size_t j = 0; j < data.size(); ++j ) {
-    data( j ) = buffer[j];
-  }
-  
-  free ( buffer );
-  
-  //cerr << "read row complete" << endl;
-  
-  return;
-}
-
-
-void harp::fits::img_read_row_int ( fitsfile * fp, size_t row, vec_denseint & data ) {
-  
-  int ret;
-  int status = 0;
-
-  long fpixel[2];
-  long lpixel[2];
-  long inc[2] = {1, 1};
-  
-  fpixel[0] = 1;
-  fpixel[1] = (long)row + 1;
-  
-  lpixel[0] = (long)data.size();
-  lpixel[1] = fpixel[1];
-  
-  int anynul;
-
-  int * buffer = moat::int_alloc ( data.size() );
-  
-  //cerr << "FITS reading image int row " << fpixel[1]-1 << " from columns " << fpixel[0]-1 << " to " << lpixel[0]-1 << endl;
-
-  ret = fits_read_subset ( fp, TINT, fpixel, lpixel, inc, 0, buffer, &anynul, &status );
-  fits::check ( status );
-  
-  for ( size_t j = 0; j < data.size(); ++j ) {
-    data( j ) = buffer[j];
-  }
-  
-  free ( buffer );
-  
-  //cerr << "read int row complete" << endl;
-  
-  return;
-}
-
-
-void harp::fits::img_write_row ( fitsfile * fp, size_t row, vec_dense & data ) {
-  
-  int ret;
-  int status = 0;
-
-  long fpixel[2];
-  long lpixel[2];
-  //long inc[2] = {1, 1};
-  
-  fpixel[0] = 1;
-  fpixel[1] = (long)row + 1;
-  
-  lpixel[0] = (long)data.size();
-  lpixel[1] = fpixel[1];
-  
-  double * buffer = moat::double_alloc ( data.size() );
-  
-  for ( size_t j = 0; j < data.size(); ++j ) {
-    buffer[j] = data( j );
-  }
-  
-  //cerr << "FITS reading image row " << fpixel[1]-1 << " from columns " << fpixel[0]-1 << " to " << lpixel[0]-1 << endl;
-  
-  ret = fits_write_subset ( fp, TDOUBLE, fpixel, lpixel, buffer, &status );
-  fits::check ( status );
-  
-  free ( buffer );
-  
-  //cerr << "read row complete" << endl;
   
   return;
 }
@@ -569,14 +380,14 @@ void harp::fits::bin_seek ( fitsfile * fp, int hdu ) {
   if ( type != BINARY_TBL ) {
     ostringstream o;
     o << "FITS HDU " << hdu << " is not a binary table";
-    MOAT_THROW( o.str().c_str() );
+    HARP_THROW( o.str().c_str() );
   }
   
   return;
 }
 
 
-void harp::fits::bin_read ( fitsfile * fp, size_t firstrow, size_t lastrow, vector < int > & columns, vector < vec_dense > & data ) {
+void harp::fits::bin_read ( fitsfile * fp, size_t firstrow, size_t lastrow, vector < int > & columns, vector < matrix_local > & data ) {
   
   int ret;
   int status = 0;
@@ -605,7 +416,7 @@ void harp::fits::bin_read ( fitsfile * fp, size_t firstrow, size_t lastrow, vect
   fits::check ( status );
   
   if ( offset + nread > nrows ) {
-    MOAT_THROW( "binary read range is beyond end of table" );
+    HARP_THROW( "binary read range is beyond end of table" );
   } 
   
   // check that column numbers are in range
@@ -617,9 +428,9 @@ void harp::fits::bin_read ( fitsfile * fp, size_t firstrow, size_t lastrow, vect
     if ( ( (*it) >= tfields ) || ( (*it) < 0 ) ) {
       ostringstream o;
       o << "cannot read (zero-based) column " << (*it) << " from binary table with " << tfields << " columns";
-      MOAT_THROW( o.str().c_str() );
+      HARP_THROW( o.str().c_str() );
     }
-    data[ cur ].resize ( nread );
+    data[ cur ].ResizeTo ( nread, 1 );
     ++cur;
   }
     
@@ -636,7 +447,7 @@ void harp::fits::bin_read ( fitsfile * fp, size_t firstrow, size_t lastrow, vect
     
     cur = 0;
     for ( it = columns.begin(); it != columns.end(); ++it ) {
-      ret = fits_read_col_dbl ( fp, (*it) + 1, offset + 1, 1, n, 0, &((data[cur])[dataoffset]), &anynul, &status );
+      ret = fits_read_col_dbl ( fp, (*it) + 1, offset + 1, 1, n, 0, &(( data[cur].Buffer() )[dataoffset]), &anynul, &status );
       fits::check ( status );
       //cerr << "fits::bin_read col " << (*it)+1 << " rows " << offset+1 << "-" << offset+1+n << " = " << (data[cur])[dataoffset] << ", " << (data[cur])[dataoffset+1] << ", " << (data[cur])[dataoffset+2] << endl;
       ++cur;
@@ -650,39 +461,47 @@ void harp::fits::bin_read ( fitsfile * fp, size_t firstrow, size_t lastrow, vect
 }
 
 
-void harp::fits::bin_write ( fitsfile * fp, size_t firstrow, size_t lastrow, std::vector < int > & columns, std::vector < vec_dense > & data ) {
+void harp::fits::bin_write ( fitsfile * fp, size_t firstrow, size_t lastrow, std::vector < int > & columns, std::vector < matrix_local > & data ) {
   
-  MOAT_THROW( "binary FITS table writing not yet implemented" );
+  HARP_THROW( "binary FITS table writing not yet implemented" );
   
   return;
 }
 
 
 void harp::fits::test ( string const & datadir ) {
+
+  int np;
+  int myp;
+
+  MPI_Comm_size ( MPI_COMM_WORLD, &np );
+  MPI_Comm_rank ( MPI_COMM_WORLD, &myp );
   
-  cerr << "Testing FITS operations..." << endl;
+  if ( myp == 0 ) {
+    cerr << "Testing FITS operations..." << endl;
+  }
   
   string imgfile = datadir + "/" + "fits_test_img.fits.out";
   
   size_t rows = 100;
   size_t cols = 500;
+  size_t nelems = rows * cols;
   
-  mat_denserow data ( rows, cols );
+  matrix_local data ( nelems, 1 );
   
-  for ( size_t i = 0; i < rows; ++i ) {
-    for ( size_t j = 0; j < cols; ++j ) {
-      data( i, j ) = (double)(i * cols + j);
+  for ( size_t i = 0; i < cols; ++i ) {
+    for ( size_t j = 0; j < rows; ++j ) {
+      data.Set ( i*rows+j, 0, (double)(i * rows + j) );
     }
   }
 
-  
   fitsfile * fp;
   
   fits::open_readwrite ( fp, imgfile );
   
   fits::img_append ( fp, rows, cols );
   
-  fits::img_write ( fp, 0, 0, data );
+  fits::img_write ( fp, data );
 
   fits::close ( fp );
 
@@ -701,50 +520,24 @@ void harp::fits::test ( string const & datadir ) {
     exit(1);
   }
 
-  mat_denserow checkdata ( rows, cols );
+  matrix_local checkdata ( nelems, 1 );
 
-  fits::img_read ( fp, 0, 0, checkdata );
+  fits::img_read ( fp, checkdata );
   
-  for ( size_t i = 0; i < rows; ++i ) {
-    for ( size_t j = 0; j < cols; ++j ) {
-      if ( checkdata( i, j ) != data( i, j ) ) {
-        cerr << "  (FAILED): img element (" << i << ", " << j << ") has wrong value (" << checkdata( i, j ) << " != " << data( i, j ) << ")" << endl;
-        exit(1);
-      }
-    }
-  }
-  
-  vec_dense checkrow ( cols );
-  vec_denseint checkrowint ( cols );
-  
-  for ( size_t i = 0; i < rows; ++i ) {
-    
-    fits::img_read_row ( fp, i, checkrow );
-    
-    for ( size_t j = 0; j < cols; ++j ) {
-      if ( checkrow( j ) != data( i, j ) ) {
-        cerr << "  (FAILED): img row " << i << ", element " << j << " has wrong value (" << checkrow( j ) << " != " << data( i, j ) << ")" << endl;
-        exit(1);
-      }
-    }
-  }
-  
-  for ( size_t i = 0; i < rows; ++i ) {
-    
-    fits::img_read_row_int ( fp, i, checkrowint );
-    
-    for ( size_t j = 0; j < cols; ++j ) {
-      if ( checkrowint( j ) != (int)data( i, j ) ) {
-        cerr << "  (FAILED): img INT row " << i << ", element " << j << " has wrong value (" << checkrowint( j ) << " != " << (int)data( i, j ) << ")" << endl;
+  for ( size_t i = 0; i < cols; ++i ) {
+    for ( size_t j = 0; j < rows; ++j ) {
+      if ( checkdata.Get( i*rows+j, 0 ) != data.Get( i*rows+j, 0 ) ) {
+        cerr << "  (FAILED): img element (" << i << ", " << j << ") has wrong value (" << checkdata.Get( i*rows+j, 0 ) << " != " << data.Get( i*rows+j, 0 ) << ")" << endl;
         exit(1);
       }
     }
   }
 
   fits::close ( fp );
-  
-  
-  cerr << "  (PASSED)" << endl;
+
+  if ( myp == 0 ) {
+    cerr << "  (PASSED)" << endl;
+  }
   
   return;
 }

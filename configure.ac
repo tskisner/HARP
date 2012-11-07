@@ -38,7 +38,7 @@ AC_HEADER_STDBOOL
 dnl +------------------------------------------------
 dnl | Check for OpenMP
 dnl +------------------------------------------------
-AX_OPENMP([ax_have_openmp=yes;AC_DEFINE(HAVE_OPENMP,1,[Define if OpenMP is enabled])])
+AX_OPENMP([ax_have_openmp=yes;AC_DEFINE(HAVE_OPEN_MP,1,[Define if OpenMP is enabled])])
 AM_CONDITIONAL([HAVE_AM_OPENMP], [test $ax_have_openmp = yes])
 dnl +------------------------------------------------
 dnl | Check for MPI
@@ -61,9 +61,9 @@ dnl +------------------------------------------------
 AX_BOOST_BASE([], [], [AC_MSG_ERROR([Could not find the BOOOST library])])
 AX_BOOST_PROGRAM_OPTIONS
 dnl +------------------------------------------------
-dnl | Check for Elemental and any dependencies
+dnl | Check for Clique and any dependencies
 dnl +------------------------------------------------
-ACX_ELEMENTAL([], [AC_MSG_ERROR([Could not find the Elemental library!])])
+ACX_CLIQUE([], [AC_MSG_ERROR([Could not find the Clique library!])])
 dnl +------------------------------------------------
 dnl | Check for CFITSIO
 dnl +------------------------------------------------
@@ -114,8 +114,8 @@ fi
 AC_MSG_NOTICE([  Boost Compile             : $BOOST_CPPFLAGS])
 AC_MSG_NOTICE([  Boost Link Flags          : $BOOST_LDFLAGS])
 AC_MSG_NOTICE([  Boost Program Options     : $BOOST_PROGRAM_OPTIONS_LIB])
-AC_MSG_NOTICE([  Elemental Compile         : $ELEMENTAL_CPPFLAGS])
-AC_MSG_NOTICE([  Elemental Link            : $ELEMENTAL])
+AC_MSG_NOTICE([  Clique Compile         : $CLIQUE_CPPFLAGS])
+AC_MSG_NOTICE([  Clique Link            : $CLIQUE])
 AC_MSG_NOTICE([  CFITSIO Compile           : $CFITSIO_CPPFLAGS])
 AC_MSG_NOTICE([  CFITSIO Link              : $CFITSIO])
 if test x"${PYTHON_VERSION}" != x; then

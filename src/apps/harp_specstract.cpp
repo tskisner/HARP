@@ -16,66 +16,11 @@ using namespace harp;
 namespace popts = boost::program_options;
 
 
-static bool harp_specstract_quiet = false;
-
-
-void harp_specstract_prec ( data_vec & in, data_vec & out, int_vec & flags, void * data ) {
-  data_vec * prec = (data_vec *) data;
-  
-  size_t vit;
-  size_t n = in.size();
-  
-  #ifdef _OPENMP
-  #pragma omp parallel for default(none) private(vit) shared(n, flags, in, out, prec) schedule(static)
-  #endif
-  for ( vit = 0; vit < n; ++vit ) {
-    if ( flags[ vit ] == 0 ) {
-      out[ vit ] = (*prec)[ vit ] * in[ vit ];
-    } else {
-      out[ vit ] = 0.0;
-    }
-  }
-  
-  return;
-}
-
-
-void harp_specstract_report ( double const & norm, double const & deltazero, int const & iter, double const & alpha, double const & beta, double const & delta, double const & epsilon ) {
-  
-  double relerr = sqrt ( delta / deltazero );
-  
-  if ( ! harp_specstract_quiet ) {
-    cout << "harp_specstract:  PCG iter " << iter << ": epsilon = " << epsilon << " relative err = " << relerr << endl;
-  }
-  
-  return;
-}
-
-void harp_specstract_profile ( string const & name, string const & desc, double & totaltime, double & opencltime, map < string, long long int > & papi ) {
-  
-  cout << "harp_specstract:   " << desc << ":  " << totaltime << " seconds" << endl;
-  
-  return;
-}
-
-
-
-typedef struct {
-  image_p handle;
-  string path;
-  string format;
-  string type;
-  map < string, string > params;
-  size_t rows;
-  size_t cols;
-  size_t npix;
-} harp_image_props;
-
-
-typedef struct {}
-
 
 int main ( int argc, char *argv[] ) {
+
+  MPI_Init ( &argc, &argv );
+  elem::Initialize( argc, argv );
   
   cout.precision ( 16 );
   cerr.precision ( 16 );
@@ -132,15 +77,9 @@ int main ( int argc, char *argv[] ) {
     harp_specstract_quiet = true;
   }
   
-  moat::profile * prof = moat::profile::get ( );
   
   if ( ! quiet ) {
 
-    prof->reg ( "HARP_PSF", "compute projection matrix" );
-    prof->reg ( "HARP_REMAP", "remap projection matrix" );
-    prof->reg ( "HARP_PRECOND", "compute preconditioner" );
-    prof->reg ( "HARP_READ", "read data" );
-    prof->reg ( "HARP_WRITE", "write data" );
 
   }
   
@@ -366,6 +305,9 @@ int main ( int argc, char *argv[] ) {
   */
   
   fftw_cleanup_threads();
+
+  elem::Finalize();
+  MPI_Finalize ();
   
   return 0;
 }

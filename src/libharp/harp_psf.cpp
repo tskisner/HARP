@@ -35,7 +35,7 @@ psf * harp::psf::create ( std::string const & format, boost::property_tree::ptre
   
   std::ostringstream o;
   o << "Cannot create psf of unknown format (" << format << ")";
-  MOAT_THROW( o.str().c_str() );
+  HARP_THROW( o.str().c_str() );
 
   return NULL;
   

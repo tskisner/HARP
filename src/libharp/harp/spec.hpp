@@ -14,15 +14,12 @@ namespace harp {
       void cleanup ( );
 
       virtual boost::property_tree::ptree serialize ( ) { return boost::property_tree::ptree(); }
-      
-      virtual size_t size ( ) { return 0; }
+
       virtual size_t nspectrum ( ) { return 0; }
-      virtual size_t spectrum_size ( size_t spectrum ) { return 0; }
+      virtual size_t spectrum_size ( ) { return 0; }
       
-      virtual void read ( vec_dense & data ) { return; }
-      virtual void write ( std::string const & path, vec_dense & data ) { return; }
-      virtual void read_spectrum ( size_t spectrum, vec_dense & data ) { return; }
-      virtual void write_spectrum ( size_t spectrum, std::string const & path, vec_dense & data ) { return; }
+      virtual void read ( matrix_dist & data ) { return; }
+      virtual void write ( std::string const & path, matrix_dist & data ) { return; }
 
       std::string format ( );
       

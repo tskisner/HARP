@@ -5,7 +5,6 @@
 
 #include <boost/random.hpp>
 
-#include <moat.hpp>
 
 extern "C" {
 #include <unistd.h>
@@ -13,9 +12,6 @@ extern "C" {
 
 using namespace std;
 using namespace harp;
-
-
-
 
 
 void sandbox_profile ( string const & name, string const & desc, double & totaltime, double & opencltime, map < string, long long int > & papi ) {
@@ -27,9 +23,93 @@ void sandbox_profile ( string const & name, string const & desc, double & totalt
 
 
 void harp::test_sandbox ( string const & datadir ) {
+
+  int np;
+  int myp;
+
+  MPI_Comm_size ( MPI_COMM_WORLD, &np );
+  MPI_Comm_rank ( MPI_COMM_WORLD, &myp );
   
-  cerr << "Testing sandbox image construction..." << endl;
+  if ( myp == 0 ) {
+    cerr << "Testing sandbox fake PSF generation..." << endl;
+  }
+
+  boost::property_tree::ptree props;
+  props.put ( "FAKE", "TRUE" );
+
+  psf_p testpsf ( psf::create ( "sandbox", props ) );
+
+  size_t npix = testpsf->pixrows() * testpsf->pixcols();
+  size_t nspec = testpsf->nspec();
+  size_t specsize = testpsf->specsize();
+  size_t nbins = nspec * specsize;
+
+  matrix_sparse design;
+
+  cerr << "constructing design matrix" << endl;
+  testpsf->projection ( 0, specsize - 1, design );
+
+  cerr << "allocate truth" << endl;
+  matrix_dist truth ( nbins, 1 );
+
+  cerr << "pointer cast" << endl;
+  boost::shared_ptr < psf_sandbox > sndpsf = testpsf->shared_ref < psf_sandbox > ();
+  cerr << "getting fake spec" << endl;
+  sndpsf->fake_spec ( truth );
+
+  matrix_local signal ( npix, 1 );
+  cerr << "projecting to pixels" << endl;
+  spec_project ( design, truth, signal );
+
+  matrix_local noise ( npix, 1 );  
+  local_matrix_zero ( noise );
+
+  matrix_local measured ( npix, 1 );  
+  local_matrix_zero ( measured );
+
+  matrix_local invnoise ( npix, 1 );
+  local_matrix_zero ( invnoise );
+
+  typedef boost::ecuyer1988 base_generator_type;
+  base_generator_type generator(42u);
+
+  double rms;
+
+  for ( size_t i = 0; i < npix; ++i ) {
+    rms = sqrt( 16.0 + signal.Get ( i, 0 ) );
+    invnoise.Set ( i, 0, 1.0 / (rms*rms) );
+
+    boost::normal_distribution < double > dist ( 0.0, rms );
+    boost::variate_generator < base_generator_type&, boost::normal_distribution < double > > gauss ( generator, dist );
+
+    noise.Set ( i, 0, gauss() );
+    measured.Set ( i, 0, signal.Get(i,0) + noise.Get(i,0) );
+  }
+
+  if ( myp == 0 ) {
+    cerr << "Testing sandbox inverse covariance calculation..." << endl;
+  }
+
+  elem::Grid grid ( elem::mpi::COMM_WORLD );
   
+  matrix_dist inv ( nbins, nbins, grid );
+
+  inverse_covariance ( design, invnoise, inv );
+
+  if ( myp == 0 ) {
+    cerr << "Testing sandbox inverse covariance eigendecomposition..." << endl;
+  }
+
+  elem::DistMatrix < double, elem::VR, elem::STAR > w;
+  matrix_dist Z;
+
+  elem::HermitianEig ( elem::LOWER, inv, w, Z );
+
+  elem::SortEig( w, Z );
+
+  w.Print();
+  
+  /*
   boost::property_tree::ptree props;
   props.put ( "path", datadir + "/test_medium_input_image.fits" );
   props.put ( "signal", 1 );
@@ -100,11 +180,6 @@ void harp::test_sandbox ( string const & datadir ) {
   
   cerr << "Testing sandbox PSF calculation of sparse projection matrix..." << endl;
   
-  moat::profile * prof = moat::profile::get ( );
-
-  prof->reg ( "SANDBOX_PSF", "compute projection matrix" );
-  prof->reg ( "SANDBOX_REMAP", "remap projection matrix" );
-  
   size_t nbins = testpsf->nspec() * testpsf->specsize(0);
   size_t npix = testimg->rows() * testimg->cols();
   
@@ -136,7 +211,7 @@ void harp::test_sandbox ( string const & datadir ) {
   
   for ( size_t b = 0; b < nbins; ++b ) {
     flags[b] = 0;
-    /*
+    
     //if ( ( b % 60 < 5 ) || ( b % 60 > 55 ) ) {
     //  flags[b] = 1;
     //}
@@ -146,7 +221,7 @@ void harp::test_sandbox ( string const & datadir ) {
     } else {
       inspec[b] = 0.0;
     }
-    */
+    
     outspec[b] = 0.0;
   }
 
@@ -329,9 +404,11 @@ void harp::test_sandbox ( string const & datadir ) {
   }
   
   out.close();
+  */
 
-
-  cerr << "  (PASSED)" << endl;
+  if ( myp == 0 ) {
+    cerr << "  (PASSED)" << endl;
+  }
      
   return;
 }

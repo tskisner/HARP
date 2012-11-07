@@ -19,5 +19,5 @@ LIBS="${HPCP_LIBS}" \
 --with-cfitsio-cpp="${cfitsio_CPPFLAGS}" \
 --with-cfitsio-libs="${cfitsio_LDFLAGS} ${cfitsio_LIBS_CXX}" \
 --with-boost="${boost_PREFIX}" \
---with-elemental-cpp="${elemental_CPPFLAGS}" \
---with-elemental-libs="${elemental_LDFLAGS} ${elemental_LIBS_MPICXX} ${lapack_LDFLAGS} ${lapack_LIBS_CXX} ${blas_LDFLAGS} ${blas_LIBS_CXX} ${HPCP_MPIFCLIBS} ${HPCP_FCLIBS}"
+--with-clique-cpp="${clique_CPPFLAGS}" \
+--with-clique-libs="${clique_LDFLAGS} ${clique_LIBS_MPICXX} ${lapack_LDFLAGS} ${lapack_LIBS_CXX} ${blas_LDFLAGS} ${blas_LIBS_CXX} ${HPCP_MPIFCLIBS} ${HPCP_FCLIBS}"

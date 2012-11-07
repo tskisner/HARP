@@ -5,7 +5,6 @@
 
 #include <boost/random.hpp>
 
-#include <moat.hpp>
 
 extern "C" {
 #include <unistd.h>
@@ -30,6 +29,7 @@ void harp::test_sandbox_sky ( string const & datadir ) {
   
   cerr << "Testing sandbox sky subtraction..." << endl;
   
+  /*
   boost::property_tree::ptree props;
   props.clear();
   props.put ( "path", datadir + "/test_medium_psf.fits" );
@@ -201,7 +201,7 @@ void harp::test_sandbox_sky ( string const & datadir ) {
 
 
 
-  /*
+  
 
   outdata = datadir + "/test_skysub_est-sky0.out";
 

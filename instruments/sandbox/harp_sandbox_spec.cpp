@@ -31,21 +31,36 @@ harp::spec_sandbox::spec_sandbox ( boost::property_tree::ptree const & props ) :
   } else {
     
     // read size from the FITS header
-    
-    fitsfile *fp;
 
-    fits::open_read ( fp, path_ );
+    int np;
+    int myp;
 
-    fits::img_seek ( fp, hdu_ );
+    MPI_Comm_size ( MPI_COMM_WORLD, &np );
+    MPI_Comm_rank ( MPI_COMM_WORLD, &myp );
     
-    size_t rows, cols;
+    if ( myp == 0 ) {
     
-    fits::img_dims ( fp, rows, cols );
-    
-    nspec_ = rows;
-    specsize_ = cols;
-    
-    fits::close ( fp );
+      fitsfile *fp;
+
+      fits::open_read ( fp, path_ );
+
+      fits::img_seek ( fp, hdu_ );
+      
+      size_t rows, cols;
+      
+      fits::img_dims ( fp, rows, cols );
+      
+      nspec_ = rows;
+      specsize_ = cols;
+      
+      fits::close ( fp );
+    }
+
+    int ret = MPI_Bcast ( (void*)(&nspec_), 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
+    mpi_check ( MPI_COMM_WORLD, ret );
+
+    ret = MPI_Bcast ( (void*)(&specsize_), 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
+    mpi_check ( MPI_COMM_WORLD, ret );
     
   }
   
@@ -81,83 +96,15 @@ boost::property_tree::ptree harp::spec_sandbox::serialize ( ) {
 }
 
 
-void harp::spec_sandbox::read ( vec_dense & data ) {
-  
-  fitsfile *fp;
+void harp::spec_sandbox::read ( matrix_dist & data ) {
 
-  fits::open_read ( fp, path_ );
-
-  fits::img_seek ( fp, hdu_ );
-  
-  fits::img_read ( fp, data );
-  
-  fits::close ( fp );
   
   return;
 }
 
 
-void harp::spec_sandbox::write ( string const & path, vec_dense & data ) {
-  
-  fitsfile *fp;
+void harp::spec_sandbox::write ( string const & path, matrix_dist & data ) {
 
-  fits::open_readwrite ( fp, path );
-  
-  int nh = fits::nhdus ( fp );
-
-  if ( nh < hdu_ ) {
-    while ( nh < hdu_ ) {
-      fits::img_append ( fp, nspec_, specsize_ );
-      ++nh;
-    }
-  } else {
-    fits::img_seek ( fp, hdu_ );
-  }
-  
-  fits::img_write ( fp, data );
-  
-  fits::close ( fp );
-  
-  return;
-}
-
-
-void harp::spec_sandbox::read_spectrum ( size_t spectrum, vec_dense & data ) {
-  
-  fitsfile *fp;
-
-  fits::open_read ( fp, path_ );
-
-  fits::img_seek ( fp, hdu_ );
-  
-  fits::img_read_row ( fp, spectrum + 1, data );
-  
-  fits::close ( fp );
-  
-  return;
-}
-
-
-void harp::spec_sandbox::write_spectrum ( size_t spectrum, string const & path, vec_dense & data ) {
-  
-  fitsfile *fp;
-
-  fits::open_readwrite ( fp, path );
-  
-  int nh = fits::nhdus ( fp );
-
-  if ( nh < hdu_ ) {
-    while ( nh < hdu_ ) {
-      fits::img_append ( fp, nspec_, specsize_ );
-      ++nh;
-    }
-  } else {
-    fits::img_seek ( fp, hdu_ );
-  }
-
-  fits::img_write_row ( fp, spectrum + 1, data );
-  
-  fits::close ( fp );
   
   return;
 }

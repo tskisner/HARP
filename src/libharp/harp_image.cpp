@@ -35,7 +35,7 @@ image * harp::image::create ( std::string const & format, boost::property_tree::
   
   std::ostringstream o;
   o << "Cannot create image of unknown format (" << format << ")";
-  MOAT_THROW( o.str().c_str() );
+  HARP_THROW( o.str().c_str() );
 
   return NULL;
   

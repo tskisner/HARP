@@ -34,16 +34,30 @@ harp::image_sandbox::image_sandbox ( boost::property_tree::ptree const & props )
   } else {
     
     // read rows / cols from the FITS header
-    
-    fitsfile *fp;
 
-    fits::open_read ( fp, path_ );
+    int np;
+    int myp;
 
-    fits::img_seek ( fp, sighdu_ );
+    MPI_Comm_size ( MPI_COMM_WORLD, &np );
+    MPI_Comm_rank ( MPI_COMM_WORLD, &myp );
     
-    fits::img_dims ( fp, rows_, cols_ );
-    
-    fits::close ( fp );
+    if ( myp == 0 ) {
+      fitsfile *fp;
+
+      fits::open_read ( fp, path_ );
+
+      fits::img_seek ( fp, sighdu_ );
+      
+      fits::img_dims ( fp, rows_, cols_ );
+      
+      fits::close ( fp );
+    }
+
+    int ret = MPI_Bcast ( (void*)(&rows_), 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
+    mpi_check ( MPI_COMM_WORLD, ret );
+
+    ret = MPI_Bcast ( (void*)(&cols_), 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
+    mpi_check ( MPI_COMM_WORLD, ret );
     
   }  
   
@@ -81,165 +95,147 @@ boost::property_tree::ptree harp::image_sandbox::serialize ( ) {
 }
 
 
-void harp::image_sandbox::read ( size_t startrow, size_t startcol, mat_denserow & data ) {
-  
-  fitsfile *fp;
+void harp::image_sandbox::read ( matrix_local & data ) {
 
-  fits::open_read ( fp, path_ );
+  int np;
+  int myp;
 
-  fits::img_seek ( fp, sighdu_ );
-  
-  fits::img_read ( fp, startrow, startcol, data );
-  
-  fits::close ( fp );
-  
-  return;
-}
+  MPI_Comm_size ( MPI_COMM_WORLD, &np );
+  MPI_Comm_rank ( MPI_COMM_WORLD, &myp );
 
+  size_t imgsize;
+  
+  if ( myp == 0 ) {
+  
+    fitsfile *fp;
 
-void harp::image_sandbox::read ( vec_dense & data ) {
-  
-  fitsfile *fp;
+    fits::open_read ( fp, path_ );
 
-  fits::open_read ( fp, path_ );
-
-  fits::img_seek ( fp, sighdu_ );
-  
-  fits::img_read ( fp, data );
-  
-  fits::close ( fp );
-  
-  return;
-}
-
-
-void harp::image_sandbox::write ( std::string const & path, size_t startrow, size_t startcol, mat_denserow & data ) {
-  
-  fitsfile *fp;
-  
-  fits::open_readwrite ( fp, path );
-  
-  int nh = fits::nhdus ( fp );
-
-  if ( nh < sighdu_ ) {
-    while ( nh < sighdu_ ) {
-      fits::img_append ( fp, data.size1(), data.size2() );
-      ++nh;
-    }
-  } else {
     fits::img_seek ( fp, sighdu_ );
+    
+    fits::img_read ( fp, data );
+    
+    fits::close ( fp );
+
+    imgsize = data.Height();
+
+  }
+
+  int ret = MPI_Bcast ( (void*)(&imgsize), 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
+  mpi_check ( MPI_COMM_WORLD, ret );
+
+  if ( myp != 0 ) {
+    data.ResizeTo ( imgsize, 1 );
+  }
+
+  ret = MPI_Bcast ( (void*)(data.Buffer()), imgsize, MPI_DOUBLE, 0, MPI_COMM_WORLD );
+  mpi_check ( MPI_COMM_WORLD, ret );
+  
+  return;
+}
+
+
+void harp::image_sandbox::write ( std::string const & path, matrix_local & data ) {
+  
+  int np;
+  int myp;
+
+  MPI_Comm_size ( MPI_COMM_WORLD, &np );
+  MPI_Comm_rank ( MPI_COMM_WORLD, &myp );
+  
+  if ( myp == 0 ) {
+
+    fitsfile *fp;
+    
+    fits::open_readwrite ( fp, path );
+    
+    int nh = fits::nhdus ( fp );
+
+    if ( nh < sighdu_ ) {
+      while ( nh < sighdu_ ) {
+        fits::img_append ( fp, rows_, cols_ );
+        ++nh;
+      }
+    } else {
+      fits::img_seek ( fp, sighdu_ );
+    }
+    
+    fits::img_write ( fp, data );
+    
+    fits::close ( fp );
   }
   
-  fits::img_write ( fp, 0, 0, data );
-  
-  fits::close ( fp );
-  
   return;
 }
 
 
-void harp::image_sandbox::write ( std::string const & path, vec_dense & data ) {
-  
-  fitsfile *fp;
-  
-  fits::open_readwrite ( fp, path );
-  
-  int nh = fits::nhdus ( fp );
+void harp::image_sandbox::read_noise ( matrix_local & data ) {
 
-  if ( nh < sighdu_ ) {
-    while ( nh < sighdu_ ) {
-      fits::img_append ( fp, rows_, cols_ );
-      ++nh;
-    }
-  } else {
-    fits::img_seek ( fp, sighdu_ );
-  }
-  
-  fits::img_write ( fp, data );
-  
-  fits::close ( fp );
-  
-  return;
-}
+  int np;
+  int myp;
 
+  MPI_Comm_size ( MPI_COMM_WORLD, &np );
+  MPI_Comm_rank ( MPI_COMM_WORLD, &myp );
 
-void harp::image_sandbox::read_noise ( size_t startrow, size_t startcol, mat_denserow & data ) {
+  size_t imgsize;
   
-  fitsfile *fp;
+  if ( myp == 0 ) {
+  
+    fitsfile *fp;
 
-  fits::open_read ( fp, path_ );
+    fits::open_read ( fp, path_ );
 
-  fits::img_seek ( fp, nsehdu_ );
-  
-  fits::img_read ( fp, startrow, startcol, data );
-  
-  fits::close ( fp );
-  
-  return;
-}
-
-
-void harp::image_sandbox::read_noise ( vec_dense & data ) {
-  
-  fitsfile *fp;
-
-  fits::open_read ( fp, path_ );
-
-  fits::img_seek ( fp, nsehdu_ );
-  
-  fits::img_read ( fp, data );
-  
-  fits::close ( fp );
-  
-  return;
-}
-
-
-void harp::image_sandbox::write_noise ( std::string const & path, size_t startrow, size_t startcol, mat_denserow & data ) {
-  
-  fitsfile *fp;
-  
-  fits::open_readwrite ( fp, path );
-  
-  int nh = fits::nhdus ( fp );
-
-  if ( nh < nsehdu_ ) {
-    while ( nh < nsehdu_ ) {
-      fits::img_append ( fp, data.size1(), data.size2() );
-      ++nh;
-    }
-  } else {
     fits::img_seek ( fp, nsehdu_ );
+    
+    fits::img_read ( fp, data );
+    
+    fits::close ( fp );
+
+    imgsize = data.Height();
   }
-  
-  fits::img_write ( fp, 0, 0, data );
-  
-  fits::close ( fp );
+
+  int ret = MPI_Bcast ( (void*)(&imgsize), 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
+  mpi_check ( MPI_COMM_WORLD, ret );
+
+  if ( myp != 0 ) {
+    data.ResizeTo ( imgsize, 1 );
+  }
+
+  ret = MPI_Bcast ( (void*)(data.Buffer()), imgsize, MPI_DOUBLE, 0, MPI_COMM_WORLD );
+  mpi_check ( MPI_COMM_WORLD, ret );
   
   return;
 }
 
 
-void harp::image_sandbox::write_noise ( std::string const & path, vec_dense & data ) {
+void harp::image_sandbox::write_noise ( std::string const & path, matrix_local & data ) {
   
-  fitsfile *fp;
-  
-  fits::open_readwrite ( fp, path );
-  
-  int nh = fits::nhdus ( fp );
+  int np;
+  int myp;
 
-  if ( nh < nsehdu_ ) {
-    while ( nh < nsehdu_ ) {
-      fits::img_append ( fp, rows_, cols_ );
-      ++nh;
+  MPI_Comm_size ( MPI_COMM_WORLD, &np );
+  MPI_Comm_rank ( MPI_COMM_WORLD, &myp );
+  
+  if ( myp == 0 ) {
+    fitsfile *fp;
+    
+    fits::open_readwrite ( fp, path );
+    
+    int nh = fits::nhdus ( fp );
+
+    if ( nh < nsehdu_ ) {
+      while ( nh < nsehdu_ ) {
+        fits::img_append ( fp, rows_, cols_ );
+        ++nh;
+      }
+    } else {
+      fits::img_seek ( fp, nsehdu_ );
     }
-  } else {
-    fits::img_seek ( fp, nsehdu_ );
+    
+    fits::img_write ( fp, data );
+    
+    fits::close ( fp );
   }
-  
-  fits::img_write ( fp, data );
-  
-  fits::close ( fp );
   
   return;
 }

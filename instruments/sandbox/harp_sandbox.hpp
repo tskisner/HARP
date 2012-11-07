@@ -9,20 +9,15 @@ namespace harp {
       ~image_sandbox ( );
 
       boost::property_tree::ptree serialize ( );
-      
+
       size_t rows ( ) { return rows_; }
       size_t cols ( ) { return cols_; }
-      void rowscols ( size_t & rows, size_t & cols ) { rows = rows_; cols = cols_; return; }
       
-      void read ( size_t startrow, size_t startcol, mat_denserow & data );
-      void write ( std::string const & path, size_t startrow, size_t startcol, mat_denserow & data );
-      void read ( vec_dense & data );
-      void write ( std::string const & path, vec_dense & data );
+      void read ( matrix_local & data );
+      void write ( std::string const & path, matrix_local & data );
       
-      void read_noise ( size_t startrow, size_t startcol, mat_denserow & data );
-      void write_noise ( std::string const & path, size_t startrow, size_t startcol, mat_denserow & data );
-      void read_noise ( vec_dense & data );
-      void write_noise ( std::string const & path, vec_dense & data );
+      void read_noise ( matrix_local & data );
+      void write_noise ( std::string const & path, matrix_local & data );
     
     private :
     
@@ -43,13 +38,10 @@ namespace harp {
 
       boost::property_tree::ptree serialize ( );
       
-      size_t size ( ) { return size_; }
       size_t nspectrum ( ) { return nspec_; }
       size_t spectrum_size ( size_t spectrum ) { return specsize_; }
-      void read ( vec_dense & data );
-      void write ( std::string const & path, vec_dense & data );
-      void read_spectrum ( size_t spectrum, vec_dense & data );
-      void write_spectrum ( size_t spectrum, std::string const & path, vec_dense & data );
+      void read ( matrix_dist & data );
+      void write ( std::string const & path, matrix_dist & data );
     
     private :
     
@@ -63,13 +55,13 @@ namespace harp {
   
   
   typedef struct {
-    vec_dense x;
-    vec_dense y;
-    vec_dense lambda;
-    vec_dense amp;
-    vec_dense maj;
-    vec_dense min;
-    vec_dense ang;
+    matrix_local x;
+    matrix_local y;
+    matrix_local lambda;
+    matrix_local amp;
+    matrix_local maj;
+    matrix_local min;
+    matrix_local ang;
   } psf_sandbox_resp;
   
   class psf_sandbox : public psf {
@@ -79,28 +71,49 @@ namespace harp {
       ~psf_sandbox ( );
 
       boost::property_tree::ptree serialize ( );
-      
+
       size_t nspec ( ) { return nspec_; }
-      size_t specsize ( size_t specnum ) { return specsize_; }
-      void lambda ( size_t specnum, vec_dense & data );
-      void extent ( size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t & firstX, size_t & firstY, size_t & lastX, size_t & lastY );
-      void projection ( std::string profcalc, std::string profremap, size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t firstX, size_t lastX, size_t firstY, size_t lastY, mat_compcol & data );
+      size_t specsize ( ) { return specsize_; }
+      size_t pixrows ( ) { return rows_; }
+      size_t pixcols ( ) { return cols_; }
+      void projection ( size_t firstbin, size_t lastbin, matrix_sparse & data );
+
+      void fake_spec ( matrix_dist & data );
       
-            
     private :
+
+      int hdu_info ( fitsfile *fp, const char * sandbox_psf_hdu );
     
-      void cache_spec ( size_t first, size_t last );
+      void cache ( size_t firstlocal, size_t nlocal );
+
+      void extent ( size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t & firstcol, size_t & firstrow, size_t & lastcol, size_t & lastrow );
       
-      size_t valid_range ( size_t const & firstX, size_t const & lastX, size_t const & firstY, size_t const & lastY, size_t & startX, size_t & stopX, size_t & startY, size_t & stopY, size_t & spec, size_t & bin );
+      void gauss_sample ( matrix_local & vals, matrix_local & xrel, matrix_local & yrel, double amp, double maj, double min, double ang );
+
+      void fake_spec2pix ( size_t spec, size_t bin, size_t & row, size_t & col );
       
-      void gauss_sample ( vec_dense & vals, vec_dense & xrel, vec_dense & yrel, double amp, double maj, double min, double ang );
-      
-      void gauss_sample_alt ( vec_dense & vals, vec_dense & xrel, vec_dense & yrel, double amp, double maj, double min, double ang );
-    
+      bool dofake_;
+      bool cached_;
+      size_t cached_first_;
+      size_t cached_last_;
+      size_t fake_n_bundle_;
+      size_t fake_bundle_size_;
+      size_t fake_pix_margin_;
+      size_t fake_pix_gap_;
+      size_t fake_pix_bundle_;
+      double fake_background_;
+      double fake_peak_amp_;
+      size_t fake_peak_space_;
+      size_t fake_peak_obj_;
+      double fake_psf_fwhm_;
+
       std::string path_;
       size_t nspec_;
       size_t specsize_;
+      size_t rows_;
+      size_t cols_;
       size_t nglobal_;
+      size_t npix_;
       size_t pixcorr_;
       std::map < std::string, int > hdus_;
       std::map < size_t, psf_sandbox_resp > resp_;

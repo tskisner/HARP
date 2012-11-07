@@ -35,7 +35,7 @@ spec * harp::spec::create ( std::string const & format, boost::property_tree::pt
   
   std::ostringstream o;
   o << "Cannot create spec of unknown format (" << format << ")";
-  MOAT_THROW( o.str().c_str() );
+  HARP_THROW( o.str().c_str() );
 
   return NULL;
   
