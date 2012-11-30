@@ -60,9 +60,10 @@
 AC_DEFUN([ACX_CLIQUE], [
 AC_PREREQ(2.50)
 AC_REQUIRE([ACX_MPI])
+AC_REQUIRE([ACX_LAPACK])
 
 acx_clique_ok=no
-acx_clique_default="-lclique -lparmetis-addons -lmetis-addons -lparmetis -lmetis -lelemental -lplcg -lpmrrr -lelem-dummy-lib -llapack -lblas"
+acx_clique_default="-lclique -lparmetis-addons -lmetis-addons -lparmetis -lmetis -lelemental -lplcg -lpmrrr -lelem-dummy-lib"
 
 CLIQUE_CPPFLAGS=""
 CLIQUE=""
@@ -122,7 +123,7 @@ else
 
    if test $acx_clique_ok = no; then
       CLIQUE="$acx_clique_default"
-      LIBS="$acx_clique_default $acx_clique_save_LIBS -lm $OPENMP_CXXFLAGS"
+      LIBS="$acx_clique_default $LAPACK_LIBS $BLAS_LIBS $acx_clique_save_LIBS -lm $OPENMP_CXXFLAGS"
 
       AC_MSG_CHECKING([for cliq::DistSparseMatrix::StartAssembly in default location])
       AC_LINK_IFELSE([AC_LANG_PROGRAM([

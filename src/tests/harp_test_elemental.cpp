@@ -56,15 +56,14 @@ void harp::test_elemental ( string const & datadir ) {
 
   // get eigenvectors and eigenvalues
 
-  elem::DistMatrix < double, elem::VR, elem::STAR > w;
-  matrix_dist wdiag ( SIZE, SIZE, grid );
+  matrix_dist w;
   matrix_dist Z;
 
-  matrix_dist symcopy ( sym );
+  eigen_decompose ( sym, w, Z );
 
-  elem::HermitianEig ( elem::LOWER, symcopy, w, Z );
-
-  elem::SortEig( w, Z );
+  matrix_dist symprod ( SIZE, SIZE, grid );
+  matrix_dist eprod ( SIZE, SIZE, grid );
+  matrix_dist wdiag ( SIZE, SIZE, grid );
 
   dist_matrix_zero ( wdiag );
   for ( size_t i = 0; i < SIZE; ++i ) {
@@ -72,11 +71,7 @@ void harp::test_elemental ( string const & datadir ) {
     wdiag.Set ( i, i, wval );
   }
 
-  matrix_dist symprod ( SIZE, SIZE, grid );
-  matrix_dist eprod ( SIZE, SIZE, grid );
-
   elem::Gemm ( elem::NORMAL, elem::NORMAL, 1.0, sym, Z, 0.0, symprod );
-
   elem::Gemm ( elem::NORMAL, elem::NORMAL, 1.0, Z, wdiag, 0.0, eprod );
 
   double relerr;
@@ -93,6 +88,30 @@ void harp::test_elemental ( string const & datadir ) {
       }
     }
   }
+
+  if ( myp == 0 ) {
+    cerr << "Testing re-composition..." << endl;
+  }
+
+  matrix_dist outcomp;
+
+  eigen_compose ( EIG_NONE, w, Z, outcomp );
+
+  double inval;
+  double outval;
+
+  for ( size_t i = 0; i < SIZE; ++i ) {
+    for ( size_t j = 0; j < SIZE; ++j ) {
+      inval = sym.Get ( j, i );
+      outval = outcomp.Get ( j, i );
+      relerr = fabs ( eval - sval ) / sval;
+      if ( relerr > TOL ) {
+        cerr << "FAIL on matrix element (" << j << ", " << i << ") input = " << inval << ", output = " << outval << " rel err = " << relerr << endl;
+        exit(1);
+      }
+    }
+  }
+
 
   if ( myp == 0 ) {
     cerr << "  (PASSED)" << endl;

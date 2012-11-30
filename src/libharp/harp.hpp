@@ -22,6 +22,12 @@ namespace harp {
   static const int STRLEN = 256;
   static const int BIGSTRLEN = 1024;
 
+  typedef enum {
+    EIG_NONE,
+    EIG_SQRT,
+    EIG_INVSQRT
+  } eigen_op;
+
   // typedefs for linear algebra
 
   typedef elem::Matrix < double > matrix_local;

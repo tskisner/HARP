@@ -594,22 +594,116 @@ void harp::inverse_covariance ( matrix_sparse const & psf, matrix_local const & 
 }
 
 
-void eigenpairs ( matrix_dist & invcov, matrix_dist & D, matrix_dist & W ) {
+void harp::eigen_decompose ( matrix_dist & invcov, matrix_dist & D, matrix_dist & W ) {
+
+  D.ResizeTo ( invcov.Height(), 1 );
+  W.ResizeTo ( invcov.Height(), invcov.Height() );
+
+  matrix_dist temp ( invcov );
+
+  elem::DistMatrix < double, elem::VR, elem::STAR > eigvals;
+
+  elem::HermitianEig ( elem::LOWER, temp, eigvals, W );
+
+  elem::SortEig( eigvals, W );
+
+  D = eigvals;
+
   return;
 }
 
 
-void norm ( matrix_dist & D, matrix_dist & W, matrix_dist & S ) {
+void harp::eigen_compose ( eigen_op op, matrix_dist & D, matrix_dist & W, matrix_dist & out ) {
+
+  out.ResizeTo ( W.Height(), W.Height() );
+
+  // scale local portion of eigenvalues
+
+  matrix_dist scaled ( D );
+
+  size_t allocated = scaled.AllocatedMemory();
+  double * raw = scaled.LocalBuffer();
+
+  switch ( op ) {
+    case EIG_SQRT:
+      for ( size_t i = 0; i < allocated; ++i ) {
+        raw[i] = sqrt ( raw[i] );
+      }
+      break;
+    case EIG_INVSQRT:
+      for ( size_t i = 0; i < allocated; ++i ) {
+        raw[i] = 1.0 / sqrt ( raw[i] );
+      }
+      break;
+    default:
+      break;
+  }
+
+  // Get full local copy of eigenvalues
+
+  matrix_local Dloc ( D.Height(), 1 );
+
+  elem::AxpyInterface < double > globloc;
+  globloc.Attach( elem::GLOBAL_TO_LOCAL, D );
+
+  globloc.Axpy ( 1.0, Dloc, 0, 0 );
+
+  globloc.Detach();
+
+  // Compute temp = op(D) * W, by modifying our local elements
+
+  matrix_dist temp ( W );
+
+  matrix_local & local = temp.LocalMatrix();
+
+  int hlocal = temp.LocalHeight();
+  int wlocal = temp.LocalWidth();
+
+  int rowoff = W.ColShift();
+  int rowstride = W.ColStride();
+  int row;
+
+  double mval;
+
+  for ( int i = 0; i < wlocal; ++i ) {
+    for ( int j = 0; j < hlocal; ++j ) {
+      row = rowoff + j * rowstride;
+      mval = local.Get ( j, i );
+      mval *= Dloc.Get ( row, 0 );
+      local.Set ( j, i, mval );
+    }
+  }
+
+  // compute out = W^T * ( op(D) * W )
+
+  elem::Gemm ( elem::TRANSPOSE, elem::NORMAL, 1.0, W, temp, 0.0, out );
+
   return;
 }
 
 
-void resolution ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_dist & R ) {
+void harp::norm ( matrix_dist & D, matrix_dist & W, matrix_dist & S ) {
+
+
+
   return;
 }
 
 
-void extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_dist & z, matrix_dist & f ) {
+void harp::resolution ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_dist & R ) {
+
+
+
+  return;
+}
+
+
+void harp::extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_dist & z, matrix_dist & f ) {
+
+
+
+
+
   return;
 }
 

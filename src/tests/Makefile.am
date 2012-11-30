@@ -15,9 +15,9 @@ harp_test_LDADD = $(AM_LIBS)
 
 # Manual dependency on the data directory
 
-harp_test.$(OBJEXT) : testdata/test_image.fits
+harp_test.$(OBJEXT) : testdata/realtoy_input_spectra.fits
 
-testdata/test_image.fits :
+testdata/realtoy_input_spectra.fits :
 	@BUNZIP=`which bunzip2`; if [ x"$${BUNZIP}" = x ]; then \
 	echo "bunzip2 not found."; else \
 	for bzfile in `ls testdata/*.bz2`; do \

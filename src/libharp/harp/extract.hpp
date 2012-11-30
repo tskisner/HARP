@@ -35,7 +35,9 @@ namespace harp {
 
   void inverse_covariance ( matrix_sparse const & psf, matrix_local const & invnoise, matrix_dist & invcov );
 
-  void eigenpairs ( matrix_dist & invcov, matrix_dist & D, matrix_dist & W );
+  void eigen_decompose ( matrix_dist & invcov, matrix_dist & D, matrix_dist & W );
+
+  void eigen_compose ( eigen_op op, matrix_dist & D, matrix_dist & W, matrix_dist & out );
 
   void norm ( matrix_dist & D, matrix_dist & W, matrix_dist & S );
 
