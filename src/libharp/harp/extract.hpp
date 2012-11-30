@@ -39,6 +39,10 @@ namespace harp {
 
   void eigen_compose ( eigen_op op, matrix_dist & D, matrix_dist & W, matrix_dist & out );
 
+  void column_norm ( matrix_dist & mat, matrix_dist & S );
+
+  void apply_norm ( matrix_dist & S, matrix_dist & mat );
+
   void norm ( matrix_dist & D, matrix_dist & W, matrix_dist & S );
 
   void resolution ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_dist & R );
