@@ -10,8 +10,14 @@ OPTS=$@
 
 # Link to packages from HPCPorts
 
+CC="${HPCP_CC}" \
 CXX="${HPCP_CXX}" \
+F77="${HPCP_F77}" \
+FC="${HPCP_FC}" \
+MPICC="${HPCP_MPICC}" \
 MPICXX="${HPCP_MPICXX}" \
+MPIF77="${HPCP_MPIF77}" \
+MPIFC="${HPCP_MPIFC}" \
 CXXFLAGS="${HPCP_CXXFLAGS}" \
 LDFLAGS="${HPCP_LDFLAGS}" \
 LIBS="${HPCP_LIBS}" \

@@ -688,6 +688,7 @@ void harp::column_norm ( matrix_dist & mat, matrix_dist & S ) {
   // Sum local columns
 
   matrix_local Sloc ( S.Height(), 1 );
+  local_matrix_zero ( Sloc );
 
   matrix_local & local = mat.LocalMatrix();
 
@@ -704,6 +705,7 @@ void harp::column_norm ( matrix_dist & mat, matrix_dist & S ) {
     for ( int j = 0; j < hlocal; ++j ) {
       row = rowoff + j * rowstride;
       mval = local.Get ( j, i ) + Sloc.Get ( row, 0 );
+      cerr << "accumulate " << local.Get(j,i) << " to Sloc row " << row << endl;
       Sloc.Set ( row, 0, mval );
     }
   }
@@ -721,6 +723,7 @@ void harp::column_norm ( matrix_dist & mat, matrix_dist & S ) {
   double * raw = S.LocalBuffer();
 
   for ( size_t i = 0; i < allocated; ++i ) {
+    cerr << "inverting S " << i << " " << raw[i] << " --> " << 1.0/raw[i] << endl;
     raw[i] = 1.0 / raw[i];
   }
 

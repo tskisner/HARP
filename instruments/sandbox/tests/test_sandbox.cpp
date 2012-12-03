@@ -86,6 +86,8 @@ void harp::test_sandbox ( string const & datadir ) {
     measured.Set ( i, 0, signal.Get(i,0) + noise.Get(i,0) );
   }
 
+  measured.Print("sndbx_measured");
+
   if ( myp == 0 ) {
     cerr << "Testing sandbox inverse covariance calculation..." << endl;
   }
@@ -104,6 +106,8 @@ void harp::test_sandbox ( string const & datadir ) {
   matrix_dist D ( nbins, 1, grid );
   eigen_decompose ( inv, D, W );
 
+  D.Write("sndbx_D");
+
   if ( myp == 0 ) {
     cerr << "Testing sandbox resolution matrix..." << endl;
   }
@@ -111,7 +115,10 @@ void harp::test_sandbox ( string const & datadir ) {
   matrix_dist R ( nbins, nbins, grid );
   matrix_dist S ( nbins, 1, grid );
 
-  resolution ( D, W, S, R );
+  norm ( D, W, S );
+  //resolution ( D, W, S, R );
+
+  S.Write("sndbx_S");
 
   if ( myp == 0 ) {
     cerr << "Testing sandbox extraction..." << endl;
@@ -122,9 +129,11 @@ void harp::test_sandbox ( string const & datadir ) {
 
   noise_weighted_spec ( design, invnoise, measured, z );
 
+  z.Write("sndbx_z");
+
   extract ( D, W, S, z, Rf );
 
-  Rf.Print();
+  Rf.Write("sndbx_Rf");
 
   if ( myp == 0 ) {
     cerr << "  (PASSED)" << endl;
