@@ -57,6 +57,8 @@ void harp::test_sandbox ( string const & datadir ) {
   cerr << "getting fake spec" << endl;
   sndpsf->fake_spec ( truth );
 
+  truth.Write("sndbx_truth");
+
   matrix_local signal ( npix, 1 );
   cerr << "projecting to pixels" << endl;
   spec_project ( design, truth, signal );
@@ -85,8 +87,6 @@ void harp::test_sandbox ( string const & datadir ) {
     noise.Set ( i, 0, gauss() );
     measured.Set ( i, 0, signal.Get(i,0) + noise.Get(i,0) );
   }
-
-  measured.Print("sndbx_measured");
 
   if ( myp == 0 ) {
     cerr << "Testing sandbox inverse covariance calculation..." << endl;

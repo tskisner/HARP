@@ -39,11 +39,11 @@ harp::psf_sandbox::psf_sandbox ( boost::property_tree::ptree const & props ) : p
 
     path_ = "";
     
-    fake_n_bundle_ = 5;
+    fake_n_bundle_ = 1;
     fake_bundle_size_ = 20;
 
     nspec_ = fake_n_bundle_ * fake_bundle_size_;
-    specsize_ = 10;
+    specsize_ = 60;
 
     fake_pix_margin_ = 5;
     fake_pix_gap_ = 7;
@@ -57,15 +57,14 @@ harp::psf_sandbox::psf_sandbox ( boost::property_tree::ptree const & props ) : p
     fake_background_ = 20.0;
 
     // amplitude of atmosphere "spikes"
-    fake_peak_amp_ = 100.0 * fake_background_;
+    fake_peak_amp_ = 50.0 * fake_background_;
 
     // spacing of spikes
-    fake_peak_space_ = 3;
+    fake_peak_space_ = 15;
     //fake_peak_space_ = (size_t)( specsize_ / 10 );
 
     // object size
-    fake_peak_obj_ = 5;
-    //fake_peak_obj_ = 3.0 * fake_background_;
+    fake_peak_obj_ = 3.0 * fake_background_;
 
     // response fwhm
     fake_psf_fwhm_ = 1.5;
@@ -557,8 +556,8 @@ void harp::psf_sandbox::fake_spec ( matrix_dist & data ) {
   double PI = std::atan2 ( 0.0, -1.0 );
 
   size_t half_peak = fake_peak_space_ >> 1;
-  size_t half_obj = (size_t)(half_peak / 3);
-  size_t obj_space = (size_t)(fake_peak_space_ / 3);
+  size_t half_obj = (size_t)(1.5 * (double)half_peak);
+  size_t obj_space = 2 * half_obj;
 
   size_t bin = 0;
 

@@ -38,7 +38,12 @@ AC_HEADER_STDBOOL
 dnl +------------------------------------------------
 dnl | Check for OpenMP
 dnl +------------------------------------------------
-AX_OPENMP([ax_have_openmp=yes;AC_DEFINE(HAVE_OPEN_MP,1,[Define if OpenMP is enabled])])
+harp_openmp=yes
+ax_have_openmp=no
+AC_ARG_ENABLE(openmp, [AC_HELP_STRING([--disable-openmp], [Disable OpenMP])], [harp_openmp=$enable_openmp])
+if test x"$harp_openmp" != xno; then
+  AX_OPENMP([ax_have_openmp=yes;AC_DEFINE(HAVE_OPENMP,1,[Define if OpenMP is enabled])])
+fi
 AM_CONDITIONAL([HAVE_AM_OPENMP], [test $ax_have_openmp = yes])
 dnl +------------------------------------------------
 dnl | Check for MPI
