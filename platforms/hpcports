@@ -10,6 +10,11 @@ OPTS=$@
 
 # Link to packages from HPCPorts
 
+sharedopt="--enable-shared --enable-python"
+if [ "x${HPCP_DYNAMIC}" = "xFALSE" ]; then
+    sharedopt="--disable-shared --disable-python"
+fi
+
 CC="${HPCP_CC}" \
 CXX="${HPCP_CXX}" \
 F77="${HPCP_F77}" \
@@ -21,7 +26,7 @@ MPIFC="${HPCP_MPIFC}" \
 CXXFLAGS="${HPCP_CXXFLAGS}" \
 LDFLAGS="${HPCP_LDFLAGS}" \
 LIBS="${HPCP_LIBS}" \
-./configure ${OPTS} \
+./configure ${sharedopt} ${OPTS} \
 --with-cfitsio-libs="${cfitsio_LDFLAGS} ${cfitsio_LIBS_CXX}" \
 --with-boost="${boost_PREFIX}" \
 --with-clique-libs="${clique_LIBS_MPICXX} ${lapack_LIBS_CXX} ${blas_LIBS_CXX} ${HPCP_MPIFCLIBS} ${HPCP_FCLIBS}"
