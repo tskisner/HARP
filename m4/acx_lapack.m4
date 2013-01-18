@@ -7,19 +7,19 @@ dnl hold the requisite library linkages.
 dnl
 dnl To link with LAPACK, you should link with:
 dnl
-dnl     $LAPACK_LIBS $BLAS_LIBS $LIBS $FLIBS
+dnl     $LAPACK_LIBS $BLAS_LIBS $LIBS $FCLIBS
 dnl
 dnl in that order.  BLAS_LIBS is the output variable of the ACX_BLAS
-dnl macro, called automatically.  FLIBS is the output variable of the
-dnl AC_F77_LIBRARY_LDFLAGS macro (called if necessary by ACX_BLAS),
-dnl and is sometimes necessary in order to link with F77 libraries.
-dnl Users will also need to use AC_F77_DUMMY_MAIN (see the autoconf
+dnl macro, called automatically.  FCLIBS is the output variable of the
+dnl AC_FC_LIBRARY_LDFLAGS macro (called if necessary by ACX_BLAS),
+dnl and is sometimes necessary in order to link with FC libraries.
+dnl Users will also need to use AC_FC_DUMMY_MAIN (see the autoconf
 dnl manual), for the same reason.
 dnl
 dnl The user may also use --with-lapack=<lib> in order to use some
 dnl specific LAPACK library <lib>.  In order to link successfully,
 dnl however, be aware that you will probably need to use the same
-dnl Fortran compiler (which can be set via the F77 env. var.) as
+dnl Fortran compiler (which can be set via the FC env. var.) as
 dnl was used to compile the LAPACK and BLAS libraries.
 dnl
 dnl ACTION-IF-FOUND is a list of shell commands to run if a LAPACK
@@ -44,7 +44,7 @@ case $with_lapack in
 esac
 
 # Get fortran linker name of LAPACK function to check for.
-AC_F77_FUNC(cheev)
+AC_FC_FUNC(cheev)
 
 # We cannot use LAPACK if BLAS is not found
 if test "x$acx_blas_ok" != xyes; then
@@ -53,9 +53,9 @@ fi
 
 # LAPACK linked to by default?  (is sometimes included in BLAS lib)
 if test $acx_lapack_ok = no; then
-        save_LIBS="$LIBS"; LIBS="$LIBS $BLAS_LIBS $FLIBS"
+        save_LIBS="$LIBS"; LIBS="$LIBS $BLAS_LIBS $FCLIBS"
         AC_MSG_CHECKING([for $cheev in $BLAS_LIBS])
-        AC_TRY_LINK_FUNC($cheev, [acx_lapack_ok=yes], [LAPACK_LIBS=""])
+        AC_TRY_LINK_FUNC($cheev, [acx_lapack_ok=yes;LAPACK_LIBS=""], [])
         AC_MSG_RESULT($acx_lapack_ok)
         LIBS="$save_LIBS"
 fi
@@ -63,9 +63,9 @@ fi
 # Next, check LAPACK_LIBS environment variable
 if test $acx_lapack_ok = no; then
    if test "x$LAPACK_LIBS" != x; then
-        save_LIBS="$LIBS"; LIBS="$LAPACK_LIBS $BLAS_LIBS $LIBS $FLIBS"
+        save_LIBS="$LIBS"; LIBS="$LAPACK_LIBS $BLAS_LIBS $LIBS $FCLIBS"
         AC_MSG_CHECKING([for $cheev in $LAPACK_LIBS])
-        AC_TRY_LINK_FUNC($cheev, [acx_lapack_ok=yes], [LAPACK_LIBS=""])
+        AC_TRY_LINK_FUNC($cheev, [acx_lapack_ok=yes], [])
         AC_MSG_RESULT($acx_lapack_ok)
         LIBS="$save_LIBS"
         if test acx_lapack_ok = no; then
@@ -80,7 +80,7 @@ if test $acx_lapack_ok = no; then
         if test $acx_lapack_ok = no; then
                 save_LIBS="$LIBS"; LIBS="$BLAS_LIBS $LIBS"
                 AC_CHECK_LIB($lapack, $cheev,
-                    [acx_lapack_ok=yes; LAPACK_LIBS="-l$lapack"], [], [$FLIBS])
+                    [acx_lapack_ok=yes; LAPACK_LIBS="-l$lapack"], [], [$FCLIBS])
                 LIBS="$save_LIBS"
         fi
    done

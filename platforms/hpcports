@@ -22,8 +22,6 @@ CXXFLAGS="${HPCP_CXXFLAGS}" \
 LDFLAGS="${HPCP_LDFLAGS}" \
 LIBS="${HPCP_LIBS}" \
 ./configure ${OPTS} \
---with-cfitsio-cpp="${cfitsio_CPPFLAGS}" \
 --with-cfitsio-libs="${cfitsio_LDFLAGS} ${cfitsio_LIBS_CXX}" \
 --with-boost="${boost_PREFIX}" \
---with-clique-cpp="${clique_CPPFLAGS}" \
---with-clique-libs="${clique_LDFLAGS} ${clique_LIBS_MPICXX} ${lapack_LDFLAGS} ${lapack_LIBS_CXX} ${blas_LDFLAGS} ${blas_LIBS_CXX} ${HPCP_MPIFCLIBS} ${HPCP_FCLIBS}"
+--with-clique-libs="${clique_LIBS_MPICXX} ${lapack_LIBS_CXX} ${blas_LIBS_CXX} ${HPCP_MPIFCLIBS} ${HPCP_FCLIBS}"

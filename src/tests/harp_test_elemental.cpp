@@ -104,7 +104,7 @@ void harp::test_elemental ( string const & datadir ) {
     for ( size_t j = 0; j < SIZE; ++j ) {
       inval = sym.Get ( j, i );
       outval = outcomp.Get ( j, i );
-      relerr = fabs ( eval - sval ) / sval;
+      relerr = fabs ( outval - inval ) / inval;
       if ( relerr > TOL ) {
         cerr << "FAIL on matrix element (" << j << ", " << i << ") input = " << inval << ", output = " << outval << " rel err = " << relerr << endl;
         exit(1);

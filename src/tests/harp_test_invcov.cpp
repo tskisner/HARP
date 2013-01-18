@@ -65,12 +65,8 @@ void harp::test_invcov ( string const & datadir ) {
 
       compAT.Set ( i, col, 1.0 );
 
-      if ( ( i >= local_firstrow ) && ( i < local_firstrow + local_rows ) ) {
-        //cerr << "update AT elem " << i << ", " << col << endl;
-        AT.Update ( i, col, 1.0 );
-      } else {
-        //cerr << "ignore AT elem " << i << ", " << col << endl;
-      }
+      AT.Update ( i, col, 1.0 );
+
     }
 
   }
@@ -91,9 +87,26 @@ void harp::test_invcov ( string const & datadir ) {
   matrix_local compinv ( SIGSIZE, SIGSIZE );
   local_matrix_zero ( compinv );
 
-  elem::Gemm ( elem::NORMAL, elem::TRANSPOSE, 1.0, compAT, compAT, 0.0, compinv );
+  matrix_local compATN ( compAT );
 
-  //compinv.Print ( "Serial inverse covariance" );
+  for ( size_t i = 0; i < SIGSIZE; ++i ) {
+
+    for ( size_t j = 0; j < nnz; ++j ) {
+
+      col = (size_t)( 2 * i + j );
+      //col = (size_t)( (double)DATASIZE * gen() );
+
+      compATN.Set ( i, col, 0.1 );
+
+    }
+
+  }
+
+  elem::Gemm ( elem::NORMAL, elem::TRANSPOSE, 1.0, compATN, compAT, 0.0, compinv );
+
+  if ( myp == 0 ) {
+    compinv.Print ( "Serial inverse covariance" );
+  }
 
   // parallel implementation
 
@@ -103,7 +116,7 @@ void harp::test_invcov ( string const & datadir ) {
 
   inverse_covariance ( AT, invpix, inv );
 
-  //inv.Print ( "MPI inverse covariance" );
+  inv.Print ( "MPI inverse covariance" );
 
   // compare results in lower triangle
 
@@ -131,7 +144,39 @@ void harp::test_invcov ( string const & datadir ) {
 
   if ( myp == 0 ) {
     cerr << "  (PASSED)" << endl;
+    cerr << "Testing column norms..." << endl;
   }
+
+  matrix_dist S_direct ( SIGSIZE, 1, grid );
+
+  column_norm ( inv, S_direct );
+
+  S_direct.Print ( "direct column norm" );
+
+  matrix_dist W ( SIGSIZE, SIGSIZE, grid );
+  matrix_dist D ( SIGSIZE, 1, grid );
+  eigen_decompose ( inv, D, W );
+
+  matrix_dist outcomp;
+  eigen_compose ( EIG_NONE, D, W, outcomp );
+
+  outcomp.Print ( "recomposed matrix" );
+
+  matrix_dist R ( SIGSIZE, SIGSIZE, grid );
+  matrix_dist S ( SIGSIZE, 1, grid );
+
+  norm ( D, W, S );
+
+  S.Print ( "column norm from eigen decomposition" );
+
+  resolution ( D, W, S, R );
+
+  R.Print ( "resolution matrix" );
+
+  if ( myp == 0 ) {
+    cerr << "  (PASSED)" << endl;
+  }
+
 
   return;
 }

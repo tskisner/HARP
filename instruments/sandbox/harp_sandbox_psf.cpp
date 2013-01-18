@@ -43,7 +43,7 @@ harp::psf_sandbox::psf_sandbox ( boost::property_tree::ptree const & props ) : p
     fake_bundle_size_ = 20;
 
     nspec_ = fake_n_bundle_ * fake_bundle_size_;
-    specsize_ = 60;
+    specsize_ = 20;
 
     fake_pix_margin_ = 5;
     fake_pix_gap_ = 7;

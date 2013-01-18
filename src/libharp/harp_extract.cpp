@@ -354,7 +354,7 @@ void harp::inverse_covariance ( matrix_sparse const & psf, matrix_local const & 
 
         if ( rhs_col == lhs_col ) {
           //cerr << "  accumulate " << psf.Value ( lhs_off + j ) * psf.Value ( rhs_off + k ) << " to (" << lhs_row << ", " << rhs_row << ")" << endl; 
-          val += psf.Value ( lhs_off + j ) * psf.Value ( rhs_off + k );
+          val += invnoise.Get( lhs_col, 0 ) * psf.Value ( lhs_off + j ) * psf.Value ( rhs_off + k );
         }
 
       }
@@ -514,7 +514,7 @@ void harp::inverse_covariance ( matrix_sparse const & psf, matrix_local const & 
             }
 
             if ( rhs_col == lhs_col ) {
-              val += psf.Value ( lhs_off + j ) * other_block->data[ rhs_off + k ];
+              val += invnoise.Get( lhs_col, 0 ) * psf.Value ( lhs_off + j ) * other_block->data[ rhs_off + k ];
             }
 
           }
@@ -560,7 +560,7 @@ void harp::inverse_covariance ( matrix_sparse const & psf, matrix_local const & 
             }
 
             if ( rhs_col == lhs_col ) {
-              val += psf.Value ( lhs_off + j ) * other_block->data[ rhs_off + k ];
+              val += invnoise.Get( lhs_col, 0 ) * psf.Value ( lhs_off + j ) * other_block->data[ rhs_off + k ];
             }
 
           }
@@ -644,15 +644,13 @@ void harp::eigen_compose ( eigen_op op, matrix_dist & D, matrix_dist & W, matrix
   matrix_local Dloc ( D.Height(), 1 );
 
   elem::AxpyInterface < double > globloc;
-  globloc.Attach( elem::GLOBAL_TO_LOCAL, D );
+  globloc.Attach( elem::GLOBAL_TO_LOCAL, scaled );
   globloc.Axpy ( 1.0, Dloc, 0, 0 );
   globloc.Detach();
 
-  // Compute temp = op(D) * W, by modifying our local elements
+  // Compute temp = W * op(D), by modifying our local elements
 
   matrix_dist temp ( W );
-
-  matrix_local & local = temp.LocalMatrix();
 
   int hlocal = temp.LocalHeight();
   int wlocal = temp.LocalWidth();
@@ -666,15 +664,15 @@ void harp::eigen_compose ( eigen_op op, matrix_dist & D, matrix_dist & W, matrix
   for ( int i = 0; i < wlocal; ++i ) {
     for ( int j = 0; j < hlocal; ++j ) {
       row = rowoff + j * rowstride;
-      mval = local.Get ( j, i );
+      mval = temp.GetLocal ( j, i );
       mval *= Dloc.Get ( row, 0 );
-      local.Set ( j, i, mval );
+      temp.SetLocal ( j, i, mval );
     }
   }
 
-  // compute out = W^T * ( op(D) * W )
+  // compute out = ( W * op(D) ) * W^T
 
-  elem::Gemm ( elem::TRANSPOSE, elem::NORMAL, 1.0, W, temp, 0.0, out );
+  elem::Gemm ( elem::NORMAL, elem::TRANSPOSE, 1.0, temp, W, 0.0, out );
 
   return;
 }
@@ -705,7 +703,7 @@ void harp::column_norm ( matrix_dist & mat, matrix_dist & S ) {
     for ( int j = 0; j < hlocal; ++j ) {
       row = rowoff + j * rowstride;
       mval = local.Get ( j, i ) + Sloc.Get ( row, 0 );
-      cerr << "accumulate " << local.Get(j,i) << " to Sloc row " << row << endl;
+      //cerr << "accumulate " << local.Get(j,i) << " to Sloc row " << row << endl;
       Sloc.Set ( row, 0, mval );
     }
   }
@@ -723,7 +721,6 @@ void harp::column_norm ( matrix_dist & mat, matrix_dist & S ) {
   double * raw = S.LocalBuffer();
 
   for ( size_t i = 0; i < allocated; ++i ) {
-    cerr << "inverting S " << i << " " << raw[i] << " --> " << 1.0/raw[i] << endl;
     raw[i] = 1.0 / raw[i];
   }
 

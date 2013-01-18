@@ -102,6 +102,8 @@ void harp::test_sandbox ( string const & datadir ) {
     cerr << "Testing sandbox inverse covariance eigendecomposition..." << endl;
   }
 
+  cerr << "matrix dims = " << nbins << " x " << nbins << endl;
+
   matrix_dist W ( nbins, nbins, grid );
   matrix_dist D ( nbins, 1, grid );
   eigen_decompose ( inv, D, W );
