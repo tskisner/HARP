@@ -615,57 +615,82 @@ void harp::eigen_decompose ( matrix_dist & invcov, matrix_dist & D, matrix_dist 
 
 void harp::eigen_compose ( eigen_op op, matrix_dist & D, matrix_dist & W, matrix_dist & out ) {
 
+  double threshold = 1.0e-14;
+
   out.ResizeTo ( W.Height(), W.Height() );
 
-  // scale local portion of eigenvalues
+  // Get full local copy of eigenvalues
 
-  matrix_dist scaled ( D );
+  matrix_local scaled ( D.Height(), 1 );
+  local_matrix_zero ( scaled );
 
-  size_t allocated = scaled.AllocatedMemory();
-  double * raw = scaled.LocalBuffer();
+  elem::AxpyInterface < double > globloc;
+  globloc.Attach( elem::GLOBAL_TO_LOCAL, D );
+  globloc.Axpy ( 1.0, scaled, 0, 0 );
+  globloc.Detach();
+
+  // scale eigenvalues and apply threshold
+
+  double max = 0.0;
+  double min;
+  double val;
+
+  for ( size_t i = 0; i < scaled.Height(); ++i ) {
+    val = scaled.Get( i, 0 );
+    if ( val > max ) {
+      max = val;
+    }
+  }
+
+  min = max * threshold;
+
+  for ( size_t i = 0; i < scaled.Height(); ++i ) {
+    val = scaled.Get( i, 0 );
+    if ( val < min ) {
+      cerr << "truncating eigenvalue " << val << " to " << min << endl;
+      scaled.Set( i, 0, min );
+    } else {
+      scaled.Set( i, 0, scaled.Get(i,0) );
+    }
+  }
 
   switch ( op ) {
     case EIG_SQRT:
-      for ( size_t i = 0; i < allocated; ++i ) {
-        raw[i] = sqrt ( raw[i] );
+      for ( size_t i = 0; i < scaled.Height(); ++i ) {
+        val = scaled.Get( i, 0 );
+        val = sqrt( val );
+        scaled.Set( i, 0, val );
       }
       break;
     case EIG_INVSQRT:
-      for ( size_t i = 0; i < allocated; ++i ) {
-        raw[i] = 1.0 / sqrt ( raw[i] );
+      for ( size_t i = 0; i < scaled.Height(); ++i ) {
+        val = scaled.Get( i, 0 );
+        val = 1.0 / sqrt( val );
+        scaled.Set( i, 0, val );
       }
       break;
     default:
       break;
   }
 
-  // Get full local copy of eigenvalues
-
-  matrix_local Dloc ( D.Height(), 1 );
-
-  elem::AxpyInterface < double > globloc;
-  globloc.Attach( elem::GLOBAL_TO_LOCAL, scaled );
-  globloc.Axpy ( 1.0, Dloc, 0, 0 );
-  globloc.Detach();
-
-  // Compute temp = W * op(D), by modifying our local elements
+  // Compute temp = W * op(D), by modifying our local elements. 
 
   matrix_dist temp ( W );
 
   int hlocal = temp.LocalHeight();
   int wlocal = temp.LocalWidth();
 
-  int rowoff = temp.ColShift();
-  int rowstride = temp.ColStride();
-  int row;
+  int coloff = temp.RowShift();
+  int colstride = temp.RowStride();
+  int col;
 
   double mval;
 
   for ( int i = 0; i < wlocal; ++i ) {
     for ( int j = 0; j < hlocal; ++j ) {
-      row = rowoff + j * rowstride;
+      col = coloff + i * colstride;
       mval = temp.GetLocal ( j, i );
-      mval *= Dloc.Get ( row, 0 );
+      mval *= scaled.Get ( col, 0 );
       temp.SetLocal ( j, i, mval );
     }
   }
@@ -733,6 +758,7 @@ void harp::apply_norm ( matrix_dist & S, matrix_dist & mat ) {
   // Get local copy of S
 
   matrix_local Sloc ( S.Height(), 1 );
+  local_matrix_zero ( Sloc );
 
   elem::AxpyInterface < double > globloc;
   globloc.Attach( elem::GLOBAL_TO_LOCAL, S );
@@ -746,17 +772,17 @@ void harp::apply_norm ( matrix_dist & S, matrix_dist & mat ) {
   int hlocal = mat.LocalHeight();
   int wlocal = mat.LocalWidth();
 
-  int rowoff = mat.ColShift();
-  int rowstride = mat.ColStride();
-  int row;
+  int coloff = mat.RowShift();
+  int colstride = mat.RowStride();
+  int col;
 
   double mval;
 
   for ( int i = 0; i < wlocal; ++i ) {
     for ( int j = 0; j < hlocal; ++j ) {
-      row = rowoff + j * rowstride;
+      col = coloff + i * colstride;
       mval = local.Get ( j, i );
-      mval *= Sloc.Get ( row, 0 );
+      mval *= Sloc.Get ( col, 0 );
       local.Set ( j, i, mval );
     }
   }

@@ -108,6 +108,8 @@ void harp::test_sandbox ( string const & datadir ) {
   matrix_dist D ( nbins, 1, grid );
   eigen_decompose ( inv, D, W );
 
+  //W.Print("eigenvectors");
+
   D.Write("sndbx_D");
 
   if ( myp == 0 ) {

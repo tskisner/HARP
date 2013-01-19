@@ -8,8 +8,8 @@
 using namespace std;
 using namespace harp;
 
-#define DATASIZE 100
-#define SIGSIZE 10
+#define DATASIZE 20
+#define SIGSIZE 4
 #define MAX 1000.0
 #define TOL 1.0e-6
 
@@ -125,9 +125,7 @@ void harp::test_invcov ( string const & datadir ) {
 
   elem::AxpyInterface < double > globloc;
   globloc.Attach( elem::GLOBAL_TO_LOCAL, inv );
-
   globloc.Axpy ( 1.0, local_inv, 0, 0 );
-
   globloc.Detach();
 
   for ( size_t i = 0; i < SIGSIZE; ++i ) {
@@ -144,23 +142,12 @@ void harp::test_invcov ( string const & datadir ) {
 
   if ( myp == 0 ) {
     cerr << "  (PASSED)" << endl;
-    cerr << "Testing column norms..." << endl;
+    cerr << "Testing extraction..." << endl;
   }
-
-  matrix_dist S_direct ( SIGSIZE, 1, grid );
-
-  column_norm ( inv, S_direct );
-
-  S_direct.Print ( "direct column norm" );
 
   matrix_dist W ( SIGSIZE, SIGSIZE, grid );
   matrix_dist D ( SIGSIZE, 1, grid );
   eigen_decompose ( inv, D, W );
-
-  matrix_dist outcomp;
-  eigen_compose ( EIG_NONE, D, W, outcomp );
-
-  outcomp.Print ( "recomposed matrix" );
 
   matrix_dist R ( SIGSIZE, SIGSIZE, grid );
   matrix_dist S ( SIGSIZE, 1, grid );
@@ -172,6 +159,17 @@ void harp::test_invcov ( string const & datadir ) {
   resolution ( D, W, S, R );
 
   R.Print ( "resolution matrix" );
+
+  /*
+  matrix_dist truth ( SIGSIZE, 1, grid );
+  matrix_local measured ()
+
+  spec_project ( AT, matrix_dist const & in, matrix_local & out );
+
+  noise_weighted_spec ( AT, invpix, matrix_local const & img, matrix_dist & z );
+
+  extract ( D, W, S, matrix_dist & z, matrix_dist & f );
+  */
 
   if ( myp == 0 ) {
     cerr << "  (PASSED)" << endl;
