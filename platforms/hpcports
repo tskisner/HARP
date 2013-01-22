@@ -15,6 +15,13 @@ if [ "x${HPCP_DYNAMIC}" = "xFALSE" ]; then
     sharedopt="--disable-shared --disable-python"
 fi
 
+clique=""
+if [ -e "${clique_PREFIX}/lib/liblapack-addons.a" ]; then
+    clique="-lclique -lparmetis-addons -lmetis-addons -lparmetis -lmetis -lelemental -lplcg -lpmrrr -llapack-addons -lelem-dummy-lib ${blas_LIBS_CXX} ${HPCP_MPIFCLIBS} ${HPCP_FCLIBS}";
+else
+    clique="-lclique -lparmetis-addons -lmetis-addons -lparmetis -lmetis -lelemental -lplcg -lpmrrr -lelem-dummy-lib ${lapack_LIBS_CXX} ${blas_LIBS_CXX} ${HPCP_MPIFCLIBS} ${HPCP_FCLIBS}";
+fi
+
 CC="${HPCP_CC}" \
 CXX="${HPCP_CXX}" \
 F77="${HPCP_F77}" \
@@ -29,4 +36,4 @@ LIBS="${HPCP_LIBS}" \
 ./configure ${sharedopt} ${OPTS} \
 --with-cfitsio-libs="${cfitsio_LDFLAGS} ${cfitsio_LIBS_CXX}" \
 --with-boost="${boost_PREFIX}" \
---with-clique-libs="${clique_LIBS_MPICXX} ${lapack_LIBS_CXX} ${blas_LIBS_CXX} ${HPCP_MPIFCLIBS} ${HPCP_FCLIBS}"
+--with-clique-libs="${clique}"

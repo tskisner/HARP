@@ -2,7 +2,7 @@ CXX = @MPICXX@
 
 AM_CPPFLAGS = -I$(top_srcdir)/src/libharp $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS) $(CLIQUE_CPPFLAGS) $(OPENMP_CXXFLAGS)
 AM_LDFLAGS =
-AM_LIBS = $(CFITSIO) $(BOOST_LDFLAGS) $(CLIQUE) $(OPENMP_CXXFLAGS) -lm
+AM_LIBS = $(CLIQUE)
 
 noinst_HEADERS = harp_internal.hpp
 include_HEADERS = harp.hpp
@@ -15,6 +15,9 @@ libharp_la_include_HEADERS = harp/fits.hpp harp/image.hpp harp/spec.hpp harp/psf
 
 libharp_la_SOURCES = harp.cpp harp_image.cpp harp_spec.cpp harp_psf.cpp harp_fits.cpp harp_extract.cpp
 
+libharp_la_LDFLAGS = -version-info @HARP_LT_VERSION@
+
+libharp_la_LIBADD = $(CLIQUE)
 
 include instruments.am
 
