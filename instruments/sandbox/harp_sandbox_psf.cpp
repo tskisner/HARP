@@ -64,10 +64,10 @@ harp::psf_sandbox::psf_sandbox ( boost::property_tree::ptree const & props ) : p
     //fake_peak_space_ = (size_t)( specsize_ / 10 );
 
     // object size
-    fake_peak_obj_ = 5.0 * fake_background_;
+    fake_peak_obj_ = 8.0 * fake_background_;
 
     // response fwhm
-    fake_psf_fwhm_ = 1.0;
+    fake_psf_fwhm_ = 1.5;
 
     // response correlation length in pixels
     pixcorr_ = (int)( 5.0 * (double)fake_psf_fwhm_ );
