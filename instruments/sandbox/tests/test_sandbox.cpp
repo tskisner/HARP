@@ -99,9 +99,10 @@ void harp::test_sandbox ( string const & datadir ) {
     measured.Set ( i, 0, signal.Get(i,0) + noise.Get(i,0) );
   }
 
+  fitsfile * fp;
+
   if ( myp == 0 ) {
     string outimg = datadir + "/sandbox_measured.fits.out";
-    fitsfile * fp;
     fits::create ( fp, outimg );
     fits::img_append ( fp, testpsf->pixrows(), testpsf->pixcols() );
     fits::img_write ( fp, measured );
@@ -222,10 +223,60 @@ void harp::test_sandbox ( string const & datadir ) {
   fstream fout;
   fout.precision(16);
 
+  matrix_local full;
+
   if ( myp == 0 ) {
     os.str("");
     os << "sndbx_results_" << np;
     fout.open ( os.str().c_str(), ios::out );
+
+    full.ResizeTo ( nbins, 1 );
+    string outspec = datadir + "/sandbox_results.fits.out";
+    fits::create ( fp, outspec );
+  }
+
+  for ( size_t i = 0; i < nbins; ++i ) {
+    double dtemp = truth.Get(i,0);
+    if ( myp == 0 ) {
+      full.Set(i,0, dtemp);
+    }
+  }
+  if ( myp == 0 ) {
+    fits::img_append ( fp, nspec, specsize );
+    fits::img_write ( fp, full );
+  }
+
+  for ( size_t i = 0; i < nbins; ++i ) {
+    double dtemp = Rtruth.Get(i,0);
+    if ( myp == 0 ) {
+      full.Set(i,0, dtemp);
+    }
+  }
+  if ( myp == 0 ) {
+    fits::img_append ( fp, nspec, specsize );
+    fits::img_write ( fp, full );
+  }
+
+  for ( size_t i = 0; i < nbins; ++i ) {
+    double dtemp = Rf.Get(i,0);
+    if ( myp == 0 ) {
+      full.Set(i,0, dtemp);
+    }
+  }
+  if ( myp == 0 ) {
+    fits::img_append ( fp, nspec, specsize );
+    fits::img_write ( fp, full );
+  }
+
+  for ( size_t i = 0; i < nbins; ++i ) {
+    double dtemp = inv.Get(i,i);
+    if ( myp == 0 ) {
+      full.Set(i,0, sqrt(1.0/dtemp));
+    }
+  }
+  if ( myp == 0 ) {
+    fits::img_append ( fp, nspec, specsize );
+    fits::img_write ( fp, full );
   }
 
   for ( size_t i = 0; i < nbins; ++i ) {
@@ -241,8 +292,8 @@ void harp::test_sandbox ( string const & datadir ) {
 
   if ( myp == 0 ) {
     fout.close();
+    fits::close ( fp );
   }
-
 
   if ( myp == 0 ) {
     cerr << "  (PASSED)" << endl;

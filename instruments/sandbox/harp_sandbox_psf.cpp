@@ -39,11 +39,11 @@ harp::psf_sandbox::psf_sandbox ( boost::property_tree::ptree const & props ) : p
 
     path_ = "";
     
-    fake_n_bundle_ = 1;
+    fake_n_bundle_ = 4;
     fake_bundle_size_ = 25;
 
     nspec_ = fake_n_bundle_ * fake_bundle_size_;
-    specsize_ = 100;
+    specsize_ = 30;
 
     fake_pix_margin_ = 5;
     fake_pix_gap_ = 7;
@@ -60,7 +60,7 @@ harp::psf_sandbox::psf_sandbox ( boost::property_tree::ptree const & props ) : p
     fake_peak_amp_ = 50.0 * fake_background_;
 
     // spacing of spikes
-    fake_peak_space_ = 20;
+    fake_peak_space_ = 12;
     //fake_peak_space_ = (size_t)( specsize_ / 10 );
 
     // object size
