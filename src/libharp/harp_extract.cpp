@@ -160,15 +160,16 @@ void harp::spec_project ( matrix_sparse const & psf, matrix_dist const & in, mat
 
   // get local chunk of input vector which goes with our range of sparse matrix rows
 
-  size_t local_firstrow = psf.FirstLocalRow();
-  size_t local_rows = psf.LocalHeight();
+  size_t first_loc_row = psf.FirstLocalRow();
+  size_t loc_height = psf.LocalHeight();
+  size_t loc_entries = psf.NumLocalEntries();
 
-  matrix_local local_in ( local_rows, 1 );
+  matrix_local local_in ( loc_height, 1 );
   local_matrix_zero ( local_in );
 
   elem::AxpyInterface < double > globloc;
   globloc.Attach( elem::GLOBAL_TO_LOCAL, in );
-  globloc.Axpy ( 1.0, local_in, local_firstrow, 0 );
+  globloc.Axpy ( 1.0, local_in, first_loc_row, 0 );
   globloc.Detach();
 
   // compute local output contribution
@@ -176,24 +177,19 @@ void harp::spec_project ( matrix_sparse const & psf, matrix_dist const & in, mat
   matrix_local local_out ( npix, 1 );
   local_matrix_zero ( local_out );
 
-  size_t col;
   double val;
+  double inval;
+  double outval;
+  size_t row;
+  size_t col;
 
-  for ( size_t row = 0; row < local_rows; ++row ) {
-
-    size_t off = psf.LocalEntryOffset ( row );
-    size_t nnz = psf.NumConnections ( row );
-
-    for ( size_t j = 0; j < nnz; ++j ) {
-      col = psf.Col ( off + j );
-
-      val = local_out.Get ( col, 0 );
-      
-      val += psf.Value ( off + j ) * local_in.Get ( row, 0 );
-
-      local_out.Set ( col, 0, val );
-    }
-
+  for ( size_t loc = 0; loc < loc_entries; ++loc ) {
+    row = psf.Row ( loc );
+    col = psf.Col ( loc );
+    val = psf.Value ( loc );
+    inval = local_in.Get ( row - first_loc_row, 0 );
+    outval = local_out.Get ( col, 0 );
+    local_out.Set ( col, 0, outval + inval * val );
   }
 
   matrix_dist globout ( npix, 1 );
@@ -244,29 +240,28 @@ void harp::noise_weighted_spec ( matrix_sparse const & psf, matrix_local const &
 
   size_t first_loc_row = psf.FirstLocalRow();
   size_t loc_height = psf.LocalHeight();
+  size_t loc_entries = psf.NumLocalEntries();
 
-  elem::AxpyInterface < double > locglob;
-  locglob.Attach( elem::LOCAL_TO_GLOBAL, z );
-
-  elem::Matrix < double > local_z ( loc_height, 1 );
+  matrix_local local_z ( loc_height, 1 );
+  local_matrix_zero ( local_z );
 
   double val;
-  size_t rowoff;
+  double zval;
+  size_t row;
   size_t nnz;
   size_t col;
 
-  for ( size_t loc_bin = 0; loc_bin < loc_height; ++loc_bin ) {
-    rowoff = psf.LocalEntryOffset ( loc_bin );
-    nnz = psf.NumConnections ( loc_bin );
-    for ( size_t j = 0; j < nnz; ++j ) {
-      val = psf.Value ( rowoff + j );
-      col = psf.Col ( rowoff + j );
-      local_z.Set ( loc_bin, 0, val * weight.Get(col,0) );
-    }
+  for ( size_t loc = 0; loc < loc_entries; ++loc ) {
+    row = psf.Row ( loc );
+    col = psf.Col ( loc );
+    val = psf.Value ( loc );
+    zval = local_z.Get ( row - first_loc_row, 0 );
+    local_z.Set ( row - first_loc_row, 0, zval + val * weight.Get( col, 0 ) );
   }
 
+  elem::AxpyInterface < double > locglob;
+  locglob.Attach( elem::LOCAL_TO_GLOBAL, z );
   locglob.Axpy ( 1.0, local_z, first_loc_row, 0 );
-
   locglob.Detach();
 
   return;
@@ -615,7 +610,7 @@ void harp::eigen_decompose ( matrix_dist & invcov, matrix_dist & D, matrix_dist 
 
 void harp::eigen_compose ( eigen_op op, matrix_dist & D, matrix_dist & W, matrix_dist & out ) {
 
-  double threshold = 1.0e-14;
+  double threshold = 1.0e-15;
 
   out.ResizeTo ( W.Height(), W.Height() );
 
@@ -644,32 +639,27 @@ void harp::eigen_compose ( eigen_op op, matrix_dist & D, matrix_dist & W, matrix
 
   min = max * threshold;
 
-  for ( size_t i = 0; i < scaled.Height(); ++i ) {
-    val = scaled.Get( i, 0 );
-    if ( val < min ) {
-      cerr << "truncating eigenvalue " << val << " to " << min << endl;
-      scaled.Set( i, 0, min );
-    } else {
-      scaled.Set( i, 0, scaled.Get(i,0) );
-    }
-  }
-
   switch ( op ) {
     case EIG_SQRT:
       for ( size_t i = 0; i < scaled.Height(); ++i ) {
         val = scaled.Get( i, 0 );
-        val = sqrt( val );
+        val = ( val < min ) ? sqrt( min ) : sqrt( val );
         scaled.Set( i, 0, val );
       }
       break;
     case EIG_INVSQRT:
       for ( size_t i = 0; i < scaled.Height(); ++i ) {
         val = scaled.Get( i, 0 );
-        val = 1.0 / sqrt( val );
+        val = ( val < min ) ? ( 1.0 / sqrt(min) ) : ( 1.0 / sqrt(val) );
         scaled.Set( i, 0, val );
       }
       break;
     default:
+      for ( size_t i = 0; i < scaled.Height(); ++i ) {
+        val = scaled.Get( i, 0 );
+        val = ( val < min ) ? min : val;
+        scaled.Set( i, 0, val );
+      }
       break;
   }
 
@@ -772,17 +762,17 @@ void harp::apply_norm ( matrix_dist & S, matrix_dist & mat ) {
   int hlocal = mat.LocalHeight();
   int wlocal = mat.LocalWidth();
 
-  int coloff = mat.RowShift();
-  int colstride = mat.RowStride();
-  int col;
+  int rowoff = mat.ColShift();
+  int rowstride = mat.ColStride();
+  int row;
 
   double mval;
 
   for ( int i = 0; i < wlocal; ++i ) {
     for ( int j = 0; j < hlocal; ++j ) {
-      col = coloff + i * colstride;
+      row = rowoff + j * rowstride;
       mval = local.Get ( j, i );
-      mval *= Sloc.Get ( col, 0 );
+      mval *= Sloc.Get ( row, 0 );
       local.Set ( j, i, mval );
     }
   }
@@ -794,7 +784,6 @@ void harp::apply_norm ( matrix_dist & S, matrix_dist & mat ) {
 void harp::norm ( matrix_dist & D, matrix_dist & W, matrix_dist & S ) {
 
   matrix_dist temp ( W );
-
   dist_matrix_zero ( temp );  
 
   eigen_compose ( EIG_SQRT, D, W, temp );
@@ -822,6 +811,8 @@ void harp::resolution ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matri
 
 void harp::extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_dist & z, matrix_dist & f ) {
 
+  dist_matrix_zero ( f );
+
   // compose ( W^T D^{-1/2} W )
 
   matrix_dist rtC ( W );
@@ -829,16 +820,18 @@ void harp::extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_d
 
   eigen_compose ( EIG_INVSQRT, D, W, rtC );
 
+  //rtC.Print( "inv sqrt" );
+
   // multiply C^{1/2} * z
 
-  matrix_dist vtemp ( z );
-  dist_matrix_zero ( vtemp );
+  //matrix_dist vtemp ( z );
+  //dist_matrix_zero ( vtemp );
 
-  elem::Gemv ( elem::NORMAL, 1.0, rtC, z, 0.0, vtemp ); 
+  elem::Symv ( elem::LOWER, 1.0, rtC, z, 0.0, f ); 
 
   // multiply S^-1 * vtemp
 
-  f = vtemp;
+  //f = vtemp;
 
   apply_norm ( S, f );
 

@@ -40,7 +40,7 @@ harp::psf_sandbox::psf_sandbox ( boost::property_tree::ptree const & props ) : p
     path_ = "";
     
     fake_n_bundle_ = 1;
-    fake_bundle_size_ = 20;
+    fake_bundle_size_ = 25;
 
     nspec_ = fake_n_bundle_ * fake_bundle_size_;
     specsize_ = 100;
@@ -54,20 +54,20 @@ harp::psf_sandbox::psf_sandbox ( boost::property_tree::ptree const & props ) : p
     rows_ = specsize_;
 
     // magnitude of continuum
-    fake_background_ = 20.0;
+    fake_background_ = 10.0;
 
     // amplitude of atmosphere "spikes"
     fake_peak_amp_ = 50.0 * fake_background_;
 
     // spacing of spikes
-    fake_peak_space_ = 15;
+    fake_peak_space_ = 20;
     //fake_peak_space_ = (size_t)( specsize_ / 10 );
 
     // object size
-    fake_peak_obj_ = 3.0 * fake_background_;
+    fake_peak_obj_ = 5.0 * fake_background_;
 
     // response fwhm
-    fake_psf_fwhm_ = 1.5;
+    fake_psf_fwhm_ = 1.0;
 
     // response correlation length in pixels
     pixcorr_ = (int)( 5.0 * (double)fake_psf_fwhm_ );
@@ -516,7 +516,7 @@ void harp::psf_sandbox::projection ( size_t firstbin, size_t lastbin, matrix_spa
     
         fxdist.Set( p, 0, (double)imgcol - xcenter );
         fydist.Set( p, 0, (double)imgrow - ycenter );
-      
+
         ++p;
       }
     
@@ -535,6 +535,7 @@ void harp::psf_sandbox::projection ( size_t firstbin, size_t lastbin, matrix_spa
 
         AT.Update ( glob_bin, pix, vals.Get( p, 0 ) );
 
+        ++p;
       }
 
     }

@@ -16,6 +16,8 @@ namespace harp { namespace fits {
   void open_read ( fitsfile * & fp, std::string const & path );
   
   void open_readwrite ( fitsfile * & fp, std::string const & path );
+
+  void create ( fitsfile * & fp, std::string const & path );
   
   void close ( fitsfile * fp );
   

@@ -8,8 +8,8 @@
 using namespace std;
 using namespace harp;
 
-#define DATASIZE 20
-#define SIGSIZE 4
+#define DATASIZE 100
+#define SIGSIZE 6
 #define MAX 1000.0
 #define TOL 1.0e-6
 
@@ -20,6 +20,8 @@ void harp::test_invcov ( string const & datadir ) {
 
   MPI_Comm_size ( MPI_COMM_WORLD, &np );
   MPI_Comm_rank ( MPI_COMM_WORLD, &myp );
+
+  elem::Grid grid ( elem::mpi::COMM_WORLD );
 
   if ( myp == 0 ) {
     cerr << "Testing inverse covariance construction..." << endl;
@@ -32,21 +34,18 @@ void harp::test_invcov ( string const & datadir ) {
   matrix_sparse AT ( SIGSIZE, DATASIZE, elem::mpi::COMM_WORLD );
 
   matrix_local compAT ( SIGSIZE, DATASIZE );
-  for ( size_t i = 0; i < SIGSIZE; ++i ) {
-    for ( size_t j = 0; j < DATASIZE; ++j ) {
-      compAT.Set ( i, j, 0.0 );
-    }
-  }
+  local_matrix_zero ( compAT );
 
   size_t local_firstrow = AT.FirstLocalRow();
   size_t local_rows = AT.LocalHeight();
 
   typedef boost::ecuyer1988 base_generator_type;
-  typedef boost::uniform_01<> distribution_type;
-  typedef boost::variate_generator < base_generator_type&, distribution_type > gen_type;
-
   base_generator_type generator(42u);
-  gen_type gen ( generator, distribution_type() );
+
+  double rms = 0.5;
+  boost::normal_distribution < double > dist ( 0.0, rms );
+  boost::variate_generator < base_generator_type&, boost::normal_distribution < double > > gauss ( generator, dist );
+
 
   AT.StartAssembly();
 
@@ -60,12 +59,13 @@ void harp::test_invcov ( string const & datadir ) {
 
     for ( size_t j = 0; j < nnz; ++j ) {
 
-      col = (size_t)( 2 * i + j );
-      //col = (size_t)( (double)DATASIZE * gen() );
+      col = (size_t)( 2 * i + 8*j );
 
       compAT.Set ( i, col, 1.0 );
 
-      AT.Update ( i, col, 1.0 );
+      if ( ( i >= local_firstrow ) && ( i < local_firstrow + local_rows ) ) {
+        AT.Update ( i, col, 1.0 );
+      }
 
     }
 
@@ -73,15 +73,39 @@ void harp::test_invcov ( string const & datadir ) {
 
   AT.StopAssembly();
 
-  // fake noise covariance
+  // truth
 
-  matrix_local invpix ( DATASIZE, 1 );
-  local_matrix_zero ( invpix );
+  matrix_dist truth ( SIGSIZE, 1, grid );
 
-  for ( size_t i = 0; i < DATASIZE; ++i ) {
-    invpix.Set ( i, 0, 0.1 );
+  matrix_local signal ( DATASIZE, 1 );
+
+  for ( int i = 0; i < SIGSIZE; ++i ) {
+    truth.Set ( i, 0, 42.0 );
   }
 
+  spec_project ( AT, truth, signal );
+  
+  // fake noise covariance and measured data
+
+  matrix_local noise ( DATASIZE, 1 );
+
+  matrix_local measured ( DATASIZE, 1 );
+
+  matrix_local invpix ( DATASIZE, 1 );
+
+  for ( size_t i = 0; i < DATASIZE; ++i ) {
+    invpix.Set ( i, 0, 1.0/(rms * rms) );
+    noise.Set ( i, 0, gauss() );
+    measured.Set ( i, 0, signal.Get(i,0) + noise.Get(i,0) );
+  }
+
+  // RHS
+
+  matrix_dist z ( SIGSIZE, 1, grid );
+
+  noise_weighted_spec ( AT, invpix, measured, z );
+
+  
   // construct test output
 
   matrix_local compinv ( SIGSIZE, SIGSIZE );
@@ -93,10 +117,9 @@ void harp::test_invcov ( string const & datadir ) {
 
     for ( size_t j = 0; j < nnz; ++j ) {
 
-      col = (size_t)( 2 * i + j );
-      //col = (size_t)( (double)DATASIZE * gen() );
+      col = (size_t)( 2 * i + 8*j );
 
-      compATN.Set ( i, col, 0.1 );
+      compATN.Set ( i, col, 1.0/(rms * rms) );
 
     }
 
@@ -109,8 +132,6 @@ void harp::test_invcov ( string const & datadir ) {
   }
 
   // parallel implementation
-
-  elem::Grid grid ( elem::mpi::COMM_WORLD );
 
   matrix_dist inv ( SIGSIZE, SIGSIZE, grid );
 
@@ -149,6 +170,12 @@ void harp::test_invcov ( string const & datadir ) {
   matrix_dist D ( SIGSIZE, 1, grid );
   eigen_decompose ( inv, D, W );
 
+  matrix_dist sq ( SIGSIZE, SIGSIZE, grid );
+  eigen_compose ( EIG_SQRT, D, W, sq );
+
+  sq.Print ( "sqrt of invcov" );
+
+  matrix_dist Rdirect ( sq );
   matrix_dist R ( SIGSIZE, SIGSIZE, grid );
   matrix_dist S ( SIGSIZE, 1, grid );
 
@@ -156,20 +183,33 @@ void harp::test_invcov ( string const & datadir ) {
 
   S.Print ( "column norm from eigen decomposition" );
 
+  apply_norm ( S, Rdirect );
+
+  Rdirect.Print ( "direct resolution matrix" );
+
   resolution ( D, W, S, R );
 
   R.Print ( "resolution matrix" );
 
-  /*
-  matrix_dist truth ( SIGSIZE, 1, grid );
-  matrix_local measured ()
+  matrix_dist f ( SIGSIZE, 1, grid );
 
-  spec_project ( AT, matrix_dist const & in, matrix_local & out );
+  extract ( D, W, S, z, f );
 
-  noise_weighted_spec ( AT, invpix, matrix_local const & img, matrix_dist & z );
-
-  extract ( D, W, S, matrix_dist & z, matrix_dist & f );
-  */
+  for ( size_t i = 0; i < SIGSIZE; ++i ) {
+    double rfdir = 0.0;
+    double tr = truth.Get ( i, 0 );
+    double rf = f.Get ( i, 0 );
+    double err = inv.Get ( i, i );
+    double ze = z.Get ( i, 0 );
+    for ( size_t j = 0; j < SIGSIZE; ++j ) {
+      rfdir += R.Get(i,j) * f.Get(j,0);
+    }
+    if ( myp == 0 ) {
+      err = sqrt( 1.0 / err );
+      cout << "  truth = " << tr << ", z = " << ze << ", convolved = " << rfdir << ", Rf = " << rf << ", err = " << err << endl;
+    }
+  }
+  
 
   if ( myp == 0 ) {
     cerr << "  (PASSED)" << endl;

@@ -2,6 +2,8 @@
 
 #include <harp_internal.hpp>
 
+#include <cstdio>
+
 extern "C" {
   #include <sys/stat.h>
 }
@@ -57,7 +59,7 @@ void harp::fits::open_readwrite ( fitsfile * & fp, string const & path ) {
   
   statret = stat ( path.c_str(), &statbuf );
 
-  if ( statret ) {
+  if ( statret != 0 ) {
     // create file
     
     ret = fits_create_file ( &fp, path.c_str(), &status );
@@ -68,6 +70,28 @@ void harp::fits::open_readwrite ( fitsfile * & fp, string const & path ) {
     ret = fits_open_file ( &fp, path.c_str(), READWRITE, &status );
     fits::check ( status );
   }
+  
+  return;
+}
+
+
+void harp::fits::create ( fitsfile * & fp, string const & path ) {
+  
+  int ret;
+  int status = 0;
+  
+  struct stat statbuf;
+  int statret;
+  
+  statret = stat ( path.c_str(), &statbuf );
+
+  if ( statret == 0 ) {
+    // delete file
+    ret = remove ( path.c_str() );
+  }
+
+  ret = fits_create_file ( &fp, path.c_str(), &status );
+  fits::check ( status );
   
   return;
 }
@@ -247,7 +271,11 @@ void harp::fits::img_write ( fitsfile * fp, matrix_local & data ) {
   fpixel[0] = 1;
   fpixel[1] = 1;
 
-  ret = fits_write_pix ( fp, TDOUBLE, fpixel, data.MemorySize(), data.Buffer(), &status );
+  int height = data.Height();
+  int width = data.Width();
+  int npix = height * width;
+
+  ret = fits_write_pix ( fp, TDOUBLE, fpixel, npix, data.Buffer(), &status );
   fits::check ( status );
   
   return;
@@ -479,63 +507,61 @@ void harp::fits::test ( string const & datadir ) {
   
   if ( myp == 0 ) {
     cerr << "Testing FITS operations..." << endl;
-  }
   
-  string imgfile = datadir + "/" + "fits_test_img.fits.out";
-  
-  size_t rows = 100;
-  size_t cols = 500;
-  size_t nelems = rows * cols;
-  
-  matrix_local data ( nelems, 1 );
-  
-  for ( size_t i = 0; i < cols; ++i ) {
-    for ( size_t j = 0; j < rows; ++j ) {
-      data.Set ( i*rows+j, 0, (double)(i * rows + j) );
-    }
-  }
-
-  fitsfile * fp;
-  
-  fits::open_readwrite ( fp, imgfile );
-  
-  fits::img_append ( fp, rows, cols );
-  
-  fits::img_write ( fp, data );
-
-  fits::close ( fp );
-
-  
-  fits::open_read ( fp, imgfile );
-
-  fits::img_seek ( fp, 1 );
-  
-  size_t checkrows;
-  size_t checkcols;
-  
-  fits::img_dims ( fp, checkrows, checkcols );
-
-  if ( ( checkrows != rows ) || ( checkcols != cols ) ) {
-    cerr << "  (FAILED): img dimensions wrong (" << checkrows << "x" << checkcols << ") != (" << rows << "x" << cols << ")" << endl;
-    exit(1);
-  }
-
-  matrix_local checkdata ( nelems, 1 );
-
-  fits::img_read ( fp, checkdata );
-  
-  for ( size_t i = 0; i < cols; ++i ) {
-    for ( size_t j = 0; j < rows; ++j ) {
-      if ( checkdata.Get( i*rows+j, 0 ) != data.Get( i*rows+j, 0 ) ) {
-        cerr << "  (FAILED): img element (" << i << ", " << j << ") has wrong value (" << checkdata.Get( i*rows+j, 0 ) << " != " << data.Get( i*rows+j, 0 ) << ")" << endl;
-        exit(1);
+    string imgfile = datadir + "/" + "fits_test_img.fits.out";
+    
+    size_t rows = 100;
+    size_t cols = 500;
+    size_t nelems = rows * cols;
+    
+    matrix_local data ( nelems, 1 );
+    
+    for ( size_t i = 0; i < cols; ++i ) {
+      for ( size_t j = 0; j < rows; ++j ) {
+        data.Set ( i*rows+j, 0, (double)(i * rows + j) );
       }
     }
-  }
 
-  fits::close ( fp );
+    fitsfile * fp;
+    
+    fits::open_readwrite ( fp, imgfile );
+    
+    fits::img_append ( fp, rows, cols );
+    
+    fits::img_write ( fp, data );
 
-  if ( myp == 0 ) {
+    fits::close ( fp );
+
+    
+    fits::open_read ( fp, imgfile );
+
+    fits::img_seek ( fp, 1 );
+    
+    size_t checkrows;
+    size_t checkcols;
+    
+    fits::img_dims ( fp, checkrows, checkcols );
+
+    if ( ( checkrows != rows ) || ( checkcols != cols ) ) {
+      cerr << "  (FAILED): img dimensions wrong (" << checkrows << "x" << checkcols << ") != (" << rows << "x" << cols << ")" << endl;
+      exit(1);
+    }
+
+    matrix_local checkdata ( nelems, 1 );
+
+    fits::img_read ( fp, checkdata );
+    
+    for ( size_t i = 0; i < cols; ++i ) {
+      for ( size_t j = 0; j < rows; ++j ) {
+        if ( checkdata.Get( i*rows+j, 0 ) != data.Get( i*rows+j, 0 ) ) {
+          cerr << "  (FAILED): img element (" << i << ", " << j << ") has wrong value (" << checkdata.Get( i*rows+j, 0 ) << " != " << data.Get( i*rows+j, 0 ) << ")" << endl;
+          exit(1);
+        }
+      }
+    }
+
+    fits::close ( fp );
+
     cerr << "  (PASSED)" << endl;
   }
   
