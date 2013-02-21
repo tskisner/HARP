@@ -5,7 +5,7 @@ dnl +------------------------
 dnl | Initialize package info
 dnl +------------------------
 AC_INIT(Makefile.am)
-AM_CONFIG_HEADER(config.h)
+AC_CONFIG_HEADERS(config.h)
 AM_INIT_AUTOMAKE(harp, 0.0.1)
 AC_CONFIG_MACRO_DIR([m4])
 dnl +-------------------------
@@ -34,7 +34,6 @@ AC_CHECK_HEADERS([iostream iostream.h])
 AC_CHECK_HEADERS([iomanip iomanip.h])
 AC_CHECK_HEADERS([cmath math.h])
 AC_CHECK_HEADERS([cstdlib stdlib.h])
-AC_HEADER_STDBOOL
 dnl +------------------------------------------------
 dnl | Check for OpenMP
 dnl +------------------------------------------------

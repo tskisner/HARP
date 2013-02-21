@@ -1105,16 +1105,18 @@ for inst in ${instruments}; do
 
     echo "include ../../instruments/${inst}/Makefile.am" >> ${START_PATH}/src/libharp/instruments.am
 
-    echo "AM_CPPFLAGS += -I\$(top_srcdir)/instruments/${inst}/tests" > ${START_PATH}/src/tests/test_instruments.am
-    echo "#include <test_${inst}.hpp>" > ${START_PATH}/src/tests/harp_test_instruments.hpp
-    testsrcs=`ls ${START_PATH}/instruments/${inst}/tests/ | grep -e '\.cpp$'`
-    for file in $testsrcs; do
-	echo "harp_test_SOURCES += ../../instruments/${inst}/tests/${file}" >> ${START_PATH}/src/tests/test_instruments.am
-    done
+    echo "include ../../instruments/${inst}/tests/Makefile.am" >> ${START_PATH}/src/tests/test_instruments.am
+
+    echo "#ifdef ENABLE_${ucinst}" >> ${START_PATH}/src/tests/harp_test_instruments.hpp
+    echo "#  include <test_${inst}.hpp>" >> ${START_PATH}/src/tests/harp_test_instruments.hpp
+    echo "#endif" >> ${START_PATH}/src/tests/harp_test_instruments.hpp
+    
     testcoms=`ls ${START_PATH}/instruments/${inst}/tests/*.com`
     for file in $testcoms; do
-	echo "  " >> ${START_PATH}/src/tests/harp_testcommands.cpp
-	cat ${file} >> ${START_PATH}/src/tests/harp_testcommands.cpp
+		echo "  " >> ${START_PATH}/src/tests/harp_testcommands.cpp
+		echo "#ifdef ENABLE_${ucinst}" >> ${START_PATH}/src/tests/harp_testcommands.cpp
+		cat ${file} >> ${START_PATH}/src/tests/harp_testcommands.cpp
+		echo "#endif" >> ${START_PATH}/src/tests/harp_testcommands.cpp
     done
 
     echo "m4_include([instruments/${inst}/configure.m4])" >> ${START_PATH}/instruments.m4
@@ -1128,15 +1130,18 @@ for inst in ${instruments}; do
     echo "  " >> ${START_PATH}/src/libharp/instruments.hpp
 
     for typ in ${types}; do
-	if [ -e "${START_PATH}/instruments/${inst}/harp_${inst}_${typ}.cpp" ]; then
-	    echo "#ifdef ENABLE_${ucinst}" >> ${START_PATH}/src/libharp/harp_${typ}_formats.cpp
-	    echo "  if ( format == \"${inst}\" ) {" >> ${START_PATH}/src/libharp/harp_${typ}_formats.cpp
-	    echo "    return new harp::${typ}_${inst}( props );" >> ${START_PATH}/src/libharp/harp_${typ}_formats.cpp
-	    echo "  }" >> ${START_PATH}/src/libharp/harp_${typ}_formats.cpp
-	    echo "#endif" >> ${START_PATH}/src/libharp/harp_${typ}_formats.cpp
-	    echo "  " >> ${START_PATH}/src/libharp/harp_${typ}_formats.cpp
-	fi
-    done
+		for instformat in `ls ${START_PATH}/instruments/${inst}/harp_${typ}_*.cpp 2>/dev/null`; do
+			if [ -e ${instformat} ]; then
+				format=`echo ${instformat} | sed -e "s#.*\/harp_${typ}_\(.*\)\.cpp#\1#"`
+				echo "#ifdef ENABLE_${ucinst}" >> ${START_PATH}/src/libharp/harp_${typ}_formats.cpp
+				echo "  if ( format == \"${format}\" ) {" >> ${START_PATH}/src/libharp/harp_${typ}_formats.cpp
+				echo "    return new harp::${typ}_${format}( props );" >> ${START_PATH}/src/libharp/harp_${typ}_formats.cpp
+				echo "  }" >> ${START_PATH}/src/libharp/harp_${typ}_formats.cpp
+				echo "#endif" >> ${START_PATH}/src/libharp/harp_${typ}_formats.cpp
+				echo "  " >> ${START_PATH}/src/libharp/harp_${typ}_formats.cpp
+			fi
+		done
+	done
 done
 
 echo "  " >> ${START_PATH}/src/libharp/instruments.am
