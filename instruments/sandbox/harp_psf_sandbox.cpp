@@ -39,35 +39,22 @@ harp::psf_sandbox::psf_sandbox ( boost::property_tree::ptree const & props ) : p
 
     path_ = "";
     
-    fake_n_bundle_ = 4;
+    fake_n_bundle_ = 20;
     fake_bundle_size_ = 25;
 
     nspec_ = fake_n_bundle_ * fake_bundle_size_;
-    specsize_ = 30;
+    nlambda_ = 4697;
 
-    fake_pix_margin_ = 5;
-    fake_pix_gap_ = 7;
+    fake_pix_margin_ = 9;
+    fake_pix_gap_ = 6;
 
     fake_pix_bundle_ = 2 * fake_pix_margin_ + (fake_bundle_size_ - 1) * fake_pix_gap_ + fake_bundle_size_;
 
     cols_ = fake_pix_bundle_ * fake_n_bundle_;
-    rows_ = specsize_;
-
-    // magnitude of continuum
-    fake_background_ = 10.0;
-
-    // amplitude of atmosphere "spikes"
-    fake_peak_amp_ = 50.0 * fake_background_;
-
-    // spacing of spikes
-    fake_peak_space_ = 12;
-    //fake_peak_space_ = (size_t)( specsize_ / 10 );
-
-    // object size
-    fake_peak_obj_ = 8.0 * fake_background_;
+    rows_ = nlambda_;
 
     // response fwhm
-    fake_psf_fwhm_ = 1.5;
+    fake_psf_fwhm_ = 3.5;
 
     // response correlation length in pixels
     pixcorr_ = (int)( 5.0 * (double)fake_psf_fwhm_ );
@@ -96,7 +83,7 @@ harp::psf_sandbox::psf_sandbox ( boost::property_tree::ptree const & props ) : p
 
       int hdu = fits::img_seek ( fp, sandbox_psf_key_name, sandbox_psf_hdu_x );
       hdus_[ sandbox_psf_hdu_x ] = hdu;
-      fits::img_dims ( fp, nspec_, specsize_ );
+      fits::img_dims ( fp, nspec_, nlambda_ );
 
       hdus_[ sandbox_psf_hdu_y ] = hdu_info ( fp, sandbox_psf_hdu_y );
       hdus_[ sandbox_psf_hdu_lambda ] = hdu_info ( fp, sandbox_psf_hdu_lambda );
@@ -114,7 +101,7 @@ harp::psf_sandbox::psf_sandbox ( boost::property_tree::ptree const & props ) : p
     int ret = MPI_Bcast ( (void*)(&nspec_), 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
     mpi_check ( MPI_COMM_WORLD, ret );
 
-    ret = MPI_Bcast ( (void*)(&specsize_), 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
+    ret = MPI_Bcast ( (void*)(&nlambda_), 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
     mpi_check ( MPI_COMM_WORLD, ret );
 
   }
@@ -123,7 +110,7 @@ harp::psf_sandbox::psf_sandbox ( boost::property_tree::ptree const & props ) : p
   cached_first_ = 0;
   cached_last_ = 0;
 
-  nglobal_ = nspec_ * specsize_;
+  nglobal_ = nspec_ * nlambda_;
 
   npix_ = rows_ * cols_;
   
@@ -134,7 +121,7 @@ int harp::psf_sandbox::hdu_info ( fitsfile *fp, const char * sandbox_psf_hdu ) {
   int hdu = fits::img_seek ( fp, sandbox_psf_key_name, sandbox_psf_hdu );
   size_t rows, cols;
   fits::img_dims ( fp, rows, cols );
-  if ( ( rows != nspec_ ) || ( cols != specsize_ ) ) {
+  if ( ( rows != nspec_ ) || ( cols != nlambda_ ) ) {
     HARP_THROW( "sandbox_psf: PSF file must have identical dimensions for all HDUs" );
   }
   return hdu;
@@ -169,17 +156,15 @@ boost::property_tree::ptree harp::psf_sandbox::serialize ( ) {
 }
 
 
-void harp::psf_sandbox::cache ( size_t firstlocal, size_t nlocal ) {
+void harp::psf_sandbox::cache ( size_t first_spec, size_t last_spec ) {
 
-  size_t firstspec = firstlocal % specsize_;
-  size_t lastspec = ( firstlocal + nlocal - 1 ) % specsize_;
-  size_t nspec = lastspec - firstspec + 1;
+  size_t nspec = last_spec - first_spec + 1;
 
   if ( ! cached_ ) {
 
     cached_ = true;
-    cached_first_ = firstspec;
-    cached_last_ = lastspec;
+    cached_first_ = first_spec;
+    cached_last_ = last_spec;
 
     if ( dofake_ ) {
       return;
@@ -198,7 +183,7 @@ void harp::psf_sandbox::cache ( size_t firstlocal, size_t nlocal ) {
       fits::open_read ( fp, path_ );
     }
 
-    matrix_local iobuffer ( nspec_, specsize_ );
+    matrix_local iobuffer ( nspec_, nlambda_ );
 
     if ( myp == 0 ) {
       fits::img_seek ( fp, hdus_[ sandbox_psf_hdu_x ] );      
@@ -207,9 +192,9 @@ void harp::psf_sandbox::cache ( size_t firstlocal, size_t nlocal ) {
     ret = MPI_Bcast ( (void*)(iobuffer.Buffer()), nglobal_, MPI_DOUBLE, 0, MPI_COMM_WORLD );
     mpi_check ( MPI_COMM_WORLD, ret );
     for ( size_t i = 0; i < nspec; ++i ) {
-      size_t spec = i + firstspec;
-      resp_[ spec ].x.ResizeTo ( specsize_, 1 );
-      for ( size_t j = 0; j < specsize_; ++j ) {
+      size_t spec = i + first_spec;
+      resp_[ spec ].x.ResizeTo ( nlambda_, 1 );
+      for ( size_t j = 0; j < nlambda_; ++j ) {
         resp_[ spec ].x.Set ( j, 0, iobuffer.Get ( spec, j ) );
       }
     }
@@ -221,9 +206,9 @@ void harp::psf_sandbox::cache ( size_t firstlocal, size_t nlocal ) {
     ret = MPI_Bcast ( (void*)(iobuffer.Buffer()), nglobal_, MPI_DOUBLE, 0, MPI_COMM_WORLD );
     mpi_check ( MPI_COMM_WORLD, ret );
     for ( size_t i = 0; i < nspec; ++i ) {
-      size_t spec = i + firstspec;
-      resp_[ spec ].y.ResizeTo ( specsize_, 1 );
-      for ( size_t j = 0; j < specsize_; ++j ) {
+      size_t spec = i + first_spec;
+      resp_[ spec ].y.ResizeTo ( nlambda_, 1 );
+      for ( size_t j = 0; j < nlambda_; ++j ) {
         resp_[ spec ].y.Set ( j, 0, iobuffer.Get ( spec, j ) );
       }
     }
@@ -235,9 +220,9 @@ void harp::psf_sandbox::cache ( size_t firstlocal, size_t nlocal ) {
     ret = MPI_Bcast ( (void*)(iobuffer.Buffer()), nglobal_, MPI_DOUBLE, 0, MPI_COMM_WORLD );
     mpi_check ( MPI_COMM_WORLD, ret );
     for ( size_t i = 0; i < nspec; ++i ) {
-      size_t spec = i + firstspec;
-      resp_[ spec ].lambda.ResizeTo ( specsize_, 1 );
-      for ( size_t j = 0; j < specsize_; ++j ) {
+      size_t spec = i + first_spec;
+      resp_[ spec ].lambda.ResizeTo ( nlambda_, 1 );
+      for ( size_t j = 0; j < nlambda_; ++j ) {
         resp_[ spec ].lambda.Set ( j, 0, iobuffer.Get ( spec, j ) );
       }
     }
@@ -249,9 +234,9 @@ void harp::psf_sandbox::cache ( size_t firstlocal, size_t nlocal ) {
     ret = MPI_Bcast ( (void*)(iobuffer.Buffer()), nglobal_, MPI_DOUBLE, 0, MPI_COMM_WORLD );
     mpi_check ( MPI_COMM_WORLD, ret );
     for ( size_t i = 0; i < nspec; ++i ) {
-      size_t spec = i + firstspec;
-      resp_[ spec ].amp.ResizeTo ( specsize_, 1 );
-      for ( size_t j = 0; j < specsize_; ++j ) {
+      size_t spec = i + first_spec;
+      resp_[ spec ].amp.ResizeTo ( nlambda_, 1 );
+      for ( size_t j = 0; j < nlambda_; ++j ) {
         resp_[ spec ].amp.Set ( j, 0, iobuffer.Get ( spec, j ) );
       }
     }
@@ -263,9 +248,9 @@ void harp::psf_sandbox::cache ( size_t firstlocal, size_t nlocal ) {
     ret = MPI_Bcast ( (void*)(iobuffer.Buffer()), nglobal_, MPI_DOUBLE, 0, MPI_COMM_WORLD );
     mpi_check ( MPI_COMM_WORLD, ret );
     for ( size_t i = 0; i < nspec; ++i ) {
-      size_t spec = i + firstspec;
-      resp_[ spec ].maj.ResizeTo ( specsize_, 1 );
-      for ( size_t j = 0; j < specsize_; ++j ) {
+      size_t spec = i + first_spec;
+      resp_[ spec ].maj.ResizeTo ( nlambda_, 1 );
+      for ( size_t j = 0; j < nlambda_; ++j ) {
         resp_[ spec ].maj.Set ( j, 0, iobuffer.Get ( spec, j ) );
       }
     }
@@ -277,9 +262,9 @@ void harp::psf_sandbox::cache ( size_t firstlocal, size_t nlocal ) {
     ret = MPI_Bcast ( (void*)(iobuffer.Buffer()), nglobal_, MPI_DOUBLE, 0, MPI_COMM_WORLD );
     mpi_check ( MPI_COMM_WORLD, ret );
     for ( size_t i = 0; i < nspec; ++i ) {
-      size_t spec = i + firstspec;
-      resp_[ spec ].min.ResizeTo ( specsize_, 1 );
-      for ( size_t j = 0; j < specsize_; ++j ) {
+      size_t spec = i + first_spec;
+      resp_[ spec ].min.ResizeTo ( nlambda_, 1 );
+      for ( size_t j = 0; j < nlambda_; ++j ) {
         resp_[ spec ].min.Set ( j, 0, iobuffer.Get ( spec, j ) );
       }
     }
@@ -291,9 +276,9 @@ void harp::psf_sandbox::cache ( size_t firstlocal, size_t nlocal ) {
     ret = MPI_Bcast ( (void*)(iobuffer.Buffer()), nglobal_, MPI_DOUBLE, 0, MPI_COMM_WORLD );
     mpi_check ( MPI_COMM_WORLD, ret );
     for ( size_t i = 0; i < nspec; ++i ) {
-      size_t spec = i + firstspec;
-      resp_[ spec ].ang.ResizeTo ( specsize_, 1 );
-      for ( size_t j = 0; j < specsize_; ++j ) {
+      size_t spec = i + first_spec;
+      resp_[ spec ].ang.ResizeTo ( nlambda_, 1 );
+      for ( size_t j = 0; j < nlambda_; ++j ) {
         resp_[ spec ].ang.Set ( j, 0, iobuffer.Get ( spec, j ) );
       }
     }
@@ -303,9 +288,9 @@ void harp::psf_sandbox::cache ( size_t firstlocal, size_t nlocal ) {
     }
 
   } else {
-    if ( ( cached_first_ != firstspec ) || ( cached_last_ != lastspec ) ) {
+    if ( ( cached_first_ != first_spec ) || ( cached_last_ != last_spec ) ) {
       std::ostringstream o;
-      o << "attempting to change which spectra are cached locally (" << cached_first_ << "-" << cached_last_ << ") --> (" << firstspec << "-" << lastspec << ")";
+      o << "attempting to change which spectra are cached locally (" << cached_first_ << "-" << cached_last_ << ") --> (" << first_spec << "-" << last_spec << ")";
       HARP_THROW( o.str().c_str() );
     }
   }
@@ -426,13 +411,13 @@ void harp::psf_sandbox::gauss_sample ( matrix_local & vals, matrix_local & xrel,
 }
 
 
-void harp::psf_sandbox::projection ( size_t firstbin, size_t lastbin, matrix_sparse & AT ) {
+void harp::psf_sandbox::projection ( size_t first_lambda, size_t last_lambda, matrix_sparse & AT ) {
 
-  if ( ( firstbin >= specsize_ ) || ( lastbin >= specsize_ ) ) {
-    HARP_THROW( "spectral bins out of range" );
+  if ( ( first_lambda >= nlambda_ ) || ( last_lambda >= nlambda_ ) ) {
+    HARP_THROW( "lambda points out of range" );
   }
 
-  size_t nflux = nspec_ * ( lastbin - firstbin + 1 );
+  size_t nflux = nspec_ * ( last_lambda - first_lambda + 1 );
   
   AT.ResizeTo ( nflux, npix_ );
 
@@ -443,7 +428,10 @@ void harp::psf_sandbox::projection ( size_t firstbin, size_t lastbin, matrix_spa
 
   // cache data
 
-  cache ( first_loc_row, loc_height );
+  size_t first_spec = (size_t)( first_loc_row / nlambda_ );
+  size_t last_spec = (size_t)( (first_loc_row + loc_height - 1) / nlambda_ );
+
+  cache ( first_spec, last_spec );
 
   // populate matrix
 
@@ -469,8 +457,8 @@ void harp::psf_sandbox::projection ( size_t firstbin, size_t lastbin, matrix_spa
 
     size_t glob_bin = loc_bin + first_loc_row;
 
-    size_t spec = (size_t) ( glob_bin / specsize_ );
-    size_t specbin = glob_bin - ( spec * specsize_ );
+    size_t spec = (size_t) ( glob_bin / nlambda_ );
+    size_t specbin = glob_bin - ( spec * nlambda_ );
 
     extent ( spec, spec, specbin, specbin, bin_firstcol, bin_firstrow, bin_lastcol, bin_lastrow );
 
@@ -489,8 +477,8 @@ void harp::psf_sandbox::projection ( size_t firstbin, size_t lastbin, matrix_spa
       ycenter = (double)ypix;
 
       amp = 1.0;
-      maj = fake_psf_fwhm_;
-      min = fake_psf_fwhm_;
+      maj = fake_psf_fwhm_ / 2.0;
+      min = fake_psf_fwhm_ / 2.0;
       ang = 0.0;
 
     } else {
@@ -548,48 +536,6 @@ void harp::psf_sandbox::projection ( size_t firstbin, size_t lastbin, matrix_spa
 }
 
 
-void harp::psf_sandbox::fake_spec ( matrix_dist & data ) {
-
-  size_t nbins = nspec_ * specsize_;
-
-  data.ResizeTo ( nbins, 1 );
-
-  double PI = std::atan2 ( 0.0, -1.0 );
-
-  size_t half_peak = fake_peak_space_ >> 1;
-  size_t half_obj = (size_t)(1.5 * (double)half_peak);
-  size_t obj_space = 2 * half_obj;
-
-  size_t bin = 0;
-
-  for ( size_t i = 0; i < nspec_; ++i ) {
-    for ( size_t j = 0; j < specsize_; ++j ) {
-
-      double val = fake_background_ * sin ( 3.0 * (double)j / ( fake_peak_space_ * 2.0 * PI ) ) * sin ( 7.0 * (double)j / ( fake_peak_space_ * 2.0 * PI ) ) * sin ( 11.0 * (double)j / ( fake_peak_space_ * 2.0 * PI ) );
-
-      val += 2.0 * fake_background_;
-
-      if ( ( ( j + half_peak ) % fake_peak_space_ ) == 0 ) {
-        val += fake_peak_amp_;
-      }
-
-      size_t temp = i % 25;
-      temp += j + half_obj;
-
-      //cerr << " temp = " << temp << " obj_space = " << obj_space << endl;
-
-      if ( ( temp % obj_space ) == 0 ) {
-        val += fake_peak_obj_;
-      }
-
-      data.Set ( bin, 0, val );
-
-      ++bin;
-    }
-  }
-
-  return;
-}
 
 
 

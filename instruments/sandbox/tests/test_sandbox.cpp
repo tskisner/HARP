@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <vector>
 
 #include <harp_test.hpp>
 
@@ -42,8 +43,29 @@ void harp::test_sandbox ( string const & datadir ) {
 
   size_t npix = testpsf->pixrows() * testpsf->pixcols();
   size_t nspec = testpsf->nspec();
-  size_t specsize = testpsf->specsize();
-  size_t nbins = nspec * specsize;
+  size_t nlambda = testpsf->nlambda();
+
+  // do one slice of wavelength points
+  size_t nslice = 5;
+
+  size_t nbins = nspec * nslice;
+
+  props.clear();
+  props.put ( "nspec", nspec );
+  props.put ( "nlambda", nslice );
+  props.put ( "back", 10.0 );
+  props.put ( "atm", 500.0 );
+  props.put ( "obj", 80.0 );
+  props.put ( "atmspace", 12 );
+  props.put ( "skymod", 25 );
+  spec_p testspec ( spec::create ( "sandbox", props ) );
+
+  matrix_dist truth ( nbins, 1 );
+  vector < double > lambda;
+  vector < bool > sky;
+  testspec->read( truth, lambda, sky );
+
+  truth.Write("sndbx_truth");
 
   matrix_sparse design;
 
@@ -51,19 +73,11 @@ void harp::test_sandbox ( string const & datadir ) {
   double tstop;
 
   tstart = MPI_Wtime();
-  testpsf->projection ( 0, specsize - 1, design );
+  testpsf->projection ( 0, nslice - 1, design );
   tstop = MPI_Wtime();
   if ( myp == 0 ) {
     cerr << "  Time for PSF creation = " << tstop-tstart << " seconds" << endl;
   }
-
-  matrix_dist truth ( nbins, 1 );
-
-  boost::shared_ptr < psf_sandbox > sndpsf = testpsf->shared_ref < psf_sandbox > ();
-
-  sndpsf->fake_spec ( truth );
-
-  truth.Write("sndbx_truth");
 
   matrix_local signal ( npix, 1 );
 
@@ -242,7 +256,7 @@ void harp::test_sandbox ( string const & datadir ) {
     }
   }
   if ( myp == 0 ) {
-    fits::img_append ( fp, nspec, specsize );
+    fits::img_append ( fp, nspec, nslice );
     fits::img_write ( fp, full );
   }
 
@@ -253,7 +267,7 @@ void harp::test_sandbox ( string const & datadir ) {
     }
   }
   if ( myp == 0 ) {
-    fits::img_append ( fp, nspec, specsize );
+    fits::img_append ( fp, nspec, nslice );
     fits::img_write ( fp, full );
   }
 
@@ -264,7 +278,7 @@ void harp::test_sandbox ( string const & datadir ) {
     }
   }
   if ( myp == 0 ) {
-    fits::img_append ( fp, nspec, specsize );
+    fits::img_append ( fp, nspec, nslice );
     fits::img_write ( fp, full );
   }
 
@@ -275,7 +289,7 @@ void harp::test_sandbox ( string const & datadir ) {
     }
   }
   if ( myp == 0 ) {
-    fits::img_append ( fp, nspec, specsize );
+    fits::img_append ( fp, nspec, nslice );
     fits::img_write ( fp, full );
   }
 

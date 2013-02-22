@@ -295,8 +295,6 @@ void harp::inverse_covariance ( matrix_sparse const & psf, matrix_local const & 
   size_t local_firstrow = psf.FirstLocalRow();
   size_t local_rows = psf.LocalHeight();
 
-  //cerr << "DBG:  proc " << myp << " has rows " << local_firstrow << " - " << local_firstrow + local_rows - 1 << endl;
-
   elem::Matrix < double > local_inv ( local_rows, local_rows );
 
   for ( size_t i = 0; i < local_rows; ++i ) {
@@ -304,8 +302,6 @@ void harp::inverse_covariance ( matrix_sparse const & psf, matrix_local const & 
       local_inv.Set ( j, i, 0.0 );
     }
   }
-
-  //cerr << "DBG:  local " << local_rows << " x " << local_rows << " matrix allocated" << endl;
 
   elem::AxpyInterface < double > locglob;
   locglob.Attach( elem::LOCAL_TO_GLOBAL, invcov );
@@ -318,8 +314,6 @@ void harp::inverse_covariance ( matrix_sparse const & psf, matrix_local const & 
   size_t lhs_col;
   size_t rhs_col;
   size_t j, k;
-
-  //cerr << "DBG:  accumulate our own subblock" << endl;
 
   for ( size_t lhs_row = 0; lhs_row < local_rows; ++lhs_row ) {
 
@@ -340,23 +334,18 @@ void harp::inverse_covariance ( matrix_sparse const & psf, matrix_local const & 
 
         lhs_col = psf.Col ( lhs_off + j );
         
-        //cerr << " lhs/rhs = " << lhs_col << "/" << rhs_col << endl;
         while ( ( rhs_col < lhs_col ) && ( k < rhs_nnz - 1 ) ) {
           ++k;
           rhs_col = psf.Col ( rhs_off + k );
-          //cerr << "  scroll rhs col to " << rhs_col << endl;
         }
 
         if ( rhs_col == lhs_col ) {
-          //cerr << "  accumulate " << psf.Value ( lhs_off + j ) * psf.Value ( rhs_off + k ) << " to (" << lhs_row << ", " << rhs_row << ")" << endl; 
           val += invnoise.Get( lhs_col, 0 ) * psf.Value ( lhs_off + j ) * psf.Value ( rhs_off + k );
         }
 
       }
 
       local_inv.Set ( lhs_row, rhs_row, val );
-
-      //cerr << "local_inv (" << lhs_row << ", " << rhs_row << ") set to " << val << endl;
 
     }
   }
@@ -394,14 +383,10 @@ void harp::inverse_covariance ( matrix_sparse const & psf, matrix_local const & 
   MPI_Request send_request;
   MPI_Status status;
 
-  //cerr << "DBG:  " << nshift << " shifts for " << np << " processes" << endl;
-
   for ( int shift = 0; shift < nshift; ++shift ) {
 
     if ( shift == 0 ) {
       // first shift, send our own data
-
-      //cerr << "proc " << myp << " allocing sparse block for own data on shift 0" << endl;
 
       sparse_block * myblock = new sparse_block ( psf );
 
@@ -432,44 +417,30 @@ void harp::inverse_covariance ( matrix_sparse const & psf, matrix_local const & 
     int recv_size_key = (shift * 2 * np) + 2 * from_proc;
     int recv_data_key = (shift * 2 * np) + 2 * from_proc + 1;
 
-    //cerr << "proc " << myp << " sending data size to " << to_proc << " with key " << send_size_key << endl;
-
     int ret = MPI_Isend ( (void*)(&sendbytes), 1, MPI_UNSIGNED_LONG, to_proc, send_size_key, psf.Comm(), &send_size_request );
     mpi_check ( psf.Comm(), ret );
-
-    //cerr << "proc " << myp << " sending data to " << to_proc << " with key " << send_data_key << endl;
 
     ret = MPI_Isend ( (void*)sendbuf, sendbytes, MPI_CHAR, to_proc, send_data_key, psf.Comm(), &send_request );
     mpi_check ( psf.Comm(), ret );
 
     // receive block from sender
 
-    //cerr << "proc " << myp << " receiving data size from " << from_proc << " with key " << recv_size_key << endl;
-
     ret = MPI_Recv ( (void*)(&recvbytes), 1, MPI_UNSIGNED_LONG, from_proc, recv_size_key, psf.Comm(), &status );
     mpi_check ( psf.Comm(), ret );
-
-    //cerr << "proc " << myp << " allocing receive data" << endl;
 
     recvbuf = (char*)malloc ( recvbytes );
     if ( ! recvbuf ) {
       HARP_THROW( "cannot allocate receive buffer" );
     }
 
-    //cerr << "proc " << myp << " receiving data from " << from_proc << " with key " << recv_data_key << endl;
-
     ret = MPI_Recv ( (void*)recvbuf, recvbytes, MPI_CHAR, from_proc, recv_data_key, psf.Comm(), &status );
     mpi_check ( psf.Comm(), ret );
 
     // reconstruct sparse_block
 
-    //cerr << "proc " << myp << " reconstructing sparse block" << endl;
-
     sparse_block * other_block = new sparse_block ( recvbuf, recvbytes );
 
     // compute block
-
-    //cerr << "proc " << myp << " computing block" << endl;
 
     locglob.Attach( elem::LOCAL_TO_GLOBAL, invcov );
 
@@ -718,7 +689,6 @@ void harp::column_norm ( matrix_dist & mat, matrix_dist & S ) {
     for ( int j = 0; j < hlocal; ++j ) {
       row = rowoff + j * rowstride;
       mval = local.Get ( j, i ) + Sloc.Get ( row, 0 );
-      //cerr << "accumulate " << local.Get(j,i) << " to Sloc row " << row << endl;
       Sloc.Set ( row, 0, mval );
     }
   }
@@ -820,18 +790,11 @@ void harp::extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_d
 
   eigen_compose ( EIG_INVSQRT, D, W, rtC );
 
-  //rtC.Print( "inv sqrt" );
-
   // multiply C^{1/2} * z
-
-  //matrix_dist vtemp ( z );
-  //dist_matrix_zero ( vtemp );
 
   elem::Symv ( elem::LOWER, 1.0, rtC, z, 0.0, f ); 
 
   // multiply S^-1 * vtemp
-
-  //f = vtemp;
 
   apply_norm ( S, f );
 
@@ -839,7 +802,63 @@ void harp::extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_d
 }
 
 
+// Append columns to the design matrix to solve for a coefficient for the sky component
 
+/*
+void harp::sky_append ( matrix_sparse const & psf, size_t nspec, size_t specsize, matrix_local & skyspec, matrix_sparse & fullpsf ) {
+
+  size_t nbins_orig = psf.Height();
+  size_t npix = psf.Width();
+
+  size_t nbins = nbins_orig + nspec;
+
+  fullpsf.ResizeTo ( nbins, npix );
+
+  
+
+
+
+  z.ResizeTo ( nbins, 1 );
+  dist_matrix_zero ( z );
+
+  // apply noise covariance to image
+
+  matrix_local weight ( npix, 1 );
+  for ( size_t i = 0; i < npix; ++i ) {
+    weight.Set ( i, 0, invnoise.Get(i,0) * img.Get(i,0) );
+  }
+
+  // accumulate local pieces of z
+
+  size_t first_loc_row = psf.FirstLocalRow();
+  size_t loc_height = psf.LocalHeight();
+  size_t loc_entries = psf.NumLocalEntries();
+
+  matrix_local local_z ( loc_height, 1 );
+  local_matrix_zero ( local_z );
+
+  double val;
+  double zval;
+  size_t row;
+  size_t nnz;
+  size_t col;
+
+  for ( size_t loc = 0; loc < loc_entries; ++loc ) {
+    row = psf.Row ( loc );
+    col = psf.Col ( loc );
+    val = psf.Value ( loc );
+    zval = local_z.Get ( row - first_loc_row, 0 );
+    local_z.Set ( row - first_loc_row, 0, zval + val * weight.Get( col, 0 ) );
+  }
+
+  elem::AxpyInterface < double > locglob;
+  locglob.Attach( elem::LOCAL_TO_GLOBAL, z );
+  locglob.Axpy ( 1.0, local_z, first_loc_row, 0 );
+  locglob.Detach();
+
+  return;
+}
+*/
 
 /*
 

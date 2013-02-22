@@ -39,17 +39,22 @@ namespace harp {
       boost::property_tree::ptree serialize ( );
       
       size_t nspectrum ( ) { return nspec_; }
-      size_t spectrum_size ( size_t spectrum ) { return specsize_; }
-      void read ( matrix_dist & data );
-      void write ( std::string const & path, matrix_dist & data );
+      size_t spectrum_size ( size_t spectrum ) { return nlambda_; }
+
+      void read ( matrix_dist & data, std::vector < double > & lambda, std::vector < bool > & sky );
+      void write ( std::string const & path, matrix_dist & data, std::vector < double > const & lambda, std::vector < bool > const & sky );
     
     private :
     
       size_t size_;
       size_t nspec_;
-      size_t specsize_;
-      std::string path_;
-      int hdu_;
+      size_t nlambda_;
+      double background_;
+      double atmpeak_;
+      double objpeak_;
+      size_t atmspace_;
+      size_t objspace_;
+      size_t skymod_;
     
   };
   
@@ -73,18 +78,16 @@ namespace harp {
       boost::property_tree::ptree serialize ( );
 
       size_t nspec ( ) { return nspec_; }
-      size_t specsize ( ) { return specsize_; }
+      size_t nlambda ( ) { return nlambda_; }
       size_t pixrows ( ) { return rows_; }
       size_t pixcols ( ) { return cols_; }
-      void projection ( size_t firstbin, size_t lastbin, matrix_sparse & data );
-
-      void fake_spec ( matrix_dist & data );
+      void projection ( size_t first_lambda, size_t last_lambda, matrix_sparse & data );
       
     private :
 
       int hdu_info ( fitsfile *fp, const char * sandbox_psf_hdu );
     
-      void cache ( size_t firstlocal, size_t nlocal );
+      void cache ( size_t first_spec, size_t last_spec );
 
       void extent ( size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t & firstcol, size_t & firstrow, size_t & lastcol, size_t & lastrow );
       
@@ -101,15 +104,11 @@ namespace harp {
       size_t fake_pix_margin_;
       size_t fake_pix_gap_;
       size_t fake_pix_bundle_;
-      double fake_background_;
-      double fake_peak_amp_;
-      size_t fake_peak_space_;
-      size_t fake_peak_obj_;
       double fake_psf_fwhm_;
 
       std::string path_;
       size_t nspec_;
-      size_t specsize_;
+      size_t nlambda_;
       size_t rows_;
       size_t cols_;
       size_t nglobal_;

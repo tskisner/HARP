@@ -17,13 +17,15 @@ namespace harp {
       
       virtual size_t nspec ( ) { return 0; }
       
-      virtual size_t specsize ( ) { return 0; }
+      virtual size_t nlambda ( ) { return 0; }
 
       virtual size_t pixrows ( ) { return 0; }
 
       virtual size_t pixcols ( ) { return 0; }
+
+      virtual std::vector < double > lambda ( ) { return std::vector < double > (); }
       
-      virtual void projection ( size_t firstbin, size_t lastbin, matrix_sparse & AT ) { return; }
+      virtual void projection ( size_t first_lambda, size_t last_lambda, matrix_sparse & AT ) { return; }
       
       std::string format ( );
       
