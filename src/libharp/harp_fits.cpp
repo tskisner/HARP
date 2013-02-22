@@ -291,7 +291,7 @@ void harp::fits::img_dims ( fitsfile * fp, size_t & rows, size_t & cols ) {
   ret = fits_get_img_dim ( fp, &naxis, &status );
   fits::check ( status );
   
-  if ( naxis != 2 ) {
+  if ( naxis > 2 ) {
     ostringstream o;
     o << "FITS image has " << naxis << " dimensions instead of 2";
     HARP_THROW( o.str().c_str() );
@@ -299,11 +299,15 @@ void harp::fits::img_dims ( fitsfile * fp, size_t & rows, size_t & cols ) {
   
   long naxes[2];
   
-  ret = fits_get_img_size ( fp, 2, naxes, &status );
+  ret = fits_get_img_size ( fp, naxis, naxes, &status );
   fits::check ( status );
-  
+
   cols = naxes[0];
-  rows = naxes[1];
+  if ( naxis == 1 ) {
+    rows = 1;
+  } else {
+    rows = naxes[1];
+  }
   
   return;
 }
@@ -315,13 +319,28 @@ void harp::fits::img_read ( fitsfile * fp, matrix_local & data ) {
   int status = 0;
   int anynul;
 
-  long fpixel[2];
+  int naxis;
 
-  fpixel[0] = 1;
-  fpixel[1] = 1;
-
-  ret = fits_read_pix ( fp, TDOUBLE, fpixel, data.MemorySize(), NULL, data.Buffer(), &anynul, &status );
+  ret = fits_get_img_dim ( fp, &naxis, &status );
   fits::check ( status );
+
+  cerr << "image has " << naxis << " dimensions" << endl;
+
+  if ( naxis <= 2 ) {
+    
+    long fpixel[2];
+
+    fpixel[0] = 1;
+    fpixel[1] = 1;
+
+    ret = fits_read_pix ( fp, TDOUBLE, fpixel, data.MemorySize(), NULL, data.Buffer(), &anynul, &status );
+    fits::check ( status );
+  
+  } else {
+
+    HARP_THROW( "unsupported number of image dimensions" );
+
+  }
   
   return;
 }
@@ -485,6 +504,72 @@ void harp::fits::bin_read ( fitsfile * fp, size_t firstrow, size_t lastrow, vect
     dataoffset += optimal;
   }
   
+  return;
+}
+
+
+void harp::fits::bin_read_strings ( fitsfile * fp, size_t firstrow, size_t lastrow, int col, vector < string > & data ) {
+  
+  int ret;
+  int status = 0;
+  long offset = (long)firstrow;
+  long nread = (long)lastrow - offset + 1;
+  
+  // get table dimensions
+  
+  long nrows;
+  int tfields;
+  char fitsval[FLEN_VALUE];
+  long pcount;
+  
+  ret = fits_read_btblhdr ( fp, 100, &nrows, &tfields, NULL, NULL, NULL, fitsval, &pcount, &status );
+  fits::check ( status );
+  
+  if ( offset + nread > nrows ) {
+    HARP_THROW( "binary read range is beyond end of table" );
+  } 
+  
+  // check that column number is in range
+  
+  if ( ( col >= tfields ) || ( col < 0 ) ) {
+    ostringstream o;
+    o << "cannot read (zero-based) column " << col << " from binary table with " << tfields << " columns";
+    HARP_THROW( o.str().c_str() );
+  }
+
+  // temporary char buffer
+
+  char ** charray;
+  charray = (char**) malloc ( nread * sizeof( char* ) );
+  if ( ! charray ) {
+    HARP_THROW( "cannot allocate temp char array" );
+  }
+  for ( long i = 0; i < nread; ++i ) {
+    charray[i] = (char*) malloc ( 50 * sizeof (char) );
+    if ( ! charray[i] ) {
+      HARP_THROW( "cannot allocate temp char array member" );
+    }
+  }
+
+  // read data in one shot
+
+  int anynul;
+
+  char empty[5];
+  strcpy ( empty, "" );
+
+  ret = fits_read_col_str ( fp, col + 1, offset + 1, 1, nread, empty, charray, &anynul, &status );
+  fits::check ( status );
+
+  // copy into output vector
+
+  data.resize ( nread );
+  for ( long i = 0; i < nread; ++i ) {
+    data[i] = charray[i];
+    free ( charray[i] );
+  }
+  free ( charray );
+
   return;
 }
 

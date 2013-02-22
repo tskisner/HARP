@@ -25,11 +25,11 @@ int main ( int argc, char *argv[] ) {
     cerr << endl;
   }
   
-  //fits::test ( datadir );
+  fits::test ( datadir );
 
-  //test_elemental ( datadir );
+  test_elemental ( datadir );
 
-  //test_invcov ( datadir );
+  test_invcov ( datadir );
 
   //test_tinyKLT ( datadir );
   

@@ -50,6 +50,8 @@ namespace harp { namespace fits {
   void bin_seek ( fitsfile * fp, int hdu );
   
   void bin_read ( fitsfile * fp, size_t firstrow, size_t lastrow, std::vector < int > & columns, std::vector < matrix_local > & data );
+
+  void bin_read_strings ( fitsfile * fp, size_t firstrow, size_t lastrow, int col, std::vector < std::string > & data );
   
   void bin_write ( fitsfile * fp, size_t firstrow, size_t lastrow, std::vector < int > & columns, std::vector < matrix_local > & data );
   
