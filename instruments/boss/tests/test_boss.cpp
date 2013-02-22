@@ -84,7 +84,7 @@ void harp::test_boss ( string const & datadir ) {
       outfile = datadir + "/boss_specter_sky.out";
 
       fout.open ( outfile.c_str(), ios::out );
-      for ( size_t i = 0; i < nlambda; ++i ) {
+      for ( size_t i = 0; i < nspec; ++i ) {
         fout << sky[i] << endl;
       }
       fout.close();

@@ -291,9 +291,9 @@ void harp::fits::img_dims ( fitsfile * fp, size_t & rows, size_t & cols ) {
   ret = fits_get_img_dim ( fp, &naxis, &status );
   fits::check ( status );
   
-  if ( naxis > 2 ) {
+  if ( (naxis > 2) || (naxis <= 0) ) {
     ostringstream o;
-    o << "FITS image has " << naxis << " dimensions instead of 2";
+    o << "FITS image has " << naxis << " dimensions instead of 1 or 2";
     HARP_THROW( o.str().c_str() );
   }
   
@@ -323,24 +323,32 @@ void harp::fits::img_read ( fitsfile * fp, matrix_local & data ) {
 
   ret = fits_get_img_dim ( fp, &naxis, &status );
   fits::check ( status );
-
-  cerr << "image has " << naxis << " dimensions" << endl;
-
-  if ( naxis <= 2 ) {
-    
-    long fpixel[2];
-
-    fpixel[0] = 1;
-    fpixel[1] = 1;
-
-    ret = fits_read_pix ( fp, TDOUBLE, fpixel, data.MemorySize(), NULL, data.Buffer(), &anynul, &status );
-    fits::check ( status );
   
-  } else {
-
-    HARP_THROW( "unsupported number of image dimensions" );
-
+  if ( (naxis > 2) || (naxis <= 0) ) {
+    ostringstream o;
+    o << "FITS image has " << naxis << " dimensions instead of 1 or 2";
+    HARP_THROW( o.str().c_str() );
   }
+  
+  long naxes[2];
+  
+  ret = fits_get_img_size ( fp, naxis, naxes, &status );
+  fits::check ( status );
+
+  long nelem = 1;
+  for ( int i = 0; i < naxis; ++i ) {
+    nelem *= naxes[i];
+  }
+
+  data.ResizeTo ( nelem, 1 );
+
+  long fpixel[2];
+
+  fpixel[0] = 1;
+  fpixel[1] = 1;
+
+  ret = fits_read_pix ( fp, TDOUBLE, fpixel, nelem, NULL, data.Buffer(), &anynul, &status );
+  fits::check ( status );
   
   return;
 }

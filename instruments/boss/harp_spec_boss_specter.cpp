@@ -38,17 +38,10 @@ harp::spec_boss_specter::spec_boss_specter ( boost::property_tree::ptree const &
       spechdu_ = fits::img_seek ( fp, "EXTNAME", "FLUX" );
     }
 
-    cerr << "spechdu = " << spechdu_ << endl;
-
     fits::img_dims ( fp, nspec_, nlambda_ );
-
-    cerr << "nspec = " << nspec_ << " nlambda = " << nlambda_ << endl;
 
     lambdahdu_ = fits::img_seek ( fp, "EXTNAME", "WAVELENGTH" );
     targethdu_ = fits::bin_seek ( fp, "EXTNAME", "TARGETINFO" );
-
-    cerr << "lambdahdu = " << lambdahdu_ << endl;
-    cerr << "targethdu = " << targethdu_ << endl;
 
     fits::close ( fp );
 
@@ -116,13 +109,10 @@ void harp::spec_boss_specter::read ( matrix_dist & data, std::vector < double > 
     fits::open_read ( fp, path_ );
     fits::img_seek ( fp, spechdu_ );   
     fits::img_read ( fp, iobuffer );
-    cerr << "spec data img read" << endl;
   }
 
   ret = MPI_Bcast ( (void*)(iobuffer.Buffer()), nglobal_, MPI_DOUBLE, 0, MPI_COMM_WORLD );
   mpi_check ( MPI_COMM_WORLD, ret );
-
-  cerr << "spec data bcast" << endl;
 
   // Each process sets its local elements of the distributed spectra
 
@@ -138,22 +128,14 @@ void harp::spec_boss_specter::read ( matrix_dist & data, std::vector < double > 
     data.SetLocal ( i, 0, iobuffer.Get ( row, 0 ) );
   }
 
-  cerr << "spec local data set" << endl;
-
   // read and broadcast the wavelength vector
 
   iobuffer.ResizeTo ( nlambda_, 1 );
 
-  cerr << "buffer resized" << endl;
-
   if ( myp == 0 ) {
     fits::img_seek ( fp, lambdahdu_ );
 
-    cerr << "seeked to lambda" << endl;
-
     fits::img_read ( fp, iobuffer );
-
-    cerr << "lambda read" << endl;
 
     for ( size_t w = 0; w < nlambda_; ++w ) {
       lambda[w] = iobuffer.Get ( w, 0 );
@@ -173,10 +155,6 @@ void harp::spec_boss_specter::read ( matrix_dist & data, std::vector < double > 
     vector < int > cols ( 1 );
     colnames[0] = "OBJTYPE";
     cols = fits::bin_columns ( fp, colnames );
-
-    cerr << "found OBJTYPE at column " << cols[0] << endl;
-
-    cerr << "reading rows 0 -- " << nspec_ - 1 << endl;
 
     vector < string > objnames;
     fits::bin_read_strings ( fp, 0, nspec_ - 1, cols[0], objnames );
