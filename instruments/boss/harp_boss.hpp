@@ -11,7 +11,7 @@ namespace harp {
 
       boost::property_tree::ptree serialize ( );
       
-      size_t nspectrum ( ) { return nspec_; }
+      size_t nspec ( ) { return nspec_; }
       size_t nlambda ( ) { return nlambda_; }
 
       void read ( matrix_dist & data, std::vector < double > & lambda, std::vector < bool > & sky );

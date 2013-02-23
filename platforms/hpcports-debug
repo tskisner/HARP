@@ -30,7 +30,7 @@ MPICC="${HPCP_MPICC}" \
 MPICXX="${HPCP_MPICXX}" \
 MPIF77="${HPCP_MPIF77}" \
 MPIFC="${HPCP_MPIFC}" \
-CXXFLAGS="-g -O0" \
+CXXFLAGS="-g -O0 -fPIC" \
 LDFLAGS="${HPCP_LDFLAGS}" \
 LIBS="${HPCP_LIBS}" \
 ./configure ${sharedopt} ${OPTS} \

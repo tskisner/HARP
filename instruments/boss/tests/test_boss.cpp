@@ -46,7 +46,7 @@ void harp::test_boss ( string const & datadir ) {
 
     spec_p testspec ( spec::create ( props ) );
 
-    size_t nspec = testspec->nspectrum();
+    size_t nspec = testspec->nspec();
     if ( nspec != 500 ) {
       cerr << "FAIL:  number of spectra (" << nspec << ") is not 500" << endl;
       exit(1);

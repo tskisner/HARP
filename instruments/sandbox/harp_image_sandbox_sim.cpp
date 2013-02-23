@@ -22,7 +22,7 @@ harp::image_sandbox_sim::image_sandbox_sim ( boost::property_tree::ptree const &
 
   spec_p child_spec ( spec::create ( spec_props_ ) );
 
-  size_t spec_nspec = child_spec->nspectrum();
+  size_t spec_nspec = child_spec->nspec();
   size_t spec_nlambda = child_spec->nlambda();
 
   psf_p child_psf ( psf::create ( psf_props_ ) );

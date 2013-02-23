@@ -20,7 +20,7 @@ static const char * sandbox_psf_key_name = "PSFPARAM";
 
 static const char * sandbox_psf_hdu_x = "X";
 static const char * sandbox_psf_hdu_y = "Y";
-static const char * sandbox_psf_hdu_lambda = "Wavelength";
+static const char * sandbox_psf_hdu_lambda = "LogLam";
 static const char * sandbox_psf_hdu_amp = "Amplitude";
 static const char * sandbox_psf_hdu_maj = "MajorAxis";
 static const char * sandbox_psf_hdu_min = "MinorAxis";
@@ -54,11 +54,19 @@ harp::psf_sandbox::psf_sandbox ( boost::property_tree::ptree const & props ) : p
     rows_ = nlambda_;
 
     // response fwhm
-    fake_psf_fwhm_ = 3.5;
+    fake_psf_fwhm_ = 1.0;
 
     // response correlation length in pixels
-    pixcorr_ = (int)( 5.0 * (double)fake_psf_fwhm_ );
+    pixcorr_ = (int)( 2.0 * (double)fake_psf_fwhm_ );
 
+    lambda_.resize ( nlambda_ );
+
+    double incr = (9808.0 - 7460.0) / (double)( nlambda_ - 1 );
+
+    for ( size_t i = 0; i < nlambda_; ++i ) {
+      lambda_[i] = 7460.0 + incr * (double)i;
+    }
+ 
   } else {
 
     path_ = props.get < string > ( sandbox_psf_key_path );
@@ -75,9 +83,9 @@ harp::psf_sandbox::psf_sandbox ( boost::property_tree::ptree const & props ) : p
     MPI_Comm_size ( MPI_COMM_WORLD, &np );
     MPI_Comm_rank ( MPI_COMM_WORLD, &myp );
 
+    fitsfile *fp;
+
     if ( myp == 0 ) {
-  
-      fitsfile *fp;
 
       fits::open_read ( fp, path_ );
 
@@ -91,18 +99,34 @@ harp::psf_sandbox::psf_sandbox ( boost::property_tree::ptree const & props ) : p
       hdus_[ sandbox_psf_hdu_maj ] = hdu_info ( fp, sandbox_psf_hdu_maj );
       hdus_[ sandbox_psf_hdu_min ] = hdu_info ( fp, sandbox_psf_hdu_min );
       hdus_[ sandbox_psf_hdu_ang ] = hdu_info ( fp, sandbox_psf_hdu_ang );
-      
-      fits::close ( fp );
 
     }
 
-    // broadcast 
+    // broadcast dims
 
     int ret = MPI_Bcast ( (void*)(&nspec_), 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
     mpi_check ( MPI_COMM_WORLD, ret );
 
     ret = MPI_Bcast ( (void*)(&nlambda_), 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
     mpi_check ( MPI_COMM_WORLD, ret );
+
+    lambda_.resize ( nlambda_ );
+
+    if ( myp == 0 ) {
+
+      matrix_local iobuffer ( nspec_, nlambda_ );
+      fits::img_seek ( fp, hdus_[ sandbox_psf_hdu_lambda ] );      
+      fits::img_read ( fp, iobuffer );
+
+      for ( size_t i = 0; i < nlambda_; ++i ) {
+        lambda_[i] = pow ( 10.0, iobuffer.Get ( 0, i ) );
+      }
+
+      fits::close ( fp );
+    }
+    
+    ret = MPI_Bcast ( (void*)(&(lambda_[0])), nlambda_, MPI_DOUBLE, 0, MPI_COMM_WORLD );
+    mpi_check ( MPI_COMM_WORLD, ret );    
 
   }
 

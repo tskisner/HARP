@@ -67,8 +67,8 @@ namespace harp {
 
       boost::property_tree::ptree serialize ( );
       
-      size_t nspectrum ( ) { return nspec_; }
-      size_t spectrum_size ( size_t spectrum ) { return nlambda_; }
+      size_t nspec ( ) { return nspec_; }
+      size_t nlambda ( ) { return nlambda_; }
 
       void read ( matrix_dist & data, std::vector < double > & lambda, std::vector < bool > & sky );
       void write ( std::string const & path, matrix_dist & data, std::vector < double > const & lambda, std::vector < bool > const & sky );
@@ -84,6 +84,8 @@ namespace harp {
       size_t atmspace_;
       size_t objspace_;
       size_t skymod_;
+      double first_lambda_;
+      double last_lambda_;
     
   };
   
@@ -110,6 +112,7 @@ namespace harp {
       size_t nlambda ( ) { return nlambda_; }
       size_t pixrows ( ) { return rows_; }
       size_t pixcols ( ) { return cols_; }
+      virtual std::vector < double > lambda ( ) { return lambda_; }
       void projection ( size_t first_lambda, size_t last_lambda, matrix_sparse & data );
       
     private :
@@ -143,6 +146,7 @@ namespace harp {
       size_t nglobal_;
       size_t npix_;
       size_t pixcorr_;
+      std::vector < double > lambda_;
       std::map < std::string, int > hdus_;
       std::map < size_t, psf_sandbox_resp > resp_;
       

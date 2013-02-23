@@ -10,6 +10,8 @@ static const char * format_sandbox = "sandbox";
 
 static const char * sandbox_spec_key_nspec = "nspec";
 static const char * sandbox_spec_key_nlambda = "nlambda";
+static const char * sandbox_spec_key_firstlambda = "first_lambda";
+static const char * sandbox_spec_key_lastlambda = "last_lambda";
 static const char * sandbox_spec_key_back = "back";
 static const char * sandbox_spec_key_atm = "atm";
 static const char * sandbox_spec_key_obj = "obj";
@@ -22,6 +24,10 @@ harp::spec_sandbox::spec_sandbox ( boost::property_tree::ptree const & props ) :
   nspec_ = props.get < size_t > ( sandbox_spec_key_nspec );
 
   nlambda_ = props.get < size_t > ( sandbox_spec_key_nlambda );
+
+  first_lambda_ = props.get < double > ( sandbox_spec_key_firstlambda );
+
+  last_lambda_ = props.get < double > ( sandbox_spec_key_lastlambda );  
 
   background_ = props.get < double > ( sandbox_spec_key_back );
 
@@ -64,8 +70,10 @@ void harp::spec_sandbox::read ( matrix_dist & data, std::vector < double > & lam
   lambda.resize ( nlambda_ );
   sky.resize ( nspec_ );
 
+  double incr = (last_lambda_ - first_lambda_) / (double)( nlambda_ - 1 );
+
   for ( size_t j = 0; j < nlambda_; ++j ) {
-    lambda[j] = 0.0;
+    lambda[j] = first_lambda_ + incr * (double)j;
   }
 
   size_t bin = 0;

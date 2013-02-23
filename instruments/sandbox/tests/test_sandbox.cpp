@@ -36,38 +36,66 @@ void harp::test_sandbox ( string const & datadir ) {
     cerr << "Testing sandbox fake PSF generation..." << endl;
   }
 
-  boost::property_tree::ptree props;
-  props.put ( "format", "sandbox" );
-  props.put ( "FAKE", "TRUE" );
+  // Create PSF
 
-  psf_p testpsf ( psf::create ( props ) );
+  boost::property_tree::ptree psf_props;
+  psf_props.put ( "format", "sandbox" );
+  psf_props.put ( "FAKE", "TRUE" );
+
+  psf_p testpsf ( psf::create ( psf_props ) );
 
   size_t npix = testpsf->pixrows() * testpsf->pixcols();
   size_t nspec = testpsf->nspec();
   size_t nlambda = testpsf->nlambda();
 
-  // do one slice of wavelength points
-  size_t nslice = 5;
+  vector < double > psf_lambda = testpsf->lambda();
 
-  size_t nbins = nspec * nslice;
+  size_t nbins = nspec * nlambda;
 
-  props.clear();
-  props.put ( "format", "sandbox" );
-  props.put ( "nspec", nspec );
-  props.put ( "nlambda", nslice );
-  props.put ( "back", 10.0 );
-  props.put ( "atm", 500.0 );
-  props.put ( "obj", 80.0 );
-  props.put ( "atmspace", 12 );
-  props.put ( "skymod", 25 );
-  spec_p testspec ( spec::create ( props ) );
+  boost::property_tree::ptree spec_props;
+  spec_props.clear();
+  spec_props.put ( "format", "sandbox" );
+  spec_props.put ( "nspec", nspec );
+  spec_props.put ( "nlambda", nlambda );
+  spec_props.put ( "first_lambda", psf_lambda[0] );
+  spec_props.put ( "last_lambda", psf_lambda[ nlambda - 1 ] );
+  spec_props.put ( "back", 10.0 );
+  spec_props.put ( "atm", 500.0 );
+  spec_props.put ( "obj", 80.0 );
+  spec_props.put ( "atmspace", 12 );
+  spec_props.put ( "skymod", 25 );
+  spec_p testspec ( spec::create ( spec_props ) );
 
   matrix_dist truth ( nbins, 1 );
   vector < double > lambda;
   vector < bool > sky;
+
   testspec->read( truth, lambda, sky );
 
   truth.Write("sndbx_truth");
+
+  boost::property_tree::ptree img_props;
+  img_props.put ( "format", "sandbox_sim" );
+  img_props.put_child ( "psf", psf_props );
+  img_props.put_child ( "spec", spec_props );
+
+  image_p testimg ( image::create ( img_props ) );
+
+  matrix_local measured ( npix, 1 );  
+  local_matrix_zero ( measured );
+
+  matrix_local invnoise ( npix, 1 );
+  local_matrix_zero ( invnoise );
+
+  testimg->read ( measured );
+  testimg->read_noise ( invnoise );
+
+
+  // generate design matrix and spectral subset for 
+  // one slice of wavelength points.
+
+  size_t nlambda_slice = 5;
+  size_t nbins_slice = nspec * nlambda_slice;
 
   matrix_sparse design;
 
@@ -75,11 +103,15 @@ void harp::test_sandbox ( string const & datadir ) {
   double tstop;
 
   tstart = MPI_Wtime();
-  testpsf->projection ( 0, nslice - 1, design );
+  testpsf->projection ( 0, nlambda_slice - 1, design );
   tstop = MPI_Wtime();
   if ( myp == 0 ) {
     cerr << "  Time for PSF creation = " << tstop-tstart << " seconds" << endl;
   }
+
+
+
+  /*
 
   matrix_local signal ( npix, 1 );
 
@@ -137,13 +169,15 @@ void harp::test_sandbox ( string const & datadir ) {
     fits::close ( fp );
   }
 
+  */
+
   if ( myp == 0 ) {
     cerr << "Testing sandbox inverse covariance calculation..." << endl;
   }
 
   elem::Grid grid ( elem::mpi::COMM_WORLD );
   
-  matrix_dist inv ( nbins, nbins, grid );
+  matrix_dist inv ( nbins_slice, nbins_slice, grid );
 
   tstart = MPI_Wtime();
   inverse_covariance ( design, invnoise, inv );
@@ -156,8 +190,8 @@ void harp::test_sandbox ( string const & datadir ) {
     cerr << "Testing sandbox inverse covariance eigendecomposition..." << endl;
   }
 
-  matrix_dist W ( nbins, nbins, grid );
-  matrix_dist D ( nbins, 1, grid );
+  matrix_dist W ( nbins_slice, nbins_slice, grid );
+  matrix_dist D ( nbins_slice, 1, grid );
 
   tstart = MPI_Wtime();
   eigen_decompose ( inv, D, W );
@@ -178,7 +212,7 @@ void harp::test_sandbox ( string const & datadir ) {
     cerr << "Testing sandbox resolution matrix..." << endl;
   }
 
-  matrix_dist S ( nbins, 1, grid );
+  matrix_dist S ( nbins_slice, 1, grid );
 
   tstart = MPI_Wtime();
   norm ( D, W, S );
@@ -195,8 +229,8 @@ void harp::test_sandbox ( string const & datadir ) {
     cerr << "Testing sandbox extraction..." << endl;
   }
 
-  matrix_dist z ( nbins, 1 );
-  matrix_dist Rf ( nbins, 1 );
+  matrix_dist z ( nbins_slice, 1 );
+  matrix_dist Rf ( nbins_slice, 1 );
 
   tstart = MPI_Wtime();
   noise_weighted_spec ( design, invnoise, measured, z );
@@ -220,8 +254,8 @@ void harp::test_sandbox ( string const & datadir ) {
   os << "sndbx_Rf_" << np;
   Rf.Write( os.str() );
 
-  matrix_dist Rtruth ( nbins, 1 );
-  matrix_dist R ( nbins, nbins, grid );
+  matrix_dist Rtruth ( nbins_slice, 1 );
+  matrix_dist R ( nbins_slice, nbins_slice, grid );
 
   tstart = MPI_Wtime();
   resolution ( D, W, S, R );
@@ -230,7 +264,34 @@ void harp::test_sandbox ( string const & datadir ) {
     cerr << "  Time for R matrix construction = " << tstop-tstart << " seconds" << endl;
   }
 
-  elem::Gemv ( elem::NORMAL, 1.0, R, truth, 0.0, Rtruth ); 
+  // (select truncated truth spectrum)
+
+  matrix_dist truth_slice ( nbins_slice, 1 );
+  dist_matrix_zero ( truth_slice );
+
+  /*
+
+  matrix_local truth_loc ( truth.Height(), 1 );
+  local_matrix_zero ( truth_loc );
+
+
+
+  matrix_local truth_slice_loc ( truth.Height(), 1 );
+  local_matrix_zero ( truth_slice_loc );
+
+  elem::AxpyInterface < double > globloc;
+  globloc.Attach( elem::GLOBAL_TO_LOCAL, truth );
+  globloc.Axpy ( 1.0, truth_loc, 0, 0 );
+  globloc.Detach();
+
+
+  elem::AxpyInterface < double > locglob;
+  locglob.Attach( elem::LOCAL_TO_GLOBAL, truth_slice );
+  locglob.Axpy ( 1.0, truth_slice_loc, 0, 0 );
+  locglob.Detach();
+  */
+
+  elem::Gemv ( elem::NORMAL, 1.0, R, truth_slice, 0.0, Rtruth ); 
 
   os.str("");
   os << "sndbx_Rtruth_" << np;
@@ -241,61 +302,63 @@ void harp::test_sandbox ( string const & datadir ) {
 
   matrix_local full;
 
+  fitsfile * fp;
+
   if ( myp == 0 ) {
     os.str("");
     os << "sndbx_results_" << np;
     fout.open ( os.str().c_str(), ios::out );
 
-    full.ResizeTo ( nbins, 1 );
+    full.ResizeTo ( nbins_slice, 1 );
     string outspec = datadir + "/sandbox_results.fits.out";
     fits::create ( fp, outspec );
   }
 
-  for ( size_t i = 0; i < nbins; ++i ) {
+  for ( size_t i = 0; i < nbins_slice; ++i ) {
     double dtemp = truth.Get(i,0);
     if ( myp == 0 ) {
       full.Set(i,0, dtemp);
     }
   }
   if ( myp == 0 ) {
-    fits::img_append ( fp, nspec, nslice );
+    fits::img_append ( fp, nspec, nlambda_slice );
     fits::img_write ( fp, full );
   }
 
-  for ( size_t i = 0; i < nbins; ++i ) {
+  for ( size_t i = 0; i < nbins_slice; ++i ) {
     double dtemp = Rtruth.Get(i,0);
     if ( myp == 0 ) {
       full.Set(i,0, dtemp);
     }
   }
   if ( myp == 0 ) {
-    fits::img_append ( fp, nspec, nslice );
+    fits::img_append ( fp, nspec, nlambda_slice );
     fits::img_write ( fp, full );
   }
 
-  for ( size_t i = 0; i < nbins; ++i ) {
+  for ( size_t i = 0; i < nbins_slice; ++i ) {
     double dtemp = Rf.Get(i,0);
     if ( myp == 0 ) {
       full.Set(i,0, dtemp);
     }
   }
   if ( myp == 0 ) {
-    fits::img_append ( fp, nspec, nslice );
+    fits::img_append ( fp, nspec, nlambda_slice );
     fits::img_write ( fp, full );
   }
 
-  for ( size_t i = 0; i < nbins; ++i ) {
+  for ( size_t i = 0; i < nbins_slice; ++i ) {
     double dtemp = inv.Get(i,i);
     if ( myp == 0 ) {
       full.Set(i,0, sqrt(1.0/dtemp));
     }
   }
   if ( myp == 0 ) {
-    fits::img_append ( fp, nspec, nslice );
+    fits::img_append ( fp, nspec, nlambda_slice );
     fits::img_write ( fp, full );
   }
 
-  for ( size_t i = 0; i < nbins; ++i ) {
+  for ( size_t i = 0; i < nbins_slice; ++i ) {
     double out_rf = Rf.Get(i,0);
     double out_rt = Rtruth.Get(i,0);
     double out_tr = truth.Get(i,0);
