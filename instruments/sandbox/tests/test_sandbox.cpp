@@ -269,27 +269,7 @@ void harp::test_sandbox ( string const & datadir ) {
   matrix_dist truth_slice ( nbins_slice, 1 );
   dist_matrix_zero ( truth_slice );
 
-  /*
-
-  matrix_local truth_loc ( truth.Height(), 1 );
-  local_matrix_zero ( truth_loc );
-
-
-
-  matrix_local truth_slice_loc ( truth.Height(), 1 );
-  local_matrix_zero ( truth_slice_loc );
-
-  elem::AxpyInterface < double > globloc;
-  globloc.Attach( elem::GLOBAL_TO_LOCAL, truth );
-  globloc.Axpy ( 1.0, truth_loc, 0, 0 );
-  globloc.Detach();
-
-
-  elem::AxpyInterface < double > locglob;
-  locglob.Attach( elem::LOCAL_TO_GLOBAL, truth_slice );
-  locglob.Axpy ( 1.0, truth_slice_loc, 0, 0 );
-  locglob.Detach();
-  */
+  sub_block ( truth, 0, 0, nbins_slice, 1, truth_slice );
 
   elem::Gemv ( elem::NORMAL, 1.0, R, truth_slice, 0.0, Rtruth ); 
 

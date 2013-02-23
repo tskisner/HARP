@@ -83,6 +83,7 @@ namespace harp {
 
 
 #include <harp/fits.hpp>
+#include <harp/matrix.hpp>
 
 #include <harp/image.hpp>
 #include <harp/spec.hpp>
