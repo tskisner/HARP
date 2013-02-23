@@ -15,7 +15,7 @@ static const char * sandbox_image_key_rows = "rows";
 static const char * sandbox_image_key_cols = "cols";
 
 
-harp::image_sandbox::image_sandbox ( boost::property_tree::ptree const & props ) : image ( format_sandbox, props ) {
+harp::image_sandbox::image_sandbox ( boost::property_tree::ptree const & props ) : image ( props ) {
 
   sighdu_ = props.get ( sandbox_image_key_signal, 1 );
 

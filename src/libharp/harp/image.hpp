@@ -10,7 +10,7 @@ namespace harp {
   class image : public boost::enable_shared_from_this < image > {
     
     public :
-      image ( std::string const & format, boost::property_tree::ptree const & props );
+      image ( boost::property_tree::ptree const & props );
       virtual ~image ( ) { }
       void cleanup ( );
 
@@ -27,7 +27,7 @@ namespace harp {
 
       std::string format ( );
       
-      static image * create ( std::string const & format, boost::property_tree::ptree const & props );
+      static image * create ( boost::property_tree::ptree const & props );
       
       image * clone ( );
       

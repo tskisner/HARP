@@ -29,7 +29,7 @@ static const char * sandbox_psf_hdu_ang = "Angle";
 static const char * sandbox_psf_key_fake = "FAKE";
 
 
-harp::psf_sandbox::psf_sandbox ( boost::property_tree::ptree const & props ) : psf ( format_sandbox, props ) {
+harp::psf_sandbox::psf_sandbox ( boost::property_tree::ptree const & props ) : psf ( props ) {
 
   boost::optional < string > fakeval = props.get_optional < string > ( sandbox_psf_key_fake );
   string fake = boost::get_optional_value_or ( fakeval, "FALSE" );

@@ -9,7 +9,7 @@ namespace harp {
   class spec : public boost::enable_shared_from_this < spec > {
     
     public :
-      spec ( std::string const & format, boost::property_tree::ptree const & props );
+      spec ( boost::property_tree::ptree const & props );
       virtual ~spec ( ) { }
       void cleanup ( );
 
@@ -19,12 +19,12 @@ namespace harp {
       virtual size_t nlambda ( ) { return 0; }
 
       virtual void read ( matrix_dist & data, std::vector < double > & lambda, std::vector < bool > & sky ) { return; }
-      
+
       virtual void write ( std::string const & path, matrix_dist & data, std::vector < double > const & lambda, std::vector < bool > const & sky ) { return; }
 
       std::string format ( );
       
-      static spec * create ( std::string const & format, boost::property_tree::ptree const & props );
+      static spec * create ( boost::property_tree::ptree const & props );
       
       spec * clone ( );
       

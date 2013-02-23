@@ -12,7 +12,7 @@ static const char * boss_specter_key_path = "path";
 static const char * boss_specter_key_objonly = "objonly";
 
 
-harp::spec_boss_specter::spec_boss_specter ( boost::property_tree::ptree const & props ) : spec ( format_boss_specter, props ) {
+harp::spec_boss_specter::spec_boss_specter ( boost::property_tree::ptree const & props ) : spec ( props ) {
 
   path_ = props.get < string > ( boss_specter_key_path );
 

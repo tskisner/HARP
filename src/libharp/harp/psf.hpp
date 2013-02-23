@@ -9,7 +9,7 @@ namespace harp {
   class psf : public boost::enable_shared_from_this < psf > {
     
     public :
-      psf ( std::string const & format, boost::property_tree::ptree const & props );
+      psf ( boost::property_tree::ptree const & props );
       virtual ~psf ( ) { }
       void cleanup ( );
 
@@ -29,7 +29,7 @@ namespace harp {
       
       std::string format ( );
       
-      static psf * create ( std::string const & format, boost::property_tree::ptree const & props );
+      static psf * create ( boost::property_tree::ptree const & props );
       
       psf * clone ( );
       

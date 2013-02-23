@@ -17,7 +17,7 @@ static const char * sandbox_spec_key_atmspace = "atmspace";
 static const char * sandbox_spec_key_skymod = "skymod";
 
 
-harp::spec_sandbox::spec_sandbox ( boost::property_tree::ptree const & props ) : spec ( format_sandbox, props ) {
+harp::spec_sandbox::spec_sandbox ( boost::property_tree::ptree const & props ) : spec ( props ) {
   
   nspec_ = props.get < size_t > ( sandbox_spec_key_nspec );
 

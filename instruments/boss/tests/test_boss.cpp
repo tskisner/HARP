@@ -41,9 +41,10 @@ void harp::test_boss ( string const & datadir ) {
     }
 
     boost::property_tree::ptree props;
+    props.put ( "format", "boss_specter" );
     props.put ( "path", filepath );
 
-    spec_p testspec ( spec::create ( "boss_specter", props ) );
+    spec_p testspec ( spec::create ( props ) );
 
     size_t nspec = testspec->nspectrum();
     if ( nspec != 500 ) {

@@ -7,9 +7,9 @@ using namespace std;
 using namespace harp;
 
 
-harp::psf::psf ( string const & format, boost::property_tree::ptree const & props ) {
-  format_ = format;
+harp::psf::psf ( boost::property_tree::ptree const & props ) {
   props_ = props;
+  format_ = props.get < string > ( "format" );
 }
 
 
@@ -25,12 +25,14 @@ string harp::psf::format ( ) {
 
 
 psf * harp::psf::clone ( ) {
-  return create ( format_, props_ );
+  return create ( props_ );
 }
 
 
-psf * harp::psf::create ( std::string const & format, boost::property_tree::ptree const & props ) {
+psf * harp::psf::create ( boost::property_tree::ptree const & props ) {
   
+  string format = props.get < string > ( "format" );
+
   #include "harp_psf_formats.cpp"
   
   std::ostringstream o;

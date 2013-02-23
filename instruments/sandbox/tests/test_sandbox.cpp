@@ -37,9 +37,10 @@ void harp::test_sandbox ( string const & datadir ) {
   }
 
   boost::property_tree::ptree props;
+  props.put ( "format", "sandbox" );
   props.put ( "FAKE", "TRUE" );
 
-  psf_p testpsf ( psf::create ( "sandbox", props ) );
+  psf_p testpsf ( psf::create ( props ) );
 
   size_t npix = testpsf->pixrows() * testpsf->pixcols();
   size_t nspec = testpsf->nspec();
@@ -51,6 +52,7 @@ void harp::test_sandbox ( string const & datadir ) {
   size_t nbins = nspec * nslice;
 
   props.clear();
+  props.put ( "format", "sandbox" );
   props.put ( "nspec", nspec );
   props.put ( "nlambda", nslice );
   props.put ( "back", 10.0 );
@@ -58,7 +60,7 @@ void harp::test_sandbox ( string const & datadir ) {
   props.put ( "obj", 80.0 );
   props.put ( "atmspace", 12 );
   props.put ( "skymod", 25 );
-  spec_p testspec ( spec::create ( "sandbox", props ) );
+  spec_p testspec ( spec::create ( props ) );
 
   matrix_dist truth ( nbins, 1 );
   vector < double > lambda;
