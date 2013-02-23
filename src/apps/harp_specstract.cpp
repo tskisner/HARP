@@ -19,17 +19,29 @@ namespace popts = boost::program_options;
 
 int main ( int argc, char *argv[] ) {
 
-  MPI_Init ( &argc, &argv );
-  elem::Initialize( argc, argv );
-  
+  cliq::Initialize( argc, argv );
+
+  int np;
+  int myp;
+  int ret;
+
+  MPI_Comm_size ( MPI_COMM_WORLD, &np );
+  MPI_Comm_rank ( MPI_COMM_WORLD, &myp );
+
+  double tstart;
+  double tstop;
+
   cout.precision ( 16 );
   cerr.precision ( 16 );
+
+  size_t lambda_width = 3;
+  size_t lambda_overlap = 1;
   
   string jsonconf = "";
+
+  string prefix = "harp:  ";
   
   bool quiet = false;
-  
-  int threads;
   
   
   // Declare options
@@ -39,276 +51,234 @@ int main ( int argc, char *argv[] ) {
   desc.add_options()
   ( "help,h", "Display usage information" )
   ( "quiet,q", "supress information printing" )
-  ;
-  
-  popts::options_description hidden;
-  hidden.add_options()
-  ("positional", popts::value < vector < string > >(&jsonconf))
+  ( "lambda_width", popts::value < size_t > ( &lambda_width ), "maximum wavelength points to process simultaneously" )
+  ( "lambda_overlap", popts::value < size_t > ( &lambda_overlap ), "minimum wavelength points to overlap" )
+  ( "conf", popts::value<string>(&jsonconf), "JSON configuration file" )
   ;
 
-  popts::options_description all_options;
-  all_options.add(desc).add(hidden);
+  popts::variables_map vm;
   
   popts::positional_options_description posargs;
-  posargs.add("positional", -1);
-  
-  popts::variables_map vm;
+  posargs.add("conf", -1);
 
-  popts::store(popts::command_line_parser(argc, argv).options(all_options).positional(posargs).run(), vm);
+  popts::store(popts::command_line_parser( argc, argv ).options(desc).positional(posargs).run(), vm);
+  
   popts::notify(vm);
 
-
-  if ( ( argc < 2 ) || vm.count( "help" ) ) {
+  if ( ( argc < 2 ) || vm.count( "help" ) || ( ! vm.count( "conf" ) ) ) {
     cerr << endl;
     cerr << desc << endl;
-    cerr << "  <JSON configuration file>" << endl << endl; 
+    cliq::Finalize();
     return 0;
   }
-  
-  if ( vm.count( "positional" ) ) {
-    jsonconf = vm["positional"].as < vector < string > > ();
-  } else {
-    cerr << "you must specify the JSON configuration file" << endl;
-    return 0;
+
+  if ( 2 * lambda_overlap > lambda_width ) {
+    cerr << prefix << "wavelength overlap is more than half the wavelength band!" << endl;
+    ret = MPI_Abort ( MPI_COMM_WORLD, 1 );
   }
+
+  size_t lambda_core = lambda_width - 2 * lambda_overlap;
   
   if ( vm.count( "quiet" ) ) {
     quiet = true;
-    harp_specstract_quiet = true;
   }
   
-  
-  if ( ! quiet ) {
+  boost::property_tree::ptree conf;
 
-
-  }
-  
-  #ifdef _OPENMP
-    threads = omp_get_max_threads();
-  #else
-    threads = 1;
-  #endif
-  
-  
-  
-  size_t nimages = imagefiles.size();
-  
-  vector < harp_image_props > images ( nimages );
-  
-  
-  if ( ! quiet ) {
-    cout << "harp_specstract:  Reading input PSF properties...              ";
-  }
-  
-  string psftype;
-  map < string, string > psfparams;
-  
-  if ( psfformat == "" ) {
-    psftype = "boss";
-  } else {
-    parse_format ( psfformat, psftype, psfparams );
-  }
-  psfparams[ "path" ] = psffile;
-  
-  psf_p resp ( psf::create ( psftype, psfparams ) );
-  
-  size_t nspec = resp->nspec();
-  size_t specbins = resp->specsize(0);
-  size_t nbins = nspec * specbins;
-  
-  if ( ! quiet ) {
-    cout << "DONE" << endl;
+  if ( ( myp == 0 ) && ( ! quiet ) ) {
+    cout << prefix << "Loading JSON config file..." << endl;
   }
 
+  boost::property_tree::json_parser::read_json ( jsonconf, conf );
   
-  if ( ! quiet ) {
-    cout << "harp_specstract:  Reading input image properties...            ";
+  if ( ( myp == 0 ) && ( ! quiet ) ) {
+    cout << prefix << "Reading input image..." << endl;
   }
 
-  string imagetype;
-  map < string, string > imageparams;
-  parse_format ( imageformat, imagetype, imageparams );
+  tstart = MPI_Wtime();
   
-  for ( size_t i = 0; i < nimages; ++i ) {
-    images[i].format = imageformat;
-    images[i].type = imagetype;
-    images[i].params = imageparams;
-    
-    images[i].path = imagefiles[i];
-    
-    images[i].params[ "path" ] = images[i].path;
-    
-    images[i].handle = image_p ( image::create ( images[i].type, images[i].params ) );
-    
-    images[i].rows = images[i].handle->rows();
-    images[i].cols = images[i].handle->cols();
-    images[i].npix = images[i].rows * images[i].cols;
-  }
-  
-  if ( ! quiet ) {
-    cout << "DONE" << endl;
-  }
-  
-  
-  if ( ! quiet ) {
-    cout << "harp_specstract:  Reading input image and noise covariance...  ";
-    prof->start ( "HARP_READ" );
+  boost::property_tree::ptree img_props;
+  img_props = conf.get_child ( "image" );
+
+  image_p img ( image::create ( img_props ) );
+
+  size_t imgrows = img->rows();
+  size_t imgcols = img->cols();
+  size_t npix = imgrows * imgcols;
+
+  matrix_local measured ( npix, 1 );  
+  local_matrix_zero ( measured );
+
+  matrix_local invnoise ( npix, 1 );
+  local_matrix_zero ( invnoise );
+
+  img->read ( measured );
+  img->read_noise ( invnoise );
+
+  tstop = MPI_Wtime();
+
+  if ( ( myp == 0 ) && ( ! quiet ) ) {
+    cout << prefix << "  time = " << tstop-tstart << " seconds" << endl;
+    cout << prefix << "  dimensions = " << imgrows << " x " << imgcols << endl;
+    cout << prefix << "Creating PSF..." << endl;
   }
 
-  // FIXME:  for now, use only the first image
-  /*
-  data_vec imgdata ( images[0].npix );
-  data_vec_view imgdataview ( imgdata, mv_range ( 0, images[0].npix ) );
-  
-  data_vec imgnoise ( images[0].npix );
-  data_vec_view imgnoiseview ( imgnoise, mv_range ( 0, images[0].npix ) );
-  
-  images[0].handle->read ( imgdataview );
-  images[0].handle->read_noise ( imgnoiseview );
-  */
-  
-  if ( ! quiet ) {
-    prof->stop ( "HARP_READ" );
-    cout << "DONE" << endl;
+  tstart = MPI_Wtime();
+
+  boost::property_tree::ptree psf_props;
+  psf_props = conf.get_child ( "psf" );
+
+  psf_p epsf ( psf::create ( psf_props ) );
+
+  size_t psf_imgrows = epsf->pixrows();
+  size_t psf_imgcols = epsf->pixcols();
+  size_t psf_npix = psf_imgrows * psf_imgcols;
+
+  if ( psf_npix != npix ) {
+    cerr << prefix << "PSF image dimensions (" << psf_imgrows << " x " << psf_imgcols << ") do not match image size" << endl;
+    ret = MPI_Abort ( MPI_COMM_WORLD, 1 );
   }
-  
-  
-  if ( ! quiet ) {
-    cout << "harp_specstract:  Computing PSF...                             ";
+
+  size_t nspec = epsf->nspec();
+  size_t nlambda = epsf->nlambda();
+
+  vector < double > lambda = epsf->lambda();
+
+  size_t nbins = nspec * nlambda;
+
+  tstop = MPI_Wtime();
+
+  if ( ( myp == 0 ) && ( ! quiet ) ) {
+    cout << prefix << "  time = " << tstop-tstart << " seconds" << endl;
+    cout << prefix << "  image dimensions = " << psf_imgrows << " x " << psf_imgcols << endl;
+    cout << prefix << "  " << nspec << " spectra with " << nlambda << " wavelength points each:" << endl;
+    cout << prefix << "  lambda = " << lambda[0] << " ... " << lambda[nlambda - 1] << endl;
+
+    cout << prefix << "Processing " << lambda_width << " wavelength points with overlap of " << lambda_overlap << " :" << endl;
   }
-  
-  // FIXME:  probably we will have pairs of images and PSFs...
-  
-  /*
-  comp_rowmat projmat ( images[0].npix, nbins );
-  
-  if ( quiet ) {
-    resp->projection ( string(""), string(""), 0, nspec - 1, 0, specbins - 1, 0, images[0].cols - 1, 0, images[0].rows - 1, projmat );
-  } else {
-    resp->projection ( string("HARP_PSF"), string("HARP_REMAP"), 0, nspec - 1, 0, specbins - 1, 0, images[0].cols - 1, 0, images[0].rows - 1, projmat );
+
+  vector < size_t > band_start;
+  vector < size_t > band_stop;
+
+  size_t offset = 0;
+
+  while ( offset + lambda_width < nlambda ) {
+    band_start.push_back( offset );
+    band_stop.push_back( offset + lambda_width );
+    offset += lambda_core;
   }
-  
-  if ( ! quiet ) {
-    cout << "DONE" << endl;
+
+  if ( offset < nlambda ) {
+    band_start.push_back( offset );
+    band_stop.push_back( nlambda - 1 );
   }
-  */
-  
-  comp_rowmat projmat ( 4114 * 4128, 1 );
-  
-  resp->projection ( string("HARP_PSF"), string("HARP_REMAP"), 10, 10, 20, 20, 0, 4114 - 1, 0, 4128 - 1, projmat );
-  
-  exit(0);
-  
-  /*
-  
-  if ( ! quiet ) {
-    cout << "harp_specstract:  Computing preconditioner...                  ";
-    prof->start ( "HARP_PRECOND" );
-  }
-  
-  data_vec outspec ( nbins );
-  int_vec flags ( nbins );
-  
-  for ( size_t b = 0; b < nbins; ++b ) {
-    flags[b] = 0;
-    outspec[b] = 0.0;
-  }
-  
-  comp_rowmat invnoise ( images[0].npix, images[0].npix );
-  data_vec precdata ( nbins );
-  
-  for ( size_t i = 0; i < images[0].npix; ++i ) {
-    invnoise( i, i ) = imgnoise[i];
-  }
-  
-  for ( size_t i = 0; i < nbins; ++i ) {
-    precdata[i] = 0.0;
-    for ( size_t j = 0; j < images[0].npix; ++j ) {
-      precdata[i] += projmat( j, i ) * projmat( j, i ) * invnoise( j, j );
+
+  size_t nband = band_start.size();
+
+  matrix_dist fullRf ( nbins, 1 );
+  matrix_dist fullcov ( nbins, 1 );
+
+  for ( size_t band = 0; band < nband; ++band ) {
+
+    if ( ( myp == 0 ) && ( ! quiet ) ) {
+      cout << prefix << "  Wavelength band " << band << "/" << nband << " (" << band_start[band] << " - " << band_stop[band] << endl;
     }
-  }
-  
-  for ( size_t i = 0; i < nbins; ++i ) {
-    precdata[i] = 1.0 / precdata[i];
-  }
-  
-  if ( ! quiet ) {
-    cout << "DONE" << endl;
-    prof->stop ( "HARP_PRECOND" );
-  }
-  
 
-  if ( ! quiet ) {
-    cout << "harp_specstract:  Solving PCG..." << endl;
-  }
-  
-  data_vec rhs ( nbins );
-  data_vec q ( nbins );
-  data_vec r ( nbins );
-  data_vec s ( nbins );
-  data_vec d ( nbins );
-  
-  double err;
-  
-  if ( quiet ) {
-    err = moat::la::pcg_mle < comp_rowmat, comp_rowmat, data_vec, int_vec > ( true, true, projmat, invnoise, imgdata, outspec, q, r, s, d, flags, rhs, 100, 1.0e-12, harp_specstract_prec, (void*)&precdata, harp_specstract_report, "", "", "", "", "" );
-  } else {
-    err = moat::la::pcg_mle < comp_rowmat, comp_rowmat, data_vec, int_vec > ( true, true, projmat, invnoise, imgdata, outspec, q, r, s, d, flags, rhs, 100, 1.0e-12, harp_specstract_prec, (void*)&precdata, harp_specstract_report, "HARP_PCG_TOT", "HARP_PCG_VEC", "HARP_PCG_PMV", "HARP_PCG_NMV", "HARP_PCG_PREC" );
-  }
-  
-  
-  if ( ! quiet ) {
-    cout << "harp_specstract:  Writing output solved spectra...             ";
-    prof->start ( "HARP_WRITE" );
-  }
-  
-  string rmcom = "rm -f " + outfile;
-  
-  system( rmcom.c_str() );
-  
-  map < string, string > specparams;
-  specparams[ "hdu" ] = "1";
-  specparams[ "nspec" ] = nspec;
-  specparams[ "specsize" ] = specbins;
-  
-  spec_p solvespec ( spec::create ( string("boss"), specparams ) );
-  data_vec_view solvespecview ( outspec, mv_range ( 0, nspec * specbins ) );
-  
-  solvespec->write ( outfile, solvespecview );
-  
-  if ( ! quiet ) {
-    cout << "DONE" << endl;
-    prof->stop ( "HARP_WRITE" );
-  }
+    tstart = MPI_Wtime();
 
-  if ( ! quiet ) {
+    double tsubstart = tstart;
+    double tsubstop;
+
+    size_t bandsize = band_stop[ band ] - band_start[ band ] + 1;
+
+    size_t nbins_band = nspec * bandsize;
+
+    matrix_sparse design;
+
+    epsf->projection ( band_start[ band ], band_stop[ band ], design );
+
+    tsubstop = MPI_Wtime();
+
+    if ( ( myp == 0 ) && ( ! quiet ) ) {
+      cout << prefix << "    computing A^T = " << tsubstop-tsubstart << " seconds" << endl;
+    }
+
+    tsubstart = MPI_Wtime();
+
+    elem::Grid grid ( elem::mpi::COMM_WORLD );
     
-    cout << "harp_specstract:  Profiling information:" << endl;
-    
-    prof->stop_all();
-    
-    prof->query ( harp_specstract_profile );
+    matrix_dist inv ( nbins_band, nbins_band, grid );
 
-    prof->unreg ( "HARP_PSF" );
-    prof->unreg ( "HARP_REMAP" );
-    prof->unreg ( "HARP_PRECOND" );
-    prof->unreg ( "HARP_READ" );
-    prof->unreg ( "HARP_WRITE" );
+    inverse_covariance ( design, invnoise, inv );
 
-    prof->unreg ( "HARP_PCG_PREC" );
-    prof->unreg ( "HARP_PCG_PMV" );
-    prof->unreg ( "HARP_PCG_NMV" );
-    prof->unreg ( "HARP_PCG_VEC" );
-    prof->unreg ( "HARP_PCG_TOT" );
+    tsubstop = MPI_Wtime();
+
+    if ( ( myp == 0 ) && ( ! quiet ) ) {
+      cout << prefix << "    building inverse covariance = " << tsubstop-tsubstart << " seconds" << endl;
+    }
+
+    tsubstart = MPI_Wtime();
+
+    matrix_dist W ( nbins_band, nbins_band, grid );
     
+    matrix_dist D ( nbins_band, 1, grid );
+
+    eigen_decompose ( inv, D, W );
+
+    tsubstop = MPI_Wtime();
+
+    if ( ( myp == 0 ) && ( ! quiet ) ) {
+      cout << prefix << "    eigendecompose inverse covariance = " << tsubstop-tsubstart << " seconds" << endl;
+    }
+
+    tsubstart = MPI_Wtime();
+
+    matrix_dist S ( nbins_band, 1, grid );
+
+    norm ( D, W, S );
+
+    tsubstop = MPI_Wtime();
+
+    if ( ( myp == 0 ) && ( ! quiet ) ) {
+      cout << prefix << "    compute matrix column norm = " << tsubstop-tsubstart << " seconds" << endl;
+    }
+
+    tsubstart = MPI_Wtime();
+
+    matrix_dist z ( nbins_band, 1 );
+  
+    matrix_dist Rf ( nbins_band, 1 );
+
+    noise_weighted_spec ( design, invnoise, measured, z );
+
+    tsubstop = MPI_Wtime();
+
+    if ( ( myp == 0 ) && ( ! quiet ) ) {
+      cout << prefix << "    compute noise weighted spec = " << tsubstop-tsubstart << " seconds" << endl;
+    }
+
+    tsubstart = MPI_Wtime();
+  
+    extract ( D, W, S, z, Rf );
+
+    // FIXME: stitch together into full Rf and covariance. check for agreement within some overlap.
+
+
+
+  
+    tsubstop = MPI_Wtime();
+
+    tstop = tsubstop;
+
+    if ( ( myp == 0 ) && ( ! quiet ) ) {
+      cout << prefix << "    extraction = " << tsubstop-tsubstart << " seconds" << endl;
+      cout << prefix << "    total band time = " << tstop-tstart << " seconds" << endl;
+    }
+
   }
-  */
-  
-  fftw_cleanup_threads();
 
-  elem::Finalize();
-  MPI_Finalize ();
-  
+  cliq::Finalize();
+
   return 0;
 }
 
