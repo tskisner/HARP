@@ -14,7 +14,9 @@ namespace harp {
 
   void resolution ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_dist & R );
 
-  void extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_dist & z, matrix_dist & f );
+  void extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_dist & z, matrix_dist & f, matrix_dist & err );
+
+  void sky_design ( matrix_sparse const & AT, std::vector < bool > const & sky, matrix_sparse & skyAT );
 
 
 }

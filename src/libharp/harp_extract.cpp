@@ -449,145 +449,305 @@ void harp::resolution ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matri
 }
 
 
-void harp::extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_dist & z, matrix_dist & f ) {
+void harp::extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_dist & z, matrix_dist & f, matrix_dist & err ) {
 
   dist_matrix_zero ( f );
+  dist_matrix_zero ( err );
 
   // compose ( W^T D^{-1/2} W )
 
-  matrix_dist rtC ( W );
-  dist_matrix_zero ( rtC );
+  matrix_dist RC ( W );
+  dist_matrix_zero ( RC );
 
-  eigen_compose ( EIG_INVSQRT, D, W, rtC );
+  eigen_compose ( EIG_INVSQRT, D, W, RC );
 
-  // multiply C^{1/2} * z
+  // normalize to get R * C
 
-  elem::Symv ( elem::LOWER, 1.0, rtC, z, 0.0, f ); 
+  apply_norm ( S, RC );
 
-  // multiply S^-1 * vtemp
+  // set local err matrix copy
 
-  apply_norm ( S, f );
+  matrix_local err_loc ( err.Height(), 1 );
 
-  return;
-}
+  matrix_local & rc_loc = RC.LocalMatrix();
 
+  int hlocal = RC.LocalHeight();
+  int wlocal = RC.LocalWidth();
 
-// Append columns to the design matrix to solve for a coefficient for the sky component
+  int rowoff = RC.ColShift();
+  int rowstride = RC.ColStride();
+  int row;
 
-/*
-void harp::sky_append ( matrix_sparse const & psf, size_t nspec, size_t specsize, matrix_local & skyspec, matrix_sparse & fullpsf ) {
+  int coloff = RC.RowShift();
+  int colstride = RC.RowStride();
+  int col;
 
-  size_t nbins_orig = psf.Height();
-  size_t npix = psf.Width();
+  double mval;
 
-  size_t nbins = nbins_orig + nspec;
-
-  fullpsf.ResizeTo ( nbins, npix );
-
-  
-
-
-
-  z.ResizeTo ( nbins, 1 );
-  dist_matrix_zero ( z );
-
-  // apply noise covariance to image
-
-  matrix_local weight ( npix, 1 );
-  for ( size_t i = 0; i < npix; ++i ) {
-    weight.Set ( i, 0, invnoise.Get(i,0) * img.Get(i,0) );
+  for ( int i = 0; i < wlocal; ++i ) {
+    for ( int j = 0; j < hlocal; ++j ) {
+      row = rowoff + j * rowstride;
+      col = coloff + i * colstride;
+      if ( row == col ) {
+        err_loc.Set ( row, 0, sqrt ( rc_loc.Get ( j, i ) ) );
+      }
+    }
   }
 
-  // accumulate local pieces of z
-
-  size_t first_loc_row = psf.FirstLocalRow();
-  size_t loc_height = psf.LocalHeight();
-  size_t loc_entries = psf.NumLocalEntries();
-
-  matrix_local local_z ( loc_height, 1 );
-  local_matrix_zero ( local_z );
-
-  double val;
-  double zval;
-  size_t row;
-  size_t nnz;
-  size_t col;
-
-  for ( size_t loc = 0; loc < loc_entries; ++loc ) {
-    row = psf.Row ( loc );
-    col = psf.Col ( loc );
-    val = psf.Value ( loc );
-    zval = local_z.Get ( row - first_loc_row, 0 );
-    local_z.Set ( row - first_loc_row, 0, zval + val * weight.Get( col, 0 ) );
-  }
+  // reduce local error vector to global one.  There should be no overlap
+  // of non-zero elements, since each diagonal value is owned by one process.
 
   elem::AxpyInterface < double > locglob;
-  locglob.Attach( elem::LOCAL_TO_GLOBAL, z );
-  locglob.Axpy ( 1.0, local_z, first_loc_row, 0 );
+  locglob.Attach( elem::LOCAL_TO_GLOBAL, err );
+  locglob.Axpy ( 1.0, err_loc, 0, 0 );
   locglob.Detach();
+
+  // multiply R * C * z
+
+  elem::Symv ( elem::LOWER, 1.0, RC, z, 0.0, f ); 
 
   return;
 }
-*/
-
-/*
-
-  template < class P, class S, class R >
-  void append_sky_comp ( boost::numeric::ublas::matrix_expression < P > const & psf, boost::numeric::ublas::matrix_expression < S > const & sky, size_t nspec, boost::numeric::ublas::matrix_expression < R > & output ) {
-
-    typedef boost::numeric::ublas::matrix_range < R > R_view;
 
 
-    // verify that length of sky components equals number of columns in design matrix
+// Produce a design matrix suitable for simultaneous extraction
+// and sky subtraction
 
-    size_t npix = psf().size1();
-    size_t nbins = psf().size2();
-    size_t ncomp = sky().size1();
-    size_t nspecbins = (size_t) ( nbins / nspec );
+void harp::sky_design ( matrix_sparse const & AT, std::vector < bool > const & sky, matrix_sparse & skyAT ) {
 
-    if ( sky().size2() != nspecbins ) {
-      std::ostringstream o;
-      o << "number of columns in sky component matrix (" << sky().size2() << ") does not match number of bins per spectrum in PSF (" << nspecbins << ")";
-      MOAT_THROW( o.str().c_str() );
+  size_t nbins = AT.Height();
+  size_t npix = AT.Width();
+  size_t nspec = sky.size();
+
+  size_t nsky = 0;
+  for ( size_t i = 0; i < nspec; ++i ) {
+    if ( sky[i] ) {
+      ++nsky;
+    }
+  }
+
+  size_t nlambda = (size_t)( nbins / nspec );
+
+  if ( nspec * nlambda != nbins ) {
+    std::ostringstream o;
+    o << "sky vector size (" << nspec << ") does not divide evenly into PSF spectral dimension (" << nbins << ")";
+    HARP_THROW( o.str().c_str() );
+  }
+
+  size_t sky_nspec = nspec - nsky + 1;
+  size_t sky_nbins = sky_nspec * nlambda;
+
+  // build the full mapping of old bins to new bins
+
+  vector < size_t > old_to_new ( nbins );
+
+  size_t skystart = (nspec - nsky) * nlambda;
+  size_t newoff = 0;
+  size_t oldoff = 0;
+
+  for ( size_t i = 0; i < nspec; ++i ) {
+    if ( sky[i] ) {
+      for ( size_t j = 0; j < nlambda; ++j ) {
+        old_to_new[ oldoff ] = skystart + j;
+        ++oldoff;
+      }
+    } else {
+      for ( size_t j = 0; j < nlambda; ++j ) {
+        old_to_new[ oldoff ] = newoff;
+        ++oldoff;
+        ++newoff;
+      }
+    }
+  }
+
+  // set up new design matrix and get our local range
+
+  skyAT.ResizeTo ( sky_nbins, npix );
+
+  size_t sky_firstrow = skyAT.FirstLocalRow();
+  size_t sky_rows = skyAT.LocalHeight();
+
+  size_t firstrow = AT.FirstLocalRow();
+  size_t rows = AT.LocalHeight();
+
+  /*
+
+  // accumulate our local block of the original design matrix.  Since we do not
+  // know a priori how many non-zeroes we will have
+
+  skyAT.StartAssembly();
+
+  // compute number of updates and reserve more space if needed
+
+  size_t updates = 0;
+  for ( size_t i = 0; i < rows; ++i ) {
+
+  }
+
+
+
+  // In order to build up the new matrix, send our data to the previous rank process
+  // and receive from the next rank process.  Repeat this (number of process times)
+  // to guarantee that all rows have been filled in.  
+
+  int nshift = np - 1;
+
+  int to_proc;
+  if ( myp > 0 ) {
+    to_proc = myp - 1;
+  } else {
+    to_proc = np - 1;
+  }
+
+  int from_proc;
+  if ( myp == np - 1 ) {
+    from_proc = 0;
+  } else {
+    from_proc = myp + 1;
+  }
+
+  char * sendbuf = NULL;
+  size_t sendbytes;
+  char * recvbuf = NULL;
+  size_t recvbytes;
+  MPI_Request send_size_request;
+  MPI_Request send_request;
+  MPI_Status status;
+
+  for ( int shift = 0; shift < nshift; ++shift ) {
+
+    if ( shift == 0 ) {
+      // first shift, send our own data
+
+      sparse_block * myblock = new sparse_block ( AT );
+
+      sendbuf = myblock->pack ( sendbytes );
+
+      delete ( myblock );
+
+    } else {
+      // pass along the buffer
+
+      sendbytes = recvbytes;
+
+      sendbuf = (char*)malloc ( sendbytes );
+      if ( ! sendbuf ) {
+        HARP_THROW( "cannot allocate send buffer" );
+      }
+
+      memcpy ( (void*)sendbuf, (void*)recvbuf, sendbytes );
+
+      free ( recvbuf );
+      
     }
 
-    if ( ncomp > nspecbins ) {
-      std::ostringstream o;
-      o << "number of sky components (" << ncomp << ") exceeds the number of flux bins per spectrum (" << nbins << ")";
-      MOAT_THROW( o.str().c_str() );
+    int temp = MPI_Barrier ( AT.Comm() );
+
+    int send_size_key = (shift * 2 * np) + 2 * myp;
+    int send_data_key = (shift * 2 * np) + 2 * myp + 1;
+    int recv_size_key = (shift * 2 * np) + 2 * from_proc;
+    int recv_data_key = (shift * 2 * np) + 2 * from_proc + 1;
+
+    int ret = MPI_Isend ( (void*)(&sendbytes), 1, MPI_UNSIGNED_LONG, to_proc, send_size_key, AT.Comm(), &send_size_request );
+    mpi_check ( AT.Comm(), ret );
+
+    ret = MPI_Isend ( (void*)sendbuf, sendbytes, MPI_CHAR, to_proc, send_data_key, AT.Comm(), &send_request );
+    mpi_check ( AT.Comm(), ret );
+
+    // receive block from sender
+
+    ret = MPI_Recv ( (void*)(&recvbytes), 1, MPI_UNSIGNED_LONG, from_proc, recv_size_key, AT.Comm(), &status );
+    mpi_check ( AT.Comm(), ret );
+
+    recvbuf = (char*)malloc ( recvbytes );
+    if ( ! recvbuf ) {
+      HARP_THROW( "cannot allocate receive buffer" );
     }
 
-    // resize output matrix and copy the original design matrix into the
-    // first column block
+    ret = MPI_Recv ( (void*)recvbuf, recvbytes, MPI_CHAR, from_proc, recv_data_key, AT.Comm(), &status );
+    mpi_check ( AT.Comm(), ret );
 
-    output().resize ( npix, nbins + ncomp * nspecbins );
+    // reconstruct sparse_block
 
-    R_view original ( output(), mv_range( 0, npix ), mv_range( 0, nbins ) );
+    sparse_block * other_block = new sparse_block ( recvbuf, recvbytes );
 
-    original.assign ( psf() );
+    // compute block
 
-    // construct component matrix
+    locglob.Attach( elem::LOCAL_TO_GLOBAL, invcov );
 
-    mat_compcol compmat ( nbins, ncomp * nspec, ncomp * nbins );
+    size_t axpy_row;
+    size_t axpy_col;
 
-    for ( size_t i = 0; i < nspec; ++i ) {
-      for ( size_t j = 0; j < ncomp; ++j ) {
-        for ( size_t k = 0; k < nspecbins; ++k ) {
-          compmat ( i * nspecbins + k, i * ncomp + j ) = sky() ( j, k );
+    // always compute non-transposed block if we have odd number of processes
+    // or we have an even number of process and we are not on the last shift.
+
+    local_inv.ResizeTo ( local_rows, other_block->local_rows );
+
+    axpy_row = local_firstrow;
+    axpy_col = other_block->local_firstrow;
+
+    for ( size_t lhs_row = 0; lhs_row < local_rows; ++lhs_row ) {
+
+      for ( size_t rhs_row = 0; rhs_row < other_block->local_rows; ++rhs_row ) {
+
+        lhs_off = psf.LocalEntryOffset ( lhs_row );
+        rhs_off = other_block->local_row_offset [ rhs_row ];
+
+        lhs_nnz = psf.NumConnections ( lhs_row );
+        rhs_nnz = other_block->local_row_nnz [ rhs_row ];
+
+        val = 0.0;
+
+        k = 0;
+        rhs_col = other_block->local_col[ rhs_off ];
+
+        for ( j = 0; j < lhs_nnz; ++j ) {
+
+          lhs_col = psf.Col ( lhs_off + j );
+          
+          while ( ( rhs_col < lhs_col ) && ( k < rhs_nnz - 1 ) ) {
+            ++k;
+            rhs_col = other_block->local_col[ rhs_off + k ];
+          }
+
+          if ( rhs_col == lhs_col ) {
+            val += invnoise.Get( lhs_col, 0 ) * psf.Value ( lhs_off + j ) * other_block->data[ rhs_off + k ];
+          }
+
         }
+
+        local_inv.Set ( lhs_row, rhs_row, val );
+
       }
     }
 
-    // fill in sky portion of output design matrix
+    locglob.Axpy ( 1.0, local_inv, axpy_row, axpy_col );
 
-    R_view skyblock ( output(), mv_range ( 0, npix ), mv_range ( nbins, nbins + ncomp * nspecbins ) );
 
-    boost::numeric::ublas::axpy_prod ( psf(), compmat, skyblock, true );
 
-    return;
+    delete other_block;
+
+    locglob.Detach();
+
+    // free send buffer
+
+    ret = MPI_Wait ( &send_size_request, &status );
+    mpi_check ( psf.Comm(), ret );
+
+    ret = MPI_Wait ( &send_request, &status );
+    mpi_check ( psf.Comm(), ret );
+
+    free ( sendbuf );
+
   }
 
+  
+  */
 
-*/
+
+
+  return;
+}
+
 
 

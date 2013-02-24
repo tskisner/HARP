@@ -52,7 +52,7 @@ void harp::test_sandbox ( string const & datadir ) {
     boost::property_tree::ptree gauss_props;
     gauss_props.put ( "format", "sandbox" );
     gauss_props.put ( "path", filepath );
-    gauss_props.put ( "corr", 1 );
+    gauss_props.put ( "corr", 2 );
     gauss_props.put ( "imgrows", 4697 );
     gauss_props.put ( "imgcols", 4110 );
 
@@ -334,6 +334,7 @@ void harp::test_sandbox ( string const & datadir ) {
 
   matrix_dist z ( nbins_slice, 1 );
   matrix_dist Rf ( nbins_slice, 1 );
+  matrix_dist err ( nbins_slice, 1 );
 
   tstart = MPI_Wtime();
   noise_weighted_spec ( design, invnoise, measured, z );
@@ -347,7 +348,7 @@ void harp::test_sandbox ( string const & datadir ) {
   z.Write( os.str() );
 
   tstart = MPI_Wtime();
-  extract ( D, W, S, z, Rf );
+  extract ( D, W, S, z, Rf, err );
   tstop = MPI_Wtime();
   if ( myp == 0 ) {
     cerr << "  Time for extraction = " << tstop-tstart << " seconds" << endl;
@@ -445,10 +446,9 @@ void harp::test_sandbox ( string const & datadir ) {
     double out_rf = Rf.Get(i,0);
     double out_rt = Rtruth.Get(i,0);
     double out_tr = truth.Get(i,0);
-    double err = inv.Get ( i, i );
+    double errval = err.Get ( i, 0 );
     if ( myp == 0 ) {
-      err = sqrt( 1.0 / err );
-      fout << i << " " << out_tr << " " << out_rt << " " << out_rf << " " << err << endl;
+      fout << i << " " << out_tr << " " << out_rt << " " << out_rf << " " << errval << endl;
     }
   }
 

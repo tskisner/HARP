@@ -96,6 +96,8 @@ int main ( int argc, char *argv[] ) {
   }
 
   tstart = MPI_Wtime();
+
+  double global_start = tstart;
   
   boost::property_tree::ptree img_props;
   img_props = conf.get_child ( "image" );
@@ -178,7 +180,8 @@ int main ( int argc, char *argv[] ) {
   matrix_dist fullRf ( nbins, 1 );
   matrix_dist fullcov ( nbins, 1 );
 
-  for ( size_t band = 0; band < nband; ++band ) {
+  //for ( size_t band = 0; band < nband; ++band ) {
+  for ( size_t band = 0; band < 1; ++band ) {
 
     if ( ( myp == 0 ) && ( ! quiet ) ) {
       cout << prefix << "  Wavelength band " << band << "/" << nband << " (" << band_start[band] << " - " << band_stop[band] << endl;
@@ -249,6 +252,8 @@ int main ( int argc, char *argv[] ) {
   
     matrix_dist Rf ( nbins_band, 1 );
 
+    matrix_dist Rf_err ( nbins_band, 1 );    
+
     noise_weighted_spec ( design, invnoise, measured, z );
 
     tsubstop = MPI_Wtime();
@@ -259,9 +264,13 @@ int main ( int argc, char *argv[] ) {
 
     tsubstart = MPI_Wtime();
   
-    extract ( D, W, S, z, Rf );
+    extract ( D, W, S, z, Rf, Rf_err );
 
     // FIXME: stitch together into full Rf and covariance. check for agreement within some overlap.
+
+    Rf.Write( "Rf.txt" );
+    Rf_err.Write( "Rf_err.txt" );
+
 
 
 
@@ -275,6 +284,12 @@ int main ( int argc, char *argv[] ) {
       cout << prefix << "    total band time = " << tstop-tstart << " seconds" << endl;
     }
 
+  }
+
+  double global_stop = MPI_Wtime();
+
+  if ( ( myp == 0 ) && ( ! quiet ) ) {
+    cout << prefix << "Total run time = " << global_stop-global_start << " seconds" << endl;
   }
 
   cliq::Finalize();
