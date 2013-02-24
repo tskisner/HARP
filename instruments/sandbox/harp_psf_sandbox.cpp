@@ -16,7 +16,7 @@ static const char * sandbox_psf_key_corr = "corr";
 static const char * sandbox_psf_key_rows = "imgrows";
 static const char * sandbox_psf_key_cols = "imgcols";
 
-static const char * sandbox_psf_key_name = "PSFPARAM";
+static const char * sandbox_psf_key_name = "EXTNAME";
 
 static const char * sandbox_psf_hdu_x = "X";
 static const char * sandbox_psf_hdu_y = "Y";
@@ -114,12 +114,12 @@ harp::psf_sandbox::psf_sandbox ( boost::property_tree::ptree const & props ) : p
 
     if ( myp == 0 ) {
 
-      matrix_local iobuffer ( nspec_, nlambda_ );
+      matrix_local iobuffer ( nlambda_, nspec_ );
       fits::img_seek ( fp, hdus_[ sandbox_psf_hdu_lambda ] );      
       fits::img_read ( fp, iobuffer );
 
       for ( size_t i = 0; i < nlambda_; ++i ) {
-        lambda_[i] = pow ( 10.0, iobuffer.Get ( 0, i ) );
+        lambda_[i] = pow ( 10.0, iobuffer.Get ( i, 0 ) );
       }
 
       fits::close ( fp );
@@ -143,6 +143,11 @@ harp::psf_sandbox::psf_sandbox ( boost::property_tree::ptree const & props ) : p
 
 int harp::psf_sandbox::hdu_info ( fitsfile *fp, const char * sandbox_psf_hdu ) {
   int hdu = fits::img_seek ( fp, sandbox_psf_key_name, sandbox_psf_hdu );
+  if ( hdu < 1 ) {
+    std::ostringstream o;
+    o << "could not find HDU named \"" << sandbox_psf_hdu << "\"";
+    HARP_THROW( o.str().c_str() );
+  }
   size_t rows, cols;
   fits::img_dims ( fp, rows, cols );
   if ( ( rows != nspec_ ) || ( cols != nlambda_ ) ) {
@@ -207,7 +212,7 @@ void harp::psf_sandbox::cache ( size_t first_spec, size_t last_spec ) {
       fits::open_read ( fp, path_ );
     }
 
-    matrix_local iobuffer ( nspec_, nlambda_ );
+    matrix_local iobuffer ( nlambda_, nspec_ );
 
     if ( myp == 0 ) {
       fits::img_seek ( fp, hdus_[ sandbox_psf_hdu_x ] );      
@@ -219,7 +224,7 @@ void harp::psf_sandbox::cache ( size_t first_spec, size_t last_spec ) {
       size_t spec = i + first_spec;
       resp_[ spec ].x.ResizeTo ( nlambda_, 1 );
       for ( size_t j = 0; j < nlambda_; ++j ) {
-        resp_[ spec ].x.Set ( j, 0, iobuffer.Get ( spec, j ) );
+        resp_[ spec ].x.Set ( j, 0, iobuffer.Get ( j, spec ) );
       }
     }
 
@@ -233,7 +238,7 @@ void harp::psf_sandbox::cache ( size_t first_spec, size_t last_spec ) {
       size_t spec = i + first_spec;
       resp_[ spec ].y.ResizeTo ( nlambda_, 1 );
       for ( size_t j = 0; j < nlambda_; ++j ) {
-        resp_[ spec ].y.Set ( j, 0, iobuffer.Get ( spec, j ) );
+        resp_[ spec ].y.Set ( j, 0, iobuffer.Get ( j, spec ) );
       }
     }
 
@@ -247,7 +252,7 @@ void harp::psf_sandbox::cache ( size_t first_spec, size_t last_spec ) {
       size_t spec = i + first_spec;
       resp_[ spec ].lambda.ResizeTo ( nlambda_, 1 );
       for ( size_t j = 0; j < nlambda_; ++j ) {
-        resp_[ spec ].lambda.Set ( j, 0, iobuffer.Get ( spec, j ) );
+        resp_[ spec ].lambda.Set ( j, 0, iobuffer.Get ( j, spec ) );
       }
     }
 
@@ -261,7 +266,7 @@ void harp::psf_sandbox::cache ( size_t first_spec, size_t last_spec ) {
       size_t spec = i + first_spec;
       resp_[ spec ].amp.ResizeTo ( nlambda_, 1 );
       for ( size_t j = 0; j < nlambda_; ++j ) {
-        resp_[ spec ].amp.Set ( j, 0, iobuffer.Get ( spec, j ) );
+        resp_[ spec ].amp.Set ( j, 0, iobuffer.Get ( j, spec ) );
       }
     }
 
@@ -275,7 +280,7 @@ void harp::psf_sandbox::cache ( size_t first_spec, size_t last_spec ) {
       size_t spec = i + first_spec;
       resp_[ spec ].maj.ResizeTo ( nlambda_, 1 );
       for ( size_t j = 0; j < nlambda_; ++j ) {
-        resp_[ spec ].maj.Set ( j, 0, iobuffer.Get ( spec, j ) );
+        resp_[ spec ].maj.Set ( j, 0, iobuffer.Get ( j, spec ) );
       }
     }
 
@@ -289,7 +294,7 @@ void harp::psf_sandbox::cache ( size_t first_spec, size_t last_spec ) {
       size_t spec = i + first_spec;
       resp_[ spec ].min.ResizeTo ( nlambda_, 1 );
       for ( size_t j = 0; j < nlambda_; ++j ) {
-        resp_[ spec ].min.Set ( j, 0, iobuffer.Get ( spec, j ) );
+        resp_[ spec ].min.Set ( j, 0, iobuffer.Get ( j, spec ) );
       }
     }
 
@@ -303,7 +308,7 @@ void harp::psf_sandbox::cache ( size_t first_spec, size_t last_spec ) {
       size_t spec = i + first_spec;
       resp_[ spec ].ang.ResizeTo ( nlambda_, 1 );
       for ( size_t j = 0; j < nlambda_; ++j ) {
-        resp_[ spec ].ang.Set ( j, 0, iobuffer.Get ( spec, j ) );
+        resp_[ spec ].ang.Set ( j, 0, iobuffer.Get ( j, spec ) );
       }
     }
     

@@ -215,6 +215,7 @@ int harp::fits::img_seek ( fitsfile * fp, std::string const & keyname, std::stri
         // keyword exists
         if ( strncmp ( valcheck, valcopy, strlen ( valcopy ) ) == 0 ) {
           // a match!
+          //cerr << "  match! hdu = " << hdu << endl;
           return hdu;
         }
       }
@@ -340,7 +341,11 @@ void harp::fits::img_read ( fitsfile * fp, matrix_local & data ) {
     nelem *= naxes[i];
   }
 
-  data.ResizeTo ( nelem, 1 );
+  if ( data.MemorySize() < nelem ) {
+    ostringstream o;
+    o << "FITS image has " << nelem << " elements, but matrix has space for only " << data.MemorySize();
+    HARP_THROW( o.str().c_str() );
+  }
 
   long fpixel[2];
 

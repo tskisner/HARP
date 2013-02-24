@@ -28,10 +28,113 @@ void harp::test_sandbox ( string const & datadir ) {
 
   int np;
   int myp;
+  int ret;
 
   MPI_Comm_size ( MPI_COMM_WORLD, &np );
   MPI_Comm_rank ( MPI_COMM_WORLD, &myp );
-  
+
+  string filepath = datadir + "/psf_g2d_2012-02-11.fits";
+
+  int statret;
+  if ( myp == 0 ) {
+    struct stat statbuf;
+    statret = stat ( filepath.c_str(), &statbuf );
+  }
+
+  ret = MPI_Bcast ( (void*)(&statret), 1, MPI_INT, 0, MPI_COMM_WORLD );
+  mpi_check ( MPI_COMM_WORLD, ret );
+    
+  if ( statret == 0 ) {
+    if ( myp == 0 ) {
+      cerr << "Testing sandbox elliptical gaussian PSF..." << endl;
+    }
+
+    boost::property_tree::ptree gauss_props;
+    gauss_props.put ( "format", "sandbox" );
+    gauss_props.put ( "path", filepath );
+    gauss_props.put ( "corr", 1 );
+    gauss_props.put ( "imgrows", 4697 );
+    gauss_props.put ( "imgcols", 4110 );
+
+    psf_p gauss_psf ( psf::create ( gauss_props ) );
+
+    size_t gauss_npix = gauss_psf->pixrows() * gauss_psf->pixcols();
+
+    if ( gauss_npix != 4697 * 4110 ) {
+      cerr << "gauss PSF image size (" << gauss_psf->pixrows() << " x " << gauss_psf->pixcols() << ") does not agree with parameters (4697 x 4110)" << endl;
+      MPI_Abort( MPI_COMM_WORLD, 1 );
+    }
+
+    size_t gauss_nspec = gauss_psf->nspec();
+
+    if ( gauss_nspec != 500 ) {
+      cerr << "gauss PSF nspec (" << gauss_nspec << ") does not agree with file (500)" << endl;
+      MPI_Abort( MPI_COMM_WORLD, 1 );
+    }
+
+    size_t gauss_nlambda = gauss_psf->nlambda();
+
+    if ( gauss_nlambda != 4697 ) {
+      cerr << "gauss PSF nlambda (" << gauss_nlambda << ") does not agree with file (4697)" << endl;
+      MPI_Abort( MPI_COMM_WORLD, 1 );
+    }
+
+    vector < double > gauss_lambda = gauss_psf->lambda();
+
+    if ( ( fabs( gauss_lambda[0] - 7460.0) > 1.0e-6 ) || ( fabs( gauss_lambda[gauss_nlambda-1] - 9808.0) > 1.0e-6 ) ) {
+      cerr << "gauss PSF lambda (" << gauss_lambda[0] << " -- " << gauss_lambda[gauss_nlambda-1] << ") does not agree with file (7460.0 -- 9808.0)" << endl;
+      MPI_Abort( MPI_COMM_WORLD, 1 );
+    }
+
+    // make fake spectra
+
+    size_t gauss_global = gauss_nspec * gauss_nlambda;
+
+    matrix_dist gauss_spec ( gauss_global, 1 );
+
+    size_t delta = 10;
+
+    for ( size_t i = 0; i < gauss_global; ++i ) {
+      double val = 0.0;
+      size_t spec = (size_t)(i / gauss_nlambda);
+      size_t l = i - ( spec * gauss_nlambda );
+      if ( l % delta == 0 ) {
+        val = 100.0;
+      }
+      gauss_spec.Set ( i, 0, val );
+    }
+
+    // get design matrix from PSF and project
+
+    matrix_sparse gauss_design;
+
+    matrix_local gauss_image ( gauss_npix, 1 );
+    local_matrix_zero ( gauss_image );
+
+    gauss_psf->projection ( 0, gauss_nlambda - 1, gauss_design );
+
+    spec_project ( gauss_design, gauss_spec, gauss_image );
+
+    fitsfile * fp;
+
+    if ( myp == 0 ) {
+      string outimg = datadir + "/sandbox_gauss_project.fits.out";
+      fits::create ( fp, outimg );
+      fits::img_append ( fp, gauss_psf->pixrows(), gauss_psf->pixcols() );
+      fits::img_write ( fp, gauss_image );
+      fits::close ( fp );
+    }
+
+    if ( myp == 0 ) {
+      cerr << "  (PASSED)" << endl;
+    }
+  } else {
+    if ( myp == 0 ) {
+      cerr << "Skipping sandbox PSF (file " << filepath << " not found)" << endl;
+    }
+  }
+
+
   if ( myp == 0 ) {
     cerr << "Testing sandbox fake PSF generation..." << endl;
   }
