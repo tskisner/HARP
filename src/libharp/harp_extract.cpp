@@ -570,8 +570,6 @@ void harp::sky_design ( matrix_sparse const & AT, std::vector < bool > const & s
   size_t firstrow = AT.FirstLocalRow();
   size_t rows = AT.LocalHeight();
 
-  /*
-
   // accumulate our local block of the original design matrix.  Since we do not
   // know a priori how many non-zeroes we will have
 
@@ -584,7 +582,7 @@ void harp::sky_design ( matrix_sparse const & AT, std::vector < bool > const & s
 
   }
 
-
+  /*
 
   // In order to build up the new matrix, send our data to the previous rank process
   // and receive from the next rank process.  Repeat this (number of process times)
@@ -741,9 +739,7 @@ void harp::sky_design ( matrix_sparse const & AT, std::vector < bool > const & s
 
   }
 
-  
   */
-
 
 
   return;

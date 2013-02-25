@@ -47,9 +47,8 @@ harp::image_sandbox_sim::image_sandbox_sim ( boost::property_tree::ptree const &
 
   matrix_dist specdata ( nglobal, 1 );
   vector < double > spec_lambda;
-  vector < bool > sky;
 
-  child_spec->read ( specdata, spec_lambda, sky );
+  child_spec->read ( specdata, spec_lambda, sky_ );
 
   // check wavelength solution against the one from the PSF
 
@@ -70,7 +69,7 @@ harp::image_sandbox_sim::image_sandbox_sim ( boost::property_tree::ptree const &
   measured_.ResizeTo ( npix, 1 );
   local_matrix_zero ( measured_ );
 
-  child_psf->projection ( 0, psf_nlambda - 1, design );
+  child_psf->projection ( 0, psf_nspec - 1, 0, psf_nlambda - 1, design );
 
   spec_project ( design, specdata, measured_ );
 

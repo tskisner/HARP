@@ -31,28 +31,41 @@ int main ( int argc, char *argv[] ) {
   double tstart;
   double tstop;
 
-  cout.precision ( 16 );
-  cerr.precision ( 16 );
+  cout.precision ( 10 );
+  cerr.precision ( 10 );
 
   size_t lambda_width = 3;
   size_t lambda_overlap = 1;
+
+  size_t spec_first = 0;
+  size_t spec_last = 1000000000;
   
   string jsonconf = "";
 
   string prefix = "harp:  ";
   
+  string truthfile = "";
+
   bool quiet = false;
+  bool debug = false;
+  bool dosky = false;
   
+  fitsfile * fp;
   
   // Declare options
   
   popts::options_description desc ( "Allowed Options" );
   
   desc.add_options()
-  ( "help,h", "Display usage information" )
+  ( "help,h", "display usage information" )
   ( "quiet,q", "supress information printing" )
+  ( "debug,d", "write out intermediate data products for debugging" )
+  ( "skysub", "simultaneously remove common sky spectrum" )
+  ( "spec_first", popts::value < size_t > ( &spec_first ), "first spectrum to extract (default 0)" )
+  ( "spec_last", popts::value < size_t > ( &spec_last ), "last spectrum to extract (default all spectra)" )
   ( "lambda_width", popts::value < size_t > ( &lambda_width ), "maximum wavelength points to process simultaneously" )
   ( "lambda_overlap", popts::value < size_t > ( &lambda_overlap ), "minimum wavelength points to overlap" )
+  ( "truth", popts::value < string > ( &truthfile ), "input truth spectrum for simulation comparison" )
   ( "conf", popts::value<string>(&jsonconf), "JSON configuration file" )
   ;
 
@@ -81,6 +94,14 @@ int main ( int argc, char *argv[] ) {
   
   if ( vm.count( "quiet" ) ) {
     quiet = true;
+  }
+
+  if ( vm.count( "debug" ) ) {
+    debug = true;
+  }
+
+  if ( vm.count( "skysub" ) ) {
+    dosky = true;
   }
   
   boost::property_tree::ptree conf;
@@ -114,10 +135,27 @@ int main ( int argc, char *argv[] ) {
   matrix_local invnoise ( npix, 1 );
   local_matrix_zero ( invnoise );
 
+  vector < bool > is_sky;
+
   img->read ( measured );
   img->read_noise ( invnoise );
+  is_sky = img->sky ();
 
   tstop = MPI_Wtime();
+
+  if ( debug ) {
+    if ( myp == 0 ) {
+      string outimg = "specstract_input_image.fits";
+      fits::create ( fp, outimg );
+      fits::img_append ( fp, imgrows, imgcols );
+      fits::write_key ( fp, "EXTNAME", "Data", "harp_specstract input image" );
+      fits::img_write ( fp, measured );
+      fits::img_append ( fp, imgrows, imgcols );
+      fits::write_key ( fp, "EXTNAME", "InvCov", "harp_specstract inverse image covariance" );
+      fits::img_write ( fp, invnoise );
+      fits::close ( fp );
+    }
+  }
 
   if ( ( myp == 0 ) && ( ! quiet ) ) {
     cout << prefix << "  time = " << tstop-tstart << " seconds" << endl;
@@ -141,8 +179,18 @@ int main ( int argc, char *argv[] ) {
     ret = MPI_Abort ( MPI_COMM_WORLD, 1 );
   }
 
-  size_t nspec = epsf->nspec();
+  size_t psf_nspec = epsf->nspec();
   size_t nlambda = epsf->nlambda();
+
+  if ( spec_first > psf_nspec - 1 ) {
+    spec_first = psf_nspec - 1;
+  }
+
+  if ( spec_last > psf_nspec - 1 ) {
+    spec_last = psf_nspec - 1;
+  }
+
+  size_t nspec = spec_last - spec_first + 1;
 
   vector < double > lambda = epsf->lambda();
 
@@ -155,7 +203,7 @@ int main ( int argc, char *argv[] ) {
     cout << prefix << "  image dimensions = " << psf_imgrows << " x " << psf_imgcols << endl;
     cout << prefix << "  " << nspec << " spectra with " << nlambda << " wavelength points each:" << endl;
     cout << prefix << "  lambda = " << lambda[0] << " ... " << lambda[nlambda - 1] << endl;
-
+    cout << prefix << "Extracting spectra " << spec_first << " - " << spec_last << endl;
     cout << prefix << "Processing " << lambda_width << " wavelength points with overlap of " << lambda_overlap << " :" << endl;
   }
 
@@ -184,7 +232,7 @@ int main ( int argc, char *argv[] ) {
   for ( size_t band = 0; band < 1; ++band ) {
 
     if ( ( myp == 0 ) && ( ! quiet ) ) {
-      cout << prefix << "  Wavelength band " << band << "/" << nband << " (" << band_start[band] << " - " << band_stop[band] << endl;
+      cout << prefix << "  Wavelength band " << band << "/" << nband << " (" << band_start[band] << " - " << band_stop[band] << ")" << endl;
     }
 
     tstart = MPI_Wtime();
@@ -198,7 +246,13 @@ int main ( int argc, char *argv[] ) {
 
     matrix_sparse design;
 
-    epsf->projection ( band_start[ band ], band_stop[ band ], design );
+    epsf->projection ( spec_first, spec_last, band_start[ band ], band_stop[ band ], design );
+
+    matrix_sparse design_sky;
+
+    if ( dosky ) {
+      sky_design ( design, is_sky, design_sky );
+    }
 
     tsubstop = MPI_Wtime();
 
@@ -212,7 +266,11 @@ int main ( int argc, char *argv[] ) {
     
     matrix_dist inv ( nbins_band, nbins_band, grid );
 
-    inverse_covariance ( design, invnoise, inv );
+    if ( dosky ) {
+      inverse_covariance ( design_sky, invnoise, inv );
+    } else {
+      inverse_covariance ( design, invnoise, inv );
+    }
 
     tsubstop = MPI_Wtime();
 
@@ -265,6 +323,8 @@ int main ( int argc, char *argv[] ) {
     tsubstart = MPI_Wtime();
   
     extract ( D, W, S, z, Rf, Rf_err );
+
+
 
     // FIXME: stitch together into full Rf and covariance. check for agreement within some overlap.
 

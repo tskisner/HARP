@@ -110,7 +110,7 @@ int harp::fits::nhdus ( fitsfile * fp ) {
 }
 
 
-string harp::fits::key_string ( fitsfile * fp, std::string keyname ) {
+void harp::fits::read_key ( fitsfile * fp, std::string const & keyname, std::string & keyval ) {
   int ret;
   int status = 0;
   
@@ -122,12 +122,14 @@ string harp::fits::key_string ( fitsfile * fp, std::string keyname ) {
   
   ret = fits_read_key ( fp, TSTRING, keycopy, value, comment, &status );
   fits::check ( status );
+
+  keyval = value;
   
-  return string(value);
+  return;
 }
 
 
-long harp::fits::key_long ( fitsfile * fp, std::string keyname ) {
+void harp::fits::read_key ( fitsfile * fp, std::string const & keyname, long & keyval ) {
   int ret;
   int status = 0;
   
@@ -139,12 +141,14 @@ long harp::fits::key_long ( fitsfile * fp, std::string keyname ) {
   
   ret = fits_read_key ( fp, TLONG, keycopy, &value, comment, &status );
   fits::check ( status );
+
+  keyval = value;
   
-  return value;
+  return;
 }
 
 
-double harp::fits::key_double ( fitsfile * fp, std::string keyname ) {
+void harp::fits::read_key ( fitsfile * fp, std::string const & keyname, double & keyval ) {
   int ret;
   int status = 0;
   
@@ -157,7 +161,67 @@ double harp::fits::key_double ( fitsfile * fp, std::string keyname ) {
   ret = fits_read_key ( fp, TDOUBLE, keycopy, &value, comment, &status );
   fits::check ( status );
   
-  return value;
+  keyval = value;
+
+  return;
+}
+
+
+void harp::fits::write_key ( fitsfile * fp, std::string const & keyname, std::string const & keyval, std::string const & keycom ) {
+  int ret;
+  int status = 0;
+  
+  char keycopy[FLEN_VALUE];
+  strncpy ( keycopy, keyname.c_str(), FLEN_VALUE );
+  
+  char comment[FLEN_VALUE];
+  strncpy ( comment, keycom.c_str(), FLEN_VALUE );
+
+  char value[FLEN_VALUE];
+  strncpy ( value, keyval.c_str(), FLEN_VALUE );  
+
+  ret = fits_update_key ( fp, TSTRING, keycopy, value, comment, &status );
+  fits::check ( status );
+
+  return;
+}
+
+
+void harp::fits::write_key ( fitsfile * fp, std::string const & keyname, long const & keyval, std::string const & keycom ) {
+  int ret;
+  int status = 0;
+  
+  char keycopy[FLEN_VALUE];
+  strncpy ( keycopy, keyname.c_str(), FLEN_VALUE );
+
+  char comment[FLEN_VALUE];
+  strncpy ( comment, keycom.c_str(), FLEN_VALUE );
+  
+  long value = keyval;
+  
+  ret = fits_update_key ( fp, TLONG, keycopy, &value, comment, &status );
+  fits::check ( status );
+  
+  return;
+}
+
+
+void harp::fits::write_key ( fitsfile * fp, std::string const & keyname, double const & keyval, std::string const & keycom ) {
+  int ret;
+  int status = 0;
+  
+  char keycopy[FLEN_VALUE];
+  strncpy ( keycopy, keyname.c_str(), FLEN_VALUE );
+
+  char comment[FLEN_VALUE];
+  strncpy ( comment, keycom.c_str(), FLEN_VALUE );
+  
+  double value = keyval;
+  
+  ret = fits_update_key ( fp, TDOUBLE, keycopy, &value, comment, &status );
+  fits::check ( status );
+  
+  return;
 }
 
 

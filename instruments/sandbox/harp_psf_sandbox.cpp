@@ -54,10 +54,10 @@ harp::psf_sandbox::psf_sandbox ( boost::property_tree::ptree const & props ) : p
     rows_ = nlambda_;
 
     // response fwhm
-    fake_psf_fwhm_ = 1.0;
+    fake_psf_fwhm_ = 2.1;
 
     // response correlation length in pixels
-    pixcorr_ = (int)( 2.0 * (double)fake_psf_fwhm_ );
+    pixcorr_ = (int)( 6.0 * (double)fake_psf_fwhm_ / 2.0 );
 
     lambda_.resize ( nlambda_ );
 
@@ -440,15 +440,21 @@ void harp::psf_sandbox::gauss_sample ( matrix_local & vals, matrix_local & xrel,
 }
 
 
-void harp::psf_sandbox::projection ( size_t first_lambda, size_t last_lambda, matrix_sparse & AT ) {
+void harp::psf_sandbox::projection ( size_t first_spec, size_t last_spec, size_t first_lambda, size_t last_lambda, matrix_sparse & AT ) {
+
+  if ( ( first_spec >= nspec_ ) || ( last_spec >= nspec_ ) ) {
+    HARP_THROW( "specs out of range" );
+  }
 
   if ( ( first_lambda >= nlambda_ ) || ( last_lambda >= nlambda_ ) ) {
     HARP_THROW( "lambda points out of range" );
   }
 
-  size_t nflux = nspec_ * ( last_lambda - first_lambda + 1 );
+  size_t block_nspec = last_spec - first_spec + 1;
+  size_t block_nlambda = last_lambda - first_lambda + 1;
+  size_t block_nbins = block_nspec * block_nlambda;
   
-  AT.ResizeTo ( nflux, npix_ );
+  AT.ResizeTo ( block_nbins, npix_ );
 
   // Get local matrix row range
 
@@ -457,10 +463,10 @@ void harp::psf_sandbox::projection ( size_t first_lambda, size_t last_lambda, ma
 
   // cache data
 
-  size_t first_spec = (size_t)( first_loc_row / nlambda_ );
-  size_t last_spec = (size_t)( (first_loc_row + loc_height - 1) / nlambda_ );
+  size_t first_spec_local = (size_t)( first_loc_row / block_nlambda );
+  size_t last_spec_local = (size_t)( (first_loc_row + loc_height - 1) / block_nlambda );
 
-  cache ( first_spec, last_spec );
+  cache ( first_spec_local, last_spec_local );
 
   // populate matrix
 
@@ -484,10 +490,13 @@ void harp::psf_sandbox::projection ( size_t first_lambda, size_t last_lambda, ma
 
   for ( size_t loc_bin = 0; loc_bin < loc_height; ++loc_bin ) {
 
-    size_t glob_bin = loc_bin + first_loc_row;
+    size_t block_bin = loc_bin + first_loc_row;
+    size_t block_spec = (size_t)( block_bin / block_nlambda );
+    size_t block_specbin = block_bin - ( block_spec * block_nlambda );
 
-    size_t spec = (size_t) ( glob_bin / nlambda_ );
-    size_t specbin = glob_bin - ( spec * nlambda_ );
+    size_t spec = first_spec + block_spec;
+    size_t specbin = first_lambda + block_specbin;
+    size_t bin = ( spec * nlambda_ ) + specbin;
 
     extent ( spec, spec, specbin, specbin, bin_firstcol, bin_firstrow, bin_lastcol, bin_lastrow );
 
@@ -550,7 +559,7 @@ void harp::psf_sandbox::projection ( size_t first_lambda, size_t last_lambda, ma
 
         size_t pix = imgrow * cols_ + imgcol;
 
-        AT.Update ( glob_bin, pix, vals.Get( p, 0 ) );
+        AT.Update ( block_bin, pix, vals.Get( p, 0 ) );
 
         ++p;
       }

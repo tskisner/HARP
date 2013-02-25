@@ -22,12 +22,14 @@ namespace harp { namespace fits {
   void close ( fitsfile * fp );
   
   int nhdus ( fitsfile * fp );
-  
-  std::string key_string ( fitsfile * fp, std::string keyname );
-  
-  long key_long ( fitsfile * fp, std::string keyname );
-  
-  double key_double ( fitsfile * fp, std::string keyname );
+
+  void read_key ( fitsfile * fp, std::string const & keyname, std::string & keyval );
+  void read_key ( fitsfile * fp, std::string const & keyname, long & keyval );
+  void read_key ( fitsfile * fp, std::string const & keyname, double & keyval );
+
+  void write_key ( fitsfile * fp, std::string const & keyname, std::string const & keyval, std::string const & keycom );
+  void write_key ( fitsfile * fp, std::string const & keyname, long const & keyval, std::string const & keycom );
+  void write_key ( fitsfile * fp, std::string const & keyname, double const & keyval, std::string const & keycom );
   
   void img_append ( fitsfile * fp, size_t rows, size_t cols );
   

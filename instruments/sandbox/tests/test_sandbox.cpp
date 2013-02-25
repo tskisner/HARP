@@ -52,7 +52,7 @@ void harp::test_sandbox ( string const & datadir ) {
     boost::property_tree::ptree gauss_props;
     gauss_props.put ( "format", "sandbox" );
     gauss_props.put ( "path", filepath );
-    gauss_props.put ( "corr", 2 );
+    gauss_props.put ( "corr", 7 );
     gauss_props.put ( "imgrows", 4697 );
     gauss_props.put ( "imgcols", 4110 );
 
@@ -88,6 +88,8 @@ void harp::test_sandbox ( string const & datadir ) {
 
     // make fake spectra
 
+    size_t fibers = 25;
+
     size_t gauss_global = gauss_nspec * gauss_nlambda;
 
     matrix_dist gauss_spec ( gauss_global, 1 );
@@ -111,9 +113,13 @@ void harp::test_sandbox ( string const & datadir ) {
     matrix_local gauss_image ( gauss_npix, 1 );
     local_matrix_zero ( gauss_image );
 
-    gauss_psf->projection ( 0, gauss_nlambda - 1, gauss_design );
+    gauss_psf->projection ( 0, fibers-1, 0, gauss_nlambda - 1, gauss_design );
 
-    spec_project ( gauss_design, gauss_spec, gauss_image );
+    matrix_dist gauss_spec_block ( fibers * gauss_nlambda, 1 );
+
+    sub_block ( gauss_spec, 0, 0, fibers * gauss_nlambda, 1, gauss_spec_block );
+
+    spec_project ( gauss_design, gauss_spec_block, gauss_image );
 
     fitsfile * fp;
 
@@ -197,8 +203,9 @@ void harp::test_sandbox ( string const & datadir ) {
   // generate design matrix and spectral subset for 
   // one slice of wavelength points.
 
-  size_t nlambda_slice = 5;
-  size_t nbins_slice = nspec * nlambda_slice;
+  size_t nspec_slice = 25;
+  size_t nlambda_slice = 100;
+  size_t nbins_slice = nspec_slice * nlambda_slice;
 
   matrix_sparse design;
 
@@ -206,73 +213,11 @@ void harp::test_sandbox ( string const & datadir ) {
   double tstop;
 
   tstart = MPI_Wtime();
-  testpsf->projection ( 0, nlambda_slice - 1, design );
+  testpsf->projection ( 0, nspec_slice - 1, 0, nlambda_slice - 1, design );
   tstop = MPI_Wtime();
   if ( myp == 0 ) {
     cerr << "  Time for PSF creation = " << tstop-tstart << " seconds" << endl;
   }
-
-
-
-  /*
-
-  matrix_local signal ( npix, 1 );
-
-  tstart = MPI_Wtime();
-  spec_project ( design, truth, signal );
-  tstop = MPI_Wtime();
-  if ( myp == 0 ) {
-    cerr << "  Time for spec to image projection = " << tstop-tstart << " seconds" << endl;
-  }
-
-  matrix_local noise ( npix, 1 );  
-  local_matrix_zero ( noise );
-
-  matrix_local measured ( npix, 1 );  
-  local_matrix_zero ( measured );
-
-  matrix_local invnoise ( npix, 1 );
-  local_matrix_zero ( invnoise );
-
-  typedef boost::ecuyer1988 base_generator_type;
-  base_generator_type generator(42u);
-
-  double rms;
-
-  for ( size_t i = 0; i < npix; ++i ) {
-    rms = sqrt( 16.0 + signal.Get ( i, 0 ) );
-    invnoise.Set ( i, 0, 1.0 / (rms*rms) );
-
-    boost::normal_distribution < double > dist ( 0.0, rms );
-    boost::variate_generator < base_generator_type&, boost::normal_distribution < double > > gauss ( generator, dist );
-
-    noise.Set ( i, 0, gauss() );
-    measured.Set ( i, 0, signal.Get(i,0) + noise.Get(i,0) );
-  }
-
-  fitsfile * fp;
-
-  if ( myp == 0 ) {
-    string outimg = datadir + "/sandbox_measured.fits.out";
-    fits::create ( fp, outimg );
-    fits::img_append ( fp, testpsf->pixrows(), testpsf->pixcols() );
-    fits::img_write ( fp, measured );
-    fits::close ( fp );
-
-    outimg = datadir + "/sandbox_signal.fits.out";
-    fits::create ( fp, outimg );
-    fits::img_append ( fp, testpsf->pixrows(), testpsf->pixcols() );
-    fits::img_write ( fp, signal );
-    fits::close ( fp );
-
-    outimg = datadir + "/sandbox_noise.fits.out";
-    fits::create ( fp, outimg );
-    fits::img_append ( fp, testpsf->pixrows(), testpsf->pixcols() );
-    fits::img_write ( fp, noise );
-    fits::close ( fp );
-  }
-
-  */
 
   if ( myp == 0 ) {
     cerr << "Testing sandbox inverse covariance calculation..." << endl;

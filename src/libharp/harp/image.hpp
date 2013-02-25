@@ -18,6 +18,8 @@ namespace harp {
       
       virtual size_t rows ( ) { return 0; }
       virtual size_t cols ( ) { return 0; }
+
+      virtual std::vector < bool > sky ( ) { return std::vector < bool > (); }
       
       virtual void read ( matrix_local & data ) { return; }
       virtual void write ( std::string const & path, matrix_local & data ) { return; }

@@ -25,7 +25,7 @@ namespace harp {
 
       virtual std::vector < double > lambda ( ) { return std::vector < double > (); }
       
-      virtual void projection ( size_t first_lambda, size_t last_lambda, matrix_sparse & AT ) { return; }
+      virtual void projection ( size_t first_spec, size_t last_spec, size_t first_lambda, size_t last_lambda, matrix_sparse & AT ) { return; }
       
       std::string format ( );
       

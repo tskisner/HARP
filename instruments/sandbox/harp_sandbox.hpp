@@ -12,6 +12,8 @@ namespace harp {
 
       size_t rows ( ) { return rows_; }
       size_t cols ( ) { return cols_; }
+
+      std::vector < bool > sky ( ) { return std::vector < bool > (); }
       
       void read ( matrix_local & data );
       void write ( std::string const & path, matrix_local & data );
@@ -40,6 +42,8 @@ namespace harp {
 
       size_t rows ( ) { return rows_; }
       size_t cols ( ) { return cols_; }
+
+      std::vector < bool > sky ( ) { return sky_; }
       
       void read ( matrix_local & data );
       void write ( std::string const & path, matrix_local & data );
@@ -55,6 +59,7 @@ namespace harp {
       size_t cols_;
       matrix_local measured_;
       matrix_local invcov_;
+      std::vector < bool > sky_;
     
   };
   
@@ -113,7 +118,7 @@ namespace harp {
       size_t pixrows ( ) { return rows_; }
       size_t pixcols ( ) { return cols_; }
       virtual std::vector < double > lambda ( ) { return lambda_; }
-      void projection ( size_t first_lambda, size_t last_lambda, matrix_sparse & data );
+      void projection ( size_t first_spec, size_t last_spec, size_t first_lambda, size_t last_lambda, matrix_sparse & data );
       
     private :
 
