@@ -43,8 +43,6 @@ int main ( int argc, char *argv[] ) {
   string jsonconf = "";
 
   string prefix = "harp:  ";
-  
-  string truthfile = "";
 
   bool quiet = false;
   bool debug = false;
@@ -65,7 +63,6 @@ int main ( int argc, char *argv[] ) {
   ( "spec_last", popts::value < size_t > ( &spec_last ), "last spectrum to extract (default all spectra)" )
   ( "lambda_width", popts::value < size_t > ( &lambda_width ), "maximum wavelength points to process simultaneously" )
   ( "lambda_overlap", popts::value < size_t > ( &lambda_overlap ), "minimum wavelength points to overlap" )
-  ( "truth", popts::value < string > ( &truthfile ), "input truth spectrum for simulation comparison" )
   ( "conf", popts::value<string>(&jsonconf), "JSON configuration file" )
   ;
 
@@ -227,6 +224,47 @@ int main ( int argc, char *argv[] ) {
 
   matrix_dist fullRf ( nbins, 1 );
   matrix_dist fullcov ( nbins, 1 );
+  matrix_dist fulltruth ( nbins, 1 );
+  matrix_dist fullRtruth ( nbins, 1 );
+  vector < bool > fulltruth_sky;
+
+  bool dotruth;
+
+  if ( conf.count ( "truth" ) > 0 ) {
+
+    boost::property_tree::ptree truth_props = conf.get_child ( "truth" );
+
+    spec_p truth_spec ( spec::create ( truth_props ) );
+    size_t truth_nspec = truth_spec->nspec();
+    size_t truth_nlambda = truth_spec->nlambda();
+
+    size_t truth_nbins = truth_nspec * truth_nlambda;
+
+    if ( truth_nbins != psf_nspec * nlambda ) {
+      ostringstream o;
+      o << "truth spectrum has " << truth_nbins << " spectral bins, but PSF has " << psf_nspec * nlambda << " bins";
+      cerr << o.str() << endl;
+      MPI_Abort ( MPI_COMM_WORLD, 1 );
+    }
+
+    dist_matrix_zero ( fulltruth );
+    vector < double > truth_lambda;
+
+    truth_spec->read ( fulltruth, truth_lambda, fulltruth_sky );
+
+    for ( size_t i = 0; i < nlambda; ++i ) {
+      if ( fabs ( truth_lambda[i] - lambda[i] ) / lambda[i] > 0.001 ) {
+        ostringstream o;
+        o << "wavelength point " << i << " does not match between PSF (" << lambda[i] << ") and truth spec (" << truth_lambda[i] << ")";
+        HARP_THROW( o.str().c_str() );
+      }
+    }
+
+    dotruth = true;
+
+  }
+
+  // Process all bands
 
   //for ( size_t band = 0; band < nband; ++band ) {
   for ( size_t band = 0; band < 1; ++band ) {
@@ -324,6 +362,49 @@ int main ( int argc, char *argv[] ) {
   
     extract ( D, W, S, z, Rf, Rf_err );
 
+    matrix_dist Rtruth ( nbins_band, 1 );
+
+    if ( dotruth ) {
+      matrix_dist truth_band ( nbins_band, 1 );
+      dist_matrix_zero ( truth_band );
+
+      dist_matrix_zero ( Rtruth );
+
+      sub_block ( fulltruth, 0, 0, nbins_band, 1, truth_band );
+
+      matrix_dist R;
+
+      resolution ( D, W, S, R );
+
+      elem::Gemv ( elem::NORMAL, 1.0, R, truth_band, 0.0, Rtruth );
+
+      Rtruth.Write ( "Rtruth.txt" );
+
+      // accumulate to global resolution convolved truth
+
+
+
+      // FIXME: do this at the end...
+
+      if ( debug ) {
+
+        matrix_local truth_image ( npix, 1 );
+        local_matrix_zero ( truth_image );
+
+        spec_project ( design, Rtruth, truth_image );
+
+        if ( myp == 0 ) {
+          string outimg = "specstract_Rtruth_projection.fits";
+          fits::create ( fp, outimg );
+          fits::img_append ( fp, imgrows, imgcols );
+          fits::write_key ( fp, "EXTNAME", "RTruth", "harp_specstract resolution convolved truth" );
+          fits::img_write ( fp, truth_image );
+          fits::close ( fp );
+        }
+
+      }
+
+    }
 
 
     // FIXME: stitch together into full Rf and covariance. check for agreement within some overlap.
@@ -332,6 +413,25 @@ int main ( int argc, char *argv[] ) {
     Rf_err.Write( "Rf_err.txt" );
 
 
+    // FIXME: put this at the end of the program and dump the full projected image
+
+    if ( debug ) {
+
+      matrix_local solution_image ( npix, 1 );
+      local_matrix_zero ( solution_image );
+
+      spec_project ( design, Rf, solution_image );
+
+      if ( myp == 0 ) {
+        string outimg = "specstract_Rf_projection.fits";
+        fits::create ( fp, outimg );
+        fits::img_append ( fp, imgrows, imgcols );
+        fits::write_key ( fp, "EXTNAME", "Rf", "harp_specstract solution" );
+        fits::img_write ( fp, solution_image );
+        fits::close ( fp );
+      }
+
+    }
 
 
   
