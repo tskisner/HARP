@@ -94,6 +94,10 @@ void harp::spec_sandbox::read ( matrix_dist & data, std::vector < double > & lam
 
       val += 2.0 * background_;
 
+      if ( ( j % atmspace_ ) == 0 ) {
+        val += atmpeak_;
+      }
+
       if ( ( ( j + objoff ) % objspace_ ) == 0 ) {
         val += objpeak_;
       }

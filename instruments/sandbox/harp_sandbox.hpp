@@ -143,6 +143,8 @@ namespace harp {
       size_t fake_pix_gap_;
       size_t fake_pix_bundle_;
       double fake_psf_fwhm_;
+      double fake_first_lambda_;
+      double fake_last_lambda_;
 
       std::string path_;
       size_t nspec_;

@@ -27,6 +27,14 @@ static const char * sandbox_psf_hdu_min = "MinorAxis";
 static const char * sandbox_psf_hdu_ang = "Angle";
 
 static const char * sandbox_psf_key_fake = "FAKE";
+static const char * sandbox_psf_key_fake_bundle_size = "bundle_size";
+static const char * sandbox_psf_key_fake_nbundle = "nbundle";
+static const char * sandbox_psf_key_fake_nlambda = "nlambda";
+static const char * sandbox_psf_key_fake_fwhm = "fwhm";
+static const char * sandbox_psf_key_fake_firstlambda = "first_lambda";
+static const char * sandbox_psf_key_fake_lastlambda = "last_lambda";
+static const char * sandbox_psf_key_fake_margin = "margin";
+static const char * sandbox_psf_key_fake_gap = "gap";
 
 
 harp::psf_sandbox::psf_sandbox ( boost::property_tree::ptree const & props ) : psf ( props ) {
@@ -39,14 +47,22 @@ harp::psf_sandbox::psf_sandbox ( boost::property_tree::ptree const & props ) : p
 
     path_ = "";
     
-    fake_n_bundle_ = 20;
-    fake_bundle_size_ = 25;
+    boost::optional < size_t > fake_n_bundle_val = props.get_optional < size_t > ( sandbox_psf_key_fake_nbundle );
+    fake_n_bundle_ = boost::get_optional_value_or ( fake_n_bundle_val, 20 );
+
+    boost::optional < size_t > fake_bundle_size_val = props.get_optional < size_t > ( sandbox_psf_key_fake_bundle_size );
+    fake_bundle_size_ = boost::get_optional_value_or ( fake_bundle_size_val, 25 );
 
     nspec_ = fake_n_bundle_ * fake_bundle_size_;
-    nlambda_ = 4697;
 
-    fake_pix_margin_ = 9;
-    fake_pix_gap_ = 6;
+    boost::optional < size_t > nlambda_val = props.get_optional < size_t > ( sandbox_psf_key_fake_nlambda );
+    nlambda_ = boost::get_optional_value_or ( nlambda_val, 12 );
+
+    boost::optional < size_t > fake_pix_margin_val = props.get_optional < size_t > ( sandbox_psf_key_fake_margin );
+    fake_pix_margin_ = boost::get_optional_value_or ( fake_pix_margin_val, 9 );
+
+    boost::optional < size_t > fake_pix_gap_val = props.get_optional < size_t > ( sandbox_psf_key_fake_gap );
+    fake_pix_gap_ = boost::get_optional_value_or ( fake_pix_gap_val, 6 );
 
     fake_pix_bundle_ = 2 * fake_pix_margin_ + (fake_bundle_size_ - 1) * fake_pix_gap_ + fake_bundle_size_;
 
@@ -54,17 +70,29 @@ harp::psf_sandbox::psf_sandbox ( boost::property_tree::ptree const & props ) : p
     rows_ = nlambda_;
 
     // response fwhm
-    fake_psf_fwhm_ = 2.1;
+
+    boost::optional < double > fake_psf_fwhm_val = props.get_optional < double > ( sandbox_psf_key_fake_fwhm );
+    fake_psf_fwhm_ = boost::get_optional_value_or ( fake_psf_fwhm_val, 2.1 );
 
     // response correlation length in pixels
-    pixcorr_ = (int)( 6.0 * (double)fake_psf_fwhm_ / 2.0 );
+
+    boost::optional < size_t > pixcorr_val = props.get_optional < size_t > ( sandbox_psf_key_corr );
+    pixcorr_ = boost::get_optional_value_or ( pixcorr_val, (size_t)( 6.0 * (double)fake_psf_fwhm_ / 2.0 ) );
+
+    // wavelength solution
+
+    boost::optional < double > fake_first_lambda_val = props.get_optional < double > ( sandbox_psf_key_fake_firstlambda );
+    fake_first_lambda_ = boost::get_optional_value_or ( fake_first_lambda_val, 8000.0 );
+
+    boost::optional < double > fake_last_lambda_val = props.get_optional < double > ( sandbox_psf_key_fake_lastlambda );
+    fake_last_lambda_ = boost::get_optional_value_or ( fake_last_lambda_val, 8000.0 + (double)(nlambda_-1) );
 
     lambda_.resize ( nlambda_ );
 
-    double incr = (9808.0 - 7460.0) / (double)( nlambda_ - 1 );
+    double incr = ( fake_last_lambda_ - fake_first_lambda_ ) / (double)( nlambda_ - 1 );
 
     for ( size_t i = 0; i < nlambda_; ++i ) {
-      lambda_[i] = 7460.0 + incr * (double)i;
+      lambda_[i] = fake_first_lambda_ + incr * (double)i;
     }
  
   } else {

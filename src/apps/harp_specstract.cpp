@@ -228,7 +228,7 @@ int main ( int argc, char *argv[] ) {
   matrix_dist fullRtruth ( nbins, 1 );
   vector < bool > fulltruth_sky;
 
-  bool dotruth;
+  bool dotruth = false;
 
   if ( conf.count ( "truth" ) > 0 ) {
 
@@ -362,15 +362,18 @@ int main ( int argc, char *argv[] ) {
   
     extract ( D, W, S, z, Rf, Rf_err );
 
-    matrix_dist Rtruth ( nbins_band, 1 );
-
     if ( dotruth ) {
-      matrix_dist truth_band ( nbins_band, 1 );
-      dist_matrix_zero ( truth_band );
+
+      matrix_dist Rtruth ( nbins_band, 1 );
+
+      matrix_dist truth_band ( fulltruth );
+      //matrix_dist truth_band ( nbins_band, 1 );
+      
+      //dist_matrix_zero ( truth_band );
+
+      //sub_block ( fulltruth, 0, 0, nbins_band, 1, truth_band );
 
       dist_matrix_zero ( Rtruth );
-
-      sub_block ( fulltruth, 0, 0, nbins_band, 1, truth_band );
 
       matrix_dist R;
 

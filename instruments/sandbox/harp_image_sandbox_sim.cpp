@@ -89,7 +89,7 @@ harp::image_sandbox_sim::image_sandbox_sim ( boost::property_tree::ptree const &
 
   if ( debug_ ) {
     if ( myp == 0 ) {
-      string outimg = "sandbox_sim_signal.fits";
+      string outimg = "sandbox_sim_image.fits";
       fits::create ( fp, outimg );
       fits::img_append ( fp, rows_, cols_ );
       fits::write_key ( fp, "EXTNAME", "Signal", "simulated signal" );
