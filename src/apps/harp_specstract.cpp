@@ -366,12 +366,10 @@ int main ( int argc, char *argv[] ) {
 
       matrix_dist Rtruth ( nbins_band, 1 );
 
-      matrix_dist truth_band ( fulltruth );
-      //matrix_dist truth_band ( nbins_band, 1 );
-      
-      //dist_matrix_zero ( truth_band );
+      matrix_dist truth_band ( nbins_band, 1 );
+      dist_matrix_zero ( truth_band );
 
-      //sub_block ( fulltruth, 0, 0, nbins_band, 1, truth_band );
+      sub_block ( fulltruth, band_start[ band ], 0, nbins_band, 1, truth_band );
 
       dist_matrix_zero ( Rtruth );
 
@@ -418,22 +416,18 @@ int main ( int argc, char *argv[] ) {
 
     // FIXME: put this at the end of the program and dump the full projected image
 
-    if ( debug ) {
+    matrix_local solution_image ( npix, 1 );
+    local_matrix_zero ( solution_image );
 
-      matrix_local solution_image ( npix, 1 );
-      local_matrix_zero ( solution_image );
+    spec_project ( design, Rf, solution_image );
 
-      spec_project ( design, Rf, solution_image );
-
-      if ( myp == 0 ) {
-        string outimg = "specstract_Rf_projection.fits";
-        fits::create ( fp, outimg );
-        fits::img_append ( fp, imgrows, imgcols );
-        fits::write_key ( fp, "EXTNAME", "Rf", "harp_specstract solution" );
-        fits::img_write ( fp, solution_image );
-        fits::close ( fp );
-      }
-
+    if ( myp == 0 ) {
+      string outimg = "specstract_Rf_projection.fits";
+      fits::create ( fp, outimg );
+      fits::img_append ( fp, imgrows, imgcols );
+      fits::write_key ( fp, "EXTNAME", "Rf", "harp_specstract solution" );
+      fits::img_write ( fp, solution_image );
+      fits::close ( fp );
     }
 
 
