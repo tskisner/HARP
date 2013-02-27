@@ -145,10 +145,10 @@ int main ( int argc, char *argv[] ) {
       string outimg = "specstract_input_image.fits";
       fits::create ( fp, outimg );
       fits::img_append ( fp, imgrows, imgcols );
-      fits::write_key ( fp, "EXTNAME", "Data", "harp_specstract input image" );
+      fits::write_key ( fp, "EXTNAME", "Data", "input image" );
       fits::img_write ( fp, measured );
       fits::img_append ( fp, imgrows, imgcols );
-      fits::write_key ( fp, "EXTNAME", "InvCov", "harp_specstract inverse image covariance" );
+      fits::write_key ( fp, "EXTNAME", "InvCov", "inverse image covariance" );
       fits::img_write ( fp, invnoise );
       fits::close ( fp );
     }
@@ -260,6 +260,14 @@ int main ( int argc, char *argv[] ) {
       }
     }
 
+    for ( size_t i = 0; i < psf_nspec; ++i ) {
+      if ( fulltruth_sky[i] != is_sky[i] ) {
+        ostringstream o;
+        o << "truth sky point " << i << " (" << fulltruth_sky[i] << ") does not match input image (" << is_sky[i] << ")";
+        HARP_THROW( o.str().c_str() );
+      }
+    }
+
     dotruth = true;
 
   }
@@ -366,6 +374,22 @@ int main ( int argc, char *argv[] ) {
 
       if ( debug ) {
 
+        boost::property_tree::ptree rtruth_spec_props;
+        rtruth_spec_props.put ( "format", "boss_specter" );
+        rtruth_spec_props.put ( "nspec", nspec );
+        rtruth_spec_props.put ( "nlambda", bandsize );
+
+        spec_p rtruth_spec ( spec::create ( rtruth_spec_props ) );
+
+        std::vector < double > band_lambda ( bandsize );
+        std::vector < bool > band_sky ( bandsize );
+        for ( size_t i = 0; i < bandsize; ++i ) {
+          band_lambda[i] = lambda[ band_start[ band ] + i ];
+          band_sky[i] = is_sky[ band_start[ band ] + i ];
+        }
+
+        rtruth_spec->write ( "specstract_Rtruth.fits", Rtruth, band_lambda, band_sky );
+
         matrix_local truth_image ( npix, 1 );
         local_matrix_zero ( truth_image );
 
@@ -425,6 +449,23 @@ int main ( int argc, char *argv[] ) {
 
 
     // FIXME: put this at the end of the program and dump the full projected image
+
+    boost::property_tree::ptree solution_spec_props;
+    solution_spec_props.put ( "format", "boss_specter" );
+    solution_spec_props.put ( "nspec", nspec );
+    solution_spec_props.put ( "nlambda", bandsize );
+
+    spec_p solution_spec ( spec::create ( solution_spec_props ) );
+
+    std::vector < double > band_lambda ( bandsize );
+    std::vector < bool > band_sky ( bandsize );
+    for ( size_t i = 0; i < bandsize; ++i ) {
+      band_lambda[i] = lambda[ band_start[ band ] + i ];
+      band_sky[i] = is_sky[ band_start[ band ] + i ];
+    }
+
+    solution_spec->write ( "specstract_Rf.fits", Rf, band_lambda, band_sky );
+    solution_spec->write ( "specstract_Rf-err.fits", Rf_err, band_lambda, band_sky );
 
     matrix_local solution_image ( npix, 1 );
     local_matrix_zero ( solution_image );

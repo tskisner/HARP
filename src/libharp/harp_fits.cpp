@@ -336,9 +336,7 @@ void harp::fits::img_write ( fitsfile * fp, matrix_local & data ) {
   fpixel[0] = 1;
   fpixel[1] = 1;
 
-  int height = data.Height();
-  int width = data.Width();
-  int npix = height * width;
+  long npix = data.Height() * data.Width();
 
   ret = fits_write_pix ( fp, TDOUBLE, fpixel, npix, data.Buffer(), &status );
   fits::check ( status );

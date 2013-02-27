@@ -10,59 +10,77 @@ static const char * format_boss_specter = "boss_specter";
 
 static const char * boss_specter_key_path = "path";
 static const char * boss_specter_key_objonly = "objonly";
+static const char * boss_specter_key_nspec = "nspec";
+static const char * boss_specter_key_nlambda = "nlambda";
 
 
 harp::spec_boss_specter::spec_boss_specter ( boost::property_tree::ptree const & props ) : spec ( props ) {
 
-  path_ = props.get < string > ( boss_specter_key_path );
+  path_ = props.get < string > ( boss_specter_key_path, "" );
 
   boost::optional < string > objval = props.get_optional < string > ( boss_specter_key_objonly );
   string obj = boost::get_optional_value_or ( objval, "FALSE" );
   objonly_ = ( obj == "TRUE" );
 
-  int np;
-  int myp;
+  if ( path_ == "" ) {
 
-  MPI_Comm_size ( MPI_COMM_WORLD, &np );
-  MPI_Comm_rank ( MPI_COMM_WORLD, &myp );
+    nspec_ = props.get < size_t > ( boss_specter_key_nspec );
 
-  if ( myp == 0 ) {
+    nlambda_ = props.get < size_t > ( boss_specter_key_nlambda );
 
-    fitsfile * fp;
+    spechdu_ = 1;
 
-    fits::open_read ( fp, path_ );
+    lambdahdu_ = 2;
 
-    if ( objonly_ ) {
-      spechdu_ = fits::img_seek ( fp, "EXTNAME", "OBJPHOT" );
-    } else {
-      spechdu_ = fits::img_seek ( fp, "EXTNAME", "FLUX" );
+    targethdu_ = 3;
+
+  } else {
+
+    int np;
+    int myp;
+
+    MPI_Comm_size ( MPI_COMM_WORLD, &np );
+    MPI_Comm_rank ( MPI_COMM_WORLD, &myp );
+
+    if ( myp == 0 ) {
+
+      fitsfile * fp;
+
+      fits::open_read ( fp, path_ );
+
+      if ( objonly_ ) {
+        spechdu_ = fits::img_seek ( fp, "EXTNAME", "OBJPHOT" );
+      } else {
+        spechdu_ = fits::img_seek ( fp, "EXTNAME", "FLUX" );
+      }
+
+      fits::img_dims ( fp, nspec_, nlambda_ );
+
+      lambdahdu_ = fits::img_seek ( fp, "EXTNAME", "WAVELENGTH" );
+      targethdu_ = fits::bin_seek ( fp, "EXTNAME", "TARGETINFO" );
+
+      fits::close ( fp );
+
     }
 
-    fits::img_dims ( fp, nspec_, nlambda_ );
+    // broadcast 
 
-    lambdahdu_ = fits::img_seek ( fp, "EXTNAME", "WAVELENGTH" );
-    targethdu_ = fits::bin_seek ( fp, "EXTNAME", "TARGETINFO" );
+    int ret = MPI_Bcast ( (void*)(&nspec_), 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
+    mpi_check ( MPI_COMM_WORLD, ret );
 
-    fits::close ( fp );
+    ret = MPI_Bcast ( (void*)(&nlambda_), 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
+    mpi_check ( MPI_COMM_WORLD, ret );
+
+    ret = MPI_Bcast ( (void*)(&spechdu_), 1, MPI_INT, 0, MPI_COMM_WORLD );
+    mpi_check ( MPI_COMM_WORLD, ret );
+
+    ret = MPI_Bcast ( (void*)(&lambdahdu_), 1, MPI_INT, 0, MPI_COMM_WORLD );
+    mpi_check ( MPI_COMM_WORLD, ret );
+
+    ret = MPI_Bcast ( (void*)(&targethdu_), 1, MPI_INT, 0, MPI_COMM_WORLD );
+    mpi_check ( MPI_COMM_WORLD, ret );
 
   }
-
-  // broadcast 
-
-  int ret = MPI_Bcast ( (void*)(&nspec_), 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
-  mpi_check ( MPI_COMM_WORLD, ret );
-
-  ret = MPI_Bcast ( (void*)(&nlambda_), 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
-  mpi_check ( MPI_COMM_WORLD, ret );
-
-  ret = MPI_Bcast ( (void*)(&spechdu_), 1, MPI_INT, 0, MPI_COMM_WORLD );
-  mpi_check ( MPI_COMM_WORLD, ret );
-
-  ret = MPI_Bcast ( (void*)(&lambdahdu_), 1, MPI_INT, 0, MPI_COMM_WORLD );
-  mpi_check ( MPI_COMM_WORLD, ret );
-
-  ret = MPI_Bcast ( (void*)(&targethdu_), 1, MPI_INT, 0, MPI_COMM_WORLD );
-  mpi_check ( MPI_COMM_WORLD, ret );
 
   nglobal_ = nspec_ * nlambda_;
   
@@ -187,7 +205,108 @@ void harp::spec_boss_specter::read ( matrix_dist & data, std::vector < double > 
 
 void harp::spec_boss_specter::write ( std::string const & path, matrix_dist & data, std::vector < double > const & lambda, std::vector < bool > const & sky ) {
 
-  HARP_THROW( "boss specter format spec writing not yet implemented" );
+  fitsfile * fp;
+
+  int ret;
+  int status = 0;
+
+  int np;
+  int myp;
+
+  MPI_Comm_size ( MPI_COMM_WORLD, &np );
+  MPI_Comm_rank ( MPI_COMM_WORLD, &myp );
+
+  // create file
+
+  if ( myp == 0 ) {
+    fits::create ( fp, path );
+    fits::img_append ( fp, nspec_, nlambda_ );
+    fits::write_key ( fp, "EXTNAME", "FLUX", "" );
+
+    fits::img_append ( fp, 1, nlambda_ );
+    fits::write_key ( fp, "EXTNAME", "WAVELENGTH", "" );
+
+    matrix_local lambda_loc ( nlambda_, 1 );
+    for ( size_t i = 0; i < nlambda_; ++i ) {
+      lambda_loc.Set ( i, 0, lambda[i] );
+    }
+    fits::img_write ( fp, lambda_loc );
+
+    char ** ttype = (char**) malloc ( 3 * sizeof(char*) );
+    char ** tform = (char**) malloc ( 3 * sizeof(char*) );
+    char ** tunit = (char**) malloc ( 3 * sizeof(char*) );
+    for ( size_t i = 0; i < 3; ++i ) {
+      ttype[i] = (char*) malloc ( FLEN_VALUE );
+      tform[i] = (char*) malloc ( FLEN_VALUE );
+      tunit[i] = (char*) malloc ( FLEN_VALUE );
+    }
+    strcpy ( ttype[0], "OBJTYPE" );
+    strcpy ( tform[0], "6A" );
+    strcpy ( tunit[0], "" );
+    strcpy ( ttype[1], "Z" );
+    strcpy ( tform[1], "1E" );
+    strcpy ( tunit[1], "" );
+    strcpy ( ttype[2], "O2FLUX" );
+    strcpy ( tform[2], "1E" );
+    strcpy ( tunit[2], "" );
+
+    ret = fits_create_tbl ( fp, BINARY_TBL, nspec_, 3, ttype, tform, tunit, "TARGETINFO", &status );
+    fits::check ( status );
+
+    for ( size_t i = 0; i < 3; ++i ) {
+      free ( ttype[i] );
+      free ( tform[i] );
+      free ( tunit[i] );
+    }
+    free ( ttype );
+    free ( tform );
+    free ( tunit );
+
+    char ** charray;
+    charray = (char**) malloc ( nspec_ * sizeof( char* ) );
+    if ( ! charray ) {
+      HARP_THROW( "cannot allocate temp char array" );
+    }
+    for ( size_t i = 0; i < nspec_; ++i ) {
+      charray[i] = (char*) malloc ( 50 * sizeof (char) );
+      if ( ! charray[i] ) {
+        HARP_THROW( "cannot allocate temp char array member" );
+      }
+      if ( sky[i] ) {
+        strcpy ( charray[i], "SKY" );
+      } else {
+        strcpy ( charray[i], "ELG" );
+      }
+    }
+
+    ret = fits_write_col_str ( fp, 1, 1, 1, nspec_, charray, &status );
+    fits::check ( status );
+
+    for ( size_t i = 0; i < nspec_; ++i ) {
+      free ( charray[i] );
+    }
+    free ( charray );
+
+
+  }
+
+  // reduce data to root process
+
+  matrix_local data_loc ( data.Height(), 1 );
+  local_matrix_zero ( data_loc );
+
+  elem::AxpyInterface < double > globloc;
+  globloc.Attach( elem::GLOBAL_TO_LOCAL, data );
+  globloc.Axpy ( 1.0, data_loc, 0, 0 );
+  globloc.Detach();
+
+  // write data
+
+  if ( myp == 0 ) {
+    fits::img_seek ( fp, spechdu_ );
+    fits::img_write ( fp, data_loc );
+    fits::close ( fp );
+  }
 
   return;
 }
