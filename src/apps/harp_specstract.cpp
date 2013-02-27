@@ -346,6 +346,8 @@ int main ( int argc, char *argv[] ) {
 
       sub_block ( fulltruth, band_start[ band ], 0, nbins_band, 1, truth_band );
 
+      truth_band.Write ( "Rband.txt" );
+
       dist_matrix_zero ( Rtruth );
 
       matrix_dist R;
