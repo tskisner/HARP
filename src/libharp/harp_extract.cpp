@@ -436,7 +436,7 @@ void harp::inverse_covariance ( matrix_sparse const & psf, matrix_local const & 
 
 void harp::resolution ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_dist & R ) {
 
-  R.ResizeTo ( W.Height(), W.Height() );
+  R = W;
   dist_matrix_zero ( R );
 
   eigen_compose ( EIG_SQRT, D, W, R );

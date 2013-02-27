@@ -334,35 +334,10 @@ int main ( int argc, char *argv[] ) {
 
     matrix_dist S ( nbins_band, 1, grid );
 
-    norm ( D, W, S );
-
-    tsubstop = MPI_Wtime();
-
-    if ( ( myp == 0 ) && ( ! quiet ) ) {
-      cout << prefix << "    compute matrix column norm = " << tsubstop-tsubstart << " seconds" << endl;
-    }
-
-    tsubstart = MPI_Wtime();
-
-    matrix_dist z ( nbins_band, 1 );
-  
-    matrix_dist Rf ( nbins_band, 1 );
-
-    matrix_dist Rf_err ( nbins_band, 1 );    
-
-    noise_weighted_spec ( design, invnoise, measured, z );
-
-    tsubstop = MPI_Wtime();
-
-    if ( ( myp == 0 ) && ( ! quiet ) ) {
-      cout << prefix << "    compute noise weighted spec = " << tsubstop-tsubstart << " seconds" << endl;
-    }
-
-    tsubstart = MPI_Wtime();
-  
-    extract ( D, W, S, z, Rf, Rf_err );
-
     if ( dotruth ) {
+
+      // since we need the explicit resolution matrix anyway, compute it
+      // here along with the normalization vector
 
       matrix_dist Rtruth ( nbins_band, 1 );
 
@@ -405,7 +380,40 @@ int main ( int argc, char *argv[] ) {
 
       }
 
+    } else {
+
+      // we just need the norm
+
+      norm ( D, W, S );
+
+    }    
+
+    tsubstop = MPI_Wtime();
+
+    if ( ( myp == 0 ) && ( ! quiet ) ) {
+      cout << prefix << "    compute matrix column norm = " << tsubstop-tsubstart << " seconds" << endl;
     }
+
+    tsubstart = MPI_Wtime();
+
+    matrix_dist z ( nbins_band, 1 );
+  
+    matrix_dist Rf ( nbins_band, 1 );
+
+    matrix_dist Rf_err ( nbins_band, 1 );    
+
+    noise_weighted_spec ( design, invnoise, measured, z );
+
+    tsubstop = MPI_Wtime();
+
+    if ( ( myp == 0 ) && ( ! quiet ) ) {
+      cout << prefix << "    compute noise weighted spec = " << tsubstop-tsubstart << " seconds" << endl;
+    }
+
+    tsubstart = MPI_Wtime();
+  
+    extract ( D, W, S, z, Rf, Rf_err );
+
 
 
     // FIXME: stitch together into full Rf and covariance. check for agreement within some overlap.
