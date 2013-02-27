@@ -117,7 +117,7 @@ void harp::test_sandbox ( string const & datadir ) {
 
     matrix_dist gauss_spec_block ( fibers * gauss_nlambda, 1 );
 
-    sub_block ( gauss_spec, 0, 0, fibers * gauss_nlambda, 1, gauss_spec_block );
+    sub_spec ( gauss_spec, gauss_nspec, 0, fibers, 0, gauss_nlambda, gauss_spec_block );
 
     spec_project ( gauss_design, gauss_spec_block, gauss_image );
 
@@ -318,7 +318,7 @@ void harp::test_sandbox ( string const & datadir ) {
   matrix_dist truth_slice ( nbins_slice, 1 );
   dist_matrix_zero ( truth_slice );
 
-  sub_block ( truth, 0, 0, nbins_slice, 1, truth_slice );
+  sub_spec ( truth, nbins, 0, nspec_slice, 0, nlambda_slice, truth_slice );
 
   elem::Gemv ( elem::NORMAL, 1.0, R, truth_slice, 0.0, Rtruth ); 
 

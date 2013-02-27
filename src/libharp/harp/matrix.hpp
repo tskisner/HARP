@@ -37,8 +37,6 @@ namespace harp {
 
   void norm ( matrix_dist & D, matrix_dist & W, matrix_dist & S );
 
-  void sub_block ( matrix_dist & in, int firstrow, int firstcol, int nrow, int ncol, matrix_dist & out );
-
 }
 
 #endif

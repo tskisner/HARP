@@ -7,6 +7,65 @@ using namespace std;
 using namespace harp;
 
 
+
+void harp::sub_spec ( matrix_dist & in, size_t total_nspec, size_t first_spec, size_t nspec, size_t first_lambda, size_t nlambda, matrix_dist & out ) {
+
+  size_t in_nlambda = (size_t) ( in.Height() / total_nspec );
+
+  if ( first_spec + nspec > total_nspec ) {
+    std::ostringstream o;
+    o << "input spec range (" << first_spec << " - " << first_spec + nspec - 1 << ") exceeds the number of input spectra (" << total_nspec << ")";
+    HARP_THROW( o.str().c_str() );
+  }
+
+  if ( first_lambda + nlambda > in_nlambda ) {
+    std::ostringstream o;
+    o << "input lambda range (" << first_lambda << " - " << first_lambda + nlambda - 1 << ") exceeds the number of input points (" << in_nlambda << ")";
+    HARP_THROW( o.str().c_str() );
+  }
+
+  // FIXME: this should be changed to not store a full local copy of the input!
+
+  matrix_local in_loc ( in.Height(), 1 );
+  local_matrix_zero ( in_loc );
+
+  elem::AxpyInterface < double > globloc;
+  globloc.Attach( elem::GLOBAL_TO_LOCAL, in );
+  globloc.Axpy ( 1.0, in_loc, 0, 0 );
+  globloc.Detach();
+
+  out.ResizeTo ( nspec * nlambda, 1 );
+
+  // Update local output matrix with proper slices from the input
+
+  matrix_local & out_loc = out.LocalMatrix();
+
+  int hlocal = out.LocalHeight();
+
+  int rowoff = out.ColShift();
+  int rowstride = out.ColStride();
+  int row;
+
+  double val;
+  size_t out_spec;
+  size_t out_lambda;
+
+  for ( int j = 0; j < hlocal; ++j ) {
+    row = rowoff + j * rowstride;
+    out_spec = (size_t)( row / nlambda );
+    out_lambda = row - out_spec * nlambda;
+    out_spec += first_spec;
+    out_lambda += first_lambda;
+    val = in_loc.Get ( out_spec * in_nlambda + out_lambda, 0 );
+    out_loc.Set ( j, 0, val );
+  }
+
+  return;
+}
+
+
+
+
 void harp::spec_project ( matrix_sparse const & psf, matrix_dist const & in, matrix_local & out ) {
 
   int np;
