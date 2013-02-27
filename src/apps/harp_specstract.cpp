@@ -211,7 +211,7 @@ int main ( int argc, char *argv[] ) {
 
   while ( offset + lambda_width < nlambda ) {
     band_start.push_back( offset );
-    band_stop.push_back( offset + lambda_width );
+    band_stop.push_back( offset + lambda_width - 1 );
     offset += lambda_core;
   }
 
