@@ -520,6 +520,14 @@ void harp::extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_d
 
   eigen_compose ( EIG_INVSQRT, D, W, rtC );
 
+  // multiply rtC * z
+
+  elem::Symv ( elem::LOWER, 1.0, rtC, z, 0.0, f );
+
+  // normalize output spectra
+
+  apply_norm ( S, f );
+
   // normalize to get R * C for error calculation
 
   matrix_dist RC ( rtC );
@@ -561,14 +569,6 @@ void harp::extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_d
   locglob.Attach( elem::LOCAL_TO_GLOBAL, err );
   locglob.Axpy ( 1.0, err_loc, 0, 0 );
   locglob.Detach();
-
-  // multiply rtC * z
-
-  elem::Symv ( elem::LOWER, 1.0, rtC, z, 0.0, f );
-
-  // normalize
-
-  apply_norm ( S, f );
 
   return;
 }
