@@ -521,6 +521,12 @@ void harp::extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_d
 
   eigen_compose ( EIG_INVSQRT, D, W, rtC );
 
+  // Store R * C for error calculation before calling Symv (which may
+  // destroy upper triangle).
+
+  matrix_dist RC ( rtC );
+  apply_norm ( S, RC );
+
   // multiply rtC * z
 
   elem::Symv ( elem::LOWER, 1.0, rtC, z, 0.0, Rf );
@@ -545,11 +551,6 @@ void harp::extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_d
 
 
   // compute diagonal error on result.
-
-  // normalize to get R * C for error calculation
-
-  matrix_dist RC ( rtC );
-  apply_norm ( S, RC );
 
   // set local err matrix copy
 
