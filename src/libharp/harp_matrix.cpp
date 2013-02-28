@@ -323,6 +323,44 @@ void harp::apply_norm ( matrix_dist & S, matrix_dist & mat ) {
 }
 
 
+void harp::apply_inverse_norm ( matrix_dist & S, matrix_dist & mat ) {
+
+  // Get local copy of S
+
+  matrix_local Sloc ( S.Height(), 1 );
+  local_matrix_zero ( Sloc );
+
+  elem::AxpyInterface < double > globloc;
+  globloc.Attach( elem::GLOBAL_TO_LOCAL, S );
+  globloc.Axpy ( 1.0, Sloc, 0, 0 );
+  globloc.Detach();
+
+  // Apply to local matrix
+
+  matrix_local & local = mat.LocalMatrix();
+
+  int hlocal = mat.LocalHeight();
+  int wlocal = mat.LocalWidth();
+
+  int rowoff = mat.ColShift();
+  int rowstride = mat.ColStride();
+  int row;
+
+  double mval;
+
+  for ( int i = 0; i < wlocal; ++i ) {
+    for ( int j = 0; j < hlocal; ++j ) {
+      row = rowoff + j * rowstride;
+      mval = local.Get ( j, i );
+      mval /= Sloc.Get ( row, 0 );
+      local.Set ( j, i, mval );
+    }
+  }
+
+  return;
+}
+
+
 void harp::norm ( matrix_dist & D, matrix_dist & W, matrix_dist & S ) {
 
   matrix_dist temp ( W );

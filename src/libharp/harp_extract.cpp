@@ -508,9 +508,10 @@ void harp::resolution ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matri
 }
 
 
-void harp::extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_dist & z, matrix_dist & f, matrix_dist & err ) {
+void harp::extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_dist & z, matrix_dist & Rf, matrix_dist & err, matrix_dist & f ) {
 
   dist_matrix_zero ( f );
+  dist_matrix_zero ( Rf );
   dist_matrix_zero ( err );
 
   // compose ( W^T D^{-1/2} W )
@@ -522,11 +523,28 @@ void harp::extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_d
 
   // multiply rtC * z
 
-  elem::Symv ( elem::LOWER, 1.0, rtC, z, 0.0, f );
+  elem::Symv ( elem::LOWER, 1.0, rtC, z, 0.0, Rf );
 
   // normalize output spectra
 
-  apply_norm ( S, f );
+  apply_norm ( S, Rf );
+
+
+  // compute deconvolved spectra (numerically unstable, but useful for visualization).
+  // R^-1 == ( W^T D^{-1/2} W ) S
+
+  // first apply inverse norm
+
+  matrix_dist srf ( Rf );
+
+  apply_inverse_norm ( S, srf );
+
+  // now apply rtC
+
+  elem::Symv ( elem::LOWER, 1.0, rtC, srf, 0.0, f );
+
+
+  // compute diagonal error on result.
 
   // normalize to get R * C for error calculation
 

@@ -142,7 +142,7 @@ int main ( int argc, char *argv[] ) {
 
   if ( debug ) {
     if ( myp == 0 ) {
-      string outimg = "specstract_input_image.fits";
+      string outimg = "harp_image_input.fits";
       fits::create ( fp, outimg );
       fits::img_append ( fp, imgrows, imgcols );
       fits::write_key ( fp, "EXTNAME", "Data", "input image" );
@@ -372,34 +372,34 @@ int main ( int argc, char *argv[] ) {
 
       // FIXME: do this at the end...
 
+      boost::property_tree::ptree rtruth_spec_props;
+      rtruth_spec_props.put ( "format", "boss_specter" );
+      rtruth_spec_props.put ( "nspec", nspec );
+      rtruth_spec_props.put ( "nlambda", bandsize );
+
+      spec_p rtruth_spec ( spec::create ( rtruth_spec_props ) );
+
+      std::vector < double > band_lambda ( bandsize );
+      std::vector < bool > band_sky ( bandsize );
+      for ( size_t i = 0; i < bandsize; ++i ) {
+        band_lambda[i] = lambda[ band_start[ band ] + i ];
+        band_sky[i] = is_sky[ band_start[ band ] + i ];
+      }
+
+      rtruth_spec->write ( "harp_spec_Rtruth.fits", Rtruth, band_lambda, band_sky );
+
       if ( debug ) {
-
-        boost::property_tree::ptree rtruth_spec_props;
-        rtruth_spec_props.put ( "format", "boss_specter" );
-        rtruth_spec_props.put ( "nspec", nspec );
-        rtruth_spec_props.put ( "nlambda", bandsize );
-
-        spec_p rtruth_spec ( spec::create ( rtruth_spec_props ) );
-
-        std::vector < double > band_lambda ( bandsize );
-        std::vector < bool > band_sky ( bandsize );
-        for ( size_t i = 0; i < bandsize; ++i ) {
-          band_lambda[i] = lambda[ band_start[ band ] + i ];
-          band_sky[i] = is_sky[ band_start[ band ] + i ];
-        }
-
-        rtruth_spec->write ( "specstract_Rtruth.fits", Rtruth, band_lambda, band_sky );
 
         matrix_local truth_image ( npix, 1 );
         local_matrix_zero ( truth_image );
 
-        spec_project ( design, Rtruth, truth_image );
+        spec_project ( design, truth_band, truth_image );
 
         if ( myp == 0 ) {
-          string outimg = "specstract_Rtruth_projection.fits";
+          string outimg = "harp_image_truth-project.fits";
           fits::create ( fp, outimg );
           fits::img_append ( fp, imgrows, imgcols );
-          fits::write_key ( fp, "EXTNAME", "RTruth", "harp_specstract resolution convolved truth" );
+          fits::write_key ( fp, "EXTNAME", "Truth", "Projected truth" );
           fits::img_write ( fp, truth_image );
           fits::close ( fp );
         }
@@ -426,6 +426,8 @@ int main ( int argc, char *argv[] ) {
   
     matrix_dist Rf ( nbins_band, 1 );
 
+    matrix_dist f ( nbins_band, 1 );
+
     matrix_dist Rf_err ( nbins_band, 1 );    
 
     noise_weighted_spec ( design, invnoise, measured, z );
@@ -438,7 +440,7 @@ int main ( int argc, char *argv[] ) {
 
     tsubstart = MPI_Wtime();
   
-    extract ( D, W, S, z, Rf, Rf_err );
+    extract ( D, W, S, z, Rf, Rf_err, f );
 
 
 
@@ -446,6 +448,7 @@ int main ( int argc, char *argv[] ) {
 
     Rf.Write( "Rf.txt" );
     Rf_err.Write( "Rf_err.txt" );
+    f.Write( "f.txt" );
 
 
     // FIXME: put this at the end of the program and dump the full projected image
@@ -464,23 +467,26 @@ int main ( int argc, char *argv[] ) {
       band_sky[i] = is_sky[ band_start[ band ] + i ];
     }
 
-    solution_spec->write ( "specstract_Rf.fits", Rf, band_lambda, band_sky );
-    solution_spec->write ( "specstract_Rf-err.fits", Rf_err, band_lambda, band_sky );
+    solution_spec->write ( "harp_spec_Rf.fits", Rf, band_lambda, band_sky );
+    solution_spec->write ( "harp_spec_Rf-err.fits", Rf_err, band_lambda, band_sky );
 
-    matrix_local solution_image ( npix, 1 );
-    local_matrix_zero ( solution_image );
+    if ( debug ) {
 
-    spec_project ( design, Rf, solution_image );
+      matrix_local solution_image ( npix, 1 );
+      local_matrix_zero ( solution_image );
 
-    if ( myp == 0 ) {
-      string outimg = "specstract_Rf_projection.fits";
-      fits::create ( fp, outimg );
-      fits::img_append ( fp, imgrows, imgcols );
-      fits::write_key ( fp, "EXTNAME", "Rf", "harp_specstract solution" );
-      fits::img_write ( fp, solution_image );
-      fits::close ( fp );
+      spec_project ( design, f, solution_image );
+
+      if ( myp == 0 ) {
+        string outimg = "harp_image_f-project.fits";
+        fits::create ( fp, outimg );
+        fits::img_append ( fp, imgrows, imgcols );
+        fits::write_key ( fp, "EXTNAME", "Solution", "Projected solution" );
+        fits::img_write ( fp, solution_image );
+        fits::close ( fp );
+      }
+
     }
-
 
   
     tsubstop = MPI_Wtime();

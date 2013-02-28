@@ -280,6 +280,7 @@ void harp::test_sandbox ( string const & datadir ) {
   matrix_dist z ( nbins_slice, 1 );
   matrix_dist Rf ( nbins_slice, 1 );
   matrix_dist err ( nbins_slice, 1 );
+  matrix_dist f ( nbins_slice, 1 );
 
   tstart = MPI_Wtime();
   noise_weighted_spec ( design, invnoise, measured, z );
@@ -293,7 +294,7 @@ void harp::test_sandbox ( string const & datadir ) {
   z.Write( os.str() );
 
   tstart = MPI_Wtime();
-  extract ( D, W, S, z, Rf, err );
+  extract ( D, W, S, z, Rf, err, f );
   tstop = MPI_Wtime();
   if ( myp == 0 ) {
     cerr << "  Time for extraction = " << tstop-tstart << " seconds" << endl;

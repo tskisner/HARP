@@ -35,6 +35,8 @@ namespace harp {
 
   void apply_norm ( matrix_dist & S, matrix_dist & mat );
 
+  void apply_inverse_norm ( matrix_dist & S, matrix_dist & mat );
+
   void norm ( matrix_dist & D, matrix_dist & W, matrix_dist & S );
 
 }
