@@ -274,10 +274,9 @@ void harp::column_norm ( matrix_dist & mat, matrix_dist & S ) {
 
   // Invert
 
-  size_t allocated = S.AllocatedMemory();
   double * raw = S.LocalBuffer();
 
-  for ( size_t i = 0; i < allocated; ++i ) {
+  for ( size_t i = 0; i < S.Height(); ++i ) {
     raw[i] = 1.0 / raw[i];
   }
 

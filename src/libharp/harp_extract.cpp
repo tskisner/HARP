@@ -64,6 +64,61 @@ void harp::sub_spec ( matrix_dist & in, size_t total_nspec, size_t first_spec, s
 }
 
 
+void harp::accum_spec ( matrix_dist & full, size_t total_nspec, size_t first_spec, size_t nspec, size_t first_lambda, size_t nlambda, matrix_dist & chunk ) {
+
+  size_t full_nlambda = (size_t) ( full.Height() / total_nspec );
+
+  if ( first_spec + nspec > total_nspec ) {
+    std::ostringstream o;
+    o << "chunk spec range (" << first_spec << " - " << first_spec + nspec - 1 << ") exceeds the number of full spectra (" << total_nspec << ")";
+    HARP_THROW( o.str().c_str() );
+  }
+
+  if ( first_lambda + nlambda > full_nlambda ) {
+    std::ostringstream o;
+    o << "chunk lambda range (" << first_lambda << " - " << first_lambda + nlambda - 1 << ") exceeds the number of full points (" << full_nlambda << ")";
+    HARP_THROW( o.str().c_str() );
+  }
+
+  // FIXME: this should be changed to not store a full local copy of the matrix!
+
+  matrix_local full_loc ( full.Height(), 1 );
+  local_matrix_zero ( full_loc );
+
+
+  // Copy our data into full local contribution
+
+  matrix_local & chunk_loc = chunk.LocalMatrix();
+
+  int hlocal = chunk.LocalHeight();
+
+  int rowoff = chunk.ColShift();
+  int rowstride = chunk.ColStride();
+  int row;
+
+  double val;
+  size_t spec;
+  size_t lambda;
+
+  for ( int j = 0; j < hlocal; ++j ) {
+    row = rowoff + j * rowstride;
+    spec = (size_t)( row / nlambda );
+    lambda = row - spec * nlambda;
+    spec += first_spec;
+    lambda += first_lambda;
+    val = chunk_loc.Get ( j, 0 );
+    full_loc.Set ( spec * nlambda + lambda, 0, val );
+  }
+
+  // accumulate
+
+  elem::AxpyInterface < double > locglob;
+  locglob.Attach( elem::LOCAL_TO_GLOBAL, full );
+  locglob.Axpy ( 1.0, full_loc, 0, 0 );
+  locglob.Detach();
+
+  return;
+}
 
 
 void harp::spec_project ( matrix_sparse const & psf, matrix_dist const & in, matrix_local & out ) {

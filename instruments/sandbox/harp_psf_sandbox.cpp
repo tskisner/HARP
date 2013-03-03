@@ -494,7 +494,7 @@ void harp::psf_sandbox::projection ( size_t first_spec, size_t last_spec, size_t
   size_t first_spec_local = (size_t)( first_loc_row / block_nlambda );
   size_t last_spec_local = (size_t)( (first_loc_row + loc_height - 1) / block_nlambda );
 
-  cache ( first_spec_local, last_spec_local );
+  cache ( 0, nspec_ - 1 );
 
   // populate matrix
 

@@ -13,7 +13,7 @@ namespace harp {
       size_t rows ( ) { return rows_; }
       size_t cols ( ) { return cols_; }
 
-      std::vector < bool > sky ( ) { return std::vector < bool > (); }
+      std::vector < bool > sky ( ) { return sky_; }
       
       void read ( matrix_local & data );
       void write ( std::string const & path, matrix_local & data );
@@ -28,6 +28,8 @@ namespace harp {
       std::string path_;
       int sighdu_;
       int nsehdu_;
+      int skyhdu_;
+      std::vector < bool > sky_;
     
   };
 
