@@ -241,6 +241,32 @@ int main ( int argc, char *argv[] ) {
 
   size_t nband = band_start.size();
 
+  // select output block from solved spectra
+
+  vector < size_t > band_out;
+  vector < size_t > band_write;
+
+  if ( nband == 1 ) {
+
+    // there is only one band...
+    band_out.push_back( 0 );
+    band_write.push_back( band_stop[0] - band_start[0] + 1 );
+
+  } else {
+
+    band_out.push_back( 0 );
+    band_write.push_back( lambda_overlap + lambda_core );
+
+    for ( size_t i = 1; i < ( nband - 1 ); ++i ) {
+      band_out.push_back( band_start[i] + lambda_overlap );
+      band_write.push_back( lambda_core );
+    }
+
+    band_out.push_back( band_start[ nband - 1 ] + lambda_overlap );
+    band_write.push_back( band_stop[ nband - 1 ] + 1 - ( band_start[ nband - 1 ] + lambda_overlap ) );
+
+  }
+
   matrix_dist fullf ( psf_nbins, 1 );
   dist_matrix_zero ( fullf );
 
@@ -314,16 +340,23 @@ int main ( int argc, char *argv[] ) {
 
   }
 
+  // aggregate timing
+
+  double tot_design = 0.0;
+  double tot_inverse = 0.0;
+  double tot_eigen = 0.0;
+  double tot_norm = 0.0;
+  double tot_nsespec = 0.0;
+  double tot_extract = 0.0;
+
   // Process all bands
 
   if ( ( myp == 0 ) && ( ! quiet ) ) {
-    cout << prefix << "Extracting " << nspec_chunk << " spectral chunks, each with" << endl;
-    cout << prefix << "           " << lambda_width << " wavelength points with overlap of " << lambda_overlap << " :" << endl;
+    cout << prefix << "Extracting " << nspec_chunk << " spectral chunks, each with " << lambda_width << " lambda points ( overlap = " << lambda_overlap << " )" << endl;
   }
 
-
-  //for ( size_t band = 0; band < nband; ++band ) {
-  for ( size_t band = 0; band < 1; ++band ) {
+  for ( size_t band = 0; band < nband; ++band ) {
+  //for ( size_t band = 0; band < 2; ++band ) {
 
     if ( ( myp == 0 ) && ( ! quiet ) ) {
       cout << prefix << "  Wavelength band " << band << "/" << nband << " (" << band_start[band] << " - " << band_stop[band] << ")" << endl;
@@ -361,6 +394,8 @@ int main ( int argc, char *argv[] ) {
 
       tsubstop = MPI_Wtime();
 
+      tot_design += ( tsubstop - tsubstart );
+
       if ( ( myp == 0 ) && ( ! quiet ) ) {
         cout << prefix << "      computing A^T = " << tsubstop-tsubstart << " seconds" << endl;
       }
@@ -379,6 +414,8 @@ int main ( int argc, char *argv[] ) {
 
       tsubstop = MPI_Wtime();
 
+      tot_inverse += ( tsubstop - tsubstart );
+
       if ( ( myp == 0 ) && ( ! quiet ) ) {
         cout << prefix << "      building inverse covariance = " << tsubstop-tsubstart << " seconds" << endl;
       }
@@ -393,11 +430,15 @@ int main ( int argc, char *argv[] ) {
 
       tsubstop = MPI_Wtime();
 
+      tot_eigen += ( tsubstop - tsubstart );
+
       if ( ( myp == 0 ) && ( ! quiet ) ) {
         cout << prefix << "      eigendecompose inverse covariance = " << tsubstop-tsubstart << " seconds" << endl;
       }
 
       matrix_dist S ( nbins, 1, grid );
+
+      matrix_dist out_spec ( nspec * band_write [ band ], 1 );
 
       if ( dotruth ) {
 
@@ -420,12 +461,16 @@ int main ( int argc, char *argv[] ) {
         resolution ( D, W, S, R );
 
         elem::Gemv ( elem::NORMAL, 1.0, R, truth_band, 0.0, Rtruth );
-
+        
         // accumulate to global resolution convolved truth
 
-        accum_spec ( fullRtruth, psf_nspec, spec_start[ spec ], nspec, band_start[ band ], bandsize, Rtruth );
+        sub_spec ( Rtruth, nspec, 0, nspec, band_out[ band ] - band_start[ band ], band_write[ band ], out_spec );
+
+        accum_spec ( fullRtruth, psf_nspec, spec_start[ spec ], nspec, band_out[ band ], band_write[ band ], out_spec );
 
         tsubstop = MPI_Wtime();
+
+        tot_norm += ( tsubstop - tsubstart );
 
         if ( ( myp == 0 ) && ( ! quiet ) ) {
           cout << prefix << "      compute column norm and resolution convolved truth = " << tsubstop-tsubstart << " seconds" << endl;
@@ -440,6 +485,8 @@ int main ( int argc, char *argv[] ) {
         norm ( D, W, S );
 
         tsubstop = MPI_Wtime();
+
+        tot_norm += ( tsubstop - tsubstart );
 
         if ( ( myp == 0 ) && ( ! quiet ) ) {
           cout << prefix << "      compute column norm = " << tsubstop-tsubstart << " seconds" << endl;
@@ -458,6 +505,8 @@ int main ( int argc, char *argv[] ) {
 
       tsubstop = MPI_Wtime();
 
+      tot_nsespec += ( tsubstop - tsubstart );
+
       if ( ( myp == 0 ) && ( ! quiet ) ) {
         cout << prefix << "      compute noise weighted spec = " << tsubstop-tsubstart << " seconds" << endl;
       }
@@ -468,13 +517,21 @@ int main ( int argc, char *argv[] ) {
 
       // accumulate to global solution
 
-      accum_spec ( fullf, psf_nspec, spec_start[ spec ], nspec, band_start[ band ], bandsize, f );
+      sub_spec ( f, nspec, 0, nspec, band_out[ band ] - band_start[ band ], band_write[ band ], out_spec );
 
-      accum_spec ( fullRf, psf_nspec, spec_start[ spec ], nspec, band_start[ band ], bandsize, Rf );
+      accum_spec ( fullf, psf_nspec, spec_start[ spec ], nspec, band_out[ band ], band_write[ band ], out_spec );
 
-      accum_spec ( fullerr, psf_nspec, spec_start[ spec ], nspec, band_start[ band ], bandsize, Rf_err );
+      sub_spec ( Rf, nspec, 0, nspec, band_out[ band ] - band_start[ band ], band_write[ band ], out_spec );
+
+      accum_spec ( fullRf, psf_nspec, spec_start[ spec ], nspec, band_out[ band ], band_write[ band ], out_spec );
+
+      sub_spec ( Rf_err, nspec, 0, nspec, band_out[ band ] - band_start[ band ], band_write[ band ], out_spec );
+
+      accum_spec ( fullerr, psf_nspec, spec_start[ spec ], nspec, band_out[ band ], band_write[ band ], out_spec );
     
       tsubstop = MPI_Wtime();
+
+      tot_extract += ( tsubstop - tsubstart );
 
       tstop = tsubstop;
 
@@ -485,6 +542,16 @@ int main ( int argc, char *argv[] ) {
 
     }
 
+  }
+
+  if ( ( myp == 0 ) && ( ! quiet ) ) {
+    cout << prefix << "Aggregate Timings:" << endl;
+    cout << prefix << "  Build design matrix = " << tot_design << " seconds" << endl;
+    cout << prefix << "  Build inverse covariance = " << tot_inverse << " seconds" << endl;
+    cout << prefix << "  Eigendecompose inverse = " << tot_eigen << " seconds" << endl;
+    cout << prefix << "  Compute column norm = " << tot_norm << " seconds" << endl;
+    cout << prefix << "  Compute noise weighted spec = " << tot_nsespec << " seconds" << endl;
+    cout << prefix << "  Extract spectra = " << tot_extract << " seconds" << endl;
   }
 
   // Write outputs
