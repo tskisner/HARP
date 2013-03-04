@@ -456,7 +456,7 @@ int main ( int argc, char *argv[] ) {
 
         dist_matrix_zero ( Rtruth );
 
-        matrix_dist R;
+        matrix_dist R ( W );
 
         resolution ( D, W, S, R );
 

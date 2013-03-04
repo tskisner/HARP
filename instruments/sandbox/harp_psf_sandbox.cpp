@@ -223,6 +223,11 @@ void harp::psf_sandbox::cache ( size_t first_spec, size_t last_spec ) {
     cached_first_ = first_spec;
     cached_last_ = last_spec;
 
+    for ( size_t i = 0; i < nspec; ++i ) {
+      size_t spec = i + first_spec;
+      resp_[ spec ].reset ( new psf_sandbox_resp );
+    }
+
     if ( dofake_ ) {
       return;
     }
@@ -250,9 +255,9 @@ void harp::psf_sandbox::cache ( size_t first_spec, size_t last_spec ) {
     mpi_check ( MPI_COMM_WORLD, ret );
     for ( size_t i = 0; i < nspec; ++i ) {
       size_t spec = i + first_spec;
-      resp_[ spec ].x.ResizeTo ( nlambda_, 1 );
+      resp_[ spec ]->x.ResizeTo ( nlambda_, 1 );
       for ( size_t j = 0; j < nlambda_; ++j ) {
-        resp_[ spec ].x.Set ( j, 0, iobuffer.Get ( j, spec ) );
+        resp_[ spec ]->x.Set ( j, 0, iobuffer.Get ( j, spec ) );
       }
     }
 
@@ -264,9 +269,9 @@ void harp::psf_sandbox::cache ( size_t first_spec, size_t last_spec ) {
     mpi_check ( MPI_COMM_WORLD, ret );
     for ( size_t i = 0; i < nspec; ++i ) {
       size_t spec = i + first_spec;
-      resp_[ spec ].y.ResizeTo ( nlambda_, 1 );
+      resp_[ spec ]->y.ResizeTo ( nlambda_, 1 );
       for ( size_t j = 0; j < nlambda_; ++j ) {
-        resp_[ spec ].y.Set ( j, 0, iobuffer.Get ( j, spec ) );
+        resp_[ spec ]->y.Set ( j, 0, iobuffer.Get ( j, spec ) );
       }
     }
 
@@ -278,9 +283,9 @@ void harp::psf_sandbox::cache ( size_t first_spec, size_t last_spec ) {
     mpi_check ( MPI_COMM_WORLD, ret );
     for ( size_t i = 0; i < nspec; ++i ) {
       size_t spec = i + first_spec;
-      resp_[ spec ].lambda.ResizeTo ( nlambda_, 1 );
+      resp_[ spec ]->lambda.ResizeTo ( nlambda_, 1 );
       for ( size_t j = 0; j < nlambda_; ++j ) {
-        resp_[ spec ].lambda.Set ( j, 0, iobuffer.Get ( j, spec ) );
+        resp_[ spec ]->lambda.Set ( j, 0, iobuffer.Get ( j, spec ) );
       }
     }
 
@@ -292,9 +297,9 @@ void harp::psf_sandbox::cache ( size_t first_spec, size_t last_spec ) {
     mpi_check ( MPI_COMM_WORLD, ret );
     for ( size_t i = 0; i < nspec; ++i ) {
       size_t spec = i + first_spec;
-      resp_[ spec ].amp.ResizeTo ( nlambda_, 1 );
+      resp_[ spec ]->amp.ResizeTo ( nlambda_, 1 );
       for ( size_t j = 0; j < nlambda_; ++j ) {
-        resp_[ spec ].amp.Set ( j, 0, iobuffer.Get ( j, spec ) );
+        resp_[ spec ]->amp.Set ( j, 0, iobuffer.Get ( j, spec ) );
       }
     }
 
@@ -306,9 +311,9 @@ void harp::psf_sandbox::cache ( size_t first_spec, size_t last_spec ) {
     mpi_check ( MPI_COMM_WORLD, ret );
     for ( size_t i = 0; i < nspec; ++i ) {
       size_t spec = i + first_spec;
-      resp_[ spec ].maj.ResizeTo ( nlambda_, 1 );
+      resp_[ spec ]->maj.ResizeTo ( nlambda_, 1 );
       for ( size_t j = 0; j < nlambda_; ++j ) {
-        resp_[ spec ].maj.Set ( j, 0, iobuffer.Get ( j, spec ) );
+        resp_[ spec ]->maj.Set ( j, 0, iobuffer.Get ( j, spec ) );
       }
     }
 
@@ -320,9 +325,9 @@ void harp::psf_sandbox::cache ( size_t first_spec, size_t last_spec ) {
     mpi_check ( MPI_COMM_WORLD, ret );
     for ( size_t i = 0; i < nspec; ++i ) {
       size_t spec = i + first_spec;
-      resp_[ spec ].min.ResizeTo ( nlambda_, 1 );
+      resp_[ spec ]->min.ResizeTo ( nlambda_, 1 );
       for ( size_t j = 0; j < nlambda_; ++j ) {
-        resp_[ spec ].min.Set ( j, 0, iobuffer.Get ( j, spec ) );
+        resp_[ spec ]->min.Set ( j, 0, iobuffer.Get ( j, spec ) );
       }
     }
 
@@ -334,9 +339,9 @@ void harp::psf_sandbox::cache ( size_t first_spec, size_t last_spec ) {
     mpi_check ( MPI_COMM_WORLD, ret );
     for ( size_t i = 0; i < nspec; ++i ) {
       size_t spec = i + first_spec;
-      resp_[ spec ].ang.ResizeTo ( nlambda_, 1 );
+      resp_[ spec ]->ang.ResizeTo ( nlambda_, 1 );
       for ( size_t j = 0; j < nlambda_; ++j ) {
-        resp_[ spec ].ang.Set ( j, 0, iobuffer.Get ( j, spec ) );
+        resp_[ spec ]->ang.Set ( j, 0, iobuffer.Get ( j, spec ) );
       }
     }
     
@@ -389,17 +394,17 @@ void harp::psf_sandbox::extent ( size_t firstspec, size_t lastspec, size_t first
     
     for ( size_t curspec = firstspec; curspec <= lastspec; ++curspec ) {
       for ( size_t curbin = firstbin; curbin <= lastbin; ++curbin ) {
-        if ( resp_[ curspec ].x.Get( curbin, 0 ) < minX ) {
-          minX = resp_[ curspec ].x.Get( curbin, 0 );
+        if ( resp_[ curspec ]->x.Get( curbin, 0 ) < minX ) {
+          minX = resp_[ curspec ]->x.Get( curbin, 0 );
         }
-        if ( resp_[ curspec ].x.Get( curbin, 0 ) > maxX ) {
-          maxX = resp_[ curspec ].x.Get( curbin, 0 );
+        if ( resp_[ curspec ]->x.Get( curbin, 0 ) > maxX ) {
+          maxX = resp_[ curspec ]->x.Get( curbin, 0 );
         }
-        if ( resp_[ curspec ].y.Get( curbin, 0 ) < minY ) {
-          minY = resp_[ curspec ].y.Get( curbin, 0 );
+        if ( resp_[ curspec ]->y.Get( curbin, 0 ) < minY ) {
+          minY = resp_[ curspec ]->y.Get( curbin, 0 );
         }
-        if ( resp_[ curspec ].y.Get( curbin, 0 ) > maxY ) {
-          maxY = resp_[ curspec ].y.Get( curbin, 0 );
+        if ( resp_[ curspec ]->y.Get( curbin, 0 ) > maxY ) {
+          maxY = resp_[ curspec ]->y.Get( curbin, 0 );
         }
       }
     }
@@ -549,12 +554,12 @@ void harp::psf_sandbox::projection ( size_t first_spec, size_t last_spec, size_t
 
     } else {
 
-      amp = resp_[ spec ].amp.Get( specbin, 0 );
-      maj = resp_[ spec ].maj.Get( specbin, 0 );
-      min = resp_[ spec ].min.Get( specbin, 0 );
-      ang = resp_[ spec ].ang.Get( specbin, 0 );
-      xcenter = resp_[ spec ].x.Get( specbin, 0 );
-      ycenter = resp_[ spec ].y.Get( specbin, 0 );
+      amp = resp_[ spec ]->amp.Get( specbin, 0 );
+      maj = resp_[ spec ]->maj.Get( specbin, 0 );
+      min = resp_[ spec ]->min.Get( specbin, 0 );
+      ang = resp_[ spec ]->ang.Get( specbin, 0 );
+      xcenter = resp_[ spec ]->x.Get( specbin, 0 );
+      ycenter = resp_[ spec ]->y.Get( specbin, 0 );
 
     }
 

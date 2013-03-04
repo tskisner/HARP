@@ -580,6 +580,7 @@ void harp::extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_d
   // destroy upper triangle).
 
   matrix_dist RC ( rtC );
+
   apply_norm ( S, RC );
 
   // multiply rtC * z

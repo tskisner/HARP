@@ -98,16 +98,56 @@ namespace harp {
   };
   
   
-  typedef struct {
-    matrix_local x;
-    matrix_local y;
-    matrix_local lambda;
-    matrix_local amp;
-    matrix_local maj;
-    matrix_local min;
-    matrix_local ang;
-  } psf_sandbox_resp;
+  class psf_sandbox_resp {
+
+    public :
+
+      psf_sandbox_resp ( ) { }
+
+      ~psf_sandbox_resp ( ) {
+        x.Empty();
+        y.Empty();
+        lambda.Empty();
+        amp.Empty();
+        maj.Empty();
+        min.Empty();
+        ang.Empty();
+      }
+
+      psf_sandbox_resp ( psf_sandbox_resp const & orig ) :
+        x( orig.x ),
+        y( orig.y ),
+        lambda( orig.lambda ),
+        amp( orig.amp ),
+        maj( orig.maj ),
+        min( orig.min ),
+        ang( orig.ang ) { }
+
+      psf_sandbox_resp & operator= ( psf_sandbox_resp const & rhs ) {
+        if ( &rhs != this ) {
+          x = rhs.x;
+          y = rhs.y;
+          lambda = rhs.lambda;
+          amp = rhs.amp;
+          maj = rhs.maj;
+          min = rhs.min;
+          ang = rhs.ang;
+        }
+        return *this;
+      }
+
+      matrix_local x;
+      matrix_local y;
+      matrix_local lambda;
+      matrix_local amp;
+      matrix_local maj;
+      matrix_local min;
+      matrix_local ang;
+  };
+
+  typedef boost::shared_ptr < psf_sandbox_resp > psf_sandbox_resp_p;
   
+
   class psf_sandbox : public psf {
     
     public :
@@ -158,7 +198,7 @@ namespace harp {
       size_t pixcorr_;
       std::vector < double > lambda_;
       std::map < std::string, int > hdus_;
-      std::map < size_t, psf_sandbox_resp > resp_;
+      std::map < size_t, psf_sandbox_resp_p > resp_;
       
   };
   
