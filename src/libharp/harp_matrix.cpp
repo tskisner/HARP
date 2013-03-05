@@ -274,10 +274,17 @@ void harp::column_norm ( matrix_dist & mat, matrix_dist & S ) {
 
   // Invert
 
-  double * raw = S.LocalBuffer();
+  local = S.LocalMatrix();
 
-  for ( size_t i = 0; i < S.Height(); ++i ) {
-    raw[i] = 1.0 / raw[i];
+  hlocal = S.LocalHeight();
+  wlocal = S.LocalWidth();
+
+  for ( int i = 0; i < wlocal; ++i ) {
+    for ( int j = 0; j < hlocal; ++j ) {
+      mval = local.Get ( j, i );
+      mval = 1.0 / mval;
+      local.Set ( j, i, mval );
+    }
   }
 
   return;
