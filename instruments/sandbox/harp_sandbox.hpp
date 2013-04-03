@@ -160,7 +160,7 @@ namespace harp {
       size_t nlambda ( ) { return nlambda_; }
       size_t pixrows ( ) { return rows_; }
       size_t pixcols ( ) { return cols_; }
-      virtual std::vector < double > lambda ( ) { return lambda_; }
+      std::vector < double > lambda ( ) { return lambda_; }
       void projection ( size_t first_spec, size_t last_spec, size_t first_lambda, size_t last_lambda, matrix_sparse & data );
       
     private :

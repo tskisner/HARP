@@ -355,8 +355,8 @@ int main ( int argc, char *argv[] ) {
     cout << prefix << "Extracting " << nspec_chunk << " spectral chunks, each with " << lambda_width << " lambda points ( overlap = " << lambda_overlap << " )" << endl;
   }
 
-  for ( size_t band = 0; band < nband; ++band ) {
-  //for ( size_t band = 0; band < 2; ++band ) {
+  //for ( size_t band = 0; band < nband; ++band ) {
+  for ( size_t band = 0; band < 1; ++band ) {
 
     if ( ( myp == 0 ) && ( ! quiet ) ) {
       cout << prefix << "  Wavelength band " << band << "/" << nband << " (" << band_start[band] << " - " << band_stop[band] << ")" << endl;

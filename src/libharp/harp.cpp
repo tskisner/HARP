@@ -46,7 +46,7 @@ void harp::mpi_check ( MPI_Comm comm, int status ) {
 
 void harp::dist_matrix_zero ( matrix_dist & mat ) {
   size_t n = mat.AllocatedMemory();
-  double * data = mat.LocalBuffer();
+  double * data = mat.Buffer();
   for ( size_t i = 0; i < n; ++i ) {
     data[i] = 0.0;
   }

@@ -13,19 +13,40 @@ namespace harp {
       virtual ~psf ( ) { }
       void cleanup ( );
 
-      virtual boost::property_tree::ptree serialize ( ) { return boost::property_tree::ptree(); }
+      virtual boost::property_tree::ptree serialize ( ) { 
+        HARP_THROW( "fell through to virtual method" );
+        return boost::property_tree::ptree();
+      }
       
-      virtual size_t nspec ( ) { return 0; }
+      virtual size_t nspec ( ) {
+        HARP_THROW( "fell through to virtual method" );
+        return 0;
+      }
       
-      virtual size_t nlambda ( ) { return 0; }
+      virtual size_t nlambda ( ) {
+        HARP_THROW( "fell through to virtual method" );
+        return 0;
+      }
 
-      virtual size_t pixrows ( ) { return 0; }
+      virtual size_t pixrows ( ) {
+        HARP_THROW( "fell through to virtual method" );
+        return 0;
+      }
 
-      virtual size_t pixcols ( ) { return 0; }
+      virtual size_t pixcols ( ) {
+        HARP_THROW( "fell through to virtual method" );
+        return 0;
+      }
 
-      virtual std::vector < double > lambda ( ) { return std::vector < double > (); }
+      virtual std::vector < double > lambda ( ) {
+        HARP_THROW( "fell through to virtual method" );
+        return std::vector < double > ();
+      }
       
-      virtual void projection ( size_t first_spec, size_t last_spec, size_t first_lambda, size_t last_lambda, matrix_sparse & AT ) { return; }
+      virtual void projection ( size_t first_spec, size_t last_spec, size_t first_lambda, size_t last_lambda, matrix_sparse & AT ) {
+        HARP_THROW( "fell through to virtual method" );
+        return;
+      }
       
       std::string format ( );
       

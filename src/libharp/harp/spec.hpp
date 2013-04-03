@@ -13,14 +13,30 @@ namespace harp {
       virtual ~spec ( ) { }
       void cleanup ( );
 
-      virtual boost::property_tree::ptree serialize ( ) { return boost::property_tree::ptree(); }
+      virtual boost::property_tree::ptree serialize ( ) {
+        HARP_THROW( "fell through to virtual method" );
+        return boost::property_tree::ptree();
+      }
 
-      virtual size_t nspec ( ) { return 0; }
-      virtual size_t nlambda ( ) { return 0; }
+      virtual size_t nspec ( ) {
+        HARP_THROW( "fell through to virtual method" );
+        return 0;
+      }
 
-      virtual void read ( matrix_dist & data, std::vector < double > & lambda, std::vector < bool > & sky ) { return; }
+      virtual size_t nlambda ( ) {
+        HARP_THROW( "fell through to virtual method" );
+        return 0;
+      }
 
-      virtual void write ( std::string const & path, matrix_dist & data, std::vector < double > const & lambda, std::vector < bool > const & sky ) { return; }
+      virtual void read ( matrix_dist & data, std::vector < double > & lambda, std::vector < bool > & sky ) {
+        HARP_THROW( "fell through to virtual method" );
+        return;
+      }
+
+      virtual void write ( std::string const & path, matrix_dist & data, std::vector < double > const & lambda, std::vector < bool > const & sky ) {
+        HARP_THROW( "fell through to virtual method" );
+        return;
+      }
 
       std::string format ( );
       

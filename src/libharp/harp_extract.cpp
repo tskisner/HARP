@@ -38,7 +38,7 @@ void harp::sub_spec ( matrix_dist & in, size_t total_nspec, size_t first_spec, s
 
   // Update local output matrix with proper slices from the input
 
-  matrix_local & out_loc = out.LocalMatrix();
+  matrix_local & out_loc = out.Matrix();
 
   int hlocal = out.LocalHeight();
 
@@ -88,7 +88,7 @@ void harp::accum_spec ( matrix_dist & full, size_t total_nspec, size_t first_spe
 
   // Copy our data into full local contribution
 
-  matrix_local & chunk_loc = chunk.LocalMatrix();
+  matrix_local & chunk_loc = chunk.Matrix();
 
   int hlocal = chunk.LocalHeight();
 
@@ -612,7 +612,7 @@ void harp::extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_d
 
   matrix_local err_loc ( err.Height(), 1 );
 
-  matrix_local & rc_loc = RC.LocalMatrix();
+  matrix_local & rc_loc = RC.Matrix();
 
   int hlocal = RC.LocalHeight();
   int wlocal = RC.LocalWidth();

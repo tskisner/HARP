@@ -14,18 +14,45 @@ namespace harp {
       virtual ~image ( ) { }
       void cleanup ( );
 
-      virtual boost::property_tree::ptree serialize ( ) { return boost::property_tree::ptree(); }
+      virtual boost::property_tree::ptree serialize ( ) {
+        HARP_THROW( "fell through to virtual method" );
+        return boost::property_tree::ptree();
+      }
       
-      virtual size_t rows ( ) { return 0; }
-      virtual size_t cols ( ) { return 0; }
+      virtual size_t rows ( ) {
+        HARP_THROW( "fell through to virtual method" );
+        return 0;
+      }
+      
+      virtual size_t cols ( ) {
+        HARP_THROW( "fell through to virtual method" );
+        return 0;
+      }
 
-      virtual std::vector < bool > sky ( ) { return std::vector < bool > (); }
+      virtual std::vector < bool > sky ( ) {
+        HARP_THROW( "fell through to virtual method" );
+        return std::vector < bool > ();
+      }
       
-      virtual void read ( matrix_local & data ) { return; }
-      virtual void write ( std::string const & path, matrix_local & data ) { return; }
+      virtual void read ( matrix_local & data ) {
+        HARP_THROW( "fell through to virtual method" );
+        return;
+      }
+
+      virtual void write ( std::string const & path, matrix_local & data ) {
+        HARP_THROW( "fell through to virtual method" );
+        return;
+      }
       
-      virtual void read_noise ( matrix_local & data ) { return; }
-      virtual void write_noise ( std::string const & path, matrix_local & data ) { return; }
+      virtual void read_noise ( matrix_local & data ) {
+        HARP_THROW( "fell through to virtual method" );
+        return;
+      }
+
+      virtual void write_noise ( std::string const & path, matrix_local & data ) {
+        HARP_THROW( "fell through to virtual method" );
+        return;
+      }
 
       std::string format ( );
       

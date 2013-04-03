@@ -246,7 +246,7 @@ void harp::column_norm ( matrix_dist & mat, matrix_dist & S ) {
   matrix_local Sloc ( S.Height(), 1 );
   local_matrix_zero ( Sloc );
 
-  matrix_local & local = mat.LocalMatrix();
+  matrix_local & local = mat.Matrix();
 
   int hlocal = mat.LocalHeight();
   int wlocal = mat.LocalWidth();
@@ -274,7 +274,7 @@ void harp::column_norm ( matrix_dist & mat, matrix_dist & S ) {
 
   // Invert
 
-  local = S.LocalMatrix();
+  local = S.Matrix();
 
   hlocal = S.LocalHeight();
   wlocal = S.LocalWidth();
@@ -305,7 +305,7 @@ void harp::apply_norm ( matrix_dist & S, matrix_dist & mat ) {
 
   // Apply to local matrix
 
-  matrix_local & local = mat.LocalMatrix();
+  matrix_local & local = mat.Matrix();
 
   int hlocal = mat.LocalHeight();
   int wlocal = mat.LocalWidth();
@@ -343,7 +343,7 @@ void harp::apply_inverse_norm ( matrix_dist & S, matrix_dist & mat ) {
 
   // Apply to local matrix
 
-  matrix_local & local = mat.LocalMatrix();
+  matrix_local & local = mat.Matrix();
 
   int hlocal = mat.LocalHeight();
   int wlocal = mat.LocalWidth();
