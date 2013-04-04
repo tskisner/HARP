@@ -5,8 +5,6 @@
 
 #include <harp_internal.hpp>
 
-#include <harp_test_instruments.hpp>
-
 namespace harp {
 
   void test_elemental ( std::string const & datadir );
@@ -14,6 +12,8 @@ namespace harp {
   void test_invcov ( std::string const & datadir );
 
   //void test_tinyKLT ( std::string const & datadir );
+
+  void test_spec_specter ( std::string const & datadir );
 
   
 }

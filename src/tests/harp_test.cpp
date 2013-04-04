@@ -19,8 +19,6 @@ int main ( int argc, char *argv[] ) {
 
   string datadir = "testdata";
 
-  // run built-in tests
-
   if ( myp == 0 ) {
     cerr << endl;
   }
@@ -36,16 +34,8 @@ int main ( int argc, char *argv[] ) {
   if ( myp == 0 ) {
     cerr << endl;
   }
-  
-
-  // run format tests
-  
-# include "harp_testcommands.cpp"
-
-  //cerr << endl;
 
   cliq::Finalize();
-  //MPI_Finalize ();
   
   return 0;
 }

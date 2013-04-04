@@ -32,8 +32,14 @@ spec * harp::spec::clone ( ) {
 spec * harp::spec::create ( boost::property_tree::ptree const & props ) {
 
   string format = props.get < string > ( "format" );
-  
-  #include "harp_spec_formats.cpp"
+
+  if ( format == "specter" ) {
+    return static_cast < spec * > ( new spec_specter ( props ) );
+  }
+
+  if ( format == "sim" ) {
+    return static_cast < spec * > ( new spec_sim ( props ) );
+  }
   
   std::ostringstream o;
   o << "Cannot create spec of unknown format (" << format << ")";

@@ -32,8 +32,14 @@ image * harp::image::clone ( ) {
 image * harp::image::create ( boost::property_tree::ptree const & props ) {
 
   string format = props.get < string > ( "format" );
-  
-  #include "harp_image_formats.cpp"
+
+  if ( format == "fits" ) {
+    return static_cast < image * > ( new image_fits ( props ) );
+  }
+
+  if ( format == "sim" ) {
+    return static_cast < image * > ( new image_sim ( props ) );
+  }
   
   std::ostringstream o;
   o << "Cannot create image of unknown format (" << format << ")";

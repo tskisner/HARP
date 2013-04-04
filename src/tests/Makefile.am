@@ -1,16 +1,23 @@
 CXX = @MPICXX@
 
-EXTRA_DIST = testdata test_instruments.am harp_testcommands.cpp
+EXTRA_DIST = testdata
 
-AM_CPPFLAGS = -I$(top_srcdir)/src/libharp -I$(top_srcdir)/src/libharp/matrix -I$(top_srcdir)/src/tests $(BOOST_CPPFLAGS) $(CLIQUE_CPPFLAGS) $(CFITSIO_CPPFLAGS) $(OPENMP_CXXFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir)/src/libharp -I$(top_srcdir)/src/libharp/formats -I$(top_srcdir)/src/tests $(BOOST_CPPFLAGS) $(CLIQUE_CPPFLAGS) $(CFITSIO_CPPFLAGS) $(OPENMP_CXXFLAGS)
 AM_LDFLAGS =
 AM_LIBS = $(top_builddir)/src/libharp/libharp.la $(BOOST_LDFLAGS) $(CFITSIO) $(OPENMP_CXXFLAGS) -lm
 
 noinst_HEADERS = harp_test.hpp
 
 bin_PROGRAMS = harp_test
+
 TESTS = harp_test
-harp_test_SOURCES = harp_test.cpp harp_test_elemental.cpp harp_test_invcov.cpp #harp_test_tinyKLT.cpp
+
+harp_test_SOURCES = \
+	harp_test.cpp \
+	harp_test_elemental.cpp \
+	harp_test_invcov.cpp \
+	harp_test_spec_specter.cpp
+
 harp_test_LDADD = $(AM_LIBS)
 
 # Manual dependency on the data directory
@@ -33,7 +40,5 @@ clean-local :
 	rm -f $${file}; rm -f testdata/*.out; \
 	done
 
-include test_instruments.am
-
-MAINTAINERCLEANFILES = test_instruments.am harp_testcommands.cpp harp_test_instruments.hpp
+MAINTAINERCLEANFILES =
 

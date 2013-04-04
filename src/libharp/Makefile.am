@@ -1,6 +1,6 @@
 CXX = @MPICXX@
 
-AM_CPPFLAGS = -I$(top_srcdir)/src/libharp $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS) $(CLIQUE_CPPFLAGS) $(OPENMP_CXXFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir)/src/libharp -I$(top_srcdir)/src/libharp/formats $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS) $(CLIQUE_CPPFLAGS) $(OPENMP_CXXFLAGS)
 AM_LDFLAGS =
 AM_LIBS = $(CLIQUE)
 
@@ -19,7 +19,7 @@ libharp_la_LDFLAGS = -version-info @HARP_LT_VERSION@
 
 libharp_la_LIBADD = $(CLIQUE)
 
-include instruments.am
+include formats/formats.am
 
-MAINTAINERCLEANFILES = git-version.cpp instruments.am instruments.hpp harp_image_formats.cpp harp_spec_formats.cpp harp_psf_formats.cpp
+MAINTAINERCLEANFILES = git-version.cpp
 

@@ -1,6 +1,4 @@
 
-AM_CPPFLAGS += -I$(top_srcdir)/src/libharp/formats
-
 noinst_HEADERS += \
   formats/harp_formats_spec.hpp \
   formats/harp_formats_image.hpp \
