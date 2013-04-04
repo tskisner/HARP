@@ -30,6 +30,10 @@ int main ( int argc, char *argv[] ) {
   test_invcov ( datadir );
 
   //test_tinyKLT ( datadir );
+
+  test_spec_specter ( datadir );
+
+  test_psf_gauss ( datadir );
   
   if ( myp == 0 ) {
     cerr << endl;

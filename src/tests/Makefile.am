@@ -16,7 +16,8 @@ harp_test_SOURCES = \
 	harp_test.cpp \
 	harp_test_elemental.cpp \
 	harp_test_invcov.cpp \
-	harp_test_spec_specter.cpp
+	harp_test_spec_specter.cpp \
+	harp_test_psf_gauss.cpp
 
 harp_test_LDADD = $(AM_LIBS)
 

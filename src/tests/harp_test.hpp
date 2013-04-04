@@ -15,6 +15,7 @@ namespace harp {
 
   void test_spec_specter ( std::string const & datadir );
 
+  void test_psf_gauss ( std::string const & datadir );
   
 }
 
