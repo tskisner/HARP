@@ -46,6 +46,8 @@ int main ( int argc, char *argv[] ) {
   bool quiet = false;
   bool debug = false;
   bool dosky = false;
+
+  int gangsize = np;
   
   fitsfile * fp;
   
@@ -58,6 +60,7 @@ int main ( int argc, char *argv[] ) {
   ( "quiet,q", "supress information printing" )
   ( "debug,d", "write out intermediate data products for debugging" )
   ( "skysub", "simultaneously remove common sky spectrum" )
+  ( "gangsize", popts::value < int > ( &gangsize ), "number of processes per gang" )
   ( "spec_width", popts::value < size_t > ( &spec_width ), "number of spectra to process at once" )
   ( "lambda_width", popts::value < size_t > ( &lambda_width ), "maximum wavelength points to process simultaneously" )
   ( "lambda_overlap", popts::value < size_t > ( &lambda_overlap ), "minimum wavelength points to overlap" )
@@ -96,6 +99,20 @@ int main ( int argc, char *argv[] ) {
   if ( vm.count( "skysub" ) ) {
     dosky = true;
   }
+
+  int ngang = (int)( np / gangsize );
+  int gangtot = ngang * gangsize;
+  if ( gangtot < np ) {
+    if ( ( myp == 0 ) && ( ! quiet ) ) {
+      cout << prefix << "WARNING: using " << ngang << " gangs of " << gangsize << " processors (" << (np-gangtot) << " unused)" << endl;
+    }
+  }
+  int gang = (int)( myp / gangsize );
+  int grank = myp % gangsize;
+  if ( gang >= ngang ) {
+    gang = -1;
+    grank = -1;
+  }
   
   boost::property_tree::ptree conf;
 
@@ -104,7 +121,7 @@ int main ( int argc, char *argv[] ) {
   }
 
   boost::property_tree::json_parser::read_json ( jsonconf, conf );
-  
+
   if ( ( myp == 0 ) && ( ! quiet ) ) {
     cout << prefix << "Reading input image..." << endl;
   }
@@ -354,6 +371,12 @@ int main ( int argc, char *argv[] ) {
   if ( ( myp == 0 ) && ( ! quiet ) ) {
     cout << prefix << "Extracting " << nspec_chunk << " spectral chunks, each with " << lambda_width << " lambda points ( overlap = " << lambda_overlap << " )" << endl;
   }
+
+
+  // split MPI communicator
+
+
+  
 
   //for ( size_t band = 0; band < nband; ++band ) {
   for ( size_t band = 0; band < 1; ++band ) {
