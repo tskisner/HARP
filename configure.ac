@@ -73,20 +73,6 @@ dnl | Check for CFITSIO
 dnl +------------------------------------------------
 ACX_CFITSIO([], [AC_MSG_ERROR([Could not find the CFITSIO library!])])
 dnl +------------------------------------------------
-dnl | Check for Doxygen
-dnl +------------------------------------------------
-DOXYGEN=""
-AC_CHECK_PROGS([DOXYGEN], [doxygen])
-if test x"$DOXYGEN" = x; then
-   AC_MSG_WARN([Doxygen not found - continuing without Doxygen support])
-fi
-AM_CONDITIONAL([HAVE_AM_DOXYGEN], [test x"$DOXYGEN" != x])
-dnl +------------------------------------------------
-dnl | Format config
-dnl +------------------------------------------------
-format_list=""
-m4_include([instruments.m4]) 
-dnl +------------------------------------------------
 dnl | Set outputs
 dnl +------------------------------------------------
 AC_CONFIG_FILES([Makefile])
@@ -97,7 +83,6 @@ AC_CONFIG_FILES([src/apps/Makefile])
 dnl AC_CONFIG_FILES([src/python/Makefile])
 dnl AC_CONFIG_FILES([src/tests-python/Makefile])
 dnl AC_CONFIG_FILES([docs/Makefile])
-dnl AM_COND_IF([HAVE_AM_DOXYGEN], [AC_CONFIG_FILES([docs/toast.dox])])
 dnl +------------------------------------------------
 dnl | Generate Makefiles
 dnl +------------------------------------------------
