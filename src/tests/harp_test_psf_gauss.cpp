@@ -32,7 +32,7 @@ void harp::test_psf_gauss ( string const & datadir ) {
 
   ret = MPI_Bcast ( (void*)(&statret), 1, MPI_INT, 0, MPI_COMM_WORLD );
   mpi_check ( MPI_COMM_WORLD, ret );
-    
+
   if ( statret == 0 ) {
     if ( myp == 0 ) {
       cerr << "Testing elliptical gaussian PSF..." << endl;

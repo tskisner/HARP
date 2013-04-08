@@ -91,6 +91,7 @@ namespace harp {
       double fake_psf_fwhm_;
       double fake_first_lambda_;
       double fake_last_lambda_;
+      boost::property_tree::ptree fake_spec_props_;
 
       std::string path_;
       size_t nspec_;
@@ -101,6 +102,7 @@ namespace harp {
       size_t npix_;
       size_t pixcorr_;
       std::vector < double > lambda_;
+      std::vector < bool > sky_;
       std::map < std::string, int > hdus_;
       std::map < size_t, psf_gauss_resp_p > resp_;
       

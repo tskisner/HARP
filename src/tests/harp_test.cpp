@@ -33,7 +33,11 @@ int main ( int argc, char *argv[] ) {
 
   test_spec_specter ( datadir );
 
+  test_spec_sim ( datadir );
+
   test_psf_gauss ( datadir );
+
+  test_sim_extract ( datadir );
   
   if ( myp == 0 ) {
     cerr << endl;

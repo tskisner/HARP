@@ -43,23 +43,21 @@ void harp::mpi_check ( MPI_Comm comm, int status ) {
 
 // utilities
 
+std::string harp::ptree_quote ( const std::string & s ) {
+  return "\"" + s + "\"";
+}
 
-void harp::dist_matrix_zero ( matrix_dist & mat ) {
-  size_t n = mat.AllocatedMemory();
-  double * data = mat.Buffer();
-  for ( size_t i = 0; i < n; ++i ) {
-    data[i] = 0.0;
+void harp::ptree_print ( const boost::property_tree::ptree & pt, int level ) {
+  const std::string sep ( 2 * level, ' ' );
+  BOOST_FOREACH ( const boost::property_tree::ptree::value_type & v, pt ) {
+    std::cerr << sep << ptree_quote ( v.first ) << " : " << ptree_quote ( v.second.data() ) << "\n";
+    ptree_print ( v.second, level + 1 );
   }
   return;
 }
 
-
-void harp::local_matrix_zero ( matrix_local & mat ) {
-  size_t n = mat.MemorySize();
-  double * data = mat.Buffer();
-  for ( size_t i = 0; i < n; ++i ) {
-    data[i] = 0.0;
-  }
+void harp::ptree_print ( const boost::property_tree::ptree & pt ) {
+  ptree_print ( pt, 0 );
   return;
 }
 

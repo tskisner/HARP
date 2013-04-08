@@ -16,6 +16,9 @@ static const char * image_fits_key_cols = "cols";
 
 harp::image_fits::image_fits ( boost::property_tree::ptree const & props ) : image ( props ) {
 
+  //cerr << "image fits props = " << endl;
+  //ptree_print ( props );
+
   sighdu_ = props.get ( image_fits_key_signal, 1 );
 
   nsehdu_ = props.get ( image_fits_key_noise, 2 );

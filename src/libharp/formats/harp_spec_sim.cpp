@@ -18,6 +18,9 @@ static const char * spec_sim_key_skymod = "skymod";
 
 
 harp::spec_sim::spec_sim ( boost::property_tree::ptree const & props ) : spec ( props ) {
+
+  //cerr << "spec sim props = " << endl;
+  //ptree_print ( props );
   
   nspec_ = props.get < size_t > ( spec_sim_key_nspec );
 

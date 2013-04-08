@@ -38,26 +38,24 @@ void harp::sub_spec ( matrix_dist & in, size_t total_nspec, size_t first_spec, s
 
   // Update local output matrix with proper slices from the input
 
-  matrix_local & out_loc = out.Matrix();
+  size_t hlocal = out.LocalHeight();
 
-  int hlocal = out.LocalHeight();
-
-  int rowoff = out.ColShift();
-  int rowstride = out.ColStride();
-  int row;
+  size_t rowoff = out.ColShift();
+  size_t rowstride = out.ColStride();
+  size_t row;
 
   double val;
   size_t out_spec;
   size_t out_lambda;
 
-  for ( int j = 0; j < hlocal; ++j ) {
+  for ( size_t j = 0; j < hlocal; ++j ) {
     row = rowoff + j * rowstride;
     out_spec = (size_t)( row / nlambda );
     out_lambda = row - out_spec * nlambda;
     out_spec += first_spec;
     out_lambda += first_lambda;
     val = in_loc.Get ( out_spec * in_nlambda + out_lambda, 0 );
-    out_loc.Set ( j, 0, val );
+    out.SetLocal ( j, 0, val );
   }
 
   return;
@@ -88,25 +86,23 @@ void harp::accum_spec ( matrix_dist & full, size_t total_nspec, size_t first_spe
 
   // Copy our data into full local contribution
 
-  matrix_local & chunk_loc = chunk.Matrix();
+  size_t hlocal = chunk.LocalHeight();
 
-  int hlocal = chunk.LocalHeight();
-
-  int rowoff = chunk.ColShift();
-  int rowstride = chunk.ColStride();
-  int row;
+  size_t rowoff = chunk.ColShift();
+  size_t rowstride = chunk.ColStride();
+  size_t row;
 
   double val;
   size_t spec;
   size_t lambda;
 
-  for ( int j = 0; j < hlocal; ++j ) {
+  for ( size_t j = 0; j < hlocal; ++j ) {
     row = rowoff + j * rowstride;
     spec = (size_t)( row / nlambda );
     lambda = row - spec * nlambda;
     spec += first_spec;
     lambda += first_lambda;
-    val = chunk_loc.Get ( j, 0 );
+    val = chunk.GetLocal ( j, 0 );
     full_loc.Set ( spec * nlambda + lambda, 0, val );
   }
 
@@ -551,6 +547,7 @@ void harp::inverse_covariance ( matrix_sparse const & psf, matrix_local const & 
 void harp::resolution ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_dist & R ) {
 
   R = W;
+
   dist_matrix_zero ( R );
 
   eigen_compose ( EIG_SQRT, D, W, R );
@@ -614,31 +611,33 @@ void harp::extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_d
 
   matrix_local & rc_loc = RC.Matrix();
 
-  int hlocal = RC.LocalHeight();
-  int wlocal = RC.LocalWidth();
+  size_t hlocal = RC.LocalHeight();
+  size_t wlocal = RC.LocalWidth();
 
-  int rowoff = RC.ColShift();
-  int rowstride = RC.ColStride();
-  int row;
+  size_t rowoff = RC.ColShift();
+  size_t rowstride = RC.ColStride();
+  size_t row;
 
-  int coloff = RC.RowShift();
-  int colstride = RC.RowStride();
-  int col;
+  size_t coloff = RC.RowShift();
+  size_t colstride = RC.RowStride();
+  size_t col;
 
   double mval;
 
-  for ( int i = 0; i < wlocal; ++i ) {
-    for ( int j = 0; j < hlocal; ++j ) {
+  for ( size_t i = 0; i < wlocal; ++i ) {
+    for ( size_t j = 0; j < hlocal; ++j ) {
       row = rowoff + j * rowstride;
       col = coloff + i * colstride;
       if ( row == col ) {
-        err_loc.Set ( row, 0, sqrt ( rc_loc.Get ( j, i ) ) );
+        err_loc.Set ( row, 0, sqrt ( RC.GetLocal ( j, i ) ) );
       }
     }
   }
 
   // reduce local error vector to global one.  There should be no overlap
   // of non-zero elements, since each diagonal value is owned by one process.
+
+  dist_matrix_zero ( err );
 
   elem::AxpyInterface < double > locglob;
   locglob.Attach( elem::LOCAL_TO_GLOBAL, err );

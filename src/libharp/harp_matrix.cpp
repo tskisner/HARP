@@ -132,6 +132,36 @@ char * harp::sparse_block::pack ( size_t & nbytes ) {
 }
 
 
+void harp::dist_matrix_zero ( matrix_dist & mat ) {
+
+  size_t hlocal = mat.LocalHeight();
+  size_t wlocal = mat.LocalWidth();
+
+  for ( size_t i = 0; i < wlocal; ++i ) {
+    for ( size_t j = 0; j < hlocal; ++j ) {
+      mat.SetLocal ( j, i, 0.0 );
+    }
+  }
+
+  return;
+}
+
+
+void harp::local_matrix_zero ( matrix_local & mat ) {
+
+  size_t hlocal = mat.Height();
+  size_t wlocal = mat.Width();
+
+  for ( size_t i = 0; i < wlocal; ++i ) {
+    for ( size_t j = 0; j < hlocal; ++j ) {
+      mat.Set ( j, i, 0.0 );
+    }
+  }
+
+  return;
+}
+
+
 void harp::eigen_decompose ( matrix_dist & invcov, matrix_dist & D, matrix_dist & W ) {
 
   D.ResizeTo ( invcov.Height(), 1 );
@@ -210,17 +240,17 @@ void harp::eigen_compose ( eigen_op op, matrix_dist & D, matrix_dist & W, matrix
 
   matrix_dist temp ( W );
 
-  int hlocal = temp.LocalHeight();
-  int wlocal = temp.LocalWidth();
+  size_t hlocal = temp.LocalHeight();
+  size_t wlocal = temp.LocalWidth();
 
-  int coloff = temp.RowShift();
-  int colstride = temp.RowStride();
-  int col;
+  size_t coloff = temp.RowShift();
+  size_t colstride = temp.RowStride();
+  size_t col;
 
   double mval;
 
-  for ( int i = 0; i < wlocal; ++i ) {
-    for ( int j = 0; j < hlocal; ++j ) {
+  for ( size_t i = 0; i < wlocal; ++i ) {
+    for ( size_t j = 0; j < hlocal; ++j ) {
       col = coloff + i * colstride;
       mval = temp.GetLocal ( j, i );
       mval *= scaled.Get ( col, 0 );
@@ -246,21 +276,19 @@ void harp::column_norm ( matrix_dist & mat, matrix_dist & S ) {
   matrix_local Sloc ( S.Height(), 1 );
   local_matrix_zero ( Sloc );
 
-  matrix_local & local = mat.Matrix();
+  size_t hlocal = mat.LocalHeight();
+  size_t wlocal = mat.LocalWidth();
 
-  int hlocal = mat.LocalHeight();
-  int wlocal = mat.LocalWidth();
-
-  int rowoff = mat.ColShift();
-  int rowstride = mat.ColStride();
-  int row;
+  size_t rowoff = mat.ColShift();
+  size_t rowstride = mat.ColStride();
+  size_t row;
 
   double mval;
 
-  for ( int i = 0; i < wlocal; ++i ) {
-    for ( int j = 0; j < hlocal; ++j ) {
+  for ( size_t i = 0; i < wlocal; ++i ) {
+    for ( size_t j = 0; j < hlocal; ++j ) {
       row = rowoff + j * rowstride;
-      mval = local.Get ( j, i ) + Sloc.Get ( row, 0 );
+      mval = mat.GetLocal ( j, i ) + Sloc.Get ( row, 0 );
       Sloc.Set ( row, 0, mval );
     }
   }
@@ -274,16 +302,14 @@ void harp::column_norm ( matrix_dist & mat, matrix_dist & S ) {
 
   // Invert
 
-  local = S.Matrix();
-
   hlocal = S.LocalHeight();
   wlocal = S.LocalWidth();
 
-  for ( int i = 0; i < wlocal; ++i ) {
-    for ( int j = 0; j < hlocal; ++j ) {
-      mval = local.Get ( j, i );
+  for ( size_t i = 0; i < wlocal; ++i ) {
+    for ( size_t j = 0; j < hlocal; ++j ) {
+      mval = S.GetLocal ( j, i );
       mval = 1.0 / mval;
-      local.Set ( j, i, mval );
+      S.SetLocal ( j, i, mval );
     }
   }
 
@@ -305,23 +331,21 @@ void harp::apply_norm ( matrix_dist & S, matrix_dist & mat ) {
 
   // Apply to local matrix
 
-  matrix_local & local = mat.Matrix();
+  size_t hlocal = mat.LocalHeight();
+  size_t wlocal = mat.LocalWidth();
 
-  int hlocal = mat.LocalHeight();
-  int wlocal = mat.LocalWidth();
-
-  int rowoff = mat.ColShift();
-  int rowstride = mat.ColStride();
-  int row;
+  size_t rowoff = mat.ColShift();
+  size_t rowstride = mat.ColStride();
+  size_t row;
 
   double mval;
 
-  for ( int i = 0; i < wlocal; ++i ) {
-    for ( int j = 0; j < hlocal; ++j ) {
+  for ( size_t i = 0; i < wlocal; ++i ) {
+    for ( size_t j = 0; j < hlocal; ++j ) {
       row = rowoff + j * rowstride;
-      mval = local.Get ( j, i );
+      mval = mat.GetLocal ( j, i );
       mval *= Sloc.Get ( row, 0 );
-      local.Set ( j, i, mval );
+      mat.SetLocal ( j, i, mval );
     }
   }
 
@@ -343,23 +367,21 @@ void harp::apply_inverse_norm ( matrix_dist & S, matrix_dist & mat ) {
 
   // Apply to local matrix
 
-  matrix_local & local = mat.Matrix();
+  size_t hlocal = mat.LocalHeight();
+  size_t wlocal = mat.LocalWidth();
 
-  int hlocal = mat.LocalHeight();
-  int wlocal = mat.LocalWidth();
-
-  int rowoff = mat.ColShift();
-  int rowstride = mat.ColStride();
-  int row;
+  size_t rowoff = mat.ColShift();
+  size_t rowstride = mat.ColStride();
+  size_t row;
 
   double mval;
 
-  for ( int i = 0; i < wlocal; ++i ) {
-    for ( int j = 0; j < hlocal; ++j ) {
+  for ( size_t i = 0; i < wlocal; ++i ) {
+    for ( size_t j = 0; j < hlocal; ++j ) {
       row = rowoff + j * rowstride;
-      mval = local.Get ( j, i );
+      mval = mat.GetLocal ( j, i );
       mval /= Sloc.Get ( row, 0 );
-      local.Set ( j, i, mval );
+      mat.SetLocal ( j, i, mval );
     }
   }
 

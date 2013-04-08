@@ -16,6 +16,9 @@ static const char * spec_specter_key_nlambda = "nlambda";
 
 harp::spec_specter::spec_specter ( boost::property_tree::ptree const & props ) : spec ( props ) {
 
+  //cerr << "spec specter props = " << endl;
+  //ptree_print ( props );
+
   path_ = props.get < string > ( spec_specter_key_path, "" );
 
   boost::optional < string > objval = props.get_optional < string > ( spec_specter_key_objonly );

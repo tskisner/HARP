@@ -27,6 +27,10 @@ namespace harp {
 
   };
 
+  void dist_matrix_zero ( matrix_dist & mat );
+
+  void local_matrix_zero ( matrix_local & mat );
+
   void eigen_decompose ( matrix_dist & invcov, matrix_dist & D, matrix_dist & W );
 
   void eigen_compose ( eigen_op op, matrix_dist & D, matrix_dist & W, matrix_dist & out );

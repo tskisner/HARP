@@ -25,18 +25,19 @@ static const char * psf_gauss_hdu_maj = "MajorAxis";
 static const char * psf_gauss_hdu_min = "MinorAxis";
 static const char * psf_gauss_hdu_ang = "Angle";
 
-static const char * psf_gauss_key_fake = "FAKE";
+static const char * psf_gauss_key_fake = "fake";
+static const char * psf_gauss_key_fake_spec = "spec";
 static const char * psf_gauss_key_fake_bundle_size = "bundle_size";
 static const char * psf_gauss_key_fake_nbundle = "nbundle";
-static const char * psf_gauss_key_fake_nlambda = "nlambda";
 static const char * psf_gauss_key_fake_fwhm = "fwhm";
-static const char * psf_gauss_key_fake_firstlambda = "first_lambda";
-static const char * psf_gauss_key_fake_lastlambda = "last_lambda";
 static const char * psf_gauss_key_fake_margin = "margin";
 static const char * psf_gauss_key_fake_gap = "gap";
 
 
 harp::psf_gauss::psf_gauss ( boost::property_tree::ptree const & props ) : psf ( props ) {
+
+  //cerr << "psf gauss props = " << endl;
+  //ptree_print ( props );
 
   boost::optional < string > fakeval = props.get_optional < string > ( psf_gauss_key_fake );
   string fake = boost::get_optional_value_or ( fakeval, "FALSE" );
@@ -45,23 +46,28 @@ harp::psf_gauss::psf_gauss ( boost::property_tree::ptree const & props ) : psf (
   if ( dofake_ ) {
 
     path_ = "";
-    
-    boost::optional < size_t > fake_n_bundle_val = props.get_optional < size_t > ( psf_gauss_key_fake_nbundle );
-    fake_n_bundle_ = boost::get_optional_value_or ( fake_n_bundle_val, 20 );
 
-    boost::optional < size_t > fake_bundle_size_val = props.get_optional < size_t > ( psf_gauss_key_fake_bundle_size );
-    fake_bundle_size_ = boost::get_optional_value_or ( fake_bundle_size_val, 25 );
+    fake_spec_props_ = props.get_child ( psf_gauss_key_fake_spec );
+
+    spec_p child_spec ( spec::create ( fake_spec_props_ ) );
+    size_t spec_nspec = child_spec->nspec();
+
+    nlambda_ = child_spec->nlambda();
+
+    fake_n_bundle_ = props.get < size_t > ( psf_gauss_key_fake_nbundle );
+    fake_bundle_size_ = props.get < size_t > ( psf_gauss_key_fake_bundle_size );
 
     nspec_ = fake_n_bundle_ * fake_bundle_size_;
 
-    boost::optional < size_t > nlambda_val = props.get_optional < size_t > ( psf_gauss_key_fake_nlambda );
-    nlambda_ = boost::get_optional_value_or ( nlambda_val, 12 );
+    if ( nspec_ != spec_nspec ) {
+      std::ostringstream o;
+      o << "number spectra in simulated PSF spec (" << spec_nspec << ") does not match the number from bundle size/count (" << nspec_ << ")";
+      HARP_THROW( o.str().c_str() );
+    }
 
-    boost::optional < size_t > fake_pix_margin_val = props.get_optional < size_t > ( psf_gauss_key_fake_margin );
-    fake_pix_margin_ = boost::get_optional_value_or ( fake_pix_margin_val, 9 );
+    fake_pix_margin_ = props.get < size_t > ( psf_gauss_key_fake_margin );
 
-    boost::optional < size_t > fake_pix_gap_val = props.get_optional < size_t > ( psf_gauss_key_fake_gap );
-    fake_pix_gap_ = boost::get_optional_value_or ( fake_pix_gap_val, 6 );
+    fake_pix_gap_ = props.get < size_t > ( psf_gauss_key_fake_gap );
 
     fake_pix_bundle_ = 2 * fake_pix_margin_ + (fake_bundle_size_ - 1) * fake_pix_gap_ + fake_bundle_size_;
 
@@ -70,29 +76,22 @@ harp::psf_gauss::psf_gauss ( boost::property_tree::ptree const & props ) : psf (
 
     // response fwhm
 
-    boost::optional < double > fake_psf_fwhm_val = props.get_optional < double > ( psf_gauss_key_fake_fwhm );
-    fake_psf_fwhm_ = boost::get_optional_value_or ( fake_psf_fwhm_val, 2.1 );
+    fake_psf_fwhm_ = props.get < double > ( psf_gauss_key_fake_fwhm );
 
     // response correlation length in pixels
 
-    boost::optional < size_t > pixcorr_val = props.get_optional < size_t > ( psf_gauss_key_corr );
-    pixcorr_ = boost::get_optional_value_or ( pixcorr_val, (size_t)( 6.0 * (double)fake_psf_fwhm_ / 2.0 ) );
+    pixcorr_ = props.get < size_t > ( psf_gauss_key_corr );
 
     // wavelength solution
 
-    boost::optional < double > fake_first_lambda_val = props.get_optional < double > ( psf_gauss_key_fake_firstlambda );
-    fake_first_lambda_ = boost::get_optional_value_or ( fake_first_lambda_val, 8000.0 );
-
-    boost::optional < double > fake_last_lambda_val = props.get_optional < double > ( psf_gauss_key_fake_lastlambda );
-    fake_last_lambda_ = boost::get_optional_value_or ( fake_last_lambda_val, 8000.0 + (double)(nlambda_-1) );
-
     lambda_.resize ( nlambda_ );
 
-    double incr = ( fake_last_lambda_ - fake_first_lambda_ ) / (double)( nlambda_ - 1 );
+    matrix_dist specdata ( nlambda_ * nspec_, 1 );
+    vector < bool > specsky;
+    child_spec->read ( specdata, lambda_, specsky );
 
-    for ( size_t i = 0; i < nlambda_; ++i ) {
-      lambda_[i] = fake_first_lambda_ + incr * (double)i;
-    }
+    fake_first_lambda_ = lambda_[0];
+    fake_last_lambda_ = lambda_[ nlambda_ - 1 ];
  
   } else {
 
@@ -200,11 +199,15 @@ boost::property_tree::ptree harp::psf_gauss::serialize ( ) {
 
     ret.put ( psf_gauss_key_fake, "TRUE" );
 
+    // FIXME: populate all the other parameters...
+
   } else {
 
     ret.put ( psf_gauss_key_path, path_ );
 
     ret.put ( psf_gauss_key_corr, pixcorr_ );
+
+    // FIXME: lots of other keys to add...
 
   }
 

@@ -14,6 +14,7 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
+#include <boost/foreach.hpp>
 
 #include <clique.hpp>
 
@@ -76,9 +77,9 @@ namespace harp {
 
   // utilities
 
-  void dist_matrix_zero ( matrix_dist & mat );
-
-  void local_matrix_zero ( matrix_local & mat );
+  std::string ptree_quote ( const std::string & s );
+  void ptree_print ( const boost::property_tree::ptree & pt, int level );
+  void ptree_print ( const boost::property_tree::ptree & pt );
   
 }
 
