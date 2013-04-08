@@ -6,8 +6,8 @@ AM_LDFLAGS =
 
 AM_LIBS = $(top_builddir)/src/libharp/libharp.la $(CFITSIO) $(BOOST_LDFLAGS) $(BOOST_PROGRAM_OPTIONS_LIB) $(OPENMP_CXXFLAGS) -lm
 
-bin_PROGRAMS = harp_specstract
+bin_PROGRAMS = harp_extract
 
-harp_specstract_SOURCES = harp_specstract.cpp
-harp_specstract_LDADD = $(AM_LIBS)
+harp_extract_SOURCES = harp_extract.cpp
+harp_extract_LDADD = $(AM_LIBS)
 

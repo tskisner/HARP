@@ -91,7 +91,7 @@ namespace harp {
 #include <harp/spec.hpp>
 #include <harp/psf.hpp>
 
-#include <harp/extract.hpp>
+#include <harp/extraction.hpp>
 #include <harp/metadata.hpp>
 
 #endif
