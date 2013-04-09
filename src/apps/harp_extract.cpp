@@ -381,13 +381,7 @@ int main ( int argc, char *argv[] ) {
 
   if ( ( myp == 0 ) && ( ! quiet ) ) {
     cout << prefix << "Extracting " << nspec_chunk << " spectral chunks, each with " << lambda_width << " lambda points ( overlap = " << lambda_overlap << " )" << endl;
-  }
-
-
-  // split MPI communicator
-
-
-  
+  }  
 
   //for ( size_t band = 0; band < nband; ++band ) {
   for ( size_t band = 0; band < 1; ++band ) {
