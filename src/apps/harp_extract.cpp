@@ -60,7 +60,7 @@ int main ( int argc, char *argv[] ) {
   ( "quiet,q", "supress information printing" )
   ( "debug,d", "write out intermediate data products for debugging" )
   ( "skysub", "simultaneously remove common sky spectrum" )
-  ( "gangsize", popts::value < int > ( &gangsize ), "number of processes per gang" )
+  ( "gangsize", popts::value < int > ( &gangsize ), "number of processes per gang (choose perfect square number if possible)" )
   ( "spec_width", popts::value < size_t > ( &spec_width ), "number of spectra to process at once" )
   ( "lambda_width", popts::value < size_t > ( &lambda_width ), "maximum wavelength points to process simultaneously" )
   ( "lambda_overlap", popts::value < size_t > ( &lambda_overlap ), "minimum wavelength points to overlap" )
@@ -100,19 +100,30 @@ int main ( int argc, char *argv[] ) {
     dosky = true;
   }
 
+  // Split the communicator
+
   int ngang = (int)( np / gangsize );
   int gangtot = ngang * gangsize;
+  if ( ( myp == 0 ) && ( ! quiet ) ) {
+    cout << prefix << "Using " << ngang << " gangs of " << gangsize << " processes each" << endl;
+  }
   if ( gangtot < np ) {
     if ( ( myp == 0 ) && ( ! quiet ) ) {
-      cout << prefix << "WARNING: using " << ngang << " gangs of " << gangsize << " processors (" << (np-gangtot) << " unused)" << endl;
+      cout << prefix << "WARNING: " << (np-gangtot) << " processes are idle" << endl;
     }
   }
   int gang = (int)( myp / gangsize );
   int grank = myp % gangsize;
   if ( gang >= ngang ) {
-    gang = -1;
-    grank = -1;
+    gang = MPI_UNDEFINED;
+    grank = MPI_UNDEFINED;
   }
+
+  MPI_Comm gcomm;
+  ret = MPI_Comm_split ( MPI_COMM_WORLD, gang, grank, &gcomm );
+  mpi_check ( MPI_COMM_WORLD, ret );
+
+  // Read metadata
   
   boost::property_tree::ptree conf;
 
