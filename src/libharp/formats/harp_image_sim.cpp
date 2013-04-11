@@ -198,7 +198,7 @@ harp::image_sim::image_sim ( boost::property_tree::ptree const & props ) : image
         }
       }
 
-      ret = fits_write_col_str ( fp, 1, 0, 0, sky_.size(), objnames, &status );
+      ret = fits_write_col_str ( fp, 1, 1, 1, sky_.size(), objnames, &status );
       fits::check ( status );
 
       for ( size_t i = 0; i < sky_.size(); ++i ) {
