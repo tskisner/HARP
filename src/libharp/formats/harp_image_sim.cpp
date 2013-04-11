@@ -88,16 +88,6 @@ harp::image_sim::image_sim ( boost::property_tree::ptree const & props ) : image
 
   fitsfile * fp;
 
-  if ( debug_ ) {
-    if ( myp == 0 ) {
-      string outimg = "image_sim.fits";
-      fits::create ( fp, outimg );
-      fits::img_append ( fp, rows_, cols_ );
-      fits::write_key ( fp, "EXTNAME", "Signal", "simulated signal" );
-      fits::img_write ( fp, signal );
-    }
-  }
-
   // add noise to get measured image
 
   matrix_local noise ( npix, 1 );
@@ -128,15 +118,101 @@ harp::image_sim::image_sim ( boost::property_tree::ptree const & props ) : image
 
   if ( debug_ ) {
     if ( myp == 0 ) {
-      fits::img_append ( fp, rows_, cols_ );
-      fits::write_key ( fp, "EXTNAME", "noise", "noise" );
-      fits::img_write ( fp, noise );
+
+      // dump out to a file compatible with fits image format
+
+      string outimg = "image_sim.fits";
+      fits::create ( fp, outimg );
       fits::img_append ( fp, rows_, cols_ );
       fits::write_key ( fp, "EXTNAME", "data", "signal plus noise" );
       fits::img_write ( fp, measured_ );
       fits::img_append ( fp, rows_, cols_ );
       fits::write_key ( fp, "EXTNAME", "invn", "inverse pixel covariance" );
       fits::img_write ( fp, invcov_ );
+
+      char ** ttype;
+      char ** tform;
+      char ** tunit;
+
+      ttype = (char**) malloc ( 3 * sizeof(char*) );
+      tform = (char**) malloc ( 3 * sizeof(char*) );
+      tunit = (char**) malloc ( 3 * sizeof(char*) );
+
+      if ( ! ( ttype && tform && tunit ) ) {
+        ostringstream o;
+        o << "cannot allocate column info for output sky table";
+        HARP_THROW( o.str().c_str() );
+      }
+
+      for ( int c = 0; c < 3; ++c ) {
+        ttype[c] = (char*) malloc ( FLEN_VALUE * sizeof(char) );
+        tform[c] = (char*) malloc ( FLEN_VALUE * sizeof(char) );
+        tunit[c] = (char*) malloc ( FLEN_VALUE * sizeof(char) );
+        if ( ! ( ttype[c] && tform[c] && tunit[c] ) ) {
+          ostringstream o;
+          o << "cannot allocate column info for output sky table";
+          HARP_THROW( o.str().c_str() );
+        }
+        strcpy ( tunit[c], "None" );
+      }
+      strcpy ( ttype[0], "OBJTYPE" );
+      strcpy ( tform[0], "6A" );
+      strcpy ( ttype[1], "Z" );
+      strcpy ( tform[1], "1E" );
+      strcpy ( ttype[2], "O2FLUX" );
+      strcpy ( tform[2], "1E" );
+
+      int status = 0;
+
+      char extname[FLEN_VALUE];
+      strcpy ( extname, "TARGETINFO" );
+
+      ret = fits_create_tbl ( fp, BINARY_TBL, sky_.size(), 3, ttype, tform, tunit, extname, &status );
+      fits::check ( status );
+
+      for ( int c = 0; c < 3; ++c ) {
+        free ( ttype[c] );
+        free ( tform[c] );
+        free ( tunit[c] );
+      }
+      free ( ttype );
+      free ( tform );
+      free ( tunit );
+
+      char ** objnames = (char **) malloc ( sky_.size() * sizeof ( char* ) );
+      if ( ! objnames ) {
+        ostringstream o;
+        o << "cannot allocate object names for output sky table";
+        HARP_THROW( o.str().c_str() );
+      }
+
+      for ( size_t i = 0; i < sky_.size(); ++i ) {
+        objnames[i] = (char*) malloc ( FLEN_VALUE * sizeof(char) );
+        if ( ! objnames[i] ) {
+          HARP_THROW( "cannot allocate objname" );
+        }
+        if ( sky_[i] ) {
+          strcpy ( objnames[i], "SKY" );
+        } else {
+          strcpy ( objnames[i], "OBJ" );
+        }
+      }
+
+      ret = fits_write_col_str ( fp, 1, 0, 0, sky_.size(), objnames, &status );
+      fits::check ( status );
+
+      for ( size_t i = 0; i < sky_.size(); ++i ) {
+        free ( objnames[i] );
+      }
+      free ( objnames );
+
+      fits::img_append ( fp, rows_, cols_ );
+      fits::write_key ( fp, "EXTNAME", "signal", "simulated signal" );
+      fits::img_write ( fp, signal );
+      fits::img_append ( fp, rows_, cols_ );
+      fits::write_key ( fp, "EXTNAME", "noise", "simulated noise" );
+      fits::img_write ( fp, noise );
+      
       fits::close ( fp );
     }
   }
