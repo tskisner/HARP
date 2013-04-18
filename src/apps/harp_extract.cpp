@@ -429,10 +429,8 @@ int main ( int argc, char *argv[] ) {
       }
 
       tsubstart = MPI_Wtime();
-
-      elem::Grid grid ( elem::mpi::COMM_WORLD );
       
-      matrix_dist inv ( nbins, nbins, grid );
+      matrix_dist inv ( nbins, nbins );
 
       if ( dosky ) {
         inverse_covariance ( design_sky, invnoise, inv );
@@ -450,9 +448,9 @@ int main ( int argc, char *argv[] ) {
 
       tsubstart = MPI_Wtime();
 
-      matrix_dist W ( nbins, nbins, grid );
+      matrix_dist W ( nbins, nbins );
       
-      matrix_dist D ( nbins, 1, grid );
+      matrix_dist D ( nbins, 1 );
 
       eigen_decompose ( inv, D, W );
 
@@ -464,7 +462,7 @@ int main ( int argc, char *argv[] ) {
         cout << prefix << "      eigendecompose inverse covariance = " << tsubstop-tsubstart << " seconds" << endl;
       }
 
-      matrix_dist S ( nbins, 1, grid );
+      matrix_dist S ( nbins, 1 );
 
       matrix_dist out_spec ( nspec * band_write [ band ], 1 );
 
@@ -476,13 +474,12 @@ int main ( int argc, char *argv[] ) {
         // here along with the normalization vector
 
         matrix_dist Rtruth ( nbins, 1 );
+        dist_matrix_zero ( Rtruth );
 
         matrix_dist truth_band ( nbins, 1 );
         dist_matrix_zero ( truth_band );
 
         sub_spec ( fulltruth, psf_nspec, spec_start[ spec ], nspec, band_start[ band ], bandsize, truth_band );
-
-        dist_matrix_zero ( Rtruth );
 
         matrix_dist R ( W );
 

@@ -24,6 +24,14 @@ void harp::sub_spec ( matrix_dist & in, size_t total_nspec, size_t first_spec, s
     HARP_THROW( o.str().c_str() );
   }
 
+  if ( (size_t)out.Height() != nspec * nlambda ) {
+    std::ostringstream o;
+    o << "output matrix height (" << out.Height() << ") does not match parameters (" << nspec * nlambda << ")";
+    HARP_THROW( o.str().c_str() );
+  }
+
+  dist_matrix_zero ( out );
+
   // FIXME: this should be changed to not store a full local copy of the input!
 
   matrix_local in_loc ( in.Height(), 1 );
@@ -33,8 +41,6 @@ void harp::sub_spec ( matrix_dist & in, size_t total_nspec, size_t first_spec, s
   globloc.Attach( elem::GLOBAL_TO_LOCAL, in );
   globloc.Axpy ( 1.0, in_loc, 0, 0 );
   globloc.Detach();
-
-  out.ResizeTo ( nspec * nlambda, 1 );
 
   // Update local output matrix with proper slices from the input
 
@@ -78,11 +84,16 @@ void harp::accum_spec ( matrix_dist & full, size_t total_nspec, size_t first_spe
     HARP_THROW( o.str().c_str() );
   }
 
+  if ( (size_t)chunk.Height() != nspec * nlambda ) {
+    std::ostringstream o;
+    o << "chunk matrix height (" << chunk.Height() << ") does not match parameters (" << nspec * nlambda << ")";
+    HARP_THROW( o.str().c_str() );
+  }
+
   // FIXME: this should be changed to not store a full local copy of the matrix!
 
   matrix_local full_loc ( full.Height(), 1 );
   local_matrix_zero ( full_loc );
-
 
   // Copy our data into full local contribution
 
