@@ -15,12 +15,7 @@ if [ "x${HPCP_DYNAMIC}" = "xFALSE" ]; then
     sharedopt="--disable-shared --disable-python"
 fi
 
-clique=""
-if [ -e "${clique_PREFIX}/lib/liblapack-addons.a" ]; then
-    clique="-lclique -lparmetis-addons -lmetis-addons -lparmetis -lmetis -lelemental -lplcg -lpmrrr -llapack-addons -lelem-dummy-lib ${blas_LIBS_CXX} ${HPCP_MPIFCLIBS} ${HPCP_FCLIBS}";
-else
-    clique="-lclique -lparmetis-addons -lmetis-addons -lparmetis -lmetis -lelemental -lplcg -lpmrrr -lelem-dummy-lib ${lapack_LIBS_CXX} ${blas_LIBS_CXX} ${HPCP_MPIFCLIBS} ${HPCP_FCLIBS}";
-fi
+clique="${clique_LIBS_MPICXX} ${elemental_LIBS_MPICXX} ${lapack_LIBS_CXX} ${blas_LIBS_CXX} ${HPCP_FCLIBS} ${HPCP_LDFLAGS} ${HPCP_LIBS}"
 
 CC="${HPCP_CC}" \
 CXX="${HPCP_CXX}" \
