@@ -45,6 +45,7 @@ void harp::sub_spec ( matrix_dist & in, size_t total_nspec, size_t first_spec, s
   // Update local output matrix with proper slices from the input
 
   size_t hlocal = out.LocalHeight();
+  size_t wlocal = out.LocalWidth();
 
   size_t rowoff = out.ColShift();
   size_t rowstride = out.ColStride();
@@ -54,14 +55,16 @@ void harp::sub_spec ( matrix_dist & in, size_t total_nspec, size_t first_spec, s
   size_t out_spec;
   size_t out_lambda;
 
-  for ( size_t j = 0; j < hlocal; ++j ) {
-    row = rowoff + j * rowstride;
-    out_spec = (size_t)( row / nlambda );
-    out_lambda = row - out_spec * nlambda;
-    out_spec += first_spec;
-    out_lambda += first_lambda;
-    val = in_loc.Get ( out_spec * in_nlambda + out_lambda, 0 );
-    out.SetLocal ( j, 0, val );
+  if ( wlocal > 0 ) {
+    for ( size_t j = 0; j < hlocal; ++j ) {
+      row = rowoff + j * rowstride;
+      out_spec = (size_t)( row / nlambda );
+      out_lambda = row - out_spec * nlambda;
+      out_spec += first_spec;
+      out_lambda += first_lambda;
+      val = in_loc.Get ( out_spec * in_nlambda + out_lambda, 0 );
+      out.SetLocal ( j, 0, val );
+    }
   }
 
   return;
@@ -98,6 +101,7 @@ void harp::accum_spec ( matrix_dist & full, size_t total_nspec, size_t first_spe
   // Copy our data into full local contribution
 
   size_t hlocal = chunk.LocalHeight();
+  size_t wlocal = chunk.LocalWidth();
 
   size_t rowoff = chunk.ColShift();
   size_t rowstride = chunk.ColStride();
@@ -107,14 +111,16 @@ void harp::accum_spec ( matrix_dist & full, size_t total_nspec, size_t first_spe
   size_t spec;
   size_t lambda;
 
-  for ( size_t j = 0; j < hlocal; ++j ) {
-    row = rowoff + j * rowstride;
-    spec = (size_t)( row / nlambda );
-    lambda = row - spec * nlambda;
-    spec += first_spec;
-    lambda += first_lambda;
-    val = chunk.GetLocal ( j, 0 );
-    full_loc.Set ( spec * nlambda + lambda, 0, val );
+  if ( wlocal > 0 ) {
+    for ( size_t j = 0; j < hlocal; ++j ) {
+      row = rowoff + j * rowstride;
+      spec = (size_t)( row / nlambda );
+      lambda = row - spec * nlambda;
+      spec += first_spec;
+      lambda += first_lambda;
+      val = chunk.GetLocal ( j, 0 );
+      full_loc.Set ( spec * nlambda + lambda, 0, val );
+    }
   }
 
   // accumulate
