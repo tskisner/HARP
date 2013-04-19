@@ -594,7 +594,7 @@ int main ( int argc, char *argv[] ) {
     tstart = MPI_Wtime();
 
     boost::property_tree::ptree rtruth_spec_props;
-    rtruth_spec_props.put ( "format", "boss_specter" );
+    rtruth_spec_props.put ( "format", "specter" );
     rtruth_spec_props.put ( "nspec", psf_nspec );
     rtruth_spec_props.put ( "nlambda", nlambda );
 
@@ -654,7 +654,7 @@ int main ( int argc, char *argv[] ) {
   tstart = MPI_Wtime();
 
   boost::property_tree::ptree solution_spec_props;
-  solution_spec_props.put ( "format", "boss_specter" );
+  solution_spec_props.put ( "format", "specter" );
   solution_spec_props.put ( "nspec", psf_nspec );
   solution_spec_props.put ( "nlambda", nlambda );
 
