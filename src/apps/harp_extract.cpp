@@ -517,12 +517,19 @@ int main ( int argc, char *argv[] ) {
           cout << prefix << "      compute column norm = " << tsubstop-tsubstart << " seconds" << endl;
         }
 
-      }    
+      }
 
       matrix_dist z ( nbins, 1 );
+      dist_matrix_zero ( z );
+
       matrix_dist Rf ( nbins, 1 );
+      dist_matrix_zero ( Rf );
+
       matrix_dist f ( nbins, 1 );
+      dist_matrix_zero ( f );
+
       matrix_dist Rf_err ( nbins, 1 );
+      dist_matrix_zero ( Rf_err );
 
       tsubstart = MPI_Wtime();
 
@@ -543,15 +550,12 @@ int main ( int argc, char *argv[] ) {
       // accumulate to global solution
 
       sub_spec ( f, nspec, 0, nspec, band_out[ band ] - band_start[ band ], band_write[ band ], out_spec );
-
       accum_spec ( fullf, psf_nspec, spec_start[ spec ], nspec, band_out[ band ], band_write[ band ], out_spec );
 
       sub_spec ( Rf, nspec, 0, nspec, band_out[ band ] - band_start[ band ], band_write[ band ], out_spec );
-
       accum_spec ( fullRf, psf_nspec, spec_start[ spec ], nspec, band_out[ band ], band_write[ band ], out_spec );
 
       sub_spec ( Rf_err, nspec, 0, nspec, band_out[ band ] - band_start[ band ], band_write[ band ], out_spec );
-
       accum_spec ( fullerr, psf_nspec, spec_start[ spec ], nspec, band_out[ band ], band_write[ band ], out_spec );
     
       tsubstop = MPI_Wtime();
