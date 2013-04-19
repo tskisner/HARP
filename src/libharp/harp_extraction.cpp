@@ -619,14 +619,11 @@ void harp::extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_d
 
   elem::Symv ( elem::LOWER, 1.0, rtC, srf, 0.0, f );
 
-
   // compute diagonal error on result.
 
   // set local err matrix copy
 
   matrix_local err_loc ( err.Height(), 1 );
-
-  matrix_local & rc_loc = RC.Matrix();
 
   size_t hlocal = RC.LocalHeight();
   size_t wlocal = RC.LocalWidth();

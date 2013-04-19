@@ -8,7 +8,7 @@
 using namespace std;
 using namespace harp;
 
-#define SIZE 10
+#define SIZE 15
 #define MAX 1000.0
 #define TOL 1.0e-6
 
@@ -28,7 +28,7 @@ void harp::test_elemental ( string const & datadir ) {
   
   // construct random matrices
 
-  elem::Grid grid;
+  elem::Grid grid ( MPI_COMM_WORLD );
 
   matrix_dist a1 ( SIZE, SIZE, grid );
   matrix_dist a2 ( SIZE, SIZE, grid );
@@ -112,11 +112,63 @@ void harp::test_elemental ( string const & datadir ) {
     }
   }
 
-
   if ( myp == 0 ) {
     cerr << "  (PASSED)" << endl;
   }
 
+  if ( myp == 0 ) {
+    cerr << "Testing gang-parallel (re)distribution..." << endl;
+  }
+
+  int gangsize = (int)( np / 2 );
+
+  int ngang = (int)( np / gangsize );
+  int gangtot = ngang * gangsize;
+  if ( myp == 0 ) {
+    cout << "  Using " << ngang << " gangs of " << gangsize << " processes each" << endl;
+  }
+  if ( gangtot < np ) {
+    if ( myp == 0 ) {
+      cout << "  WARNING: " << (np-gangtot) << " processes are idle" << endl;
+    }
+  }
+  int gang = (int)( myp / gangsize );
+  int grank = myp % gangsize;
+  if ( gang >= ngang ) {
+    gang = MPI_UNDEFINED;
+    grank = MPI_UNDEFINED;
+  }
+
+  MPI_Comm gcomm;
+  int ret = MPI_Comm_split ( MPI_COMM_WORLD, gang, grank, &gcomm );
+  mpi_check ( MPI_COMM_WORLD, ret );
+
+  // create gang process grids
+
+  elem::Grid gang_grid ( gcomm );
+
+  matrix_dist redist_comp ( outcomp );
+  matrix_dist gout_comp ( SIZE, SIZE, gang_grid );
+
+  gang_distribute ( outcomp, gout_comp );
+
+  gang_accum ( gout_comp, redist_comp );
+
+  for ( size_t i = 0; i < SIZE; ++i ) {
+    for ( size_t j = 0; j < SIZE; ++j ) {
+      inval = outcomp.Get ( j, i );
+      outval = redist_comp.Get ( j, i );
+      relerr = fabs ( outval - inval ) / inval;
+      if ( relerr > TOL ) {
+        cerr << "FAIL on matrix element (" << j << ", " << i << ") input = " << inval << ", output = " << outval << " rel err = " << relerr << endl;
+        exit(1);
+      }
+    }
+  }
+
+  if ( myp == 0 ) {
+    cerr << "  (PASSED)" << endl;
+  }
 
   return;
 }

@@ -123,6 +123,11 @@ int main ( int argc, char *argv[] ) {
   ret = MPI_Comm_split ( MPI_COMM_WORLD, gang, grank, &gcomm );
   mpi_check ( MPI_COMM_WORLD, ret );
 
+  // create global and gang process grids
+
+  elem::Grid grid ( MPI_COMM_WORLD );
+  elem::Grid gang_grid ( gcomm );
+
   // Read metadata
   
   boost::property_tree::ptree conf;
@@ -295,19 +300,19 @@ int main ( int argc, char *argv[] ) {
 
   }
 
-  matrix_dist fullf ( psf_nbins, 1 );
+  matrix_dist fullf ( psf_nbins, 1, grid );
   dist_matrix_zero ( fullf );
 
-  matrix_dist fullRf ( psf_nbins, 1 );
+  matrix_dist fullRf ( psf_nbins, 1, grid );
   dist_matrix_zero ( fullRf );
 
-  matrix_dist fullerr ( psf_nbins, 1 );
+  matrix_dist fullerr ( psf_nbins, 1, grid );
   dist_matrix_zero ( fullerr );
 
-  matrix_dist fulltruth ( psf_nbins, 1 );
+  matrix_dist fulltruth ( psf_nbins, 1, grid );
   dist_matrix_zero ( fulltruth );
 
-  matrix_dist fullRtruth ( psf_nbins, 1 );
+  matrix_dist fullRtruth ( psf_nbins, 1, grid );
   dist_matrix_zero ( fullRtruth );
 
   vector < bool > fulltruth_sky;
@@ -410,11 +415,11 @@ int main ( int argc, char *argv[] ) {
       
       size_t nbins = nspec * bandsize;
 
-      matrix_sparse design;
+      matrix_sparse design ( gcomm );
 
       epsf->projection ( spec_start[ spec ], spec_stop[ spec ], band_start[ band ], band_stop[ band ], design );
 
-      matrix_sparse design_sky;
+      matrix_sparse design_sky ( gcomm );
 
       if ( dosky ) {
         sky_design ( design, is_sky, design_sky );
@@ -430,7 +435,7 @@ int main ( int argc, char *argv[] ) {
 
       tsubstart = MPI_Wtime();
       
-      matrix_dist inv ( nbins, nbins );
+      matrix_dist inv ( nbins, nbins, gang_grid );
 
       if ( dosky ) {
         inverse_covariance ( design_sky, invnoise, inv );
@@ -448,9 +453,9 @@ int main ( int argc, char *argv[] ) {
 
       tsubstart = MPI_Wtime();
 
-      matrix_dist W ( nbins, nbins );
+      matrix_dist W ( nbins, nbins, gang_grid );
       
-      matrix_dist D ( nbins, 1 );
+      matrix_dist D ( nbins, 1, gang_grid );
 
       eigen_decompose ( inv, D, W );
 
@@ -462,9 +467,9 @@ int main ( int argc, char *argv[] ) {
         cout << prefix << "      eigendecompose inverse covariance = " << tsubstop-tsubstart << " seconds" << endl;
       }
 
-      matrix_dist S ( nbins, 1 );
+      matrix_dist S ( nbins, 1, gang_grid );
 
-      matrix_dist out_spec ( nspec * band_write [ band ], 1 );
+      matrix_dist out_spec ( nspec * band_write [ band ], 1, gang_grid );
 
       if ( dotruth ) {
 
@@ -473,10 +478,10 @@ int main ( int argc, char *argv[] ) {
         // since we need the explicit resolution matrix anyway, compute it
         // here along with the normalization vector
 
-        matrix_dist Rtruth ( nbins, 1 );
+        matrix_dist Rtruth ( nbins, 1, gang_grid );
         dist_matrix_zero ( Rtruth );
 
-        matrix_dist truth_band ( nbins, 1 );
+        matrix_dist truth_band ( nbins, 1, gang_grid );
         dist_matrix_zero ( truth_band );
 
         sub_spec ( fulltruth, psf_nspec, spec_start[ spec ], nspec, band_start[ band ], bandsize, truth_band );
@@ -519,16 +524,16 @@ int main ( int argc, char *argv[] ) {
 
       }
 
-      matrix_dist z ( nbins, 1 );
+      matrix_dist z ( nbins, 1, gang_grid );
       dist_matrix_zero ( z );
 
-      matrix_dist Rf ( nbins, 1 );
+      matrix_dist Rf ( nbins, 1, gang_grid );
       dist_matrix_zero ( Rf );
 
-      matrix_dist f ( nbins, 1 );
+      matrix_dist f ( nbins, 1, gang_grid );
       dist_matrix_zero ( f );
 
-      matrix_dist Rf_err ( nbins, 1 );
+      matrix_dist Rf_err ( nbins, 1, gang_grid );
       dist_matrix_zero ( Rf_err );
 
       tsubstart = MPI_Wtime();
@@ -619,7 +624,7 @@ int main ( int argc, char *argv[] ) {
 
       tstart = MPI_Wtime();
 
-      matrix_sparse design;
+      matrix_sparse design ( psf_nspec * nlambda, npix, MPI_COMM_WORLD );
 
       epsf->projection ( 0, psf_nspec - 1, 0, nlambda - 1, design );
 
@@ -684,7 +689,7 @@ int main ( int argc, char *argv[] ) {
     matrix_local solution_image ( npix, 1 );
     local_matrix_zero ( solution_image );
 
-    matrix_sparse design;
+    matrix_sparse design ( psf_nspec * nlambda, npix, MPI_COMM_WORLD );
 
     epsf->projection ( 0, psf_nspec - 1, 0, nlambda - 1, design );
 

@@ -43,6 +43,10 @@ namespace harp {
 
   void norm ( matrix_dist & D, matrix_dist & W, matrix_dist & S );
 
+  void gang_distribute ( matrix_dist & mat, matrix_dist & gmat );
+
+  void gang_accum ( matrix_dist & gmat, matrix_dist & mat );
+
 }
 
 #endif

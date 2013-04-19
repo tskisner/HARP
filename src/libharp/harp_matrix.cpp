@@ -402,3 +402,104 @@ void harp::norm ( matrix_dist & D, matrix_dist & W, matrix_dist & S ) {
 }
 
 
+void harp::gang_distribute ( matrix_dist & mat, matrix_dist & gmat ) {
+
+  if ( ( mat.Height() != gmat.Height() ) || ( mat.Width() != gmat.Width() ) ) {
+    HARP_THROW( "matrix dimensions do not match" );
+  }
+
+  int gang_np;
+  int gang_myp;
+
+  MPI_Comm_size ( gmat.Grid().Comm(), &gang_np );
+  MPI_Comm_rank ( gmat.Grid().Comm(), &gang_myp );
+
+  // local column buffer
+
+  matrix_local colmat ( mat.Height(), 1 );
+
+  // compute local gang-matrix elements
+
+  elem::AxpyInterface < double > globloc;
+  elem::AxpyInterface < double > locglob;
+
+  // iterate over all columns
+
+  dist_matrix_zero ( gmat );
+
+  for ( size_t col = 0; col < mat.Width(); ++col ) {
+
+    local_matrix_zero ( colmat );
+
+    // get full local copy of the column
+
+    globloc.Attach( elem::GLOBAL_TO_LOCAL, mat );
+    if ( gang_myp == 0 ) {
+      globloc.Axpy ( 1.0, colmat, 0, col );
+    }
+    globloc.Detach();
+
+    // distribute to gang
+
+    locglob.Attach( elem::LOCAL_TO_GLOBAL, gmat );
+    if ( gang_myp == 0 ) {
+      locglob.Axpy ( 1.0, colmat, 0, col );
+    }
+    locglob.Detach();
+
+  }
+
+  return;
+}
+
+
+void harp::gang_accum ( matrix_dist & gmat, matrix_dist & mat ) {
+
+  if ( ( mat.Height() != gmat.Height() ) || ( mat.Width() != gmat.Width() ) ) {
+    HARP_THROW( "matrix dimensions do not match" );
+  }
+
+  int gang_np;
+  int gang_myp;
+
+  MPI_Comm_size ( gmat.Grid().Comm(), &gang_np );
+  MPI_Comm_rank ( gmat.Grid().Comm(), &gang_myp );
+
+  // local column buffer
+
+  matrix_local colmat ( mat.Height(), 1 );
+
+  // compute local gang-matrix elements
+
+  elem::AxpyInterface < double > globloc;
+  elem::AxpyInterface < double > locglob;
+
+  // iterate over all columns
+
+  dist_matrix_zero ( mat );
+
+  for ( size_t col = 0; col < mat.Width(); ++col ) {
+
+    local_matrix_zero ( colmat );
+
+    // get full local copy of the gang column
+
+    globloc.Attach( elem::GLOBAL_TO_LOCAL, gmat );
+    if ( gang_myp == 0 ) {
+      globloc.Axpy ( 1.0, colmat, 0, col );
+    }
+    globloc.Detach();
+
+    // each gang root process accumulates to global column
+
+    locglob.Attach( elem::LOCAL_TO_GLOBAL, mat );
+    if ( gang_myp == 0 ) {
+      locglob.Axpy ( 1.0, colmat, 0, col );
+    }
+    locglob.Detach();
+
+  }
+
+  return;
+}
+
