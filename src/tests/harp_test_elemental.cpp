@@ -121,6 +121,9 @@ void harp::test_elemental ( string const & datadir ) {
   }
 
   int gangsize = (int)( np / 2 );
+  if ( gangsize < 1 ) {
+    gangsize = 1;
+  }
 
   int ngang = (int)( np / gangsize );
   int gangtot = ngang * gangsize;
@@ -156,7 +159,7 @@ void harp::test_elemental ( string const & datadir ) {
 
   for ( size_t i = 0; i < SIZE; ++i ) {
     for ( size_t j = 0; j < SIZE; ++j ) {
-      inval = outcomp.Get ( j, i );
+      inval = 2.0 * outcomp.Get ( j, i );
       outval = redist_comp.Get ( j, i );
       relerr = fabs ( outval - inval ) / inval;
       if ( relerr > TOL ) {

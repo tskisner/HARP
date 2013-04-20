@@ -46,6 +46,7 @@ int main ( int argc, char *argv[] ) {
   bool quiet = false;
   bool debug = false;
   bool dosky = false;
+  bool only_plan = false;
 
   int gangsize = np;
   
@@ -64,6 +65,7 @@ int main ( int argc, char *argv[] ) {
   ( "spec_width", popts::value < size_t > ( &spec_width ), "number of spectra to process at once" )
   ( "lambda_width", popts::value < size_t > ( &lambda_width ), "maximum wavelength points to process simultaneously" )
   ( "lambda_overlap", popts::value < size_t > ( &lambda_overlap ), "minimum wavelength points to overlap" )
+  ( "plan", "check inputs, compute distribution, and exit" )
   ( "conf", popts::value<string>(&jsonconf), "JSON configuration file" )
   ;
 
@@ -90,6 +92,10 @@ int main ( int argc, char *argv[] ) {
   
   if ( vm.count( "quiet" ) ) {
     quiet = true;
+  }
+
+  if ( vm.count( "plan" ) ) {
+    only_plan = true;
   }
 
   if ( vm.count( "debug" ) ) {
@@ -174,7 +180,7 @@ int main ( int argc, char *argv[] ) {
     cout << prefix << "  dimensions = " << imgrows << " x " << imgcols << endl;
   }
 
-  if ( debug ) {
+  if ( debug && ( ! only_plan ) ) {
 
     tstart = MPI_Wtime();
 
@@ -300,6 +306,45 @@ int main ( int argc, char *argv[] ) {
 
   }
 
+  // distribute spectral chunks among the gangs
+
+  size_t total_chunks = nspec_chunk * nband;
+
+  vector < size_t > gang_band;
+  vector < size_t > gang_spec;
+
+  size_t gang_nchunk = (size_t) ( total_chunks / ngang );
+  size_t gang_offset;
+
+  size_t leftover = total_chunks % ngang;
+
+  if ( gang < leftover ) {
+    ++gang_nchunk;
+    gang_offset = gang * gang_nchunk;
+  } else {
+    gang_offset = ( (gang_nchunk + 1) * leftover ) + ( gang_nchunk * (gang - leftover) );
+  }
+
+  // Print out "planning information"
+
+  if ( ( myp == 0 ) && ( ! quiet ) ) {
+    cout << prefix << "Extracting " << total_chunks << " spectral chunks, each with " <<nspec_chunk << " spectra and " << lambda_width << " lambda points ( overlap = " << lambda_overlap << " )" << endl;
+  }  
+
+  for ( int g = 0; g < ngang; ++g ) {
+    if ( ( g == gang ) && ( grank == 0 ) ) {
+      cout << prefix << "  Gang " << g << ": assigned spectral chunks " << gang_offset << " - " << (gang_offset + gang_nchunk - 1) << endl;
+    }
+    MPI_Barrier ( MPI_COMM_WORLD );
+  }
+
+  if ( only_plan ) {
+    cliq::Finalize();
+    return 0;
+  }
+
+  // global distributed spectral products
+
   matrix_dist fullf ( psf_nbins, 1, grid );
   dist_matrix_zero ( fullf );
 
@@ -314,6 +359,24 @@ int main ( int argc, char *argv[] ) {
 
   matrix_dist fullRtruth ( psf_nbins, 1, grid );
   dist_matrix_zero ( fullRtruth );
+
+  // gang distributed spectral products
+
+  matrix_dist gang_fullf ( psf_nbins, 1, gang_grid );
+  dist_matrix_zero ( gang_fullf );
+
+  matrix_dist gang_fullRf ( psf_nbins, 1, gang_grid );
+  dist_matrix_zero ( gang_fullRf );
+
+  matrix_dist gang_fullerr ( psf_nbins, 1, gang_grid );
+  dist_matrix_zero ( gang_fullerr );
+
+  matrix_dist gang_fulltruth ( psf_nbins, 1, gang_grid );
+  dist_matrix_zero ( gang_fulltruth );
+
+  matrix_dist gang_fullRtruth ( psf_nbins, 1, gang_grid );
+  dist_matrix_zero ( gang_fullRtruth );
+
 
   vector < bool > fulltruth_sky;
 
@@ -365,6 +428,8 @@ int main ( int argc, char *argv[] ) {
 
     dotruth = true;
 
+    gang_distribute ( fulltruth, gang_fulltruth );
+
     tstop = MPI_Wtime();
 
     if ( ( myp == 0 ) && ( ! quiet ) ) {
@@ -382,201 +447,204 @@ int main ( int argc, char *argv[] ) {
   double tot_nsespec = 0.0;
   double tot_extract = 0.0;
 
-  // Process all bands
+  // Process all chunks for this gang
 
-  if ( ( myp == 0 ) && ( ! quiet ) ) {
-    cout << prefix << "Extracting " << nspec_chunk << " spectral chunks, each with " << lambda_width << " lambda points ( overlap = " << lambda_overlap << " )" << endl;
-  }  
+  for ( size_t gchunk = 0; gchunk < gang_nchunk; ++gchunk ) {
 
-  //for ( size_t band = 0; band < nband; ++band ) {
-  for ( size_t band = 0; band < 1; ++band ) {
+    size_t band = (size_t) ( (gang_offset + gchunk) / nspec_chunk );
 
+    size_t spec = (gang_offset + gchunk) % nspec_chunk;
+    
+    size_t bandsize = band_stop[ band ] - band_start[ band ] + 1;
+
+    /*
     if ( ( myp == 0 ) && ( ! quiet ) ) {
       cout << prefix << "  Wavelength band " << band << "/" << nband << " (" << band_start[band] << " - " << band_stop[band] << ")" << endl;
     }
 
-    size_t bandsize = band_stop[ band ] - band_start[ band ] + 1;
+    if ( ( myp == 0 ) && ( ! quiet ) ) {
+      cout << prefix << "    Spectral chunk " << spec << "/" << nspec_chunk << " (" << spec_start[spec] << " - " << spec_stop[spec] << ")" << endl;
+    }
+    */
 
-    // Process all spectra for this band
+    tstart = MPI_Wtime();
 
-    for ( size_t spec = 0; spec < nspec_chunk; ++spec ) {
-    //for ( size_t spec = 0; spec < 1; ++spec ) {
+    double tsubstart = tstart;
+    double tsubstop;
 
-      if ( ( myp == 0 ) && ( ! quiet ) ) {
-        cout << prefix << "    Spectral chunk " << spec << "/" << nspec_chunk << " (" << spec_start[spec] << " - " << spec_stop[spec] << ")" << endl;
-      }
-
-      tstart = MPI_Wtime();
-
-      double tsubstart = tstart;
-      double tsubstop;
-
-      size_t nspec = spec_stop[ spec ] - spec_start[ spec ] + 1;
-      
-      size_t nbins = nspec * bandsize;
-
-      matrix_sparse design ( gcomm );
-
-      epsf->projection ( spec_start[ spec ], spec_stop[ spec ], band_start[ band ], band_stop[ band ], design );
-
-      matrix_sparse design_sky ( gcomm );
-
-      if ( dosky ) {
-        sky_design ( design, is_sky, design_sky );
-      }
-
-      tsubstop = MPI_Wtime();
-
-      tot_design += ( tsubstop - tsubstart );
-
-      if ( ( myp == 0 ) && ( ! quiet ) ) {
-        cout << prefix << "      computing A^T = " << tsubstop-tsubstart << " seconds" << endl;
-      }
-
-      tsubstart = MPI_Wtime();
-      
-      matrix_dist inv ( nbins, nbins, gang_grid );
-
-      if ( dosky ) {
-        inverse_covariance ( design_sky, invnoise, inv );
-      } else {
-        inverse_covariance ( design, invnoise, inv );
-      }
-
-      tsubstop = MPI_Wtime();
-
-      tot_inverse += ( tsubstop - tsubstart );
-
-      if ( ( myp == 0 ) && ( ! quiet ) ) {
-        cout << prefix << "      building inverse covariance = " << tsubstop-tsubstart << " seconds" << endl;
-      }
-
-      tsubstart = MPI_Wtime();
-
-      matrix_dist W ( nbins, nbins, gang_grid );
-      
-      matrix_dist D ( nbins, 1, gang_grid );
-
-      eigen_decompose ( inv, D, W );
-
-      tsubstop = MPI_Wtime();
-
-      tot_eigen += ( tsubstop - tsubstart );
-
-      if ( ( myp == 0 ) && ( ! quiet ) ) {
-        cout << prefix << "      eigendecompose inverse covariance = " << tsubstop-tsubstart << " seconds" << endl;
-      }
-
-      matrix_dist S ( nbins, 1, gang_grid );
-
-      matrix_dist out_spec ( nspec * band_write [ band ], 1, gang_grid );
-
-      if ( dotruth ) {
-
-        tsubstart = MPI_Wtime();
-
-        // since we need the explicit resolution matrix anyway, compute it
-        // here along with the normalization vector
-
-        matrix_dist Rtruth ( nbins, 1, gang_grid );
-        dist_matrix_zero ( Rtruth );
-
-        matrix_dist truth_band ( nbins, 1, gang_grid );
-        dist_matrix_zero ( truth_band );
-
-        sub_spec ( fulltruth, psf_nspec, spec_start[ spec ], nspec, band_start[ band ], bandsize, truth_band );
-
-        matrix_dist R ( W );
-
-        resolution ( D, W, S, R );
-
-        elem::Gemv ( elem::NORMAL, 1.0, R, truth_band, 0.0, Rtruth );
-        
-        // accumulate to global resolution convolved truth
-
-        sub_spec ( Rtruth, nspec, 0, nspec, band_out[ band ] - band_start[ band ], band_write[ band ], out_spec );
-
-        accum_spec ( fullRtruth, psf_nspec, spec_start[ spec ], nspec, band_out[ band ], band_write[ band ], out_spec );
-
-        tsubstop = MPI_Wtime();
-
-        tot_norm += ( tsubstop - tsubstart );
-
-        if ( ( myp == 0 ) && ( ! quiet ) ) {
-          cout << prefix << "      compute column norm and resolution convolved truth = " << tsubstop-tsubstart << " seconds" << endl;
-        }
-
-      } else {
-
-        // we just need the norm
-
-        tsubstart = MPI_Wtime();
-
-        norm ( D, W, S );
-
-        tsubstop = MPI_Wtime();
-
-        tot_norm += ( tsubstop - tsubstart );
-
-        if ( ( myp == 0 ) && ( ! quiet ) ) {
-          cout << prefix << "      compute column norm = " << tsubstop-tsubstart << " seconds" << endl;
-        }
-
-      }
-
-      matrix_dist z ( nbins, 1, gang_grid );
-      dist_matrix_zero ( z );
-
-      matrix_dist Rf ( nbins, 1, gang_grid );
-      dist_matrix_zero ( Rf );
-
-      matrix_dist f ( nbins, 1, gang_grid );
-      dist_matrix_zero ( f );
-
-      matrix_dist Rf_err ( nbins, 1, gang_grid );
-      dist_matrix_zero ( Rf_err );
-
-      tsubstart = MPI_Wtime();
-
-      noise_weighted_spec ( design, invnoise, measured, z );
-
-      tsubstop = MPI_Wtime();
-
-      tot_nsespec += ( tsubstop - tsubstart );
-
-      if ( ( myp == 0 ) && ( ! quiet ) ) {
-        cout << prefix << "      compute noise weighted spec = " << tsubstop-tsubstart << " seconds" << endl;
-      }
-
-      tsubstart = MPI_Wtime();
+    size_t nspec = spec_stop[ spec ] - spec_start[ spec ] + 1;
     
-      extract ( D, W, S, z, Rf, Rf_err, f );
+    size_t nbins = nspec * bandsize;
 
-      // accumulate to global solution
+    matrix_sparse design ( gcomm );
 
-      sub_spec ( f, nspec, 0, nspec, band_out[ band ] - band_start[ band ], band_write[ band ], out_spec );
-      accum_spec ( fullf, psf_nspec, spec_start[ spec ], nspec, band_out[ band ], band_write[ band ], out_spec );
+    epsf->projection ( spec_start[ spec ], spec_stop[ spec ], band_start[ band ], band_stop[ band ], design );
 
-      sub_spec ( Rf, nspec, 0, nspec, band_out[ band ] - band_start[ band ], band_write[ band ], out_spec );
-      accum_spec ( fullRf, psf_nspec, spec_start[ spec ], nspec, band_out[ band ], band_write[ band ], out_spec );
+    matrix_sparse design_sky ( gcomm );
 
-      sub_spec ( Rf_err, nspec, 0, nspec, band_out[ band ] - band_start[ band ], band_write[ band ], out_spec );
-      accum_spec ( fullerr, psf_nspec, spec_start[ spec ], nspec, band_out[ band ], band_write[ band ], out_spec );
+    if ( dosky ) {
+      sky_design ( design, is_sky, design_sky );
+    }
+
+    tsubstop = MPI_Wtime();
+
+    tot_design += ( tsubstop - tsubstart );
+
+    if ( ( myp == 0 ) && ( ! quiet ) ) {
+      cout << prefix << "      computing A^T = " << tsubstop-tsubstart << " seconds" << endl;
+    }
+
+    tsubstart = MPI_Wtime();
     
+    matrix_dist inv ( nbins, nbins, gang_grid );
+
+    if ( dosky ) {
+      inverse_covariance ( design_sky, invnoise, inv );
+    } else {
+      inverse_covariance ( design, invnoise, inv );
+    }
+
+    tsubstop = MPI_Wtime();
+
+    tot_inverse += ( tsubstop - tsubstart );
+
+    if ( ( myp == 0 ) && ( ! quiet ) ) {
+      cout << prefix << "      building inverse covariance = " << tsubstop-tsubstart << " seconds" << endl;
+    }
+
+    tsubstart = MPI_Wtime();
+
+    matrix_dist W ( nbins, nbins, gang_grid );
+    
+    matrix_dist D ( nbins, 1, gang_grid );
+
+    eigen_decompose ( inv, D, W );
+
+    tsubstop = MPI_Wtime();
+
+    tot_eigen += ( tsubstop - tsubstart );
+
+    if ( ( myp == 0 ) && ( ! quiet ) ) {
+      cout << prefix << "      eigendecompose inverse covariance = " << tsubstop-tsubstart << " seconds" << endl;
+    }
+
+    matrix_dist S ( nbins, 1, gang_grid );
+
+    matrix_dist out_spec ( nspec * band_write [ band ], 1, gang_grid );
+
+    if ( dotruth ) {
+
+      tsubstart = MPI_Wtime();
+
+      // since we need the explicit resolution matrix anyway, compute it
+      // here along with the normalization vector
+
+      matrix_dist Rtruth ( nbins, 1, gang_grid );
+      dist_matrix_zero ( Rtruth );
+
+      matrix_dist truth_band ( nbins, 1, gang_grid );
+      dist_matrix_zero ( truth_band );
+
+      sub_spec ( gang_fulltruth, psf_nspec, spec_start[ spec ], nspec, band_start[ band ], bandsize, truth_band );
+
+      matrix_dist R ( W );
+
+      resolution ( D, W, S, R );
+
+      elem::Gemv ( elem::NORMAL, 1.0, R, truth_band, 0.0, Rtruth );
+      
+      // accumulate to global resolution convolved truth
+
+      sub_spec ( Rtruth, nspec, 0, nspec, band_out[ band ] - band_start[ band ], band_write[ band ], out_spec );
+
+      accum_spec ( gang_fullRtruth, psf_nspec, spec_start[ spec ], nspec, band_out[ band ], band_write[ band ], out_spec );
+
       tsubstop = MPI_Wtime();
 
-      tot_extract += ( tsubstop - tsubstart );
-
-      tstop = tsubstop;
+      tot_norm += ( tsubstop - tsubstart );
 
       if ( ( myp == 0 ) && ( ! quiet ) ) {
-        cout << prefix << "      extraction = " << tsubstop-tsubstart << " seconds" << endl;
-        cout << prefix << "      total band time = " << tstop-tstart << " seconds" << endl;
+        cout << prefix << "      compute column norm and resolution convolved truth = " << tsubstop-tsubstart << " seconds" << endl;
+      }
+
+    } else {
+
+      // we just need the norm
+
+      tsubstart = MPI_Wtime();
+
+      norm ( D, W, S );
+
+      tsubstop = MPI_Wtime();
+
+      tot_norm += ( tsubstop - tsubstart );
+
+      if ( ( myp == 0 ) && ( ! quiet ) ) {
+        cout << prefix << "      compute column norm = " << tsubstop-tsubstart << " seconds" << endl;
       }
 
     }
 
+    matrix_dist z ( nbins, 1, gang_grid );
+    dist_matrix_zero ( z );
+
+    matrix_dist Rf ( nbins, 1, gang_grid );
+    dist_matrix_zero ( Rf );
+
+    matrix_dist f ( nbins, 1, gang_grid );
+    dist_matrix_zero ( f );
+
+    matrix_dist Rf_err ( nbins, 1, gang_grid );
+    dist_matrix_zero ( Rf_err );
+
+    tsubstart = MPI_Wtime();
+
+    noise_weighted_spec ( design, invnoise, measured, z );
+
+    tsubstop = MPI_Wtime();
+
+    tot_nsespec += ( tsubstop - tsubstart );
+
+    if ( ( myp == 0 ) && ( ! quiet ) ) {
+      cout << prefix << "      compute noise weighted spec = " << tsubstop-tsubstart << " seconds" << endl;
+    }
+
+    tsubstart = MPI_Wtime();
+  
+    extract ( D, W, S, z, Rf, Rf_err, f );
+
+    // accumulate to global solution
+
+    sub_spec ( f, nspec, 0, nspec, band_out[ band ] - band_start[ band ], band_write[ band ], out_spec );
+    accum_spec ( gang_fullf, psf_nspec, spec_start[ spec ], nspec, band_out[ band ], band_write[ band ], out_spec );
+
+    sub_spec ( Rf, nspec, 0, nspec, band_out[ band ] - band_start[ band ], band_write[ band ], out_spec );
+    accum_spec ( gang_fullRf, psf_nspec, spec_start[ spec ], nspec, band_out[ band ], band_write[ band ], out_spec );
+
+    sub_spec ( Rf_err, nspec, 0, nspec, band_out[ band ] - band_start[ band ], band_write[ band ], out_spec );
+    accum_spec ( gang_fullerr, psf_nspec, spec_start[ spec ], nspec, band_out[ band ], band_write[ band ], out_spec );
+  
+    tsubstop = MPI_Wtime();
+
+    tot_extract += ( tsubstop - tsubstart );
+
+    tstop = tsubstop;
+
+    if ( ( myp == 0 ) && ( ! quiet ) ) {
+      cout << prefix << "      extraction = " << tsubstop-tsubstart << " seconds" << endl;
+      cout << prefix << "      total band time = " << tstop-tstart << " seconds" << endl;
+    }
+
   }
+
+  // Merge gang-wise outputs
+
+  gang_accum ( gang_fullf, fullf );
+  gang_accum ( gang_fullRf, fullRf );
+  gang_accum ( gang_fullerr, fullerr );
+  gang_accum ( gang_fullRtruth, fullRtruth );
+
+  // Total timings
 
   if ( ( myp == 0 ) && ( ! quiet ) ) {
     cout << prefix << "Aggregate Timings:" << endl;

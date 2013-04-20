@@ -138,15 +138,17 @@ void harp::spec_specter::read ( matrix_dist & data, std::vector < double > & lam
   // Each process sets its local elements of the distributed spectra
 
   int hlocal = data.LocalHeight();
-  int wlocal = data.LocalWidth(); // this should be one...
+  int wlocal = data.LocalWidth();
 
   int rowoff = data.ColShift();
   int rowstride = data.ColStride();
   int row;
 
-  for ( int i = 0; i < hlocal; ++i ) {
-    row = rowoff + i * rowstride;
-    data.SetLocal ( i, 0, iobuffer.Get ( row, 0 ) );
+  if ( wlocal > 0 ) {
+    for ( int i = 0; i < hlocal; ++i ) {
+      row = rowoff + i * rowstride;
+      data.SetLocal ( i, 0, iobuffer.Get ( row, 0 ) );
+    }
   }
 
   // read and broadcast the wavelength vector
