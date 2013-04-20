@@ -3,8 +3,11 @@
 #include <iostream>
 #include <cstdio>
 
-#include <boost/program_options.hpp>
+extern "C" {
+  #include <unistd.h>
+}
 
+#include <boost/program_options.hpp>
 
 #include <harp.hpp>
 
@@ -377,7 +380,6 @@ int main ( int argc, char *argv[] ) {
   matrix_dist gang_fullRtruth ( psf_nbins, 1, gang_grid );
   dist_matrix_zero ( gang_fullRtruth );
 
-
   vector < bool > fulltruth_sky;
 
   bool dotruth = false;
@@ -441,11 +443,27 @@ int main ( int argc, char *argv[] ) {
   // aggregate timing
 
   double tot_design = 0.0;
+  double time_design;
   double tot_inverse = 0.0;
+  double time_inverse;
   double tot_eigen = 0.0;
+  double time_eigen;
   double tot_norm = 0.0;
+  double time_norm;
   double tot_nsespec = 0.0;
+  double time_nsespec;
   double tot_extract = 0.0;
+  double time_extract;
+  double time_chunk;
+
+  // root process implements RMA lock for gangs to take turns writing to stdout
+
+  int lockbuf = -1;
+
+  MPI_Win printlock;
+
+  ret = MPI_Win_create ( (void*)(&lockbuf), sizeof(int), sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &printlock );
+  mpi_check ( MPI_COMM_WORLD, ret );
 
   // Process all chunks for this gang
 
@@ -456,16 +474,6 @@ int main ( int argc, char *argv[] ) {
     size_t spec = (gang_offset + gchunk) % nspec_chunk;
     
     size_t bandsize = band_stop[ band ] - band_start[ band ] + 1;
-
-    /*
-    if ( ( myp == 0 ) && ( ! quiet ) ) {
-      cout << prefix << "  Wavelength band " << band << "/" << nband << " (" << band_start[band] << " - " << band_stop[band] << ")" << endl;
-    }
-
-    if ( ( myp == 0 ) && ( ! quiet ) ) {
-      cout << prefix << "    Spectral chunk " << spec << "/" << nspec_chunk << " (" << spec_start[spec] << " - " << spec_stop[spec] << ")" << endl;
-    }
-    */
 
     tstart = MPI_Wtime();
 
@@ -487,12 +495,7 @@ int main ( int argc, char *argv[] ) {
     }
 
     tsubstop = MPI_Wtime();
-
-    tot_design += ( tsubstop - tsubstart );
-
-    if ( ( myp == 0 ) && ( ! quiet ) ) {
-      cout << prefix << "      computing A^T = " << tsubstop-tsubstart << " seconds" << endl;
-    }
+    time_design = ( tsubstop - tsubstart );
 
     tsubstart = MPI_Wtime();
     
@@ -505,12 +508,7 @@ int main ( int argc, char *argv[] ) {
     }
 
     tsubstop = MPI_Wtime();
-
-    tot_inverse += ( tsubstop - tsubstart );
-
-    if ( ( myp == 0 ) && ( ! quiet ) ) {
-      cout << prefix << "      building inverse covariance = " << tsubstop-tsubstart << " seconds" << endl;
-    }
+    time_inverse = ( tsubstop - tsubstart );
 
     tsubstart = MPI_Wtime();
 
@@ -521,12 +519,7 @@ int main ( int argc, char *argv[] ) {
     eigen_decompose ( inv, D, W );
 
     tsubstop = MPI_Wtime();
-
-    tot_eigen += ( tsubstop - tsubstart );
-
-    if ( ( myp == 0 ) && ( ! quiet ) ) {
-      cout << prefix << "      eigendecompose inverse covariance = " << tsubstop-tsubstart << " seconds" << endl;
-    }
+    time_eigen = ( tsubstop - tsubstart );
 
     matrix_dist S ( nbins, 1, gang_grid );
 
@@ -560,12 +553,7 @@ int main ( int argc, char *argv[] ) {
       accum_spec ( gang_fullRtruth, psf_nspec, spec_start[ spec ], nspec, band_out[ band ], band_write[ band ], out_spec );
 
       tsubstop = MPI_Wtime();
-
-      tot_norm += ( tsubstop - tsubstart );
-
-      if ( ( myp == 0 ) && ( ! quiet ) ) {
-        cout << prefix << "      compute column norm and resolution convolved truth = " << tsubstop-tsubstart << " seconds" << endl;
-      }
+      time_norm = ( tsubstop - tsubstart );
 
     } else {
 
@@ -576,12 +564,7 @@ int main ( int argc, char *argv[] ) {
       norm ( D, W, S );
 
       tsubstop = MPI_Wtime();
-
-      tot_norm += ( tsubstop - tsubstart );
-
-      if ( ( myp == 0 ) && ( ! quiet ) ) {
-        cout << prefix << "      compute column norm = " << tsubstop-tsubstart << " seconds" << endl;
-      }
+      time_norm = ( tsubstop - tsubstart );
 
     }
 
@@ -602,12 +585,7 @@ int main ( int argc, char *argv[] ) {
     noise_weighted_spec ( design, invnoise, measured, z );
 
     tsubstop = MPI_Wtime();
-
-    tot_nsespec += ( tsubstop - tsubstart );
-
-    if ( ( myp == 0 ) && ( ! quiet ) ) {
-      cout << prefix << "      compute noise weighted spec = " << tsubstop-tsubstart << " seconds" << endl;
-    }
+    time_nsespec = ( tsubstop - tsubstart );
 
     tsubstart = MPI_Wtime();
   
@@ -625,15 +603,70 @@ int main ( int argc, char *argv[] ) {
     accum_spec ( gang_fullerr, psf_nspec, spec_start[ spec ], nspec, band_out[ band ], band_write[ band ], out_spec );
   
     tsubstop = MPI_Wtime();
-
-    tot_extract += ( tsubstop - tsubstart );
+    time_extract = ( tsubstop - tsubstart );
 
     tstop = tsubstop;
 
-    if ( ( myp == 0 ) && ( ! quiet ) ) {
-      cout << prefix << "      extraction = " << tsubstop-tsubstart << " seconds" << endl;
-      cout << prefix << "      total band time = " << tstop-tstart << " seconds" << endl;
+    time_chunk = tstop - tstart;
+
+    if ( ( grank == 0 ) && ( ! quiet ) ) {
+
+      // wait for print lock
+
+      bool done = false;
+
+      while ( ! done ) {
+
+        ret = MPI_Get ( (void*)( &lockbuf ), 1, MPI_INT, 0, 0, 1, MPI_INT, printlock );
+        mpi_check ( MPI_COMM_WORLD, ret );
+
+        if ( lockbuf < 0 ) {
+          // available- try to claim it
+          MPI_Put ( (void*)( &myp ), 1, MPI_INT, 0, 0, 1, MPI_INT, printlock );
+          mpi_check ( MPI_COMM_WORLD, ret );
+        }
+
+        ret = MPI_Get ( (void*)( &lockbuf ), 1, MPI_INT, 0, 0, 1, MPI_INT, printlock );
+        mpi_check ( MPI_COMM_WORLD, ret );
+
+        if ( lockbuf == myp ) {
+          // we've got lock, print our info
+
+          cout << prefix << "  gang " << gang << ": finished chunk " << (gang_offset + gchunk) << endl;
+          cout << prefix << "    computing A^T = " << time_design << " seconds" << endl;
+          cout << prefix << "    building inverse covariance = " << time_inverse << " seconds" << endl;
+          cout << prefix << "    eigendecompose inverse covariance = " << time_eigen << " seconds" << endl;
+          if ( dotruth ) {
+            cout << prefix << "    compute column norm and resolution convolved truth = " << time_norm << " seconds" << endl;
+          } else {
+            cout << prefix << "    compute column norm = " << time_norm << " seconds" << endl;
+          }
+          cout << prefix << "    compute noise weighted spec = " << time_nsespec << " seconds" << endl;
+          cout << prefix << "    extraction = " << time_extract << " seconds" << endl;
+          cout << prefix << "    total band time = " << time_chunk << " seconds" << endl;
+
+          // free the lock
+          lockbuf = -1;
+          MPI_Put ( (void*)( &lockbuf ), 1, MPI_INT, 0, 0, 1, MPI_INT, printlock );
+          mpi_check ( MPI_COMM_WORLD, ret );
+
+          done = true;
+        }
+
+        usleep ( 100 );
+
+      }
+
+      tot_design += time_design;
+      tot_inverse += time_inverse;
+      tot_eigen += time_eigen;
+      tot_norm += time_norm;
+      tot_nsespec += time_nsespec;
+      tot_extract += time_extract;
+
     }
+
+    MPI_Barrier ( gcomm );
 
   }
 
@@ -786,6 +819,8 @@ int main ( int argc, char *argv[] ) {
   if ( ( myp == 0 ) && ( ! quiet ) ) {
     cout << prefix << "Total run time = " << global_stop-global_start << " seconds" << endl;
   }
+
+  MPI_Win_free ( &printlock );
 
   cliq::Finalize();
 

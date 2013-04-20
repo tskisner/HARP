@@ -159,7 +159,7 @@ void harp::test_elemental ( string const & datadir ) {
 
   for ( size_t i = 0; i < SIZE; ++i ) {
     for ( size_t j = 0; j < SIZE; ++j ) {
-      inval = 2.0 * outcomp.Get ( j, i );
+      inval = (double)ngang * outcomp.Get ( j, i );
       outval = redist_comp.Get ( j, i );
       relerr = fabs ( outval - inval ) / inval;
       if ( relerr > TOL ) {
