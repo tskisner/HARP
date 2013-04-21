@@ -336,7 +336,7 @@ int main ( int argc, char *argv[] ) {
 
   for ( int g = 0; g < ngang; ++g ) {
     if ( ( g == gang ) && ( grank == 0 ) ) {
-      cout << prefix << "  Gang " << g << ": assigned spectral chunks " << gang_offset << " - " << (gang_offset + gang_nchunk - 1) << endl;
+      cout << prefix << "  gang " << g << ": assigned spectral chunks " << gang_offset << " - " << (gang_offset + gang_nchunk - 1) << endl;
     }
     MPI_Barrier ( MPI_COMM_WORLD );
   }
@@ -458,12 +458,23 @@ int main ( int argc, char *argv[] ) {
 
   // root process implements RMA lock for gangs to take turns writing to stdout
 
-  int lockbuf = -1;
+  int * root_lockbuf;
+
+  ret = MPI_Alloc_mem ( sizeof(int), MPI_INFO_NULL, (void*)&root_lockbuf );
+  mpi_check ( MPI_COMM_WORLD, ret );
 
   MPI_Win printlock;
 
-  ret = MPI_Win_create ( (void*)(&lockbuf), sizeof(int), sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &printlock );
+  if ( myp == 0 ) {
+    ret = MPI_Win_create ( (void*)(root_lockbuf), sizeof(int), sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &printlock );
+  } else {
+    ret = MPI_Win_create ( NULL, 0, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &printlock );
+  }
   mpi_check ( MPI_COMM_WORLD, ret );
+
+  if ( ( myp == 0 ) && ( ! quiet ) ) {
+    cout << prefix << "Processing..." << endl;
+  }
 
   // Process all chunks for this gang
 
@@ -611,51 +622,25 @@ int main ( int argc, char *argv[] ) {
 
     if ( ( grank == 0 ) && ( ! quiet ) ) {
 
-      // wait for print lock
+      ret = MPI_Win_lock ( MPI_LOCK_EXCLUSIVE, 0, 0, printlock );
+      mpi_check ( MPI_COMM_WORLD, ret );
 
-      bool done = false;
-
-      while ( ! done ) {
-
-        ret = MPI_Get ( (void*)( &lockbuf ), 1, MPI_INT, 0, 0, 1, MPI_INT, printlock );
-        mpi_check ( MPI_COMM_WORLD, ret );
-
-        if ( lockbuf < 0 ) {
-          // available- try to claim it
-          MPI_Put ( (void*)( &myp ), 1, MPI_INT, 0, 0, 1, MPI_INT, printlock );
-          mpi_check ( MPI_COMM_WORLD, ret );
-        }
-
-        ret = MPI_Get ( (void*)( &lockbuf ), 1, MPI_INT, 0, 0, 1, MPI_INT, printlock );
-        mpi_check ( MPI_COMM_WORLD, ret );
-
-        if ( lockbuf == myp ) {
-          // we've got lock, print our info
-
-          cout << prefix << "  gang " << gang << ": finished chunk " << (gang_offset + gchunk) << endl;
-          cout << prefix << "    computing A^T = " << time_design << " seconds" << endl;
-          cout << prefix << "    building inverse covariance = " << time_inverse << " seconds" << endl;
-          cout << prefix << "    eigendecompose inverse covariance = " << time_eigen << " seconds" << endl;
-          if ( dotruth ) {
-            cout << prefix << "    compute column norm and resolution convolved truth = " << time_norm << " seconds" << endl;
-          } else {
-            cout << prefix << "    compute column norm = " << time_norm << " seconds" << endl;
-          }
-          cout << prefix << "    compute noise weighted spec = " << time_nsespec << " seconds" << endl;
-          cout << prefix << "    extraction = " << time_extract << " seconds" << endl;
-          cout << prefix << "    total band time = " << time_chunk << " seconds" << endl;
-
-          // free the lock
-          lockbuf = -1;
-          MPI_Put ( (void*)( &lockbuf ), 1, MPI_INT, 0, 0, 1, MPI_INT, printlock );
-          mpi_check ( MPI_COMM_WORLD, ret );
-
-          done = true;
-        }
-
-        usleep ( 100 );
-
+      cout << prefix << "  gang " << gang << ": finished chunk " << (gang_offset + gchunk) << endl;
+      cout << prefix << "    computing A^T = " << time_design << " seconds" << endl;
+      cout << prefix << "    building inverse covariance = " << time_inverse << " seconds" << endl;
+      cout << prefix << "    eigendecompose inverse covariance = " << time_eigen << " seconds" << endl;
+      if ( dotruth ) {
+        cout << prefix << "    compute column norm and resolution convolved truth = " << time_norm << " seconds" << endl;
+      } else {
+        cout << prefix << "    compute column norm = " << time_norm << " seconds" << endl;
       }
+      cout << prefix << "    compute noise weighted spec = " << time_nsespec << " seconds" << endl;
+      cout << prefix << "    extraction = " << time_extract << " seconds" << endl;
+      cout << prefix << "    total band time = " << time_chunk << " seconds" << endl;
+
+      // free the lock
+      ret = MPI_Win_unlock ( 0, printlock );
+      mpi_check ( MPI_COMM_WORLD, ret );
 
       tot_design += time_design;
       tot_inverse += time_inverse;
@@ -669,6 +654,10 @@ int main ( int argc, char *argv[] ) {
     MPI_Barrier ( gcomm );
 
   }
+
+  MPI_Win_free ( &printlock );
+  ret = MPI_Free_mem ( (void*)root_lockbuf );
+  mpi_check ( MPI_COMM_WORLD, ret );
 
   // Merge gang-wise outputs
 
@@ -819,8 +808,6 @@ int main ( int argc, char *argv[] ) {
   if ( ( myp == 0 ) && ( ! quiet ) ) {
     cout << prefix << "Total run time = " << global_stop-global_start << " seconds" << endl;
   }
-
-  MPI_Win_free ( &printlock );
 
   cliq::Finalize();
 
