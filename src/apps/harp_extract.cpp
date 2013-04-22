@@ -331,7 +331,7 @@ int main ( int argc, char *argv[] ) {
   // Print out "planning information"
 
   if ( ( myp == 0 ) && ( ! quiet ) ) {
-    cout << prefix << "Extracting " << total_chunks << " spectral chunks, each with " <<nspec_chunk << " spectra and " << lambda_width << " lambda points ( overlap = " << lambda_overlap << " )" << endl;
+    cout << prefix << "Extracting " << total_chunks << " spectral chunks, each with " << spec_width << " spectra and " << lambda_width << " lambda points ( overlap = " << lambda_overlap << " )" << endl;
   }  
 
   for ( int g = 0; g < ngang; ++g ) {

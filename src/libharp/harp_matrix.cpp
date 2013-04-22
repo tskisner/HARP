@@ -169,7 +169,7 @@ void harp::eigen_decompose ( matrix_dist & invcov, matrix_dist & D, matrix_dist 
 
   matrix_dist temp ( invcov );
 
-  elem::DistMatrix < double, elem::VR, elem::STAR > eigvals;
+  elem::DistMatrix < double, elem::VR, elem::STAR > eigvals ( invcov.Grid() );
 
   elem::HermitianEig ( elem::LOWER, temp, eigvals, W );
 

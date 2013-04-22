@@ -193,7 +193,7 @@ void harp::spec_project ( matrix_sparse const & psf, matrix_dist const & in, mat
     local_out.Set ( col, 0, outval + inval * val );
   }
 
-  matrix_dist globout ( npix, 1 );
+  matrix_dist globout ( npix, 1, in.Grid() );
   dist_matrix_zero ( globout );
 
   elem::AxpyInterface < double > locglob;
