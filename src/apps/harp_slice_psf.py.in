@@ -1,0 +1,29 @@
+#!@PYTHON@
+
+import os
+import sys
+import re
+import numpy as np
+import pyfits as pf
+
+infile = sys.argv[1]
+outfile = sys.argv[2]
+nlambda = int(sys.argv[3])
+
+hdus = pf.open( infile )
+
+nhdu = len ( hdus )
+
+newhdus = pf.HDUList([])
+
+for i in range ( 0, nhdu ):
+	head = hdus[i].header
+	data = hdus[i].data
+	newdata = data[:,0:nlambda]
+	newhdus.append ( pf.ImageHDU( data=newdata, header=head ) )
+
+# write output
+if ( os.path.isfile ( outfile ) ):
+	os.remove ( outfile )
+newhdus.writeto( outfile )
+

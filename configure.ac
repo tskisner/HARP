@@ -80,7 +80,7 @@ AC_CONFIG_FILES([src/Makefile])
 AC_CONFIG_FILES([src/libharp/Makefile])
 AC_CONFIG_FILES([src/tests/Makefile])
 AC_CONFIG_FILES([src/apps/Makefile])
-dnl AC_CONFIG_FILES([src/python/Makefile])
+AC_CONFIG_FILES([src/python/Makefile])
 dnl AC_CONFIG_FILES([src/tests-python/Makefile])
 dnl AC_CONFIG_FILES([docs/Makefile])
 dnl +------------------------------------------------
