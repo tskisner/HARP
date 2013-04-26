@@ -313,6 +313,13 @@ int main ( int argc, char *argv[] ) {
 
   size_t total_chunks = nspec_chunk * nband;
 
+  if ( total_chunks > ngang ) {
+    cerr << "There are more chunks than process gangs: " << endl;
+    cerr << "   use fewer total processes, larger gangs, or bigger chunks!" << endl;
+    cliq::Finalize();
+    return 0;
+  }
+
   vector < size_t > gang_band;
   vector < size_t > gang_spec;
 
