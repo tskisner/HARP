@@ -418,24 +418,32 @@ void harp::psf_gauss::extent ( size_t firstspec, size_t lastspec, size_t firstbi
   
   if ( (int)minX - (int)pixcorr_ < 0 ) {
     firstcol = 0;
+  } else if ( (int)minX - (int)pixcorr_ >= (int)cols_ ) {
+    firstcol = cols_ - 1;
   } else {
     firstcol = minX - pixcorr_;
   }
   
   if ( (int)minY - (int)pixcorr_ < 0 ) {
     firstrow = 0;
+  } else if ( (int)minY - (int)pixcorr_ >= (int)rows_ ) {
+    firstrow = rows_ - 1;
   } else {
     firstrow = minY - pixcorr_;
   }
   
-  if ( maxX + pixcorr_ >= cols_ ) {
+  if ( (int)maxX + (int)pixcorr_ >= (int)cols_ ) {
     lastcol = cols_ - 1;
+  } else if ( (int)maxX + (int)pixcorr_ < 0 ) {
+    lastcol = 0;
   } else {
     lastcol = maxX + pixcorr_;
   }
 
-  if ( maxY + pixcorr_ >= rows_ ) {
+  if ( (int)maxY + (int)pixcorr_ >= (int)rows_ ) {
     lastrow = rows_ - 1;
+  } else if ( (int)maxY + (int)pixcorr_ < 0 ) {
+    lastrow = 0;
   } else {
     lastrow = maxY + pixcorr_;
   }

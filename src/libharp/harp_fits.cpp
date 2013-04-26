@@ -277,7 +277,7 @@ int harp::fits::img_seek ( fitsfile * fp, std::string const & keyname, std::stri
       //cerr << "key compare " << keycopy << ": " << valcheck << " =? " << valcopy << endl;
       if ( status == 0 ) {
         // keyword exists
-        if ( strncmp ( valcheck, valcopy, strlen ( valcopy ) ) == 0 ) {
+        if ( strncasecmp ( valcheck, valcopy, strlen ( valcopy ) ) == 0 ) {
           // a match!
           //cerr << "  match! hdu = " << hdu << endl;
           return hdu;
@@ -454,7 +454,7 @@ int harp::fits::bin_seek ( fitsfile * fp, string const & keyname, string const &
       //cerr << "key compare " << keycopy << ": " << valcheck << " =? " << valcopy << endl;
       if ( status == 0 ) {
         // keyword exists
-        if ( strncmp ( valcheck, valcopy, strlen ( valcopy ) ) == 0 ) {
+        if ( strncasecmp ( valcheck, valcopy, strlen ( valcopy ) ) == 0 ) {
           // a match!
           return hdu;
         }
