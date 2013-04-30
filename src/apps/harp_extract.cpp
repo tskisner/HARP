@@ -321,6 +321,7 @@ int main ( int argc, char *argv[] ) {
   int grank = MPI_UNDEFINED;
 
   MPI_Comm gcomm;
+  MPI_Comm grootcomm;
 
   if ( planproc > 0 ) {
     fake_gang.resize ( planproc );
@@ -332,7 +333,15 @@ int main ( int argc, char *argv[] ) {
   } else {
     gang = (int)( myp / gangsize );
     grank = myp % gangsize;
+
     ret = MPI_Comm_split ( MPI_COMM_WORLD, gang, grank, &gcomm );
+    mpi_check ( MPI_COMM_WORLD, ret );
+
+    if ( grank == 0 ) {
+      ret = MPI_Comm_split ( MPI_COMM_WORLD, 0, gang, &grootcomm );
+    } else {
+      ret = MPI_Comm_split ( MPI_COMM_WORLD, MPI_UNDEFINED, 0, &grootcomm );
+    }
     mpi_check ( MPI_COMM_WORLD, ret );
   }
 
@@ -527,21 +536,23 @@ int main ( int argc, char *argv[] ) {
   double time_extract;
   double time_chunk;
 
-  // root process implements RMA lock for gangs to take turns writing to stdout
+  // root gang processes implement RMA lock for gangs to take turns writing to stdout
 
   int * root_lockbuf;
 
-  ret = MPI_Alloc_mem ( sizeof(int), MPI_INFO_NULL, (void*)&root_lockbuf );
-  mpi_check ( MPI_COMM_WORLD, ret );
-
   MPI_Win printlock;
 
-  if ( myp == 0 ) {
-    ret = MPI_Win_create ( (void*)(root_lockbuf), sizeof(int), sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &printlock );
-  } else {
-    ret = MPI_Win_create ( NULL, 0, sizeof(int), MPI_INFO_NULL, MPI_COMM_WORLD, &printlock );
+  if ( grank == 0 ) {
+    if ( gang == 0 ) {
+      ret = MPI_Alloc_mem ( sizeof(int), MPI_INFO_NULL, (void*)&root_lockbuf );
+      mpi_check ( grootcomm, ret );
+
+      ret = MPI_Win_create ( (void*)(root_lockbuf), sizeof(int), sizeof(int), MPI_INFO_NULL, grootcomm, &printlock );
+    } else {
+      ret = MPI_Win_create ( NULL, 0, sizeof(int), MPI_INFO_NULL, grootcomm, &printlock );
+    }
+    mpi_check ( grootcomm, ret );
   }
-  mpi_check ( MPI_COMM_WORLD, ret );
 
   if ( ( myp == 0 ) && ( ! quiet ) ) {
     cout << prefix << "Processing..." << endl;
@@ -694,7 +705,7 @@ int main ( int argc, char *argv[] ) {
     if ( ( grank == 0 ) && ( ! quiet ) ) {
 
       ret = MPI_Win_lock ( MPI_LOCK_EXCLUSIVE, 0, 0, printlock );
-      mpi_check ( MPI_COMM_WORLD, ret );
+      mpi_check ( grootcomm, ret );
 
       cout << prefix << "  gang " << gang << ": finished chunk " << (gang_offset + gchunk) << endl;
       cout << prefix << "    computing A^T = " << time_design << " seconds" << endl;
@@ -711,7 +722,7 @@ int main ( int argc, char *argv[] ) {
 
       // free the lock
       ret = MPI_Win_unlock ( 0, printlock );
-      mpi_check ( MPI_COMM_WORLD, ret );
+      mpi_check ( grootcomm, ret );
 
       tot_design += time_design;
       tot_inverse += time_inverse;
@@ -726,10 +737,14 @@ int main ( int argc, char *argv[] ) {
 
   }
 
-  MPI_Win_free ( &printlock );
-  ret = MPI_Free_mem ( (void*)root_lockbuf );
-  mpi_check ( MPI_COMM_WORLD, ret );
-
+  if ( grank == 0 ) {
+    MPI_Win_free ( &printlock );
+    if ( gang == 0 ) {
+      ret = MPI_Free_mem ( (void*)root_lockbuf );
+      mpi_check ( grootcomm, ret );
+    }
+  }
+  
   // Merge gang-wise outputs
 
   gang_accum ( gang_fullf, fullf );
