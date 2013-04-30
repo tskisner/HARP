@@ -49,7 +49,7 @@ int main ( int argc, char *argv[] ) {
   bool quiet = false;
   bool debug = false;
   bool dosky = false;
-  bool only_plan = false;
+  int planproc = 0;
 
   int gangsize = np;
   
@@ -68,7 +68,7 @@ int main ( int argc, char *argv[] ) {
   ( "spec_width", popts::value < size_t > ( &spec_width ), "number of spectra to process at once" )
   ( "lambda_width", popts::value < size_t > ( &lambda_width ), "maximum wavelength points to process simultaneously" )
   ( "lambda_overlap", popts::value < size_t > ( &lambda_overlap ), "minimum wavelength points to overlap" )
-  ( "plan", "check inputs, compute distribution, and exit" )
+  ( "plan", popts::value < int > ( &planproc ), "# procs to simulate. Check inputs and compute distribution." )
   ( "conf", popts::value<string>(&jsonconf), "JSON configuration file" )
   ;
 
@@ -97,10 +97,6 @@ int main ( int argc, char *argv[] ) {
     quiet = true;
   }
 
-  if ( vm.count( "plan" ) ) {
-    only_plan = true;
-  }
-
   if ( vm.count( "debug" ) ) {
     debug = true;
   }
@@ -109,33 +105,9 @@ int main ( int argc, char *argv[] ) {
     dosky = true;
   }
 
-  // Split the communicator
-
-  int ngang = (int)( np / gangsize );
-  int gangtot = ngang * gangsize;
-  if ( ( myp == 0 ) && ( ! quiet ) ) {
-    cout << prefix << "Using " << ngang << " gangs of " << gangsize << " processes each" << endl;
-  }
-  if ( gangtot < np ) {
-    if ( ( myp == 0 ) && ( ! quiet ) ) {
-      cout << prefix << "WARNING: " << (np-gangtot) << " processes are idle" << endl;
-    }
-  }
-  int gang = (int)( myp / gangsize );
-  int grank = myp % gangsize;
-  if ( gang >= ngang ) {
-    gang = MPI_UNDEFINED;
-    grank = MPI_UNDEFINED;
-  }
-
-  MPI_Comm gcomm;
-  ret = MPI_Comm_split ( MPI_COMM_WORLD, gang, grank, &gcomm );
-  mpi_check ( MPI_COMM_WORLD, ret );
-
-  // create global and gang process grids
+  // create global process grid
 
   elem::Grid grid ( MPI_COMM_WORLD );
-  elem::Grid gang_grid ( gcomm );
 
   // Read metadata
   
@@ -183,7 +155,7 @@ int main ( int argc, char *argv[] ) {
     cout << prefix << "  dimensions = " << imgrows << " x " << imgcols << endl;
   }
 
-  if ( debug && ( ! only_plan ) ) {
+  if ( debug && ( planproc < 1 ) ) {
 
     tstart = MPI_Wtime();
 
@@ -309,49 +281,141 @@ int main ( int argc, char *argv[] ) {
 
   }
 
-  // distribute spectral chunks among the gangs
+  // Compute gang distribution
 
-  size_t total_chunks = nspec_chunk * nband;
-
-  if ( total_chunks > ngang ) {
-    cerr << "There are more chunks than process gangs: " << endl;
-    cerr << "   use fewer total processes, larger gangs, or bigger chunks!" << endl;
+  int ngang;
+  if ( planproc > 0 ) {
+    ngang = (int)( planproc / gangsize );
+  } else {
+    ngang = (int)( np / gangsize );
+  }
+  if ( ( myp == 0 ) && ( ngang < 1 ) ) {
+    cerr << "Process gang size is larger than the total number of processes!" << endl;
     cliq::Finalize();
     return 0;
   }
 
-  vector < size_t > gang_band;
-  vector < size_t > gang_spec;
+  int gangtot = ngang * gangsize;
+  if ( ( myp == 0 ) && ( ! quiet ) ) {
+    cout << prefix << "Using " << ngang << " gangs of " << gangsize << " processes each" << endl;
+  }
+
+  if ( planproc > 0 ) {
+    if ( gangtot < planproc ) {
+      if ( ( myp == 0 ) && ( ! quiet ) ) {
+        cout << prefix << "WARNING: " << (planproc-gangtot) << " processes are idle" << endl;
+      }
+    }
+  } else {
+    if ( gangtot < np ) {
+      if ( ( myp == 0 ) && ( ! quiet ) ) {
+        cout << prefix << "WARNING: " << (np-gangtot) << " processes are idle" << endl;
+      }
+    }
+  }
+
+  vector < int > fake_gang ( planproc );
+  vector < int > fake_grank ( planproc );
+
+  int gang = MPI_UNDEFINED;
+  int grank = MPI_UNDEFINED;
+
+  MPI_Comm gcomm;
+
+  if ( planproc > 0 ) {
+    fake_gang.resize ( planproc );
+    fake_grank.resize ( planproc );
+    for ( int fakep = 0; fakep < planproc; ++fakep ) {
+      fake_gang[ fakep ] = (int)( fakep / gangsize );
+      fake_grank[ fakep ] = fakep % gangsize;
+    }
+  } else {
+    gang = (int)( myp / gangsize );
+    grank = myp % gangsize;
+    ret = MPI_Comm_split ( MPI_COMM_WORLD, gang, grank, &gcomm );
+    mpi_check ( MPI_COMM_WORLD, ret );
+  }
+
+  // distribute spectral chunks among the gangs
+
+  size_t total_chunks = nspec_chunk * nband;
+
+  if ( ( myp == 0 ) && ( total_chunks < ngang ) ) {
+    cerr << "There are more process gangs than chunks: " << endl;
+    cerr << "   use fewer total processes, larger gangs, or smaller chunks!" << endl;
+    cliq::Finalize();
+    return 0;
+  }
 
   size_t gang_nchunk = (size_t) ( total_chunks / ngang );
   size_t gang_offset;
 
   size_t leftover = total_chunks % ngang;
 
-  if ( gang < leftover ) {
-    ++gang_nchunk;
-    gang_offset = gang * gang_nchunk;
+  vector < size_t > fake_gang_nchunk ( planproc );
+  vector < size_t > fake_gang_offset ( planproc );
+
+  if ( planproc > 0 ) {
+
+    for ( int fakep = 0; fakep < planproc; ++fakep ) {
+      fake_gang_nchunk[ fakep ] = gang_nchunk;
+      if ( fake_gang[ fakep ] < leftover ) {
+        ++fake_gang_nchunk[ fakep ];
+        fake_gang_offset[ fakep ] = fake_gang[ fakep ] * fake_gang_nchunk[ fakep ];
+      } else {
+        fake_gang_offset[ fakep ] = ( (fake_gang_nchunk[ fakep ] + 1) * leftover ) + ( fake_gang_nchunk[ fakep ] * (fake_gang[ fakep ] - leftover) );
+      }
+
+    }
+
   } else {
-    gang_offset = ( (gang_nchunk + 1) * leftover ) + ( gang_nchunk * (gang - leftover) );
+
+    if ( gang < leftover ) {
+      ++gang_nchunk;
+      gang_offset = gang * gang_nchunk;
+    } else {
+      gang_offset = ( (gang_nchunk + 1) * leftover ) + ( gang_nchunk * (gang - leftover) );
+    }
+
   }
 
   // Print out "planning information"
 
   if ( ( myp == 0 ) && ( ! quiet ) ) {
     cout << prefix << "Extracting " << total_chunks << " spectral chunks, each with " << spec_width << " spectra and " << lambda_width << " lambda points ( overlap = " << lambda_overlap << " )" << endl;
-  }  
-
-  for ( int g = 0; g < ngang; ++g ) {
-    if ( ( g == gang ) && ( grank == 0 ) ) {
-      cout << prefix << "  gang " << g << ": assigned spectral chunks " << gang_offset << " - " << (gang_offset + gang_nchunk - 1) << endl;
-    }
-    MPI_Barrier ( MPI_COMM_WORLD );
   }
 
-  if ( only_plan ) {
+  if ( planproc > 0 ) {
+
+    if ( myp == 0 ) {
+      for ( int g = 0; g < ngang; ++g ) {
+        for ( int fakep = 0; fakep < planproc; ++fakep ) {
+          if ( ( fake_gang[ fakep ] == g ) && ( fake_grank[ fakep ] == 0 ) ) {
+            cout << prefix << "  gang " << g << ": assigned spectral chunks " << fake_gang_offset[ fakep ] << " - " << (fake_gang_offset[ fakep ] + fake_gang_nchunk[ fakep ] - 1) << endl;
+          }
+        }
+      }
+    }
+
+    MPI_Barrier ( MPI_COMM_WORLD );
+
     cliq::Finalize();
     return 0;
+
+  } else {
+
+    for ( int g = 0; g < ngang; ++g ) {
+      if ( ( g == gang ) && ( grank == 0 ) ) {
+        cout << prefix << "  gang " << g << ": assigned spectral chunks " << gang_offset << " - " << (gang_offset + gang_nchunk - 1) << endl;
+      }
+      MPI_Barrier ( MPI_COMM_WORLD );
+    }
+    
   }
+
+  // create gang process grid
+
+  elem::Grid gang_grid ( gcomm );
 
   // global distributed spectral products
 
