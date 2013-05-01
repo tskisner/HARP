@@ -9,6 +9,8 @@ using namespace std;
 using namespace harp;
 
 #define SIZE 15
+#define SPECSIZE 100
+#define NSPEC 10
 #define MAX 1000.0
 #define TOL 1.0e-6
 
@@ -168,6 +170,66 @@ void harp::test_elemental ( string const & datadir ) {
       }
     }
   }
+
+  if ( myp == 0 ) {
+    cerr << "  (PASSED)" << endl;
+  }
+
+  if ( myp == 0 ) {
+    cerr << "Testing gang-parallel slice and accum..." << endl;
+  }
+
+  matrix_dist fullspec ( NSPEC * SPECSIZE, 1, grid );
+  matrix_dist comp_fullspec ( NSPEC * SPECSIZE, 1, grid );
+
+  for ( size_t i = 0; i < NSPEC; ++i ) {
+    for ( size_t j = 0; j < SPECSIZE; ++j ) {
+      fullspec.Set ( i * SPECSIZE + j, 0, 100.0 + (double)j );
+    }
+  }
+
+  matrix_dist gang_fullspec ( NSPEC * SPECSIZE, 1, gang_grid );
+
+  gang_distribute ( fullspec, gang_fullspec );
+
+  size_t nspec_chunk = (size_t)( NSPEC / 2 );
+  size_t first_spec = (size_t)( NSPEC / 4 );
+  size_t nlambda_chunk = (size_t)( SPECSIZE / 4 );
+  size_t first_lambda = (size_t)( SPECSIZE / 8 );
+
+  if ( myp == 0 ) {
+    cout << "spec range = " << first_spec << " - " << (first_spec + nspec_chunk - 1) << endl;
+    cout << "lambda range = " << first_lambda << " - " << (first_lambda + nlambda_chunk - 1) << endl;
+  }
+
+  matrix_dist gang_subspec ( nspec_chunk * nlambda_chunk, 1, gang_grid );
+
+  sub_spec ( gang_fullspec, NSPEC, first_spec, nspec_chunk, first_lambda, nlambda_chunk, gang_subspec );
+
+  MPI_Barrier ( MPI_COMM_WORLD );
+
+  accum_spec ( gang_fullspec, NSPEC, first_spec, nspec_chunk, first_lambda, nlambda_chunk, gang_subspec );
+
+  gang_accum ( gang_fullspec, comp_fullspec );
+
+  MPI_Barrier ( MPI_COMM_WORLD );
+
+  for ( size_t i = 0; i < NSPEC; ++i ) {
+    for ( size_t j = 0; j < SPECSIZE; ++j ) {
+      inval = fullspec.Get ( i * SPECSIZE + j, 0 ) * (double)ngang;
+      if ( ( ( i >= first_spec ) && ( i < first_spec + nspec_chunk ) ) && ( ( j >= first_lambda ) && ( j < first_lambda + nlambda_chunk ) ) ) {
+        inval *= 2.0;
+      }
+      outval = comp_fullspec.Get ( i * SPECSIZE + j, 0 );
+      relerr = fabs ( outval - inval ) / inval;
+      if ( relerr > TOL ) {
+        cerr << "FAIL on spectrum " << i << ", wavelength " << j << ": " << outval << " != " << inval << endl;
+        exit(1);
+      }
+
+    }
+  }
+
 
   if ( myp == 0 ) {
     cerr << "  (PASSED)" << endl;

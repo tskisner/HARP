@@ -10,6 +10,10 @@ using namespace harp;
 
 void harp::sub_spec ( matrix_dist & in, size_t total_nspec, size_t first_spec, size_t nspec, size_t first_lambda, size_t nlambda, matrix_dist & out ) {
 
+  if ( in.Grid() != out.Grid() ) {
+    HARP_THROW( "sub_spec extraction only works within a process grid" );
+  }
+
   size_t in_nlambda = (size_t) ( in.Height() / total_nspec );
 
   if ( first_spec + nspec > total_nspec ) {
@@ -73,6 +77,10 @@ void harp::sub_spec ( matrix_dist & in, size_t total_nspec, size_t first_spec, s
 
 void harp::accum_spec ( matrix_dist & full, size_t total_nspec, size_t first_spec, size_t nspec, size_t first_lambda, size_t nlambda, matrix_dist & chunk ) {
 
+  if ( full.Grid() != chunk.Grid() ) {
+    HARP_THROW( "sub_spec extraction only works within a process grid" );
+  }
+
   size_t full_nlambda = (size_t) ( full.Height() / total_nspec );
 
   if ( first_spec + nspec > total_nspec ) {
@@ -108,18 +116,20 @@ void harp::accum_spec ( matrix_dist & full, size_t total_nspec, size_t first_spe
   size_t row;
 
   double val;
+  size_t chunk_spec;
+  size_t chunk_lambda;
   size_t spec;
   size_t lambda;
 
   if ( wlocal > 0 ) {
     for ( size_t j = 0; j < hlocal; ++j ) {
       row = rowoff + j * rowstride;
-      spec = (size_t)( row / nlambda );
-      lambda = row - spec * nlambda;
-      spec += first_spec;
-      lambda += first_lambda;
+      chunk_spec = (size_t)( row / nlambda );
+      chunk_lambda = row - chunk_spec * nlambda;
+      spec = chunk_spec + first_spec;
+      lambda = chunk_lambda + first_lambda;
       val = chunk.GetLocal ( j, 0 );
-      full_loc.Set ( spec * nlambda + lambda, 0, val );
+      full_loc.Set ( spec * full_nlambda + lambda, 0, val );
     }
   }
 
