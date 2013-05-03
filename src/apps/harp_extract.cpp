@@ -766,68 +766,6 @@ int main ( int argc, char *argv[] ) {
 
   // Write outputs
 
-  if ( dotruth ) {
-
-    if ( ( myp == 0 ) && ( ! quiet ) ) {
-      cout << prefix << "Writing resolution convolved truth..." << endl;
-    }
-
-    tstart = MPI_Wtime();
-
-    boost::property_tree::ptree rtruth_spec_props;
-    rtruth_spec_props.put ( "format", "specter" );
-    rtruth_spec_props.put ( "nspec", psf_nspec );
-    rtruth_spec_props.put ( "nlambda", nlambda );
-
-    spec_p rtruth_spec ( spec::create ( rtruth_spec_props ) );
-
-    rtruth_spec->write ( "harp_spec_Rtruth.fits", fullRtruth, lambda, is_sky );
-
-    tstop = MPI_Wtime();
-
-    fulltruth.Write("truth.txt");
-    fullRtruth.Write("Rtruth.txt");
-
-    if ( ( myp == 0 ) && ( ! quiet ) ) {
-      cout << prefix << "  time = " << tstop-tstart << " seconds" << endl;
-    }
-
-    if ( debug ) {
-
-      if ( ( myp == 0 ) && ( ! quiet ) ) {
-        cout << prefix << "(debug mode) Writing projected truth..." << endl;
-      }
-
-      tstart = MPI_Wtime();
-
-      matrix_sparse design ( psf_nspec * nlambda, npix, MPI_COMM_WORLD );
-
-      epsf->projection ( 0, psf_nspec - 1, 0, nlambda - 1, design );
-
-      matrix_local truth_image ( npix, 1 );
-      local_matrix_zero ( truth_image );
-
-      spec_project ( design, fulltruth, truth_image );
-
-      if ( myp == 0 ) {
-        string outimg = "harp_image_truth-project.fits";
-        fits::create ( fp, outimg );
-        fits::img_append ( fp, imgrows, imgcols );
-        fits::write_key ( fp, "EXTNAME", "Truth", "Projected truth" );
-        fits::img_write ( fp, truth_image );
-        fits::close ( fp );
-      }
-
-      tstop = MPI_Wtime();
-
-      if ( ( myp == 0 ) && ( ! quiet ) ) {
-        cout << prefix << "  time = " << tstop-tstart << " seconds" << endl;
-      }
-
-    }
-
-  }
-
   if ( ( myp == 0 ) && ( ! quiet ) ) {
     cout << prefix << "Writing solution and error..." << endl;
   }
@@ -844,15 +782,19 @@ int main ( int argc, char *argv[] ) {
   solution_spec->write ( "harp_spec_Rf.fits", fullRf, lambda, is_sky );
   solution_spec->write ( "harp_spec_Rf-err.fits", fullerr, lambda, is_sky );
 
-  fullf.Write( "f.txt" );
-  fullRf.Write( "Rf.txt" );
-  fullerr.Write( "Rf_err.txt" );
+  if ( debug ) {
+    fullf.Write ( "harp_spec_f.txt" );
+    fullRf.Write ( "harp_spec_Rf.txt" );
+    fullerr.Write ( "harp_spec_Rf-err.txt" );
+  }
 
   tstop = MPI_Wtime();
 
   if ( ( myp == 0 ) && ( ! quiet ) ) {
     cout << prefix << "  time = " << tstop-tstart << " seconds" << endl;
   }
+
+  matrix_local solution_image;
 
   if ( debug ) {
 
@@ -862,7 +804,7 @@ int main ( int argc, char *argv[] ) {
 
     tstart = MPI_Wtime();
 
-    matrix_local solution_image ( npix, 1 );
+    solution_image.ResizeTo ( npix, 1 );
     local_matrix_zero ( solution_image );
 
     matrix_sparse design ( psf_nspec * nlambda, npix, MPI_COMM_WORLD );
@@ -887,6 +829,180 @@ int main ( int argc, char *argv[] ) {
     }
 
   }
+
+  if ( dotruth ) {
+
+    if ( ( myp == 0 ) && ( ! quiet ) ) {
+      cout << prefix << "Writing resolution convolved truth..." << endl;
+    }
+
+    tstart = MPI_Wtime();
+
+    boost::property_tree::ptree rtruth_spec_props;
+    rtruth_spec_props.put ( "format", "specter" );
+    rtruth_spec_props.put ( "nspec", psf_nspec );
+    rtruth_spec_props.put ( "nlambda", nlambda );
+
+    spec_p rtruth_spec ( spec::create ( rtruth_spec_props ) );
+
+    rtruth_spec->write ( "harp_spec_Rtruth.fits", fullRtruth, lambda, is_sky );
+
+    if ( debug ) {
+      fulltruth.Write ( "harp_spec_truth.txt" );
+      fullRtruth.Write ( "harp_spec_Rtruth.txt" );
+    }
+
+    tstop = MPI_Wtime();
+
+    if ( ( myp == 0 ) && ( ! quiet ) ) {
+      cout << prefix << "  time = " << tstop-tstart << " seconds" << endl;
+    }
+
+    if ( ( myp == 0 ) && ( ! quiet ) ) {
+      cout << prefix << "Computing spectral Chi-square..." << endl;
+    }
+
+    tstart = MPI_Wtime();
+
+    matrix_local loc_fullRtruth;
+    matrix_local loc_fullRf;
+    matrix_local loc_fullerr;
+    
+    elem::AxpyInterface < double > globloc;
+
+    globloc.Attach( elem::GLOBAL_TO_LOCAL, fullRtruth );
+    if ( myp == 0 ) {
+      loc_fullRtruth.ResizeTo ( fullRtruth.Height(), 1 );
+      local_matrix_zero ( loc_fullRtruth );
+      globloc.Axpy ( 1.0, loc_fullRtruth, 0, 0 );
+    }
+    globloc.Detach();
+
+    globloc.Attach( elem::GLOBAL_TO_LOCAL, fullRf );
+    if ( myp == 0 ) {
+      loc_fullRtruth.ResizeTo ( fullRf.Height(), 1 );
+      local_matrix_zero ( loc_fullRf );
+      globloc.Axpy ( 1.0, loc_fullRf, 0, 0 );
+    }
+    globloc.Detach();
+
+    globloc.Attach( elem::GLOBAL_TO_LOCAL, fullerr );
+    if ( myp == 0 ) {
+      loc_fullRtruth.ResizeTo ( fullerr.Height(), 1 );
+      local_matrix_zero ( loc_fullerr );
+      globloc.Axpy ( 1.0, loc_fullerr, 0, 0 );
+    }
+    globloc.Detach();
+
+    if ( myp == 0 ) {
+      fstream outfile ( "harp_spec_chisq.txt", ios::out );
+      outfile.precision(15);
+
+      if ( ! outfile.is_open() ) {
+        std::ostringstream o;
+        o << "cannot open output spec chisq file";
+        HARP_THROW( o.str().c_str() );
+      }
+
+      double chisq_reduced = 0.0;
+      double val;
+      for ( size_t i = 0; i < loc_fullRf.Height(); ++i ) {
+        val = ( loc_fullRf.Get ( i, 0 ) - loc_fullRtruth.Get ( i, 0 ) ) / loc_fullerr.Get ( i, 0 );
+        val *= val;
+        chisq_reduced += val;
+        outfile << val << endl;
+      }
+
+      chisq_reduced /= (double)loc_fullRf.Height();
+
+      cout << prefix << "  Reduced Chi square = " << chisq_reduced << endl;
+
+      outfile.close();
+    }
+
+    tstop = MPI_Wtime();
+
+    if ( ( myp == 0 ) && ( ! quiet ) ) {
+      cout << prefix << "  time = " << tstop-tstart << " seconds" << endl;
+    }
+
+    matrix_local truth_image;
+
+    if ( debug ) {
+
+      if ( ( myp == 0 ) && ( ! quiet ) ) {
+        cout << prefix << "(debug mode) Writing projected truth..." << endl;
+      }
+
+      tstart = MPI_Wtime();
+
+      matrix_sparse design ( psf_nspec * nlambda, npix, MPI_COMM_WORLD );
+
+      epsf->projection ( 0, psf_nspec - 1, 0, nlambda - 1, design );
+
+      truth_image.ResizeTo ( npix, 1 );
+      local_matrix_zero ( truth_image );
+
+      spec_project ( design, fulltruth, truth_image );
+
+      if ( myp == 0 ) {
+        string outimg = "harp_image_truth-project.fits";
+        fits::create ( fp, outimg );
+        fits::img_append ( fp, imgrows, imgcols );
+        fits::write_key ( fp, "EXTNAME", "Truth", "Projected truth" );
+        fits::img_write ( fp, truth_image );
+        fits::close ( fp );
+      }
+
+      tstop = MPI_Wtime();
+
+      if ( ( myp == 0 ) && ( ! quiet ) ) {
+        cout << prefix << "  time = " << tstop-tstart << " seconds" << endl;
+      }
+
+      if ( ( myp == 0 ) && ( ! quiet ) ) {
+        cout << prefix << "Computing pixel space Chi-square..." << endl;
+      }
+
+      tstart = MPI_Wtime();
+
+      if ( myp == 0 ) {
+        fstream outfile ( "harp_image_chisq.txt", ios::out );
+        outfile.precision(15);
+
+        if ( ! outfile.is_open() ) {
+          std::ostringstream o;
+          o << "cannot open output spec chisq file";
+          HARP_THROW( o.str().c_str() );
+        }
+
+        double chisq_reduced = 0.0;
+        double val;
+        for ( size_t i = 0; i < truth_image.Height(); ++i ) {
+          val = ( solution_image.Get ( i, 0 ) - truth_image.Get ( i, 0 ) ) / sqrt ( invnoise.Get ( i, 0 ) );
+          val *= val;
+          chisq_reduced += val;
+          outfile << val << endl;
+        }
+
+        chisq_reduced /= (double)loc_fullRf.Height();
+
+        cout << prefix << "  Reduced Chi square = " << chisq_reduced << endl;
+
+        outfile.close();
+      }
+
+      tstop = MPI_Wtime();
+
+      if ( ( myp == 0 ) && ( ! quiet ) ) {
+        cout << prefix << "  time = " << tstop-tstart << " seconds" << endl;
+      }
+
+    }
+
+  }
+
+  
 
 
   double global_stop = MPI_Wtime();

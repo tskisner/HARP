@@ -27,7 +27,8 @@ void harp::test_invcov ( string const & datadir ) {
     cerr << "Testing inverse covariance construction..." << endl;
   }
 
-  cerr.precision(16);
+  cerr.precision(15);
+  cout.precision(15);
   
   // construct random sparse matrix
 
@@ -80,7 +81,7 @@ void harp::test_invcov ( string const & datadir ) {
   matrix_local signal ( DATASIZE, 1 );
 
   for ( int i = 0; i < SIGSIZE; ++i ) {
-    truth.Set ( i, 0, 42.0 );
+    truth.Set ( i, 0, 42.0 + (double)i );
   }
 
   spec_project ( AT, truth, signal );
@@ -199,17 +200,18 @@ void harp::test_invcov ( string const & datadir ) {
 
   extract ( D, W, S, z, Rf, err, f );
 
+  matrix_dist Rtruth ( SIGSIZE, 1, grid );
+
+  elem::Gemv ( elem::NORMAL, 1.0, R, truth, 0.0, Rtruth );
+
   for ( size_t i = 0; i < SIGSIZE; ++i ) {
-    double rfdir = 0.0;
     double tr = truth.Get ( i, 0 );
+    double rt = Rtruth.Get ( i, 0 );
     double rf = Rf.Get ( i, 0 );
     double errval = err.Get ( i, 0 );
     double ze = z.Get ( i, 0 );
-    for ( size_t j = 0; j < SIGSIZE; ++j ) {
-      rfdir += R.Get(i,j) * Rf.Get(j,0);
-    }
     if ( myp == 0 ) {
-      cout << "  truth = " << tr << ", z = " << ze << ", convolved = " << rfdir << ", Rf = " << rf << ", err = " << errval << endl;
+      cout << "  truth = " << tr << ", z = " << ze << ", convolved = " << rt << ", Rf = " << rf << ", err = " << errval << endl;
     }
   }
   
