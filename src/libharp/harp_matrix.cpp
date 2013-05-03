@@ -202,6 +202,7 @@ void harp::eigen_compose ( eigen_op op, matrix_dist & D, matrix_dist & W, matrix
   double max = 0.0;
   double min;
   double val;
+  double invmin;
 
   for ( size_t i = 0; i < scaled.Height(); ++i ) {
     val = scaled.Get( i, 0 );
@@ -210,24 +211,26 @@ void harp::eigen_compose ( eigen_op op, matrix_dist & D, matrix_dist & W, matrix
     }
   }
 
-  min = max * threshold;
-
   switch ( op ) {
     case EIG_SQRT:
+      min = sqrt(max) * threshold;
       for ( size_t i = 0; i < scaled.Height(); ++i ) {
-        val = scaled.Get( i, 0 );
-        val = ( val < min ) ? sqrt( min ) : sqrt( val );
+        val = sqrt ( scaled.Get( i, 0 ) );
+        val = ( val < min ) ? min : val;
         scaled.Set( i, 0, val );
       }
       break;
     case EIG_INVSQRT:
+      min = sqrt(max) * threshold;
+      invmin = 1.0 / min;
       for ( size_t i = 0; i < scaled.Height(); ++i ) {
-        val = scaled.Get( i, 0 );
-        val = ( val < min ) ? ( 1.0 / sqrt(min) ) : ( 1.0 / sqrt(val) );
+        val = sqrt ( scaled.Get( i, 0 ) );
+        val = ( val < min ) ? invmin : ( 1.0 / val );
         scaled.Set( i, 0, val );
       }
       break;
     default:
+      min = max * threshold;
       for ( size_t i = 0; i < scaled.Height(); ++i ) {
         val = scaled.Get( i, 0 );
         val = ( val < min ) ? min : val;

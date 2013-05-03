@@ -81,7 +81,7 @@ void harp::test_invcov ( string const & datadir ) {
   matrix_local signal ( DATASIZE, 1 );
 
   for ( int i = 0; i < SIGSIZE; ++i ) {
-    truth.Set ( i, 0, 42.0 + (double)i );
+    truth.Set ( i, 0, 40.0 + 10.0*(double)i );
   }
 
   spec_project ( AT, truth, signal );

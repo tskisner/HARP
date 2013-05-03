@@ -595,39 +595,17 @@ void harp::extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_d
 
   // compose ( W^T D^{-1/2} W )
 
-  matrix_dist rtC ( W );
-  dist_matrix_zero ( rtC );
+  matrix_dist invrtC ( W );
+  dist_matrix_zero ( invrtC );
 
-  eigen_compose ( EIG_INVSQRT, D, W, rtC );
+  eigen_compose ( EIG_INVSQRT, D, W, invrtC );
 
   // Store R * C for error calculation before calling Symv (which may
   // destroy upper triangle).
 
-  matrix_dist RC ( rtC );
+  matrix_dist RC ( invrtC );
 
   apply_norm ( S, RC );
-
-  // multiply rtC * z
-
-  elem::Symv ( elem::LOWER, 1.0, rtC, z, 0.0, Rf );
-
-  // normalize output spectra
-
-  apply_norm ( S, Rf );
-
-
-  // compute deconvolved spectra (numerically unstable, but useful for visualization).
-  // R^-1 == ( W^T D^{-1/2} W ) S
-
-  // first apply inverse norm
-
-  matrix_dist srf ( Rf );
-
-  apply_inverse_norm ( S, srf );
-
-  // now apply rtC
-
-  elem::Symv ( elem::LOWER, 1.0, rtC, srf, 0.0, f );
 
   // compute diagonal error on result.
 
@@ -667,6 +645,21 @@ void harp::extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_d
   locglob.Attach( elem::LOCAL_TO_GLOBAL, err );
   locglob.Axpy ( 1.0, err_loc, 0, 0 );
   locglob.Detach();
+
+  // Compute R * f.  This destroys upper triangle of RC.
+
+  elem::Symv ( elem::LOWER, 1.0, RC, z, 0.0, Rf );
+
+  // compute deconvolved spectra (numerically unstable, but useful for visualization).
+  // R^-1 == ( W^T D^{-1/2} W ) S
+
+  matrix_dist srf ( Rf );
+
+  apply_inverse_norm ( S, srf );
+
+  // now apply invrtC.  This destroys upper triangle of invrtC.
+
+  elem::Symv ( elem::LOWER, 1.0, invrtC, srf, 0.0, f );
 
   return;
 }

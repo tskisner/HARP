@@ -27,8 +27,8 @@ void harp::test_sim_extract ( string const & datadir ) {
     cerr << "Testing spectral extraction..." << endl;
   }
 
-  size_t nlambda = 50;
-  size_t nspec = 50;
+  size_t nlambda = 60;
+  size_t nspec = 25;
   size_t first_lambda = 8000.0;
   size_t last_lambda = 8004.9;
 
@@ -58,7 +58,7 @@ void harp::test_sim_extract ( string const & datadir ) {
   psf_props.put ( "fake", "TRUE" );
   psf_props.put_child ( "spec", spec_props );
   psf_props.put ( "bundle_size", 25 );
-  psf_props.put ( "nbundle", 2 );
+  psf_props.put ( "nbundle", 1 );
   psf_props.put ( "fwhm", 1.5 );
   psf_props.put ( "margin", 5 );
   psf_props.put ( "gap", 7 );
@@ -189,6 +189,45 @@ void harp::test_sim_extract ( string const & datadir ) {
 
   outfile = datadir + "/sim_extract_Rtruth.out";
   Rtruth.Write( outfile );
+
+  // do some sub spec and accum operations to test those...
+
+  matrix_dist test_Rtruth ( nbins, 1 );
+  dist_matrix_zero ( test_Rtruth );
+
+  matrix_dist test_Rf ( nbins, 1 );
+  dist_matrix_zero ( test_Rf );
+
+  matrix_dist test_truth ( nbins, 1 );
+  dist_matrix_zero ( test_truth );
+
+  matrix_dist test_err ( nbins, 1 );
+  dist_matrix_zero ( test_err );
+
+  matrix_dist out_spec ( nspec * 20, 1 );
+
+  for ( size_t b = 0; b < 3; ++b ) {
+
+    sub_spec ( Rtruth, nspec, 0, nspec, 20 * b, 20, out_spec );
+    accum_spec ( test_Rtruth, nspec, 0, nspec, 20 * b, 20, out_spec );
+
+    sub_spec ( truth, nspec, 0, nspec, 20 * b, 20, out_spec );
+    accum_spec ( test_truth, nspec, 0, nspec, 20 * b, 20, out_spec );
+
+    sub_spec ( Rf, nspec, 0, nspec, 20 * b, 20, out_spec );
+    accum_spec ( test_Rf, nspec, 0, nspec, 20 * b, 20, out_spec );
+
+    sub_spec ( err, nspec, 0, nspec, 20 * b, 20, out_spec );
+    accum_spec ( test_err, nspec, 0, nspec, 20 * b, 20, out_spec );
+
+  }
+
+  Rtruth = test_Rtruth;
+  truth = test_truth;
+  Rf = test_Rf;
+  err = test_err;
+
+  // write outputs
 
   fstream fout;
   fout.precision(16);

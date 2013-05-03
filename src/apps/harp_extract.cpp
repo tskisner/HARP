@@ -689,12 +689,16 @@ int main ( int argc, char *argv[] ) {
     sub_spec ( f, nspec, 0, nspec, band_out[ band ] - band_start[ band ], band_write[ band ], out_spec );
     accum_spec ( gang_fullf, psf_nspec, spec_start[ spec ], nspec, band_out[ band ], band_write[ band ], out_spec );
 
+    MPI_Barrier ( gcomm );
+
     sub_spec ( Rf, nspec, 0, nspec, band_out[ band ] - band_start[ band ], band_write[ band ], out_spec );
     accum_spec ( gang_fullRf, psf_nspec, spec_start[ spec ], nspec, band_out[ band ], band_write[ band ], out_spec );
 
+    MPI_Barrier ( gcomm );
+
     sub_spec ( Rf_err, nspec, 0, nspec, band_out[ band ] - band_start[ band ], band_write[ band ], out_spec );
     accum_spec ( gang_fullerr, psf_nspec, spec_start[ spec ], nspec, band_out[ band ], band_write[ band ], out_spec );
-  
+
     tsubstop = MPI_Wtime();
     time_extract = ( tsubstop - tsubstart );
 
