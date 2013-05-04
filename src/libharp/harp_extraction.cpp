@@ -306,16 +306,8 @@ void harp::inverse_covariance ( matrix_sparse const & psf, matrix_local const & 
   size_t local_firstrow = psf.FirstLocalRow();
   size_t local_rows = psf.LocalHeight();
 
-  elem::Matrix < double > local_inv ( local_rows, local_rows );
-
-  for ( size_t i = 0; i < local_rows; ++i ) {
-    for ( size_t j = 0; j < local_rows; ++j ) {
-      local_inv.Set ( j, i, 0.0 );
-    }
-  }
-
-  elem::AxpyInterface < double > locglob;
-  locglob.Attach( elem::LOCAL_TO_GLOBAL, invcov );
+  matrix_local local_inv ( local_rows, local_rows );
+  local_matrix_zero ( local_inv );
 
   double val;
   size_t lhs_off;
@@ -361,10 +353,11 @@ void harp::inverse_covariance ( matrix_sparse const & psf, matrix_local const & 
     }
   }
 
+  elem::AxpyInterface < double > locglob;
+  locglob.Attach( elem::LOCAL_TO_GLOBAL, invcov );
   locglob.Axpy ( 1.0, local_inv, local_firstrow, local_firstrow );
-
   locglob.Detach();
-  
+
   // In order to build up the final matrix, we must do (# procs / 2) communications of 
   // the distributed rows of the sparse PSF.  Send our data to the previous rank process
   // and receive from the next rank process.  Repeat this until all matrix blocks have 
@@ -421,12 +414,12 @@ void harp::inverse_covariance ( matrix_sparse const & psf, matrix_local const & 
       
     }
 
-    int temp = MPI_Barrier ( psf.Comm() );
-
     int send_size_key = (shift * 2 * np) + 2 * myp;
     int send_data_key = (shift * 2 * np) + 2 * myp + 1;
     int recv_size_key = (shift * 2 * np) + 2 * from_proc;
     int recv_data_key = (shift * 2 * np) + 2 * from_proc + 1;
+
+    // send our data, then wait receive the next block
 
     int ret = MPI_Isend ( (void*)(&sendbytes), 1, MPI_UNSIGNED_LONG, to_proc, send_size_key, psf.Comm(), &send_size_request );
     mpi_check ( psf.Comm(), ret );
@@ -453,8 +446,6 @@ void harp::inverse_covariance ( matrix_sparse const & psf, matrix_local const & 
 
     // compute block
 
-    locglob.Attach( elem::LOCAL_TO_GLOBAL, invcov );
-
     size_t axpy_row;
     size_t axpy_col;
 
@@ -462,6 +453,7 @@ void harp::inverse_covariance ( matrix_sparse const & psf, matrix_local const & 
       // we are computing the transposed block of the output
 
       local_inv.ResizeTo ( other_block->local_rows, local_rows );
+      local_matrix_zero ( local_inv );
 
       axpy_row = other_block->local_firstrow;
       axpy_col = local_firstrow;
@@ -501,13 +493,12 @@ void harp::inverse_covariance ( matrix_sparse const & psf, matrix_local const & 
         }
       }
 
-      locglob.Axpy ( 1.0, local_inv, axpy_row, axpy_col );
-
     } else if ( ( np % 2 != 0 ) || ( shift != nshift -1 ) ) {
       // always compute non-transposed block if we have odd number of processes
       // or we have an even number of process and we are not on the last shift.
 
       local_inv.ResizeTo ( local_rows, other_block->local_rows );
+      local_matrix_zero ( local_inv );
 
       axpy_row = local_firstrow;
       axpy_col = other_block->local_firstrow;
@@ -547,15 +538,12 @@ void harp::inverse_covariance ( matrix_sparse const & psf, matrix_local const & 
         }
       }
 
-      locglob.Axpy ( 1.0, local_inv, axpy_row, axpy_col );
-
     }
 
     delete other_block;
 
-    locglob.Detach();
-
-    // free send buffer
+    // Wait for everyone to finish sending and calculating their blocks before
+    // entering into Axpy communication code.
 
     ret = MPI_Wait ( &send_size_request, &status );
     mpi_check ( psf.Comm(), ret );
@@ -564,6 +552,14 @@ void harp::inverse_covariance ( matrix_sparse const & psf, matrix_local const & 
     mpi_check ( psf.Comm(), ret );
 
     free ( sendbuf );
+
+    ret = MPI_Barrier ( psf.Comm() );
+
+    // accumulate to global matrix
+
+    locglob.Attach( elem::LOCAL_TO_GLOBAL, invcov );
+    locglob.Axpy ( 1.0, local_inv, axpy_row, axpy_col );
+    locglob.Detach();
 
   }
 
