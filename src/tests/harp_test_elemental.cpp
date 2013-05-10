@@ -114,6 +114,39 @@ void harp::test_elemental ( string const & datadir ) {
     }
   }
 
+  matrix_dist mat_rt;
+  eigen_compose ( EIG_SQRT, w, Z, mat_rt );
+
+  matrix_dist mat_invrt;
+  eigen_compose ( EIG_INVSQRT, w, Z, mat_invrt );
+  
+  matrix_dist w_inv;
+  matrix_dist Z_inv;
+
+  eigen_decompose ( mat_invrt, w_inv, Z_inv );
+
+  for ( size_t i = 0; i < SIZE; ++i ) {
+    double val = w_inv.Get(i,0);
+    val *= val;
+    w_inv.Set ( i, 0, val );
+  }
+
+  matrix_dist comp_rt;
+
+  eigen_compose ( EIG_INVSQRT, w_inv, Z_inv, comp_rt );
+
+  for ( size_t i = 0; i < SIZE; ++i ) {
+    for ( size_t j = 0; j < SIZE; ++j ) {
+      inval = mat_rt.Get ( j, i );
+      outval = comp_rt.Get ( j, i );
+      relerr = fabs ( outval - inval ) / inval;
+      if ( relerr > TOL ) {
+        cerr << "FAIL on doubly inverted sqrt matrix element (" << j << ", " << i << ") original = " << inval << ", output = " << outval << " rel err = " << relerr << endl;
+        exit(1);
+      }
+    }
+  }
+
   if ( myp == 0 ) {
     cerr << "  (PASSED)" << endl;
   }

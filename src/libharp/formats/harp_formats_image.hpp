@@ -62,7 +62,6 @@ namespace harp {
       matrix_local measured_;
       matrix_local invcov_;
       std::vector < bool > sky_;
-      bool debug_;
     
   };
   

@@ -8,7 +8,10 @@ import pyfits as pf
 
 infile = sys.argv[1]
 outfile = sys.argv[2]
-nlambda = int(sys.argv[3])
+first_lambda = int(sys.argv[3])
+nlambda = int(sys.argv[4])
+first_spec = int(sys.argv[5])
+nspec = int(sys.argv[6])
 
 hdus = pf.open( infile )
 
@@ -22,22 +25,24 @@ newhdus = pf.HDUList([])
 # slice FLUX HDU
 head = hdus[0].header
 data = hdus[0].data
-newdata = data[:,0:nlambda]
+newdata = data[first_spec:first_spec+nspec,first_lambda:first_lambda+nlambda]
 newhdus.append ( pf.ImageHDU( data=newdata, header=head ) )
 
 # slice WAVELENGTH HDU
 head = hdus[1].header
 data = hdus[1].data
-newdata = data[0:nlambda]
+newdata = data[first_lambda:first_lambda+nlambda]
 newhdus.append ( pf.ImageHDU( data=newdata, header=head ) )
 
 # copy TARGETINFO HDU
+newdata = hdus[2].data[first_spec:first_spec+nspec]
 newhdus.append ( hdus[2] )
+newhdus[-1].data = newdata
 
 # slice OBJPHOT HDU
 head = hdus[3].header
 data = hdus[3].data
-newdata = data[:,0:nlambda]
+newdata = data[first_spec:first_spec+nspec,first_lambda:first_lambda+nlambda]
 newhdus.append ( pf.ImageHDU( data=newdata, header=head ) )
 
 # write output

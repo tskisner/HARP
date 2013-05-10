@@ -30,8 +30,7 @@ harp::image_sim::image_sim ( boost::property_tree::ptree const & props ) : image
   spec_props_ = props.get_child ( image_sim_key_spec );
 
   boost::optional < string > debugval = props.get_optional < string > ( image_sim_key_debug );
-  string debug = boost::get_optional_value_or ( debugval, "FALSE" );
-  debug_ = ( debug == "TRUE" );
+  string debug = boost::get_optional_value_or ( debugval, "" );
 
   spec_p child_spec ( spec::create ( spec_props_ ) );
 
@@ -116,12 +115,12 @@ harp::image_sim::image_sim ( boost::property_tree::ptree const & props ) : image
     measured_.Set ( i, 0, signal.Get(i,0) + noise.Get(i,0) );
   }
 
-  if ( debug_ ) {
+  if ( debug != "" ) {
     if ( myp == 0 ) {
 
       // dump out to a file compatible with fits image format
 
-      string outimg = "image_sim.fits";
+      string outimg = debug;
       fits::create ( fp, outimg );
       fits::img_append ( fp, rows_, cols_ );
       fits::write_key ( fp, "EXTNAME", "data", "signal plus noise" );

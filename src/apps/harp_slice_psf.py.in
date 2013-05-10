@@ -8,7 +8,11 @@ import pyfits as pf
 
 infile = sys.argv[1]
 outfile = sys.argv[2]
-nlambda = int(sys.argv[3])
+first_lambda = int(sys.argv[3])
+nlambda = int(sys.argv[4])
+first_spec = int(sys.argv[5])
+nspec = int(sys.argv[6])
+corr = int(sys.argv[7])
 
 hdus = pf.open( infile )
 
@@ -19,7 +23,14 @@ newhdus = pf.HDUList([])
 for i in range ( 0, nhdu ):
 	head = hdus[i].header
 	data = hdus[i].data
-	newdata = data[:,0:nlambda]
+	newdata = data[first_spec:first_spec+nspec,first_lambda:first_lambda+nlambda]
+	# for X and Y, shift origin
+	if ( ( i == 0 ) or ( i == 1 ) ):
+		min = np.amin ( newdata )
+		min -= corr
+		if ( min < 0 ):
+			min = 0
+		newdata -= min
 	newhdus.append ( pf.ImageHDU( data=newdata, header=head ) )
 
 # write output

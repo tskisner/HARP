@@ -446,11 +446,14 @@ void harp::inverse_covariance ( matrix_sparse const & psf, matrix_local const & 
 
     // compute block
 
-    size_t axpy_row;
-    size_t axpy_col;
+    size_t axpy_row = 0;
+    size_t axpy_col = 0;
+    bool participate;
 
     if ( from_proc > myp ) {
       // we are computing the transposed block of the output
+
+      participate = true;
 
       local_inv.ResizeTo ( other_block->local_rows, local_rows );
       local_matrix_zero ( local_inv );
@@ -497,6 +500,8 @@ void harp::inverse_covariance ( matrix_sparse const & psf, matrix_local const & 
       // always compute non-transposed block if we have odd number of processes
       // or we have an even number of process and we are not on the last shift.
 
+      participate = true;
+
       local_inv.ResizeTo ( local_rows, other_block->local_rows );
       local_matrix_zero ( local_inv );
 
@@ -538,6 +543,12 @@ void harp::inverse_covariance ( matrix_sparse const & psf, matrix_local const & 
         }
       }
 
+    } else {
+      // for even numbers of processes, on the last pass, half the processors have
+      // duplicate blocks and sit idle.
+
+      participate = false;
+
     }
 
     delete other_block;
@@ -558,7 +569,9 @@ void harp::inverse_covariance ( matrix_sparse const & psf, matrix_local const & 
     // accumulate to global matrix
 
     locglob.Attach( elem::LOCAL_TO_GLOBAL, invcov );
-    locglob.Axpy ( 1.0, local_inv, axpy_row, axpy_col );
+    if ( participate ) {
+      locglob.Axpy ( 1.0, local_inv, axpy_row, axpy_col );
+    }
     locglob.Detach();
 
   }
@@ -656,6 +669,27 @@ void harp::extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_d
   // now apply invrtC.  This destroys upper triangle of invrtC.
 
   elem::Symv ( elem::LOWER, 1.0, invrtC, srf, 0.0, f );
+
+  return;
+}
+
+
+void harp::extract_alt ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_dist & z, matrix_dist & Rf ) {
+
+  dist_matrix_zero ( Rf );
+
+  // compose ( W^T D^{-1/2} W )
+
+  matrix_dist RC ( W );
+  dist_matrix_zero ( RC );
+
+  eigen_compose ( EIG_INVSQRT, D, W, RC );
+
+  apply_norm ( S, RC );
+
+  // Compute R * f.  This destroys upper triangle of RC.
+
+  elem::Symv ( elem::LOWER, 1.0, RC, z, 0.0, Rf );
 
   return;
 }

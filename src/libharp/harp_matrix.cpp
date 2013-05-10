@@ -173,7 +173,9 @@ void harp::eigen_decompose ( matrix_dist & invcov, matrix_dist & D, matrix_dist 
 
   elem::HermitianEig ( elem::LOWER, temp, eigvals, W );
 
-  elem::SortEig( eigvals, W );
+  // I don't think we need this, since we never need to order the
+  // eigenpairs.
+  //elem::SortEig( eigvals, W );
 
   D = eigvals;
 

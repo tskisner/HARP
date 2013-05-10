@@ -573,6 +573,8 @@ void harp::psf_gauss::projection ( size_t first_spec, size_t last_spec, size_t f
 
     }
 
+    //cerr << "bin " << loc_bin << ": [" << xcenter << "," << ycenter << "] ( " << amp << ", " << maj << ", " << min << ", " << ang << endl;
+
     // compute pixel distances from center
 
     matrix_local fxdist ( bin_npix, 1 );

@@ -44,7 +44,7 @@ void harp::test_sim_extract ( string const & datadir ) {
   spec_props.put ( "first_lambda", first_lambda );
   spec_props.put ( "last_lambda", last_lambda );
   spec_props.put ( "back", 10.0 );
-  spec_props.put ( "atm", 500.0 );
+  spec_props.put ( "atm", 5000.0 );
   spec_props.put ( "obj", 80.0 );
   spec_props.put ( "atmspace", 12 );
   spec_props.put ( "skymod", 25 );
@@ -59,17 +59,20 @@ void harp::test_sim_extract ( string const & datadir ) {
   psf_props.put_child ( "spec", spec_props );
   psf_props.put ( "bundle_size", 25 );
   psf_props.put ( "nbundle", 1 );
-  psf_props.put ( "fwhm", 1.5 );
+  psf_props.put ( "fwhm", 2.2 );
   psf_props.put ( "margin", 5 );
   psf_props.put ( "gap", 7 );
   psf_p testpsf ( psf::create ( psf_props ) );
 
   // Create image
 
+  string imgfile = datadir + "/sim_extract_image.fits.out";
+
   boost::property_tree::ptree img_props;
   img_props.put ( "format", "sim" );
   img_props.put_child ( "psf", psf_props );
   img_props.put_child ( "spec", spec_props );
+  img_props.put ( "debug", imgfile );
   image_p testimg ( image::create ( img_props ) );
 
   // Read truth spec
