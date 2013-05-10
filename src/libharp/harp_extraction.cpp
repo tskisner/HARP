@@ -8,7 +8,7 @@ using namespace harp;
 
 
 
-void harp::sub_spec ( matrix_dist & in, size_t total_nspec, size_t first_spec, size_t nspec, size_t first_lambda, size_t nlambda, matrix_dist & out ) {
+void harp::sub_spec ( matrix_dist const & in, size_t total_nspec, size_t first_spec, size_t nspec, size_t first_lambda, size_t nlambda, matrix_dist & out ) {
 
   if ( in.Grid() != out.Grid() ) {
     HARP_THROW( "sub_spec extraction only works within a process grid" );
@@ -75,7 +75,7 @@ void harp::sub_spec ( matrix_dist & in, size_t total_nspec, size_t first_spec, s
 }
 
 
-void harp::accum_spec ( matrix_dist & full, size_t total_nspec, size_t first_spec, size_t nspec, size_t first_lambda, size_t nlambda, matrix_dist & chunk ) {
+void harp::accum_spec ( matrix_dist & full, size_t total_nspec, size_t first_spec, size_t nspec, size_t first_lambda, size_t nlambda, matrix_dist const & chunk ) {
 
   if ( full.Grid() != chunk.Grid() ) {
     HARP_THROW( "sub_spec extraction only works within a process grid" );
@@ -655,9 +655,9 @@ void harp::extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_d
   locglob.Axpy ( 1.0, err_loc, 0, 0 );
   locglob.Detach();
 
-  // Compute R * f.  This destroys upper triangle of RC.
+  // Compute R * f.
 
-  elem::Symv ( elem::LOWER, 1.0, RC, z, 0.0, Rf );
+  elem::Gemv ( elem::NORMAL, 1.0, RC, z, 0.0, Rf );
 
   // compute deconvolved spectra (numerically unstable, but useful for visualization).
   // R^-1 == ( W^T D^{-1/2} W ) S
@@ -669,27 +669,6 @@ void harp::extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_d
   // now apply invrtC.  This destroys upper triangle of invrtC.
 
   elem::Symv ( elem::LOWER, 1.0, invrtC, srf, 0.0, f );
-
-  return;
-}
-
-
-void harp::extract_alt ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_dist & z, matrix_dist & Rf ) {
-
-  dist_matrix_zero ( Rf );
-
-  // compose ( W^T D^{-1/2} W )
-
-  matrix_dist RC ( W );
-  dist_matrix_zero ( RC );
-
-  eigen_compose ( EIG_INVSQRT, D, W, RC );
-
-  apply_norm ( S, RC );
-
-  // Compute R * f.  This destroys upper triangle of RC.
-
-  elem::Symv ( elem::LOWER, 1.0, RC, z, 0.0, Rf );
 
   return;
 }

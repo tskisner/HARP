@@ -16,9 +16,6 @@ static const char * image_sim_key_debug = "debug";
 
 harp::image_sim::image_sim ( boost::property_tree::ptree const & props ) : image ( props ) {
 
-  //cerr << "image sim props = " << endl;
-  //ptree_print ( props );
-
   int np;
   int myp;
   int ret;

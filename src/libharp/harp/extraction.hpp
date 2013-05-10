@@ -6,9 +6,9 @@
 
 namespace harp {
 
-  void sub_spec ( matrix_dist & in, size_t total_nspec, size_t first_spec, size_t nspec, size_t first_lambda, size_t nlambda, matrix_dist & out );
+  void sub_spec ( matrix_dist const & in, size_t total_nspec, size_t first_spec, size_t nspec, size_t first_lambda, size_t nlambda, matrix_dist & out );
 
-  void accum_spec ( matrix_dist & full, size_t total_nspec, size_t first_spec, size_t nspec, size_t first_lambda, size_t nlambda, matrix_dist & chunk );
+  void accum_spec ( matrix_dist & full, size_t total_nspec, size_t first_spec, size_t nspec, size_t first_lambda, size_t nlambda, matrix_dist const & chunk );
 
   void spec_project ( matrix_sparse const & m, matrix_dist const & in, matrix_local & out );
 
@@ -19,8 +19,6 @@ namespace harp {
   void resolution ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_dist & R );
 
   void extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_dist & z, matrix_dist & Rf, matrix_dist & err, matrix_dist & f );
-
-  void extract_alt ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_dist & z, matrix_dist & Rf );
 
   void sky_design ( matrix_sparse const & AT, std::vector < bool > const & sky, matrix_sparse & skyAT );
 

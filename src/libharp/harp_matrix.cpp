@@ -162,7 +162,7 @@ void harp::local_matrix_zero ( matrix_local & mat ) {
 }
 
 
-void harp::eigen_decompose ( matrix_dist & invcov, matrix_dist & D, matrix_dist & W ) {
+void harp::eigen_decompose ( matrix_dist const & invcov, matrix_dist & D, matrix_dist & W ) {
 
   D.ResizeTo ( invcov.Height(), 1 );
   W.ResizeTo ( invcov.Height(), invcov.Height() );
@@ -183,7 +183,7 @@ void harp::eigen_decompose ( matrix_dist & invcov, matrix_dist & D, matrix_dist 
 }
 
 
-void harp::eigen_compose ( eigen_op op, matrix_dist & D, matrix_dist & W, matrix_dist & out ) {
+void harp::eigen_compose ( eigen_op op, matrix_dist const & D, matrix_dist const & W, matrix_dist & out ) {
 
   double threshold = 1.0e-15;
 
@@ -271,7 +271,7 @@ void harp::eigen_compose ( eigen_op op, matrix_dist & D, matrix_dist & W, matrix
 }
 
 
-void harp::column_norm ( matrix_dist & mat, matrix_dist & S ) {
+void harp::column_norm ( matrix_dist const & mat, matrix_dist & S ) {
 
   S.ResizeTo ( mat.Height(), 1 );
   dist_matrix_zero ( S );
@@ -322,7 +322,7 @@ void harp::column_norm ( matrix_dist & mat, matrix_dist & S ) {
 }
 
 
-void harp::apply_norm ( matrix_dist & S, matrix_dist & mat ) {
+void harp::apply_norm ( matrix_dist const & S, matrix_dist & mat ) {
 
   // Get local copy of S
 
@@ -358,7 +358,7 @@ void harp::apply_norm ( matrix_dist & S, matrix_dist & mat ) {
 }
 
 
-void harp::apply_inverse_norm ( matrix_dist & S, matrix_dist & mat ) {
+void harp::apply_inverse_norm ( matrix_dist const & S, matrix_dist & mat ) {
 
   // Get local copy of S
 
@@ -394,7 +394,7 @@ void harp::apply_inverse_norm ( matrix_dist & S, matrix_dist & mat ) {
 }
 
 
-void harp::norm ( matrix_dist & D, matrix_dist & W, matrix_dist & S ) {
+void harp::norm ( matrix_dist const & D, matrix_dist const & W, matrix_dist & S ) {
 
   matrix_dist temp ( W );
   dist_matrix_zero ( temp );  
@@ -407,7 +407,7 @@ void harp::norm ( matrix_dist & D, matrix_dist & W, matrix_dist & S ) {
 }
 
 
-void harp::gang_distribute ( matrix_dist & mat, matrix_dist & gmat ) {
+void harp::gang_distribute ( matrix_dist const & mat, matrix_dist & gmat ) {
 
   if ( ( mat.Height() != gmat.Height() ) || ( mat.Width() != gmat.Width() ) ) {
     HARP_THROW( "matrix dimensions do not match" );
@@ -458,7 +458,7 @@ void harp::gang_distribute ( matrix_dist & mat, matrix_dist & gmat ) {
 }
 
 
-void harp::gang_accum ( matrix_dist & gmat, matrix_dist & mat ) {
+void harp::gang_accum ( matrix_dist const & gmat, matrix_dist & mat ) {
 
   if ( ( mat.Height() != gmat.Height() ) || ( mat.Width() != gmat.Width() ) ) {
     HARP_THROW( "matrix dimensions do not match" );

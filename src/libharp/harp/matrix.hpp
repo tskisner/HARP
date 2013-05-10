@@ -31,21 +31,21 @@ namespace harp {
 
   void local_matrix_zero ( matrix_local & mat );
 
-  void eigen_decompose ( matrix_dist & invcov, matrix_dist & D, matrix_dist & W );
+  void eigen_decompose ( matrix_dist const & invcov, matrix_dist & D, matrix_dist & W );
 
-  void eigen_compose ( eigen_op op, matrix_dist & D, matrix_dist & W, matrix_dist & out );
+  void eigen_compose ( eigen_op op, matrix_dist const & D, matrix_dist const & W, matrix_dist & out );
 
-  void column_norm ( matrix_dist & mat, matrix_dist & S );
+  void column_norm ( matrix_dist const & mat, matrix_dist & S );
 
-  void apply_norm ( matrix_dist & S, matrix_dist & mat );
+  void apply_norm ( matrix_dist const & S, matrix_dist & mat );
 
-  void apply_inverse_norm ( matrix_dist & S, matrix_dist & mat );
+  void apply_inverse_norm ( matrix_dist const & S, matrix_dist & mat );
 
-  void norm ( matrix_dist & D, matrix_dist & W, matrix_dist & S );
+  void norm ( matrix_dist const & D, matrix_dist const & W, matrix_dist & S );
 
-  void gang_distribute ( matrix_dist & mat, matrix_dist & gmat );
+  void gang_distribute ( matrix_dist const & mat, matrix_dist & gmat );
 
-  void gang_accum ( matrix_dist & gmat, matrix_dist & mat );
+  void gang_accum ( matrix_dist const & gmat, matrix_dist & mat );
 
 }
 

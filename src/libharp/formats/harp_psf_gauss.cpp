@@ -71,9 +71,6 @@ harp::psf_gauss::psf_gauss ( boost::property_tree::ptree const & props ) : psf (
 
     fake_pix_bundle_ = 2 * fake_pix_margin_ + (fake_bundle_size_ - 1) * fake_pix_gap_ + fake_bundle_size_;
 
-    cols_ = fake_pix_bundle_ * fake_n_bundle_;
-    rows_ = nlambda_;
-
     // response fwhm
 
     fake_psf_fwhm_ = props.get < double > ( psf_gauss_key_fake_fwhm );
@@ -81,6 +78,9 @@ harp::psf_gauss::psf_gauss ( boost::property_tree::ptree const & props ) : psf (
     // response correlation length in pixels
 
     pixcorr_ = props.get < size_t > ( psf_gauss_key_corr );
+
+    cols_ = fake_pix_bundle_ * fake_n_bundle_;
+    rows_ = nlambda_ + 2 * pixcorr_;
 
     // wavelength solution
 
@@ -367,7 +367,7 @@ void harp::psf_gauss::fake_spec2pix ( size_t spec, size_t bin, size_t & row, siz
   size_t bundle = (size_t)( spec / fake_bundle_size_ );
   size_t bundle_spec = spec - bundle * fake_bundle_size_;
   col = (bundle * fake_pix_bundle_) + fake_pix_margin_ + ( bundle_spec * ( fake_pix_gap_ + 1 ) );
-  row = bin;
+  row = bin + pixcorr_;
   return;
 }
 
@@ -471,13 +471,26 @@ void harp::psf_gauss::gauss_sample ( matrix_local & vals, matrix_local & xrel, m
   double xt, yt, exparg;
   
   size_t i;
+
+  double norm = 0.0;
   
   for ( i = 0; i < nvals; ++i ) {
     xt = xrel.Get( i, 0 ) * cang + yrel.Get( i, 0 ) * sang;
     yt = - xrel.Get( i, 0 ) * sang + yrel.Get( i, 0 ) * cang;
     exparg = - 0.5 * ( xt * xt * invmaj * invmaj + yt * yt * invmin * invmin );
     vals.Set( i, 0, amp * exp ( exparg ) );
+    norm += vals.Get ( i, 0 );
   }
+
+  norm = 1.0 / norm;
+
+  double temp;
+
+  for ( i = 0; i < nvals; ++i ) {
+    temp = vals.Get ( i, 0 );
+    temp *= norm;
+    vals.Set ( i, 0, temp );
+  }  
   
   return;
 }
@@ -573,7 +586,7 @@ void harp::psf_gauss::projection ( size_t first_spec, size_t last_spec, size_t f
 
     }
 
-    //cerr << "bin " << loc_bin << ": [" << xcenter << "," << ycenter << "] ( " << amp << ", " << maj << ", " << min << ", " << ang << endl;
+    //cerr << "bin " << loc_bin << ": [" << xcenter << "," << ycenter << "] ( " << bin_firstcol << " - " << bin_lastcol << ", " << bin_firstrow << " - " << bin_lastrow << " )" << endl;
 
     // compute pixel distances from center
 

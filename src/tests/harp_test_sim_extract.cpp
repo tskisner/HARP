@@ -28,7 +28,7 @@ void harp::test_sim_extract ( string const & datadir ) {
   }
 
   size_t nlambda = 60;
-  size_t nspec = 25;
+  size_t nspec = 10;
   size_t first_lambda = 8000.0;
   size_t last_lambda = 8004.9;
 
@@ -54,13 +54,13 @@ void harp::test_sim_extract ( string const & datadir ) {
 
   boost::property_tree::ptree psf_props;
   psf_props.put ( "format", "gauss" );
-  psf_props.put ( "corr", 7 );
+  psf_props.put ( "corr", 10 );
   psf_props.put ( "fake", "TRUE" );
   psf_props.put_child ( "spec", spec_props );
-  psf_props.put ( "bundle_size", 25 );
+  psf_props.put ( "bundle_size", 10 );
   psf_props.put ( "nbundle", 1 );
   psf_props.put ( "fwhm", 2.2 );
-  psf_props.put ( "margin", 5 );
+  psf_props.put ( "margin", 10 );
   psf_props.put ( "gap", 7 );
   psf_p testpsf ( psf::create ( psf_props ) );
 
@@ -104,6 +104,7 @@ void harp::test_sim_extract ( string const & datadir ) {
   // generate design matrix
 
   matrix_sparse design;
+
 
   double tstart;
   double tstop;
