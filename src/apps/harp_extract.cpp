@@ -670,9 +670,6 @@ int main ( int argc, char *argv[] ) {
     matrix_dist f ( nbins, 1, gang_grid );
     dist_matrix_zero ( f );
 
-    matrix_dist Rf_err ( nbins, 1, gang_grid );
-    dist_matrix_zero ( Rf_err );
-
     tsubstart = MPI_Wtime();
 
     noise_weighted_spec ( design, invnoise, measured, z );
@@ -682,7 +679,7 @@ int main ( int argc, char *argv[] ) {
 
     tsubstart = MPI_Wtime();
   
-    extract ( D, W, S, z, Rf, Rf_err, f );
+    extract ( D, W, S, z, Rf, f );
 
     // accumulate to global solution
 
@@ -696,7 +693,7 @@ int main ( int argc, char *argv[] ) {
 
     MPI_Barrier ( gcomm );
 
-    sub_spec ( Rf_err, nspec, 0, nspec, band_out[ band ] - band_start[ band ], band_write[ band ], out_spec );
+    sub_spec ( S, nspec, 0, nspec, band_out[ band ] - band_start[ band ], band_write[ band ], out_spec );
     accum_spec ( gang_fullerr, psf_nspec, spec_start[ spec ], nspec, band_out[ band ], band_write[ band ], out_spec );
 
     tsubstop = MPI_Wtime();
@@ -884,7 +881,7 @@ int main ( int argc, char *argv[] ) {
 
     globloc.Attach( elem::GLOBAL_TO_LOCAL, fullRf );
     if ( myp == 0 ) {
-      loc_fullRtruth.ResizeTo ( fullRf.Height(), 1 );
+      loc_fullRf.ResizeTo ( fullRf.Height(), 1 );
       local_matrix_zero ( loc_fullRf );
       globloc.Axpy ( 1.0, loc_fullRf, 0, 0 );
     }
@@ -892,7 +889,7 @@ int main ( int argc, char *argv[] ) {
 
     globloc.Attach( elem::GLOBAL_TO_LOCAL, fullerr );
     if ( myp == 0 ) {
-      loc_fullRtruth.ResizeTo ( fullerr.Height(), 1 );
+      loc_fullerr.ResizeTo ( fullerr.Height(), 1 );
       local_matrix_zero ( loc_fullerr );
       globloc.Axpy ( 1.0, loc_fullerr, 0, 0 );
     }
@@ -917,7 +914,7 @@ int main ( int argc, char *argv[] ) {
         outfile << val << endl;
       }
 
-      chisq_reduced /= (double)loc_fullRf.Height();
+      chisq_reduced /= (double)( loc_fullRf.Height() - 1 );
 
       cout << prefix << "  Reduced Chi square = " << chisq_reduced << endl;
 
@@ -982,14 +979,15 @@ int main ( int argc, char *argv[] ) {
 
         double chisq_reduced = 0.0;
         double val;
-        for ( size_t i = 0; i < truth_image.Height(); ++i ) {
-          val = ( solution_image.Get ( i, 0 ) - truth_image.Get ( i, 0 ) ) / sqrt ( invnoise.Get ( i, 0 ) );
+        for ( size_t i = 0; i < npix; ++i ) {
+          val = ( solution_image.Get ( i, 0 ) - truth_image.Get ( i, 0 ) ) * sqrt ( invnoise.Get ( i, 0 ) );
           val *= val;
           chisq_reduced += val;
           outfile << val << endl;
         }
 
-        chisq_reduced /= (double)loc_fullRf.Height();
+        // (same number of degrees as freedom, even though projected onto pixels)
+        chisq_reduced /= (double)( loc_fullRf.Height() - 1 );
 
         cout << prefix << "  Reduced Chi square = " << chisq_reduced << endl;
 

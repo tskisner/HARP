@@ -596,11 +596,10 @@ void harp::resolution ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matri
 }
 
 
-void harp::extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_dist & z, matrix_dist & Rf, matrix_dist & err, matrix_dist & f ) {
+void harp::extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_dist & z, matrix_dist & Rf, matrix_dist & f ) {
 
   dist_matrix_zero ( f );
   dist_matrix_zero ( Rf );
-  dist_matrix_zero ( err );
 
   // compose ( W^T D^{-1/2} W )
 
@@ -609,51 +608,11 @@ void harp::extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_d
 
   eigen_compose ( EIG_INVSQRT, D, W, invrtC );
 
-  // Store R * C for error calculation before calling Symv (which may
-  // destroy upper triangle).
+  // Compute R * C
 
   matrix_dist RC ( invrtC );
 
   apply_norm ( S, RC );
-
-  // compute diagonal error on result.
-
-  // set local err matrix copy
-
-  matrix_local err_loc ( err.Height(), 1 );
-
-  size_t hlocal = RC.LocalHeight();
-  size_t wlocal = RC.LocalWidth();
-
-  size_t rowoff = RC.ColShift();
-  size_t rowstride = RC.ColStride();
-  size_t row;
-
-  size_t coloff = RC.RowShift();
-  size_t colstride = RC.RowStride();
-  size_t col;
-
-  double mval;
-
-  for ( size_t i = 0; i < wlocal; ++i ) {
-    for ( size_t j = 0; j < hlocal; ++j ) {
-      row = rowoff + j * rowstride;
-      col = coloff + i * colstride;
-      if ( row == col ) {
-        err_loc.Set ( row, 0, sqrt ( RC.GetLocal ( j, i ) ) );
-      }
-    }
-  }
-
-  // reduce local error vector to global one.  There should be no overlap
-  // of non-zero elements, since each diagonal value is owned by one process.
-
-  dist_matrix_zero ( err );
-
-  elem::AxpyInterface < double > locglob;
-  locglob.Attach( elem::LOCAL_TO_GLOBAL, err );
-  locglob.Axpy ( 1.0, err_loc, 0, 0 );
-  locglob.Detach();
 
   // Compute R * f.
 
@@ -662,13 +621,13 @@ void harp::extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_d
   // compute deconvolved spectra (numerically unstable, but useful for visualization).
   // R^-1 == ( W^T D^{-1/2} W ) S
 
-  matrix_dist srf ( Rf );
+  matrix_dist temp ( Rf );
 
-  apply_inverse_norm ( S, srf );
+  apply_inverse_norm ( S, temp );
 
-  // now apply invrtC.  This destroys upper triangle of invrtC.
+  // now apply invrtC.  This destroys upper triangle of invrtC!
 
-  elem::Symv ( elem::LOWER, 1.0, invrtC, srf, 0.0, f );
+  elem::Symv ( elem::LOWER, 1.0, invrtC, temp, 0.0, f );
 
   return;
 }

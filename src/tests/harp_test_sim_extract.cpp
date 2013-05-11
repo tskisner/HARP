@@ -154,7 +154,6 @@ void harp::test_sim_extract ( string const & datadir ) {
 
   matrix_dist z ( nbins, 1 );
   matrix_dist Rf ( nbins, 1 );
-  matrix_dist err ( nbins, 1 );
   matrix_dist f ( nbins, 1 );
 
   tstart = MPI_Wtime();
@@ -168,7 +167,7 @@ void harp::test_sim_extract ( string const & datadir ) {
   z.Write( outfile );
 
   tstart = MPI_Wtime();
-  extract ( D, W, S, z, Rf, err, f );
+  extract ( D, W, S, z, Rf, f );
   tstop = MPI_Wtime();
   if ( myp == 0 ) {
     cerr << "  Time for extraction = " << tstop-tstart << " seconds" << endl;
@@ -205,9 +204,6 @@ void harp::test_sim_extract ( string const & datadir ) {
   matrix_dist test_truth ( nbins, 1 );
   dist_matrix_zero ( test_truth );
 
-  matrix_dist test_err ( nbins, 1 );
-  dist_matrix_zero ( test_err );
-
   matrix_dist out_spec ( nspec * 20, 1 );
 
   for ( size_t b = 0; b < 3; ++b ) {
@@ -221,15 +217,11 @@ void harp::test_sim_extract ( string const & datadir ) {
     sub_spec ( Rf, nspec, 0, nspec, 20 * b, 20, out_spec );
     accum_spec ( test_Rf, nspec, 0, nspec, 20 * b, 20, out_spec );
 
-    sub_spec ( err, nspec, 0, nspec, 20 * b, 20, out_spec );
-    accum_spec ( test_err, nspec, 0, nspec, 20 * b, 20, out_spec );
-
   }
 
   Rtruth = test_Rtruth;
   truth = test_truth;
   Rf = test_Rf;
-  err = test_err;
 
   // write outputs
 
@@ -297,7 +289,7 @@ void harp::test_sim_extract ( string const & datadir ) {
     double out_rf = Rf.Get(i,0);
     double out_rt = Rtruth.Get(i,0);
     double out_tr = truth.Get(i,0);
-    double errval = err.Get ( i, 0 );
+    double errval = S.Get ( i, 0 );
     if ( myp == 0 ) {
       fout << i << " " << out_tr << " " << out_rt << " " << out_rf << " " << errval << endl;
     }

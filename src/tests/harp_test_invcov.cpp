@@ -196,9 +196,7 @@ void harp::test_invcov ( string const & datadir ) {
 
   matrix_dist Rf ( SIGSIZE, 1, grid );
 
-  matrix_dist err ( SIGSIZE, 1, grid );
-
-  extract ( D, W, S, z, Rf, err, f );
+  extract ( D, W, S, z, Rf, f );
 
   matrix_dist Rtruth ( SIGSIZE, 1, grid );
 
@@ -208,7 +206,7 @@ void harp::test_invcov ( string const & datadir ) {
     double tr = truth.Get ( i, 0 );
     double rt = Rtruth.Get ( i, 0 );
     double rf = Rf.Get ( i, 0 );
-    double errval = err.Get ( i, 0 );
+    double errval = S.Get ( i, 0 );
     double ze = z.Get ( i, 0 );
     if ( myp == 0 ) {
       cout << "  truth = " << tr << ", z = " << ze << ", convolved = " << rt << ", Rf = " << rf << ", err = " << errval << endl;
