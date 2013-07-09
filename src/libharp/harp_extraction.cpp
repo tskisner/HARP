@@ -183,6 +183,10 @@ void harp::spec_project ( matrix_sparse const & psf, matrix_dist const & in, mat
   globloc.Axpy ( 1.0, local_in, first_loc_row, 0 );
   globloc.Detach();
 
+  // resize output to zero, to save mem temporarily
+
+  out.ResizeTo ( 0, 0 );
+
   // compute local output contribution
 
   matrix_local local_out ( npix, 1 );
@@ -211,7 +215,12 @@ void harp::spec_project ( matrix_sparse const & psf, matrix_dist const & in, mat
   locglob.Axpy ( 1.0, local_out, 0, 0 );
   locglob.Detach();
 
+  // clear local buffer and resize output
+
+  local_out.ResizeTo ( 0, 0 );
+  out.ResizeTo ( npix, 1 );
   local_matrix_zero ( out );
+  
   globloc.Attach( elem::GLOBAL_TO_LOCAL, globout );
   globloc.Axpy ( 1.0, out, 0, 0 );
   globloc.Detach();
@@ -693,10 +702,21 @@ void harp::sky_design ( matrix_sparse const & AT, std::vector < bool > const & s
   size_t firstrow = AT.FirstLocalRow();
   size_t rows = AT.LocalHeight();
 
-  // accumulate our local block of the original design matrix.  Since we do not
-  // know a priori how many non-zeroes we will have
+  // without some tedious calculations, we do not know how many
+  // non-zeros each process will have in the new matrix.  So as a 
+  // first guess, we just reserve the number of non-zeros in the
+  // old matrix.
+
+  skyAT.Reserve ( At.)
+
+  // accumulate our local block of the original design matrix.
 
   skyAT.StartAssembly();
+
+lastls
+
+
+
 
   // compute number of updates and reserve more space if needed
 
