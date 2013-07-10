@@ -784,9 +784,9 @@ int main ( int argc, char *argv[] ) {
   solution_spec->write ( "harp_spec_Rf-err.fits", fullerr, lambda, is_sky );
 
   if ( debug ) {
-    fullf.Write ( "harp_spec_f.txt" );
-    fullRf.Write ( "harp_spec_Rf.txt" );
-    fullerr.Write ( "harp_spec_Rf-err.txt" );
+    elem::Write ( fullf, "harp_spec_f.txt" );
+    elem::Write ( fullRf, "harp_spec_Rf.txt" );
+    elem::Write ( fullerr, "harp_spec_Rf-err.txt" );
   }
 
   tstop = MPI_Wtime();
@@ -849,8 +849,8 @@ int main ( int argc, char *argv[] ) {
     rtruth_spec->write ( "harp_spec_Rtruth.fits", fullRtruth, lambda, is_sky );
 
     if ( debug ) {
-      fulltruth.Write ( "harp_spec_truth.txt" );
-      fullRtruth.Write ( "harp_spec_Rtruth.txt" );
+      elem::Write ( fulltruth, "harp_spec_truth.txt" );
+      elem::Write ( fullRtruth, "harp_spec_Rtruth.txt" );
     }
 
     tstop = MPI_Wtime();

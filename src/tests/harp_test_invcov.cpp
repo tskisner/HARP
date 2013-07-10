@@ -129,7 +129,7 @@ void harp::test_invcov ( string const & datadir ) {
   elem::Gemm ( elem::NORMAL, elem::TRANSPOSE, 1.0, compATN, compAT, 0.0, compinv );
 
   if ( myp == 0 ) {
-    compinv.Print ( "Serial inverse covariance" );
+    elem::Print ( compinv, "Serial inverse covariance" );
   }
 
   // parallel implementation
@@ -138,7 +138,7 @@ void harp::test_invcov ( string const & datadir ) {
 
   inverse_covariance ( AT, invpix, inv );
 
-  inv.Print ( "MPI inverse covariance" );
+  elem::Print ( inv, "MPI inverse covariance" );
 
   // compare results in lower triangle
 
@@ -174,7 +174,7 @@ void harp::test_invcov ( string const & datadir ) {
   matrix_dist sq ( SIGSIZE, SIGSIZE, grid );
   eigen_compose ( EIG_SQRT, D, W, sq );
 
-  sq.Print ( "sqrt of invcov" );
+  elem::Print ( sq, "sqrt of invcov" );
 
   matrix_dist Rdirect ( sq );
   matrix_dist R ( SIGSIZE, SIGSIZE, grid );
@@ -182,15 +182,15 @@ void harp::test_invcov ( string const & datadir ) {
 
   norm ( D, W, S );
 
-  S.Print ( "column norm from eigen decomposition" );
+  elem::Print ( S, "column norm from eigen decomposition" );
 
   apply_norm ( S, Rdirect );
 
-  Rdirect.Print ( "direct resolution matrix" );
+  elem::Print ( Rdirect, "direct resolution matrix" );
 
   resolution ( D, W, S, R );
 
-  R.Print ( "resolution matrix" );
+  elem::Print ( R, "resolution matrix" );
 
   matrix_dist f ( SIGSIZE, 1, grid );
 

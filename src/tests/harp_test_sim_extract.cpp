@@ -84,7 +84,7 @@ void harp::test_sim_extract ( string const & datadir ) {
   testspec->read( truth, lambda, sky );
 
   string outfile = datadir + "/sim_extract_truth.out";
-  truth.Write( outfile );
+  elem::Write ( truth, outfile );
 
   // Read image and noise covariance
 
@@ -138,7 +138,7 @@ void harp::test_sim_extract ( string const & datadir ) {
   }
 
   outfile = datadir + "/sim_extract_eigen.out";
-  D.Write( outfile );
+  elem::Write ( D, outfile );
 
   matrix_dist S ( nbins, 1, grid );
 
@@ -150,7 +150,7 @@ void harp::test_sim_extract ( string const & datadir ) {
   }
 
   outfile = datadir + "/sim_extract_colnorm.out";
-  S.Write( outfile );
+  elem::Write ( S, outfile );
 
   matrix_dist z ( nbins, 1 );
   matrix_dist Rf ( nbins, 1 );
@@ -164,7 +164,7 @@ void harp::test_sim_extract ( string const & datadir ) {
   }
 
   outfile = datadir + "/sim_extract_rhs.out";
-  z.Write( outfile );
+  elem::Write ( z, outfile );
 
   tstart = MPI_Wtime();
   extract ( D, W, S, z, Rf, f );
@@ -174,7 +174,7 @@ void harp::test_sim_extract ( string const & datadir ) {
   }
 
   outfile = datadir + "/sim_extract_Rf.out";
-  Rf.Write( outfile );
+  elem::Write ( Rf, outfile );
 
   matrix_dist Rtruth ( nbins, 1 );
   matrix_dist R ( nbins, nbins, grid );
@@ -191,7 +191,7 @@ void harp::test_sim_extract ( string const & datadir ) {
   elem::Gemv ( elem::NORMAL, 1.0, R, truth, 0.0, Rtruth );
 
   outfile = datadir + "/sim_extract_Rtruth.out";
-  Rtruth.Write( outfile );
+  elem::Write ( Rtruth, outfile );
 
   // do some sub spec and accum operations to test those...
 

@@ -38,8 +38,6 @@ namespace harp {
 
   typedef cliq::DistSparseMatrix < double > matrix_sparse;
 
-  typedef cliq::DistVector < double > vector_dist;
-
   // Exception handling
 
   class exception : public std::exception {

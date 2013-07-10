@@ -72,7 +72,7 @@ void harp::test_small_extract ( string const & datadir ) {
   testspec->read( truth, lambda, sky );
 
   string outfile = datadir + "/small_extract_truth.out";
-  truth.Write( outfile );
+  elem::Write ( truth, outfile );
 
   // Read image and noise covariance
 
@@ -125,7 +125,7 @@ void harp::test_small_extract ( string const & datadir ) {
   }
 
   outfile = datadir + "/small_extract_eigen.out";
-  D.Write( outfile );
+  elem::Write ( D, outfile );
 
   matrix_dist S ( nbins, 1, grid );
 
@@ -137,7 +137,7 @@ void harp::test_small_extract ( string const & datadir ) {
   }
 
   outfile = datadir + "/small_extract_colnorm.out";
-  S.Write( outfile );
+  elem::Write ( S, outfile );
 
   matrix_dist z ( nbins, 1 );
   matrix_dist Rf ( nbins, 1 );
@@ -151,7 +151,7 @@ void harp::test_small_extract ( string const & datadir ) {
   }
 
   outfile = datadir + "/small_extract_rhs.out";
-  z.Write( outfile );
+  elem::Write ( z, outfile );
 
   tstart = MPI_Wtime();
   extract ( D, W, S, z, Rf, f );
@@ -161,7 +161,7 @@ void harp::test_small_extract ( string const & datadir ) {
   }
 
   outfile = datadir + "/small_extract_Rf.out";
-  Rf.Write( outfile );
+  elem::Write ( Rf, outfile );
 
   matrix_dist Rtruth ( nbins, 1 );
   matrix_dist R ( nbins, nbins, grid );
@@ -171,7 +171,7 @@ void harp::test_small_extract ( string const & datadir ) {
   tstop = MPI_Wtime();
 
   outfile = datadir + "/small_extract_colnorm-res.out";
-  S.Write( outfile );
+  elem::Write ( S, outfile );
 
   if ( myp == 0 ) {
     cerr << "  Time for R matrix construction = " << tstop-tstart << " seconds" << endl;
@@ -182,7 +182,7 @@ void harp::test_small_extract ( string const & datadir ) {
   elem::Gemv ( elem::NORMAL, 1.0, R, truth, 0.0, Rtruth );
 
   outfile = datadir + "/small_extract_Rtruth.out";
-  Rtruth.Write( outfile );
+  elem::Write ( Rtruth, outfile );
 
   // do some sub spec and accum operations to test those...
 

@@ -647,6 +647,12 @@ void harp::extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_d
 
 void harp::sky_design ( matrix_sparse const & AT, std::vector < bool > const & sky, matrix_sparse & skyAT ) {
 
+  int np;
+  int myp;
+
+  MPI_Comm_size ( AT.Comm(), &np );
+  MPI_Comm_rank ( AT.Comm(), &myp );
+
   size_t nbins = AT.Height();
   size_t npix = AT.Width();
   size_t nspec = sky.size();
@@ -707,25 +713,47 @@ void harp::sky_design ( matrix_sparse const & AT, std::vector < bool > const & s
   // first guess, we just reserve the number of non-zeros in the
   // old matrix.
 
-  skyAT.Reserve ( At.)
+  skyAT.Reserve ( AT.NumLocalEntries() );
+
+  double * sky_buf = skyAT.ValueBuffer();
+
+  for ( size_t i = 0; i < skyAT.NumLocalEntries(); ++i ) {
+    sky_buf[i] = 0.0;
+  }
 
   // accumulate our local block of the original design matrix.
 
+  size_t offset;
+  size_t nnz;
+  size_t global_row;
+  size_t global_col;
+  size_t sky_global_row;
+
   skyAT.StartAssembly();
 
-lastls
+  for ( size_t row = 0; row < rows; ++row ) {
 
+    global_row = firstrow + row;
+    sky_global_row = old_to_new [ global_row ];
 
+    offset = AT.LocalEntryOffset ( row );
+    nnz = AT.NumConnections ( row );
 
+    if ( ( sky_global_row >= sky_firstrow ) && ( sky_global_row < sky_firstrow + sky_rows ) ) {
 
-  // compute number of updates and reserve more space if needed
+      for ( size_t col = 0; col < nnz; ++col ) {
 
-  size_t updates = 0;
-  for ( size_t i = 0; i < rows; ++i ) {
+        global_col = AT.Col ( offset + col );
+
+        skyAT.Update ( sky_global_row, global_col, AT.Value ( offset + col ) );
+
+      }
+
+    }
 
   }
 
-  /*
+  skyAT.StopAssembly();
 
   // In order to build up the new matrix, send our data to the previous rank process
   // and receive from the next rank process.  Repeat this (number of process times)
@@ -812,78 +840,47 @@ lastls
 
     sparse_block * other_block = new sparse_block ( recvbuf, recvbytes );
 
-    // compute block
+    // accumulate block
 
-    locglob.Attach( elem::LOCAL_TO_GLOBAL, invcov );
+    skyAT.StartAssembly();
 
-    size_t axpy_row;
-    size_t axpy_col;
+    for ( size_t row = 0; row < other_block->local_rows; ++row ) {
 
-    // always compute non-transposed block if we have odd number of processes
-    // or we have an even number of process and we are not on the last shift.
+      global_row = other_block->local_firstrow + row;
+      sky_global_row = old_to_new [ global_row ];
 
-    local_inv.ResizeTo ( local_rows, other_block->local_rows );
+      offset = other_block->local_row_offset[ row ];
+      nnz = other_block->local_row_nnz[ row ];
 
-    axpy_row = local_firstrow;
-    axpy_col = other_block->local_firstrow;
+      if ( ( sky_global_row >= sky_firstrow ) && ( sky_global_row < sky_firstrow + sky_rows ) ) {
 
-    for ( size_t lhs_row = 0; lhs_row < local_rows; ++lhs_row ) {
+        for ( size_t col = 0; col < nnz; ++col ) {
 
-      for ( size_t rhs_row = 0; rhs_row < other_block->local_rows; ++rhs_row ) {
+          global_col = other_block->local_col[ offset + col ];
 
-        lhs_off = psf.LocalEntryOffset ( lhs_row );
-        rhs_off = other_block->local_row_offset [ rhs_row ];
-
-        lhs_nnz = psf.NumConnections ( lhs_row );
-        rhs_nnz = other_block->local_row_nnz [ rhs_row ];
-
-        val = 0.0;
-
-        k = 0;
-        rhs_col = other_block->local_col[ rhs_off ];
-
-        for ( j = 0; j < lhs_nnz; ++j ) {
-
-          lhs_col = psf.Col ( lhs_off + j );
-          
-          while ( ( rhs_col < lhs_col ) && ( k < rhs_nnz - 1 ) ) {
-            ++k;
-            rhs_col = other_block->local_col[ rhs_off + k ];
-          }
-
-          if ( rhs_col == lhs_col ) {
-            val += invnoise.Get( lhs_col, 0 ) * psf.Value ( lhs_off + j ) * other_block->data[ rhs_off + k ];
-          }
+          skyAT.Update ( sky_global_row, global_col, other_block->data[ offset + col ] );
 
         }
 
-        local_inv.Set ( lhs_row, rhs_row, val );
-
       }
+
     }
-
-    locglob.Axpy ( 1.0, local_inv, axpy_row, axpy_col );
-
-
 
     delete other_block;
 
-    locglob.Detach();
+    skyAT.StopAssembly();
 
     // free send buffer
 
     ret = MPI_Wait ( &send_size_request, &status );
-    mpi_check ( psf.Comm(), ret );
+    mpi_check ( AT.Comm(), ret );
 
     ret = MPI_Wait ( &send_request, &status );
-    mpi_check ( psf.Comm(), ret );
+    mpi_check ( AT.Comm(), ret );
 
     free ( sendbuf );
 
   }
-
-  */
-
 
   return;
 }
