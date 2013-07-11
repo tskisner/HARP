@@ -22,6 +22,8 @@ namespace harp {
   void test_sim_extract ( std::string const & datadir );
 
   void test_small_extract ( std::string const & datadir );
+
+  void test_sky_extract ( std::string const & datadir );
   
 }
 

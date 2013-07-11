@@ -40,6 +40,8 @@ int main ( int argc, char *argv[] ) {
   test_sim_extract ( datadir );
 
   test_small_extract ( datadir );
+
+  test_sky_extract ( datadir );
   
   if ( myp == 0 ) {
     cerr << endl;
