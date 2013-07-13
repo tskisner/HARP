@@ -14,7 +14,10 @@ namespace harp {
       size_t nlambda ( ) { return nlambda_; }
 
       void read ( matrix_dist & data, std::vector < double > & lambda, std::vector < bool > & sky );
+      
       void write ( std::string const & path, matrix_dist & data, std::vector < double > const & lambda, std::vector < bool > const & sky );
+
+      void sky_truth ( matrix_dist & data );
     
     private :
     

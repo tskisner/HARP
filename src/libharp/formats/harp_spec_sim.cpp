@@ -79,6 +79,8 @@ void harp::spec_sim::read ( matrix_dist & data, std::vector < double > & lambda,
 
   size_t bin = 0;
 
+  size_t halfspace = (size_t)( atmspace_ / 2 );
+
   for ( size_t i = 0; i < nspec_; ++i ) {
 
     if ( i % skymod_ == 0 ) {
@@ -91,16 +93,20 @@ void harp::spec_sim::read ( matrix_dist & data, std::vector < double > & lambda,
 
     for ( size_t j = 0; j < nlambda_; ++j ) {
 
-      double val = background_ * sin ( 3.0 * (double)j / ( (double)atmspace_ * 2.0 * PI ) ) * sin ( 7.0 * (double)j / ( (double)atmspace_ * 2.0 * PI ) ) * sin ( 11.0 * (double)j / ( (double)atmspace_ * 2.0 * PI ) );
+      double val = 0.0;
+
+      val += background_ * sin ( 3.0 * (double)j / ( (double)atmspace_ * 2.0 * PI ) ) * sin ( 7.0 * (double)j / ( (double)atmspace_ * 2.0 * PI ) ) * sin ( 11.0 * (double)j / ( (double)atmspace_ * 2.0 * PI ) );
 
       val += 2.0 * background_;
 
-      if ( ( j % atmspace_ ) == 0 ) {
+      if ( ( ( j + halfspace ) % atmspace_ ) == 0 ) {
         val += atmpeak_;
       }
 
-      if ( ( ( j + objoff ) % objspace_ ) == 0 ) {
-        val += objpeak_;
+      if ( ! sky[i] ) {
+        if ( ( ( j + objoff ) % objspace_ ) == 0 ) {
+          val += objpeak_;
+        }
       }
 
       data.Set ( bin, 0, val );
@@ -118,6 +124,72 @@ void harp::spec_sim::write ( std::string const & path, matrix_dist & data, std::
 
   HARP_THROW( "sim spec format does not support writing" );
   
+  return;
+}
+
+
+void harp::spec_sim::sky_truth ( matrix_dist & data ) {
+
+  double PI = std::atan2 ( 0.0, -1.0 );
+
+  size_t halfspace = (size_t)( atmspace_ / 2 );
+
+  size_t nreduced = 0;
+
+  for ( size_t i = 0; i < nspec_; ++i ) {
+    if ( i % skymod_ != 0 ) {
+      ++nreduced;
+    }
+  }
+
+  ++nreduced;
+
+  size_t nbins = nreduced * nlambda_;
+
+  data.ResizeTo ( nbins, 1 );
+
+  size_t bin = 0;
+
+  for ( size_t i = 0; i < nspec_; ++i ) {
+
+    if ( i % skymod_ != 0 ) {
+
+      size_t objoff = 2 * i;
+
+      for ( size_t j = 0; j < nlambda_; ++j ) {
+
+        double val = 0.0;
+
+        if ( ( ( j + objoff ) % objspace_ ) == 0 ) {
+          val += objpeak_;
+        }
+
+        data.Set ( bin, 0, val );
+
+        ++bin;
+      }
+
+    }
+
+  }
+
+  for ( size_t j = 0; j < nlambda_; ++j ) {
+
+    double val = 0.0;
+
+    val += background_ * sin ( 3.0 * (double)j / ( (double)atmspace_ * 2.0 * PI ) ) * sin ( 7.0 * (double)j / ( (double)atmspace_ * 2.0 * PI ) ) * sin ( 11.0 * (double)j / ( (double)atmspace_ * 2.0 * PI ) );
+
+    val += 2.0 * background_;
+
+    if ( ( ( j + halfspace ) % atmspace_ ) == 0 ) {
+      val += atmpeak_;
+    }
+
+    data.Set ( bin, 0, val );
+
+    ++bin;
+  }
+
   return;
 }
 

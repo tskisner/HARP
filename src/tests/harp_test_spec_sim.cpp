@@ -63,7 +63,7 @@ void harp::test_spec_sim ( string const & datadir ) {
   testspec->read( data, lambda, sky );
 
   string outfile = datadir + "/spec_sim_data.out";
-  elem::Write ( data, outfile );
+  elem::Write ( data, "data", outfile );
 
   fstream fout;
   fout.precision(16);

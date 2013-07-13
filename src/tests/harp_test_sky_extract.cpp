@@ -45,9 +45,9 @@ void harp::test_sky_extract ( string const & datadir ) {
   spec_props.put ( "last_lambda", last_lambda );
   spec_props.put ( "back", 10.0 );
   spec_props.put ( "atm", 5000.0 );
-  spec_props.put ( "obj", 80.0 );
+  spec_props.put ( "obj", 1000.0 );
   spec_props.put ( "atmspace", 12 );
-  spec_props.put ( "skymod", 4 );
+  spec_props.put ( "skymod", 2 );
   spec_p testspec ( spec::create ( spec_props ) );
 
   // Create PSF
@@ -59,7 +59,7 @@ void harp::test_sky_extract ( string const & datadir ) {
   psf_props.put_child ( "spec", spec_props );
   psf_props.put ( "bundle_size", 20 );
   psf_props.put ( "nbundle", 1 );
-  psf_props.put ( "fwhm", 2.2 );
+  psf_props.put ( "fwhm", 2.4 );
   psf_props.put ( "margin", 10 );
   psf_props.put ( "gap", 7 );
   psf_p testpsf ( psf::create ( psf_props ) );
@@ -84,7 +84,7 @@ void harp::test_sky_extract ( string const & datadir ) {
   testspec->read( truth, lambda, sky );
 
   string outfile = datadir + "/sky_extract_truth.out";
-  elem::Write ( truth, outfile );
+  elem::Write ( truth, "truth", outfile );
 
   // Read image and noise covariance
 
@@ -105,7 +105,6 @@ void harp::test_sky_extract ( string const & datadir ) {
 
   matrix_sparse design;
 
-
   double tstart;
   double tstop;
 
@@ -116,17 +115,15 @@ void harp::test_sky_extract ( string const & datadir ) {
     cerr << "  Time for PSF creation = " << tstop-tstart << " seconds" << endl;
   }
 
-  // generate sky subtraction design matrix
-
-  matrix_sparse sdesign;
-  sky_design ( design, sky, sdesign );
+  fstream fout;
+  fout.precision(16);
 
   elem::Grid grid ( elem::mpi::COMM_WORLD );
   
   matrix_dist inv ( nbins, nbins, grid );
 
   tstart = MPI_Wtime();
-  inverse_covariance ( sdesign, invnoise, inv );
+  inverse_covariance ( design, invnoise, inv );
   tstop = MPI_Wtime();
   if ( myp == 0 ) {
     cerr << "  Time for inverse covariance building = " << tstop-tstart << " seconds" << endl;
@@ -142,8 +139,8 @@ void harp::test_sky_extract ( string const & datadir ) {
     cerr << "  Time for eigendecomposition = " << tstop-tstart << " seconds" << endl;
   }
 
-  outfile = datadir + "/sky_extract_eigen.out";
-  elem::Write ( D, outfile );
+  outfile = datadir + "/sky_extract_orig_eigen.out";
+  elem::Write ( D, "eigen", outfile );
 
   matrix_dist S ( nbins, 1, grid );
 
@@ -154,22 +151,22 @@ void harp::test_sky_extract ( string const & datadir ) {
     cerr << "  Time to compute S norm = " << tstop-tstart << " seconds" << endl;
   }
 
-  outfile = datadir + "/sky_extract_colnorm.out";
-  elem::Write ( S, outfile );
+  outfile = datadir + "/sky_extract_orig_colnorm.out";
+  elem::Write ( S, "colnorm", outfile );
 
   matrix_dist z ( nbins, 1 );
   matrix_dist Rf ( nbins, 1 );
   matrix_dist f ( nbins, 1 );
 
   tstart = MPI_Wtime();
-  noise_weighted_spec ( sdesign, invnoise, measured, z );
+  noise_weighted_spec ( design, invnoise, measured, z );
   tstop = MPI_Wtime();
   if ( myp == 0 ) {
     cerr << "  Time to compute RHS = " << tstop-tstart << " seconds" << endl;
   }
 
-  outfile = datadir + "/sky_extract_rhs.out";
-  elem::Write ( z, outfile );
+  outfile = datadir + "/sky_extract_orig_rhs.out";
+  elem::Write ( z, "rhs", outfile );
 
   tstart = MPI_Wtime();
   extract ( D, W, S, z, Rf, f );
@@ -178,8 +175,8 @@ void harp::test_sky_extract ( string const & datadir ) {
     cerr << "  Time for extraction = " << tstop-tstart << " seconds" << endl;
   }
 
-  outfile = datadir + "/sky_extract_Rf.out";
-  elem::Write ( Rf, outfile );
+  outfile = datadir + "/sky_extract_orig_Rf.out";
+  elem::Write ( Rf, "Rf", outfile );
 
   matrix_dist Rtruth ( nbins, 1 );
   matrix_dist R ( nbins, nbins, grid );
@@ -195,54 +192,22 @@ void harp::test_sky_extract ( string const & datadir ) {
 
   elem::Gemv ( elem::NORMAL, 1.0, R, truth, 0.0, Rtruth );
 
-  outfile = datadir + "/sky_extract_Rtruth.out";
-  elem::Write ( Rtruth, outfile );
+  outfile = datadir + "/sky_extract_orig_Rtruth.out";
+  elem::Write ( Rtruth, "Rtruth", outfile );
 
-  // do some sub spec and accum operations to test those...
-
-  matrix_dist test_Rtruth ( nbins, 1 );
-  dist_matrix_zero ( test_Rtruth );
-
-  matrix_dist test_Rf ( nbins, 1 );
-  dist_matrix_zero ( test_Rf );
-
-  matrix_dist test_truth ( nbins, 1 );
-  dist_matrix_zero ( test_truth );
-
-  matrix_dist out_spec ( nspec * 20, 1 );
-
-  for ( size_t b = 0; b < 3; ++b ) {
-
-    sub_spec ( Rtruth, nspec, 0, nspec, 20 * b, 20, out_spec );
-    accum_spec ( test_Rtruth, nspec, 0, nspec, 20 * b, 20, out_spec );
-
-    sub_spec ( truth, nspec, 0, nspec, 20 * b, 20, out_spec );
-    accum_spec ( test_truth, nspec, 0, nspec, 20 * b, 20, out_spec );
-
-    sub_spec ( Rf, nspec, 0, nspec, 20 * b, 20, out_spec );
-    accum_spec ( test_Rf, nspec, 0, nspec, 20 * b, 20, out_spec );
-
-  }
-
-  Rtruth = test_Rtruth;
-  truth = test_truth;
-  Rf = test_Rf;
 
   // write outputs
-
-  fstream fout;
-  fout.precision(16);
 
   matrix_local full;
 
   fitsfile * fp;
 
   if ( myp == 0 ) {
-    outfile = datadir + "/sky_extract.out";
+    outfile = datadir + "/sky_extract_orig.out";
     fout.open ( outfile.c_str(), ios::out );
 
     full.ResizeTo ( nbins, 1 );
-    string outspec = datadir + "/sky_extract.fits.out";
+    string outspec = datadir + "/sky_extract_orig.fits.out";
     fits::create ( fp, outspec );
   }
 
@@ -295,6 +260,183 @@ void harp::test_sky_extract ( string const & datadir ) {
     double out_rt = Rtruth.Get(i,0);
     double out_tr = truth.Get(i,0);
     double errval = S.Get ( i, 0 );
+    if ( myp == 0 ) {
+      fout << i << " " << out_tr << " " << out_rt << " " << out_rf << " " << errval << endl;
+    }
+  }
+
+  if ( myp == 0 ) {
+    fout.close();
+    fits::close ( fp );
+  }
+
+
+  // get sky truth
+
+  spec_sim * testsimspec = dynamic_cast < spec_sim * > ( testspec.get() );
+
+  matrix_dist truth_sky;
+
+  testsimspec->sky_truth ( truth_sky );
+
+
+  // generate sky subtraction design matrix
+
+  size_t nspec_obj = 0;
+
+  vector < bool > :: const_iterator itsky;
+  for ( itsky = sky.begin(); itsky != sky.end(); ++itsky ) {
+    if ( ! (*itsky) ) {
+      ++nspec_obj;
+    }
+  }
+
+  size_t nspec_sky = nspec_obj + 1;
+  size_t nbins_sky = nspec_sky * nlambda;
+
+  cerr << "  " << nspec_obj << " object spectra plus one sky" << endl;
+  cerr << "   (" << nbins_sky << ") bins" << endl; 
+
+  matrix_sparse sdesign;
+  sky_design ( design, sky, sdesign );
+
+
+  outfile = datadir + "/sky_design_orig.out";
+  fout.open ( outfile.c_str(), ios::out );
+  cliq::Print ( design, "original", fout );
+  fout.close();
+
+  outfile = datadir + "/sky_design_new.out";
+  fout.open ( outfile.c_str(), ios::out );
+  cliq::Print ( sdesign, "sky", fout );
+  fout.close();
+  
+  matrix_dist inv_sky ( nbins_sky, nbins_sky, grid );
+
+  tstart = MPI_Wtime();
+  inverse_covariance ( sdesign, invnoise, inv_sky );
+  tstop = MPI_Wtime();
+  if ( myp == 0 ) {
+    cerr << "  Time for inverse covariance building = " << tstop-tstart << " seconds" << endl;
+  }
+
+  matrix_dist W_sky ( nbins_sky, nbins_sky, grid );
+  matrix_dist D_sky ( nbins_sky, 1, grid );
+
+  tstart = MPI_Wtime();
+  eigen_decompose ( inv_sky, D_sky, W_sky );
+  tstop = MPI_Wtime();
+  if ( myp == 0 ) {
+    cerr << "  Time for eigendecomposition = " << tstop-tstart << " seconds" << endl;
+  }
+
+  outfile = datadir + "/sky_extract_eigen.out";
+  elem::Write ( D_sky, "eigen", outfile );
+
+  matrix_dist S_sky ( nbins_sky, 1, grid );
+
+  tstart = MPI_Wtime();
+  norm ( D_sky, W_sky, S_sky );
+  tstop = MPI_Wtime();
+  if ( myp == 0 ) {
+    cerr << "  Time to compute S norm = " << tstop-tstart << " seconds" << endl;
+  }
+
+  outfile = datadir + "/sky_extract_colnorm.out";
+  elem::Write ( S_sky, "colnorm", outfile );
+
+  matrix_dist z_sky ( nbins_sky, 1 );
+  matrix_dist Rf_sky ( nbins_sky, 1 );
+  matrix_dist f_sky ( nbins_sky, 1 );
+
+  tstart = MPI_Wtime();
+  noise_weighted_spec ( sdesign, invnoise, measured, z_sky );
+  tstop = MPI_Wtime();
+  if ( myp == 0 ) {
+    cerr << "  Time to compute RHS = " << tstop-tstart << " seconds" << endl;
+  }
+
+  outfile = datadir + "/sky_extract_rhs.out";
+  elem::Write ( z_sky, "rhs", outfile );
+
+  tstart = MPI_Wtime();
+  extract ( D_sky, W_sky, S_sky, z_sky, Rf_sky, f_sky );
+  tstop = MPI_Wtime();
+  if ( myp == 0 ) {
+    cerr << "  Time for extraction = " << tstop-tstart << " seconds" << endl;
+  }
+
+  outfile = datadir + "/sky_extract_Rf.out";
+  elem::Write ( Rf_sky, "Rf", outfile );
+
+  matrix_dist R_sky ( nbins_sky, nbins_sky, grid );
+
+  tstart = MPI_Wtime();
+  resolution ( D_sky, W_sky, S_sky, R_sky );
+  tstop = MPI_Wtime();
+  if ( myp == 0 ) {
+    cerr << "  Time for R matrix construction = " << tstop-tstart << " seconds" << endl;
+  }
+
+  // resolution-convolved truth
+
+  matrix_dist Rtruth_sky ( nbins_sky, 1, grid );
+
+  elem::Gemv ( elem::NORMAL, 1.0, R_sky, truth_sky, 0.0, Rtruth_sky );
+
+  // projected truth
+
+  matrix_local projected ( npix, 1 );
+  spec_project ( sdesign, truth_sky, projected );
+
+  if ( myp == 0 ) {
+    string outimg = datadir + "/sky_extract_truth-project.fits.out";
+    fits::create ( fp, outimg );
+    fits::img_append ( fp, rows, cols );
+    fits::write_key ( fp, "EXTNAME", "truth", "sky subtraction truth" );
+    fits::img_write ( fp, projected );
+    fits::close ( fp );
+  }
+
+
+  // write outputs
+
+  if ( myp == 0 ) {
+    outfile = datadir + "/sky_extract.out";
+    fout.open ( outfile.c_str(), ios::out );
+
+    full.ResizeTo ( nbins_sky, 1 );
+    string outspec = datadir + "/sky_extract.fits.out";
+    fits::create ( fp, outspec );
+  }
+
+  for ( size_t i = 0; i < nbins_sky; ++i ) {
+    double dtemp = Rf_sky.Get(i,0);
+    if ( myp == 0 ) {
+      full.Set ( i, 0, dtemp );
+    }
+  }
+  if ( myp == 0 ) {
+    fits::img_append ( fp, nspec_sky, nlambda );
+    fits::img_write ( fp, full );
+  }
+
+  for ( size_t i = 0; i < nbins_sky; ++i ) {
+    double dtemp = inv_sky.Get(i,i);
+    if ( myp == 0 ) {
+      full.Set ( i, 0, sqrt(1.0/dtemp) );
+    }
+  }
+  if ( myp == 0 ) {
+    fits::img_append ( fp, nspec_sky, nlambda );
+    fits::img_write ( fp, full );
+  }
+
+  for ( size_t i = 0; i < nbins_sky; ++i ) {
+    double out_tr = truth_sky.Get(i,0);
+    double out_rt = Rtruth_sky.Get(i,0);
+    double out_rf = Rf_sky.Get(i,0);
+    double errval = S_sky.Get ( i, 0 );
     if ( myp == 0 ) {
       fout << i << " " << out_tr << " " << out_rt << " " << out_rf << " " << errval << endl;
     }

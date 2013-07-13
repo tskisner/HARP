@@ -72,7 +72,7 @@ void harp::test_small_extract ( string const & datadir ) {
   testspec->read( truth, lambda, sky );
 
   string outfile = datadir + "/small_extract_truth.out";
-  elem::Write ( truth, outfile );
+  elem::Write ( truth, "truth", outfile );
 
   // Read image and noise covariance
 
@@ -125,7 +125,7 @@ void harp::test_small_extract ( string const & datadir ) {
   }
 
   outfile = datadir + "/small_extract_eigen.out";
-  elem::Write ( D, outfile );
+  elem::Write ( D, "eigen", outfile );
 
   matrix_dist S ( nbins, 1, grid );
 
@@ -137,7 +137,7 @@ void harp::test_small_extract ( string const & datadir ) {
   }
 
   outfile = datadir + "/small_extract_colnorm.out";
-  elem::Write ( S, outfile );
+  elem::Write ( S, "colnorm", outfile );
 
   matrix_dist z ( nbins, 1 );
   matrix_dist Rf ( nbins, 1 );
@@ -151,7 +151,7 @@ void harp::test_small_extract ( string const & datadir ) {
   }
 
   outfile = datadir + "/small_extract_rhs.out";
-  elem::Write ( z, outfile );
+  elem::Write ( z, "rhs", outfile );
 
   tstart = MPI_Wtime();
   extract ( D, W, S, z, Rf, f );
@@ -161,7 +161,7 @@ void harp::test_small_extract ( string const & datadir ) {
   }
 
   outfile = datadir + "/small_extract_Rf.out";
-  elem::Write ( Rf, outfile );
+  elem::Write ( Rf, "Rf", outfile );
 
   matrix_dist Rtruth ( nbins, 1 );
   matrix_dist R ( nbins, nbins, grid );
@@ -171,7 +171,7 @@ void harp::test_small_extract ( string const & datadir ) {
   tstop = MPI_Wtime();
 
   outfile = datadir + "/small_extract_colnorm-res.out";
-  elem::Write ( S, outfile );
+  elem::Write ( S, "colnorm-res", outfile );
 
   if ( myp == 0 ) {
     cerr << "  Time for R matrix construction = " << tstop-tstart << " seconds" << endl;
@@ -182,7 +182,7 @@ void harp::test_small_extract ( string const & datadir ) {
   elem::Gemv ( elem::NORMAL, 1.0, R, truth, 0.0, Rtruth );
 
   outfile = datadir + "/small_extract_Rtruth.out";
-  elem::Write ( Rtruth, outfile );
+  elem::Write ( Rtruth, "Rtruth", outfile );
 
   // do some sub spec and accum operations to test those...
 
@@ -294,6 +294,73 @@ void harp::test_small_extract ( string const & datadir ) {
   if ( myp == 0 ) {
     cerr << "  (PASSED)" << endl;
   }
+
+
+  if ( myp == 0 ) {
+    cerr << "Same, but with sky subtraction..." << endl;
+  }
+
+
+  // generate sky subtraction design matrix
+
+  size_t nspec_obj = 0;
+
+  vector < bool > :: const_iterator itsky;
+  for ( itsky = sky.begin(); itsky != sky.end(); ++itsky ) {
+    if ( ! (*itsky) ) {
+      ++nspec_obj;
+    }
+  }
+
+  size_t nspec_sky = nspec_obj + 1;
+  size_t nbins_sky = nspec_sky * nlambda;
+
+  cerr << "  " << nspec_obj << " object spectra plus one sky" << endl;
+  cerr << "   (" << nbins_sky << ") bins" << endl; 
+
+  matrix_sparse sdesign;
+  sky_design ( design, sky, sdesign );
+  
+  matrix_dist inv_sky ( nbins_sky, nbins_sky, grid );
+
+  inverse_covariance ( sdesign, invnoise, inv_sky );
+
+  matrix_dist W_sky ( nbins_sky, nbins_sky, grid );
+  matrix_dist D_sky ( nbins_sky, 1, grid );  
+  eigen_decompose ( inv_sky, D_sky, W_sky );
+  
+  matrix_dist S_sky ( nbins_sky, 1, grid );
+  norm ( D_sky, W_sky, S_sky );
+
+  matrix_dist z_sky ( nbins_sky, 1 );
+  matrix_dist Rf_sky ( nbins_sky, 1 );
+  matrix_dist f_sky ( nbins_sky, 1 );
+
+  noise_weighted_spec ( sdesign, invnoise, measured, z_sky );
+
+  extract ( D_sky, W_sky, S_sky, z_sky, Rf_sky, f_sky );
+
+  if ( myp == 0 ) {
+    outfile = datadir + "/small_extract_skysub.out";
+    fout.open ( outfile.c_str(), ios::out );
+  }
+
+  for ( size_t i = 0; i < nbins_sky; ++i ) {
+    double out_rf = Rf_sky.Get(i,0);
+    double errval = S_sky.Get ( i, 0 );
+    if ( myp == 0 ) {
+      fout << i << " " << out_rf << " " << errval << endl;
+    }
+  }
+
+  if ( myp == 0 ) {
+    fout.close();
+  }
+
+  if ( myp == 0 ) {
+    cerr << "  (PASSED)" << endl;
+  }
+
      
   return;
 }

@@ -677,26 +677,31 @@ void harp::sky_design ( matrix_sparse const & AT, std::vector < bool > const & s
 
   // build the full mapping of old bins to new bins
 
-  vector < size_t > old_to_new ( nbins );
+  vector < int64_t > old_to_new ( nbins );
+  vector < int64_t > old_to_sky ( nbins );
 
-  size_t skystart = (nspec - nsky) * nlambda;
+  size_t skystart = (sky_nspec - 1) * nlambda;
   size_t newoff = 0;
   size_t oldoff = 0;
 
   for ( size_t i = 0; i < nspec; ++i ) {
-    if ( sky[i] ) {
-      for ( size_t j = 0; j < nlambda; ++j ) {
-        old_to_new[ oldoff ] = skystart + j;
-        ++oldoff;
-      }
-    } else {
-      for ( size_t j = 0; j < nlambda; ++j ) {
+    for ( size_t j = 0; j < nlambda; ++j ) {
+      if ( sky[i] ) {
+        old_to_new[ oldoff ] = -1;
+      } else {
         old_to_new[ oldoff ] = newoff;
-        ++oldoff;
         ++newoff;
       }
+      old_to_sky[ oldoff ] = skystart + j;
+      ++oldoff;
     }
   }
+
+  /*
+  for ( size_t i = 0; i < nbins; ++i ) {
+    cerr << "bin map " << i << " --> " << old_to_new[i] << endl;
+  }
+  */
 
   // set up new design matrix and get our local range
 
@@ -734,10 +739,31 @@ void harp::sky_design ( matrix_sparse const & AT, std::vector < bool > const & s
   for ( size_t row = 0; row < rows; ++row ) {
 
     global_row = firstrow + row;
-    sky_global_row = old_to_new [ global_row ];
-
     offset = AT.LocalEntryOffset ( row );
     nnz = AT.NumConnections ( row );
+
+    // fill in object elements
+    
+    if ( old_to_new[ global_row ] >= 0 ) {
+
+      sky_global_row = old_to_new [ global_row ];
+
+      if ( ( sky_global_row >= sky_firstrow ) && ( sky_global_row < sky_firstrow + sky_rows ) ) {
+
+        for ( size_t col = 0; col < nnz; ++col ) {
+
+          global_col = AT.Col ( offset + col );
+
+          skyAT.Update ( sky_global_row, global_col, AT.Value ( offset + col ) );
+
+        }
+      }
+
+    }
+
+    // fill in sky elements
+
+    sky_global_row = old_to_sky [ global_row ];
 
     if ( ( sky_global_row >= sky_firstrow ) && ( sky_global_row < sky_firstrow + sky_rows ) ) {
 
@@ -748,8 +774,8 @@ void harp::sky_design ( matrix_sparse const & AT, std::vector < bool > const & s
         skyAT.Update ( sky_global_row, global_col, AT.Value ( offset + col ) );
 
       }
-
     }
+
 
   }
 
@@ -847,10 +873,32 @@ void harp::sky_design ( matrix_sparse const & AT, std::vector < bool > const & s
     for ( size_t row = 0; row < other_block->local_rows; ++row ) {
 
       global_row = other_block->local_firstrow + row;
-      sky_global_row = old_to_new [ global_row ];
-
       offset = other_block->local_row_offset[ row ];
       nnz = other_block->local_row_nnz[ row ];
+
+      // fill in object elements
+      
+      if ( old_to_new[ global_row ] >= 0 ) {
+
+        sky_global_row = old_to_new [ global_row ];
+
+        if ( ( sky_global_row >= sky_firstrow ) && ( sky_global_row < sky_firstrow + sky_rows ) ) {
+
+          for ( size_t col = 0; col < nnz; ++col ) {
+
+            global_col = other_block->local_col[ offset + col ];
+
+            skyAT.Update ( sky_global_row, global_col, other_block->data[ offset + col ] );
+
+          }
+
+        }
+
+      }
+      
+      // fill in sky elements
+
+      sky_global_row = old_to_sky [ global_row ];
 
       if ( ( sky_global_row >= sky_firstrow ) && ( sky_global_row < sky_firstrow + sky_rows ) ) {
 

@@ -68,7 +68,7 @@ void harp::test_spec_specter ( string const & datadir ) {
 
     string outfile = datadir + "/spec_specter_data.out";
 
-    elem::Write ( specdata, outfile );
+    elem::Write ( specdata, "data", outfile );
 
     if ( myp == 0 ) {
       fstream fout;
