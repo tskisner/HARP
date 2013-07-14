@@ -40,7 +40,7 @@ int main ( int argc, char *argv[] ) {
   size_t lambda_width = 3;
   size_t lambda_overlap = 1;
 
-  size_t spec_width = 1;
+  size_t spec_width = 0;
   
   string jsonconf = "";
 
@@ -65,7 +65,7 @@ int main ( int argc, char *argv[] ) {
   ( "debug,d", "write out intermediate data products for debugging" )
   ( "skysub", "simultaneously remove common sky spectrum" )
   ( "gangsize", popts::value < int > ( &gangsize ), "number of processes per gang (choose perfect square number if possible)" )
-  ( "spec_width", popts::value < size_t > ( &spec_width ), "number of spectra to process at once" )
+  ( "spec_width", popts::value < size_t > ( &spec_width ), "number of spectra to process at once (default = all)" )
   ( "lambda_width", popts::value < size_t > ( &lambda_width ), "maximum wavelength points to process simultaneously" )
   ( "lambda_overlap", popts::value < size_t > ( &lambda_overlap ), "minimum wavelength points to overlap" )
   ( "plan", popts::value < int > ( &planproc ), "# procs to simulate. Check inputs and compute distribution." )
@@ -206,6 +206,17 @@ int main ( int argc, char *argv[] ) {
   vector < double > lambda = epsf->lambda();
   size_t psf_nbins = psf_nspec * nlambda;
 
+  if ( spec_width == 0 ) {
+    spec_width = psf_nspec;
+  }
+
+  // If we are doing sky subtraction, force user to solve for bands of all spectra
+
+  if ( dosky && ( spec_width != psf_nspec ) ) {
+    cerr << prefix << "when doing sky subtraction, spec_width must be all spectra" << endl;
+    ret = MPI_Abort ( MPI_COMM_WORLD, 1 );
+  }
+
   tstop = MPI_Wtime();
 
   if ( ( myp == 0 ) && ( ! quiet ) ) {
@@ -213,6 +224,45 @@ int main ( int argc, char *argv[] ) {
     cout << prefix << "  image dimensions = " << psf_imgrows << " x " << psf_imgcols << endl;
     cout << prefix << "  " << psf_nspec << " spectra with " << nlambda << " wavelength points each:" << endl;
     cout << prefix << "  lambda = " << lambda[0] << " ... " << lambda[nlambda - 1] << endl;
+  }
+
+  // Determine reduced problem size for sky subtraction
+
+  size_t psf_nspec_obj = 0;
+
+  for ( size_t i = 0; i < psf_nspec; ++i ) {
+    if ( ! is_sky[i] ) {
+      ++psf_nspec_obj;
+    }
+  }
+
+  size_t psf_nspec_sky = psf_nspec_obj + 1;
+  size_t psf_nbins_sky = psf_nspec_sky * nlambda;
+
+  vector < bool > is_sky_solve ( psf_nspec_sky );
+  vector < int > sky_lookup ( psf_nspec );
+  int sky_off = 0;
+
+  for ( size_t i = 0; i < psf_nspec; ++i ) {
+    if ( is_sky[i] ) {
+      sky_lookup[i] = psf_nspec_sky - 1;
+    } else {
+      sky_lookup[i] = sky_off;
+      is_sky_solve[ sky_off ] = false;
+      ++sky_off;
+    }
+  }
+  is_sky_solve[ sky_off ] = true;
+
+  size_t psf_nspec_solve;
+  size_t psf_nbins_solve;
+
+  if ( dosky ) {
+    psf_nspec_solve = psf_nspec_sky;
+    psf_nbins_solve = psf_nbins_sky;
+  } else {
+    psf_nspec_solve = psf_nspec;
+    psf_nbins_solve = psf_nbins;
   }
 
   // Determine spectral chunks
@@ -428,36 +478,36 @@ int main ( int argc, char *argv[] ) {
 
   // global distributed spectral products
 
-  matrix_dist fullf ( psf_nbins, 1, grid );
+  matrix_dist fullf ( psf_nbins_solve, 1, grid );
   dist_matrix_zero ( fullf );
 
-  matrix_dist fullRf ( psf_nbins, 1, grid );
+  matrix_dist fullRf ( psf_nbins_solve, 1, grid );
   dist_matrix_zero ( fullRf );
 
-  matrix_dist fullerr ( psf_nbins, 1, grid );
+  matrix_dist fullerr ( psf_nbins_solve, 1, grid );
   dist_matrix_zero ( fullerr );
 
-  matrix_dist fulltruth ( psf_nbins, 1, grid );
+  matrix_dist fulltruth ( psf_nbins_solve, 1, grid );
   dist_matrix_zero ( fulltruth );
 
-  matrix_dist fullRtruth ( psf_nbins, 1, grid );
+  matrix_dist fullRtruth ( psf_nbins_solve, 1, grid );
   dist_matrix_zero ( fullRtruth );
 
   // gang distributed spectral products
 
-  matrix_dist gang_fullf ( psf_nbins, 1, gang_grid );
+  matrix_dist gang_fullf ( psf_nbins_solve, 1, gang_grid );
   dist_matrix_zero ( gang_fullf );
 
-  matrix_dist gang_fullRf ( psf_nbins, 1, gang_grid );
+  matrix_dist gang_fullRf ( psf_nbins_solve, 1, gang_grid );
   dist_matrix_zero ( gang_fullRf );
 
-  matrix_dist gang_fullerr ( psf_nbins, 1, gang_grid );
+  matrix_dist gang_fullerr ( psf_nbins_solve, 1, gang_grid );
   dist_matrix_zero ( gang_fullerr );
 
-  matrix_dist gang_fulltruth ( psf_nbins, 1, gang_grid );
+  matrix_dist gang_fulltruth ( psf_nbins_solve, 1, gang_grid );
   dist_matrix_zero ( gang_fulltruth );
 
-  matrix_dist gang_fullRtruth ( psf_nbins, 1, gang_grid );
+  matrix_dist gang_fullRtruth ( psf_nbins_solve, 1, gang_grid );
   dist_matrix_zero ( gang_fullRtruth );
 
   vector < bool > fulltruth_sky;
@@ -480,9 +530,9 @@ int main ( int argc, char *argv[] ) {
 
     size_t truth_nbins = truth_nspec * truth_nlambda;
 
-    if ( truth_nbins != psf_nspec * nlambda ) {
+    if ( truth_nbins != psf_nspec_solve * nlambda ) {
       ostringstream o;
-      o << "truth spectrum has " << truth_nbins << " spectral bins, but PSF has " << psf_nspec * nlambda << " bins";
+      o << "truth spectrum has " << truth_nbins << " spectral bins, but we are solving for " << psf_nspec_solve * nlambda << " bins";
       cerr << o.str() << endl;
       MPI_Abort ( MPI_COMM_WORLD, 1 );
     }
@@ -500,11 +550,26 @@ int main ( int argc, char *argv[] ) {
       }
     }
 
-    for ( size_t i = 0; i < psf_nspec; ++i ) {
-      if ( fulltruth_sky[i] != is_sky[i] ) {
+    if ( dosky ) {
+      for ( size_t i = 0; i < psf_nspec_sky - 1; ++i ) {
+        if ( fulltruth_sky[i] ) {
+          ostringstream o;
+          o << "doing sky subtraction, but truth spec " << i << " is a sky fiber!";
+          HARP_THROW( o.str().c_str() );
+        }
+      }
+      if ( ! fulltruth_sky[ psf_nspec_solve - 1 ] ) {
         ostringstream o;
-        o << "truth sky point " << i << " (" << fulltruth_sky[i] << ") does not match input image (" << is_sky[i] << ")";
+        o << "doing sky subtraction, but last truth spec is not a sky fiber!";
         HARP_THROW( o.str().c_str() );
+      }
+    } else {
+      for ( size_t i = 0; i < psf_nspec; ++i ) {
+        if ( fulltruth_sky[i] != is_sky[i] ) {
+          ostringstream o;
+          o << "truth sky point " << i << " (" << fulltruth_sky[i] << ") does not match input image (" << is_sky[i] << ")";
+          HARP_THROW( o.str().c_str() );
+        }
       }
     }
 
@@ -574,8 +639,23 @@ int main ( int argc, char *argv[] ) {
     double tsubstop;
 
     size_t nspec = spec_stop[ spec ] - spec_start[ spec ] + 1;
+
+    size_t spec_start_solve;
+    size_t spec_stop_solve;
+
+    if ( dosky ) {
+      // we are doing the full range of spectra (enforced by checks on spec_width)
+      spec_start_solve = 0;
+      spec_stop_solve = psf_nspec_sky - 1;
+    } else {
+      spec_start_solve = spec_start[ spec ];
+      spec_stop_solve = spec_stop[ spec ];
+    }
+
+    size_t nspec_solve = spec_stop_solve - spec_start_solve + 1;
     
     size_t nbins = nspec * bandsize;
+    size_t nbins_solve = nspec_solve * bandsize;
 
     matrix_sparse design ( gcomm );
 
@@ -592,7 +672,7 @@ int main ( int argc, char *argv[] ) {
 
     tsubstart = MPI_Wtime();
     
-    matrix_dist inv ( nbins, nbins, gang_grid );
+    matrix_dist inv ( nbins_solve, nbins_solve, gang_grid );
 
     if ( dosky ) {
       inverse_covariance ( design_sky, invnoise, inv );
@@ -605,18 +685,18 @@ int main ( int argc, char *argv[] ) {
 
     tsubstart = MPI_Wtime();
 
-    matrix_dist W ( nbins, nbins, gang_grid );
+    matrix_dist W ( nbins_solve, nbins_solve, gang_grid );
     
-    matrix_dist D ( nbins, 1, gang_grid );
+    matrix_dist D ( nbins_solve, 1, gang_grid );
 
     eigen_decompose ( inv, D, W );
 
     tsubstop = MPI_Wtime();
     time_eigen = ( tsubstop - tsubstart );
 
-    matrix_dist S ( nbins, 1, gang_grid );
+    matrix_dist S ( nbins_solve, 1, gang_grid );
 
-    matrix_dist out_spec ( nspec * band_write [ band ], 1, gang_grid );
+    matrix_dist out_spec ( nspec_solve * band_write [ band ], 1, gang_grid );
 
     if ( dotruth ) {
 
@@ -625,13 +705,13 @@ int main ( int argc, char *argv[] ) {
       // since we need the explicit resolution matrix anyway, compute it
       // here along with the normalization vector
 
-      matrix_dist Rtruth ( nbins, 1, gang_grid );
+      matrix_dist Rtruth ( nbins_solve, 1, gang_grid );
       dist_matrix_zero ( Rtruth );
 
-      matrix_dist truth_band ( nbins, 1, gang_grid );
+      matrix_dist truth_band ( nbins_solve, 1, gang_grid );
       dist_matrix_zero ( truth_band );
 
-      sub_spec ( gang_fulltruth, psf_nspec, spec_start[ spec ], nspec, band_start[ band ], bandsize, truth_band );
+      sub_spec ( gang_fulltruth, psf_nspec_solve, spec_start_solve, nspec_solve, band_start[ band ], bandsize, truth_band );
 
       matrix_dist R ( W );
 
@@ -641,9 +721,9 @@ int main ( int argc, char *argv[] ) {
       
       // accumulate to global resolution convolved truth
 
-      sub_spec ( Rtruth, nspec, 0, nspec, band_out[ band ] - band_start[ band ], band_write[ band ], out_spec );
+      sub_spec ( Rtruth, nspec_solve, 0, nspec_solve, band_out[ band ] - band_start[ band ], band_write[ band ], out_spec );
 
-      accum_spec ( gang_fullRtruth, psf_nspec, spec_start[ spec ], nspec, band_out[ band ], band_write[ band ], out_spec );
+      accum_spec ( gang_fullRtruth, psf_nspec_solve, spec_start_solve, nspec_solve, band_out[ band ], band_write[ band ], out_spec );
 
       tsubstop = MPI_Wtime();
       time_norm = ( tsubstop - tsubstart );
@@ -661,18 +741,22 @@ int main ( int argc, char *argv[] ) {
 
     }
 
-    matrix_dist z ( nbins, 1, gang_grid );
+    matrix_dist z ( nbins_solve, 1, gang_grid );
     dist_matrix_zero ( z );
 
-    matrix_dist Rf ( nbins, 1, gang_grid );
+    matrix_dist Rf ( nbins_solve, 1, gang_grid );
     dist_matrix_zero ( Rf );
 
-    matrix_dist f ( nbins, 1, gang_grid );
+    matrix_dist f ( nbins_solve, 1, gang_grid );
     dist_matrix_zero ( f );
 
     tsubstart = MPI_Wtime();
 
-    noise_weighted_spec ( design, invnoise, measured, z );
+    if ( dosky ) {
+      noise_weighted_spec ( design_sky, invnoise, measured, z );
+    } else {
+      noise_weighted_spec ( design, invnoise, measured, z );
+    }
 
     tsubstop = MPI_Wtime();
     time_nsespec = ( tsubstop - tsubstart );
@@ -683,18 +767,18 @@ int main ( int argc, char *argv[] ) {
 
     // accumulate to global solution
 
-    sub_spec ( f, nspec, 0, nspec, band_out[ band ] - band_start[ band ], band_write[ band ], out_spec );
-    accum_spec ( gang_fullf, psf_nspec, spec_start[ spec ], nspec, band_out[ band ], band_write[ band ], out_spec );
+    sub_spec ( f, nspec_solve, 0, nspec_solve, band_out[ band ] - band_start[ band ], band_write[ band ], out_spec );
+    accum_spec ( gang_fullf, psf_nspec_solve, spec_start_solve, nspec_solve, band_out[ band ], band_write[ band ], out_spec );
 
     MPI_Barrier ( gcomm );
 
-    sub_spec ( Rf, nspec, 0, nspec, band_out[ band ] - band_start[ band ], band_write[ band ], out_spec );
-    accum_spec ( gang_fullRf, psf_nspec, spec_start[ spec ], nspec, band_out[ band ], band_write[ band ], out_spec );
+    sub_spec ( Rf, nspec_solve, 0, nspec_solve, band_out[ band ] - band_start[ band ], band_write[ band ], out_spec );
+    accum_spec ( gang_fullRf, psf_nspec_solve, spec_start_solve, nspec_solve, band_out[ band ], band_write[ band ], out_spec );
 
     MPI_Barrier ( gcomm );
 
-    sub_spec ( S, nspec, 0, nspec, band_out[ band ] - band_start[ band ], band_write[ band ], out_spec );
-    accum_spec ( gang_fullerr, psf_nspec, spec_start[ spec ], nspec, band_out[ band ], band_write[ band ], out_spec );
+    sub_spec ( S, nspec_solve, 0, nspec_solve, band_out[ band ] - band_start[ band ], band_write[ band ], out_spec );
+    accum_spec ( gang_fullerr, psf_nspec_solve, spec_start_solve, nspec_solve, band_out[ band ], band_write[ band ], out_spec );
 
     tsubstop = MPI_Wtime();
     time_extract = ( tsubstop - tsubstart );
@@ -775,18 +859,18 @@ int main ( int argc, char *argv[] ) {
 
   boost::property_tree::ptree solution_spec_props;
   solution_spec_props.put ( "format", "specter" );
-  solution_spec_props.put ( "nspec", psf_nspec );
+  solution_spec_props.put ( "nspec", psf_nspec_solve );
   solution_spec_props.put ( "nlambda", nlambda );
 
   spec_p solution_spec ( spec::create ( solution_spec_props ) );
 
-  solution_spec->write ( "harp_spec_Rf.fits", fullRf, lambda, is_sky );
-  solution_spec->write ( "harp_spec_Rf-err.fits", fullerr, lambda, is_sky );
+  solution_spec->write ( "harp_spec_Rf.fits", fullRf, lambda, is_sky_solve );
+  solution_spec->write ( "harp_spec_Rf-err.fits", fullerr, lambda, is_sky_solve );
 
   if ( debug ) {
-    elem::Write ( fullf, "harp_spec_f.txt" );
-    elem::Write ( fullRf, "harp_spec_Rf.txt" );
-    elem::Write ( fullerr, "harp_spec_Rf-err.txt" );
+    elem::Write ( fullf, "spec_f", "harp_spec_f.txt" );
+    elem::Write ( fullRf, "spec_Rf", "harp_spec_Rf.txt" );
+    elem::Write ( fullerr, "spec_Rf-err", "harp_spec_Rf-err.txt" );
   }
 
   tstop = MPI_Wtime();
@@ -812,7 +896,14 @@ int main ( int argc, char *argv[] ) {
 
     epsf->projection ( 0, psf_nspec - 1, 0, nlambda - 1, design );
 
-    spec_project ( design, fullf, solution_image );
+    matrix_sparse design_sky ( gcomm );
+
+    if ( dosky ) {
+      sky_design ( design, is_sky, design_sky );
+      spec_project ( design_sky, fullf, solution_image );
+    } else {
+      spec_project ( design, fullf, solution_image );
+    }
 
     if ( myp == 0 ) {
       string outimg = "harp_image_f-project.fits";
@@ -846,11 +937,11 @@ int main ( int argc, char *argv[] ) {
 
     spec_p rtruth_spec ( spec::create ( rtruth_spec_props ) );
 
-    rtruth_spec->write ( "harp_spec_Rtruth.fits", fullRtruth, lambda, is_sky );
+    rtruth_spec->write ( "harp_spec_Rtruth.fits", fullRtruth, lambda, is_sky_solve );
 
     if ( debug ) {
-      elem::Write ( fulltruth, "harp_spec_truth.txt" );
-      elem::Write ( fullRtruth, "harp_spec_Rtruth.txt" );
+      elem::Write ( fulltruth, "spec_truth", "harp_spec_truth.txt" );
+      elem::Write ( fullRtruth, "spec_Rtruth", "harp_spec_Rtruth.txt" );
     }
 
     tstop = MPI_Wtime();
@@ -944,7 +1035,14 @@ int main ( int argc, char *argv[] ) {
       truth_image.ResizeTo ( npix, 1 );
       local_matrix_zero ( truth_image );
 
-      spec_project ( design, fulltruth, truth_image );
+      matrix_sparse design_sky ( gcomm );
+
+      if ( dosky ) {
+        sky_design ( design, is_sky, design_sky );
+        spec_project ( design_sky, fulltruth, truth_image );
+      } else {
+        spec_project ( design, fulltruth, truth_image );
+      }
 
       if ( myp == 0 ) {
         string outimg = "harp_image_truth-project.fits";
