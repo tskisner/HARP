@@ -1,0 +1,73 @@
+#!@PYTHON@
+
+import os
+import sys
+import re
+import numpy as np
+import pyfits as pf
+
+infile = sys.argv[1]
+outfile = sys.argv[2]
+
+hdus = pf.open( infile )
+
+nhdu = len ( hdus )
+if ( nhdu != 4 ):
+	print "incorrect number of HDUS (!= 4)"
+	exit()
+
+newhdus = pf.HDUList([])
+
+# extract target info to find object spectra
+
+data = hdus[2].data
+head = hdus[2].header
+
+objmask = data.field('OBJTYPE') != 'SKY'
+skymask = data.field('OBJTYPE') == 'SKY'
+indices = [ x[0] for x in enumerate(objmask) if ( x[1] == True ) ]
+skyindices = [ x[0] for x in enumerate(skymask) if ( x[1] == True ) ]
+indices.append ( skyindices[0] )
+
+newobjdata = data[ objmask ]
+newskydata = data[ skymask ]
+
+nobj = newobjdata.shape[0]
+nsky = newskydata.shape[0]
+nrows = nobj + 1
+
+objtab = pf.new_table( newobjdata.columns, nrows=nrows )
+objtab.header = head
+
+for i in range( len( newobjdata.columns ) ):
+	objtab.data.field(i)[0:nobj] = newobjdata.field(i)
+	objtab.data.field(i)[nobj] = newskydata.field(i)[0]
+
+# Merge object and single sky spectra
+
+head = hdus[3].header
+data = hdus[3].data
+newdata = np.ndarray ( (len(indices), data.shape[1]), dtype=data.dtype )
+data.take( indices, axis=0, out=newdata )
+
+head = hdus[0].header
+data = hdus[0].data
+data.take( indices[nobj:nrows], axis=0, out=newdata[nobj:nrows,:] )
+
+newhdus.append ( pf.ImageHDU( data=newdata, header=head ) )
+
+# write WAVELENGTH HDU
+
+head = hdus[1].header
+data = hdus[1].data
+newhdus.append ( pf.ImageHDU( data=data, header=head ) )
+
+# write new TARGETINFO HDU
+
+newhdus.append ( objtab )
+
+# write output
+if ( os.path.isfile ( outfile ) ):
+	os.remove ( outfile )
+newhdus.writeto( outfile )
+

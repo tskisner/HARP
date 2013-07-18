@@ -29,6 +29,7 @@ CXXFLAGS="-g -O0 -fPIC" \
 LDFLAGS="${HPCP_LDFLAGS}" \
 LIBS="${HPCP_LIBS}" \
 ./configure ${sharedopt} ${OPTS} \
---with-cfitsio-libs="${cfitsio_LDFLAGS} ${cfitsio_LIBS_CXX}" \
+--with-cfitsio-cpp="-I${cfitsio_PREFIX}/include" \
+--with-cfitsio-libs="-L${cfitsio_PREFIX}/lib ${cfitsio_LIBS_CXX}" \
 --with-boost="${boost_PREFIX}" \
 --with-clique-libs="${clique}"

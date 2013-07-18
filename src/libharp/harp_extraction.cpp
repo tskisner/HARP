@@ -645,7 +645,7 @@ void harp::extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_d
 // Produce a design matrix suitable for simultaneous extraction
 // and sky subtraction
 
-void harp::sky_design ( matrix_sparse const & AT, std::vector < bool > const & sky, matrix_sparse & skyAT ) {
+void harp::sky_design ( matrix_sparse const & AT, std::vector < bool > const & sky, matrix_sparse & skyAT, bool skysub ) {
 
   int np;
   int myp;
@@ -763,19 +763,25 @@ void harp::sky_design ( matrix_sparse const & AT, std::vector < bool > const & s
 
     // fill in sky elements
 
-    sky_global_row = old_to_sky [ global_row ];
+    // FIXME: this currently disables simultaneous splitting of object/sky power
+    // in object fibers
 
-    if ( ( sky_global_row >= sky_firstrow ) && ( sky_global_row < sky_firstrow + sky_rows ) ) {
+    if ( ( old_to_new[ global_row ] < 0 ) || skysub ) {
 
-      for ( size_t col = 0; col < nnz; ++col ) {
+      sky_global_row = old_to_sky [ global_row ];
 
-        global_col = AT.Col ( offset + col );
+      if ( ( sky_global_row >= sky_firstrow ) && ( sky_global_row < sky_firstrow + sky_rows ) ) {
 
-        skyAT.Update ( sky_global_row, global_col, AT.Value ( offset + col ) );
+        for ( size_t col = 0; col < nnz; ++col ) {
 
+          global_col = AT.Col ( offset + col );
+
+          skyAT.Update ( sky_global_row, global_col, AT.Value ( offset + col ) );
+
+        }
       }
-    }
 
+    }
 
   }
 
@@ -898,18 +904,21 @@ void harp::sky_design ( matrix_sparse const & AT, std::vector < bool > const & s
       
       // fill in sky elements
 
-      sky_global_row = old_to_sky [ global_row ];
+      if ( ( old_to_new[ global_row ] < 0 ) || skysub ) {
 
-      if ( ( sky_global_row >= sky_firstrow ) && ( sky_global_row < sky_firstrow + sky_rows ) ) {
+        sky_global_row = old_to_sky [ global_row ];
 
-        for ( size_t col = 0; col < nnz; ++col ) {
+        if ( ( sky_global_row >= sky_firstrow ) && ( sky_global_row < sky_firstrow + sky_rows ) ) {
 
-          global_col = other_block->local_col[ offset + col ];
+          for ( size_t col = 0; col < nnz; ++col ) {
 
-          skyAT.Update ( sky_global_row, global_col, other_block->data[ offset + col ] );
+            global_col = other_block->local_col[ offset + col ];
+
+            skyAT.Update ( sky_global_row, global_col, other_block->data[ offset + col ] );
+
+          }
 
         }
-
       }
 
     }
@@ -928,6 +937,101 @@ void harp::sky_design ( matrix_sparse const & AT, std::vector < bool > const & s
 
     free ( sendbuf );
 
+  }
+
+  return;
+}
+
+
+// in case of solving for mean sky, this function subtracts this
+// and adds error in quadrature
+
+void harp::sky_subtract ( size_t nobj, matrix_dist const & Rf_orig, matrix_dist const & err_orig, matrix_dist & Rf, matrix_dist & err ) {
+
+  size_t nspec = nobj + 1;
+  size_t nlambda = (size_t)( Rf_orig.Height() / nspec );
+
+  if ( nlambda * nspec != Rf_orig.Height() ) {
+    std::ostringstream o;
+    o << "number of spectra does not divide evenly into vector dimension" ;
+    HARP_THROW( o.str().c_str() );
+  }
+
+  // get local copy of sky and error bars
+
+  matrix_local local_sky ( nlambda, 1 );
+  local_matrix_zero ( local_sky );
+
+  matrix_local local_sky_err ( nlambda, 1 );
+  local_matrix_zero ( local_sky_err );
+
+  elem::AxpyInterface < double > globloc;
+  globloc.Attach( elem::GLOBAL_TO_LOCAL, Rf_orig );
+  globloc.Axpy ( 1.0, local_sky, (nobj * nlambda), 0 );
+  globloc.Detach();
+
+  globloc.Attach( elem::GLOBAL_TO_LOCAL, err_orig );
+  globloc.Axpy ( 1.0, local_sky_err, (nobj * nlambda), 0 );
+  globloc.Detach();
+
+  /*
+  for ( size_t d = 0; d < nlambda; ++d ) {
+    cerr << d << " " << local_sky.Get(d,0) << " " << local_sky_err.Get(d,0) << endl;
+  }
+  */
+
+  // go through local spectra and subtract sky, adding errors
+  // in quadrature.
+
+  size_t hlocal = Rf_orig.LocalHeight();
+  size_t wlocal = Rf_orig.LocalWidth();
+
+  size_t rowoff = Rf_orig.ColShift();
+  size_t rowstride = Rf_orig.ColStride();
+  size_t row;
+
+  double oval;
+  double sval;
+  double oerr;
+  double serr;
+  size_t spec;
+  size_t lambda;
+
+  if ( wlocal > 0 ) {
+    for ( size_t j = 0; j < hlocal; ++j ) {
+      row = rowoff + j * rowstride;
+      spec = (size_t)( row / nlambda );
+      lambda = row - spec * nlambda;
+      //cerr << j << ": row " << row << ", spec " << spec << ", lambda " << lambda << endl;
+
+      oval = Rf_orig.GetLocal ( j, 0 );
+      oerr = err_orig.GetLocal ( j, 0 );
+
+      cerr << "    " << oval << " " << oerr << endl;
+
+      if ( row < (nobj * nlambda) ) {
+        
+        sval = local_sky.Get ( lambda, 0 );
+        serr = local_sky_err.Get ( lambda, 0 );
+
+        //cerr << "    new = " << oval << " - " << sval << endl;
+        //cerr << "    err = sqrt (" << oerr << "^2 + " << serr << "^2 )" << endl;
+
+        oval -= sval;
+        oerr = sqrt ( oerr * oerr + serr * serr );
+
+        Rf.SetLocal ( j, 0, oval );
+        err.SetLocal ( j, 0, oerr );
+
+      } else {
+        // just copy sky information
+
+        Rf.SetLocal ( j, 0, oval );
+        err.SetLocal ( j, 0, oerr );
+
+      }
+
+    }
   }
 
   return;

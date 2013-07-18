@@ -49,6 +49,7 @@ int main ( int argc, char *argv[] ) {
   bool quiet = false;
   bool debug = false;
   bool dosky = false;
+  bool doskysub = false;
   int planproc = 0;
 
   int gangsize = np;
@@ -63,7 +64,8 @@ int main ( int argc, char *argv[] ) {
   ( "help,h", "display usage information" )
   ( "quiet,q", "supress information printing" )
   ( "debug,d", "write out intermediate data products for debugging" )
-  ( "skysub", "simultaneously remove common sky spectrum" )
+  ( "sky", "simultaneously remove common sky spectrum" )
+  ( "skysub", "solve for common sky and subtract" )
   ( "gangsize", popts::value < int > ( &gangsize ), "number of processes per gang (choose perfect square number if possible)" )
   ( "spec_width", popts::value < size_t > ( &spec_width ), "number of spectra to process at once (default = all)" )
   ( "lambda_width", popts::value < size_t > ( &lambda_width ), "maximum wavelength points to process simultaneously" )
@@ -102,8 +104,14 @@ int main ( int argc, char *argv[] ) {
   }
 
   if ( vm.count( "skysub" ) ) {
+    doskysub = true;
+  }
+
+  if ( vm.count( "sky" ) ) {
     dosky = true;
   }
+
+  bool skystuff = dosky || doskysub;
 
   // create global process grid
 
@@ -212,7 +220,7 @@ int main ( int argc, char *argv[] ) {
 
   // If we are doing sky subtraction, force user to solve for bands of all spectra
 
-  if ( dosky && ( spec_width != psf_nspec ) ) {
+  if ( skystuff && ( spec_width != psf_nspec ) ) {
     cerr << prefix << "when doing sky subtraction, spec_width must be all spectra" << endl;
     ret = MPI_Abort ( MPI_COMM_WORLD, 1 );
   }
@@ -257,7 +265,7 @@ int main ( int argc, char *argv[] ) {
   size_t psf_nspec_solve;
   size_t psf_nbins_solve;
 
-  if ( dosky ) {
+  if ( skystuff ) {
     psf_nspec_solve = psf_nspec_sky;
     psf_nbins_solve = psf_nbins_sky;
   } else {
@@ -550,7 +558,7 @@ int main ( int argc, char *argv[] ) {
       }
     }
 
-    if ( dosky ) {
+    if ( skystuff ) {
       for ( size_t i = 0; i < psf_nspec_sky - 1; ++i ) {
         if ( fulltruth_sky[i] ) {
           ostringstream o;
@@ -643,7 +651,7 @@ int main ( int argc, char *argv[] ) {
     size_t spec_start_solve;
     size_t spec_stop_solve;
 
-    if ( dosky ) {
+    if ( skystuff ) {
       // we are doing the full range of spectra (enforced by checks on spec_width)
       spec_start_solve = 0;
       spec_stop_solve = psf_nspec_sky - 1;
@@ -663,8 +671,8 @@ int main ( int argc, char *argv[] ) {
 
     matrix_sparse design_sky ( gcomm );
 
-    if ( dosky ) {
-      sky_design ( design, is_sky, design_sky );
+    if ( skystuff ) {
+      sky_design ( design, is_sky, design_sky, dosky );
     }
 
     tsubstop = MPI_Wtime();
@@ -674,7 +682,7 @@ int main ( int argc, char *argv[] ) {
     
     matrix_dist inv ( nbins_solve, nbins_solve, gang_grid );
 
-    if ( dosky ) {
+    if ( skystuff ) {
       inverse_covariance ( design_sky, invnoise, inv );
     } else {
       inverse_covariance ( design, invnoise, inv );
@@ -752,7 +760,7 @@ int main ( int argc, char *argv[] ) {
 
     tsubstart = MPI_Wtime();
 
-    if ( dosky ) {
+    if ( skystuff ) {
       noise_weighted_spec ( design_sky, invnoise, measured, z );
     } else {
       noise_weighted_spec ( design, invnoise, measured, z );
@@ -837,6 +845,18 @@ int main ( int argc, char *argv[] ) {
   gang_accum ( gang_fullerr, fullerr );
   gang_accum ( gang_fullRtruth, fullRtruth );
 
+  // subtract sky if needed
+
+  matrix_dist fullRfsky ( psf_nbins_solve, 1, grid );
+  dist_matrix_zero ( fullRfsky );
+
+  matrix_dist fullerrsky ( psf_nbins_solve, 1, grid );
+  dist_matrix_zero ( fullerrsky );
+
+  if ( doskysub ) {
+    sky_subtract ( psf_nspec_obj, fullRf, fullerr, fullRfsky, fullerrsky );
+  }
+
   // Total timings
 
   if ( ( myp == 0 ) && ( ! quiet ) ) {
@@ -867,10 +887,19 @@ int main ( int argc, char *argv[] ) {
   solution_spec->write ( "harp_spec_Rf.fits", fullRf, lambda, is_sky_solve );
   solution_spec->write ( "harp_spec_Rf-err.fits", fullerr, lambda, is_sky_solve );
 
+  if ( doskysub ) {
+    solution_spec->write ( "harp_spec_Rfsky.fits", fullRfsky, lambda, is_sky_solve );
+    solution_spec->write ( "harp_spec_Rfsky-err.fits", fullerrsky, lambda, is_sky_solve );
+  }
+
   if ( debug ) {
     elem::Write ( fullf, "spec_f", "harp_spec_f.txt" );
     elem::Write ( fullRf, "spec_Rf", "harp_spec_Rf.txt" );
     elem::Write ( fullerr, "spec_Rf-err", "harp_spec_Rf-err.txt" );
+    if ( doskysub ) {
+      elem::Write ( fullRfsky, "spec_Rfsky", "harp_spec_Rfsky.txt" );
+      elem::Write ( fullerrsky, "spec_Rf-errsky", "harp_spec_Rf-errsky.txt" );
+    }
   }
 
   tstop = MPI_Wtime();
@@ -898,8 +927,8 @@ int main ( int argc, char *argv[] ) {
 
     matrix_sparse design_sky ( gcomm );
 
-    if ( dosky ) {
-      sky_design ( design, is_sky, design_sky );
+    if ( skystuff ) {
+      sky_design ( design, is_sky, design_sky, dosky );
       spec_project ( design_sky, fullf, solution_image );
     } else {
       spec_project ( design, fullf, solution_image );
@@ -932,7 +961,7 @@ int main ( int argc, char *argv[] ) {
 
     boost::property_tree::ptree rtruth_spec_props;
     rtruth_spec_props.put ( "format", "specter" );
-    rtruth_spec_props.put ( "nspec", psf_nspec );
+    rtruth_spec_props.put ( "nspec", psf_nspec_solve );
     rtruth_spec_props.put ( "nlambda", nlambda );
 
     spec_p rtruth_spec ( spec::create ( rtruth_spec_props ) );
@@ -1035,10 +1064,10 @@ int main ( int argc, char *argv[] ) {
       truth_image.ResizeTo ( npix, 1 );
       local_matrix_zero ( truth_image );
 
-      matrix_sparse design_sky ( gcomm );
+      matrix_sparse design_sky ( psf_nspec_solve * nlambda, npix, MPI_COMM_WORLD );
 
-      if ( dosky ) {
-        sky_design ( design, is_sky, design_sky );
+      if ( skystuff ) {
+        sky_design ( design, is_sky, design_sky, dosky );
         spec_project ( design_sky, fulltruth, truth_image );
       } else {
         spec_project ( design, fulltruth, truth_image );
