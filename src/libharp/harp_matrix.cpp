@@ -185,7 +185,7 @@ void harp::eigen_decompose ( matrix_dist const & invcov, matrix_dist & D, matrix
 
 void harp::eigen_compose ( eigen_op op, matrix_dist const & D, matrix_dist const & W, matrix_dist & out ) {
 
-  double threshold = 1.0e-15;
+  double threshold = 1.0e-12;
 
   out.ResizeTo ( W.Height(), W.Height() );
 

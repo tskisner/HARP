@@ -244,6 +244,9 @@ int main ( int argc, char *argv[] ) {
     }
   }
 
+  //size_t psf_nspec_sky = psf_nspec + 1;
+  //size_t psf_nbins_sky = psf_nspec_sky * nlambda;
+
   size_t psf_nspec_sky = psf_nspec_obj + 1;
   size_t psf_nbins_sky = psf_nspec_sky * nlambda;
 
@@ -672,6 +675,7 @@ int main ( int argc, char *argv[] ) {
     matrix_sparse design_sky ( gcomm );
 
     if ( skystuff ) {
+      //sky_design2 ( design, is_sky, design_sky );
       sky_design ( design, is_sky, design_sky, dosky );
     }
 
@@ -698,6 +702,8 @@ int main ( int argc, char *argv[] ) {
     matrix_dist D ( nbins_solve, 1, gang_grid );
 
     eigen_decompose ( inv, D, W );
+
+    elem::Write ( D, "eigen", "dbg_eigevals.txt" );
 
     tsubstop = MPI_Wtime();
     time_eigen = ( tsubstop - tsubstart );
@@ -928,6 +934,7 @@ int main ( int argc, char *argv[] ) {
     matrix_sparse design_sky ( gcomm );
 
     if ( skystuff ) {
+      //sky_design2 ( design, is_sky, design_sky );
       sky_design ( design, is_sky, design_sky, dosky );
       spec_project ( design_sky, fullf, solution_image );
     } else {
@@ -1067,6 +1074,7 @@ int main ( int argc, char *argv[] ) {
       matrix_sparse design_sky ( psf_nspec_solve * nlambda, npix, MPI_COMM_WORLD );
 
       if ( skystuff ) {
+        //sky_design2 ( design, is_sky, design_sky );
         sky_design ( design, is_sky, design_sky, dosky );
         spec_project ( design_sky, fulltruth, truth_image );
       } else {
