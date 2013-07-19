@@ -92,6 +92,8 @@ namespace harp {
 #include <harp/extraction.hpp>
 #include <harp/metadata.hpp>
 
+#include <harp/sky.hpp>
+
 #endif
 
 
