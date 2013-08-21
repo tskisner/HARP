@@ -14,9 +14,9 @@
 #
 #   The user may use:
 # 
-#       --with-clique-cpp=<flags> --with-clique-libs=<flags> 
+#       --with-clique=<path> 
 #
-#   to manually specify the Clique include and linking flags.
+#   to manually specify the installation prefix of Clique.
 #
 #   ACTION-IF-FOUND is a list of shell commands to run if a clique library is
 #   found, and ACTION-IF-NOT-FOUND is a list of commands to run it if it is
@@ -27,11 +27,11 @@
 #
 # LAST MODIFICATION
 #
-#   2012-10-16
+#   2013-08-14
 #
 # COPYING
 #
-#   Copyright (c) 2012 Theodore Kisner <tskisner@lbl.gov>
+#   Copyright (c) 2012-2013 Theodore Kisner <tskisner@lbl.gov>
 #
 #   All rights reserved.
 #
@@ -59,14 +59,24 @@
 
 AC_DEFUN([ACX_CLIQUE], [
 AC_PREREQ(2.50)
-AC_REQUIRE([ACX_MPI])
-AC_REQUIRE([ACX_LAPACK])
+AC_REQUIRE([ACX_ELEMENTAL])
 
 acx_clique_ok=no
-acx_clique_default="-lclique -lparmetis-addons -lmetis-addons -lparmetis -lmetis -lelemental -lplcg -lpmrrr -lelem-dummy-lib"
+acx_clique_default="-lclique -lparmetis-addons -lmetis-addons -lparmetis -lmetis"
 
 CLIQUE_CPPFLAGS=""
 CLIQUE=""
+
+AC_ARG_WITH(clique, [AC_HELP_STRING([--with-clique=<PATH>], [use the Clique installed in <PATH>.])])
+
+if test x"$with_elemental" != x; then
+   if test x"$with_elemental" != xno; then
+      ELEMENTAL_CPPFLAGS="-I$with_elemental/include"
+      ELEMENTAL="-L$with_elemental/lib -lelemental -lpmrrr"
+   else
+      acx_elemental_ok=disable
+   fi
+fi
 
 AC_ARG_WITH(clique-cpp, [AC_HELP_STRING([--with-clique-cpp=<flags>], [use Clique preprocessing flags <flags>.  Set to "no" to disable.])])
 

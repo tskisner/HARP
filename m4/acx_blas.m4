@@ -7,19 +7,19 @@ dnl hold the requisite library linkages.
 dnl
 dnl To link with BLAS, you should link with:
 dnl
-dnl 	$BLAS_LIBS $LIBS $FLIBS
+dnl 	$BLAS_LIBS $LIBS $FCLIBS
 dnl
-dnl in that order.  FLIBS is the output variable of the
-dnl AC_F77_LIBRARY_LDFLAGS macro (called if necessary by ACX_BLAS),
-dnl and is sometimes necessary in order to link with F77 libraries.
-dnl Users will also need to use AC_F77_DUMMY_MAIN (see the autoconf
+dnl in that order.  FCLIBS is the output variable of the
+dnl AC_FC_LIBRARY_LDFLAGS macro (called if necessary by ACX_BLAS),
+dnl and is sometimes necessary in order to link with FC libraries.
+dnl Users will also need to use AC_FC_DUMMY_MAIN (see the autoconf
 dnl manual), for the same reason.
 dnl
 dnl Many libraries are searched for, from ATLAS to CXML to ESSL.
 dnl The user may also use --with-blas=<lib> in order to use some
 dnl specific BLAS library <lib>.  In order to link successfully,
 dnl however, be aware that you will probably need to use the same
-dnl Fortran compiler (which can be set via the F77 env. var.) as
+dnl Fortran compiler (which can be set via the FC env. var.) as
 dnl was used to compile the BLAS library.
 dnl
 dnl ACTION-IF-FOUND is a list of shell commands to run if a BLAS
@@ -37,7 +37,8 @@ dnl look for OS X Accelerate framework.
 dnl
 AC_DEFUN([ACX_BLAS], [
 AC_PREREQ(2.50)
-AC_REQUIRE([AC_F77_LIBRARY_LDFLAGS])
+AC_REQUIRE([AC_FC_LIBRARY_LDFLAGS])
+AC_REQUIRE([AX_OPENMP])
 acx_blas_ok=no
 
 AC_ARG_WITH(blas,
@@ -45,16 +46,16 @@ AC_ARG_WITH(blas,
 case $with_blas in
 	yes | "") ;;
 	no) acx_blas_ok=disable ;;
-	-* | */* | *.a | *.so | *.so.* | *.o) BLAS_LIBS="$with_blas" ;;
+	-* | */* | *.a | *.so | *.so.* | *.o) BLAS_LIBS="$with_blas $OPENMP_CFLAGS" ;;
 	*) BLAS_LIBS="-l$with_blas" ;;
 esac
 
 # Get fortran linker names of BLAS functions to check for.
-AC_F77_FUNC(sgemm)
-AC_F77_FUNC(dgemm)
+AC_FC_FUNC(sgemm)
+AC_FC_FUNC(dgemm)
 
 acx_blas_save_LIBS="$LIBS"
-LIBS="$LIBS $FLIBS"
+LIBS="$LIBS $FCLIBS"
 
 # First, check BLAS_LIBS environment variable
 if test $acx_blas_ok = no; then
@@ -140,7 +141,7 @@ if test $acx_blas_ok = no; then
 	AC_CHECK_LIB(blas, $sgemm,
 		[AC_CHECK_LIB(essl, $sgemm,
 			[acx_blas_ok=yes; BLAS_LIBS="-lessl -lblas"],
-			[], [-lblas $FLIBS])])
+			[], [-lblas $FCLIBS])])
 fi
 
 # Generic BLAS library?

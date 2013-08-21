@@ -14,9 +14,9 @@
 #
 #   The user may use:
 # 
-#       --with-elemental-cpp=<flags> --with-elemental-libs=<flags> 
+#       --with-elemental=<PATH>
 #
-#   to manually specify the Elemental include and linking flags.
+#   to manually specify the Elemental installation prefix.
 #
 #   ACTION-IF-FOUND is a list of shell commands to run if an Elemental library is
 #   found, and ACTION-IF-NOT-FOUND is a list of commands to run it if it is
@@ -27,11 +27,11 @@
 #
 # LAST MODIFICATION
 #
-#   2012-10-01
+#   2013-03-09
 #
 # COPYING
 #
-#   Copyright (c) 2012 Theodore Kisner <tskisner@lbl.gov>
+#   Copyright (c) 2013 Theodore Kisner <tskisner@lbl.gov>
 #
 #   All rights reserved.
 #
@@ -60,28 +60,21 @@
 AC_DEFUN([ACX_ELEMENTAL], [
 AC_PREREQ(2.50)
 AC_REQUIRE([ACX_MPI])
+AC_REQUIRE([ACX_LAPACK])
+AC_REQUIRE([AX_OPENMP])
 
 acx_elemental_ok=no
-acx_elemental_default="-lelemental -lplcg -lpmrrr -lcmake-dummy-lib -llapack -lblas"
+acx_elemental_default="-lelemental -lpmrrr"
 
 ELEMENTAL_CPPFLAGS=""
 ELEMENTAL=""
 
-AC_ARG_WITH(elemental-cpp, [AC_HELP_STRING([--with-elemental-cpp=<flags>], [use Elemental preprocessing flags <flags>.  Set to "no" to disable.])])
+AC_ARG_WITH(elemental, [AC_HELP_STRING([--with-elemental=<PATH>], [use the Elemental installed in <PATH>.])])
 
-AC_ARG_WITH(elemental-libs, [AC_HELP_STRING([--with-elemental-libs=<flags>], [use Elemental linking flags <flags>.  Set to "no" to disable.])])
-
-if test x"$with_elemental_cpp" != x; then
-   if test x"$with_elemental_cpp" != xno; then
-      ELEMENTAL_CPPFLAGS="$with_elemental_cpp"
-   else
-      acx_elemental_ok=disable
-   fi
-fi
-
-if test x"$with_elemental_libs" != x; then
-   if test x"$with_elemental_libs" != xno; then
-      ELEMENTAL="$with_elemental_libs"
+if test x"$with_elemental" != x; then
+   if test x"$with_elemental" != xno; then
+      ELEMENTAL_CPPFLAGS="-I$with_elemental/include"
+      ELEMENTAL="-L$with_elemental/lib -lelemental -lpmrrr"
    else
       acx_elemental_ok=disable
    fi
@@ -93,6 +86,7 @@ else
 
    # Save environment
 
+   acx_elemental_save_CC="$CC"
    acx_elemental_save_CXX="$CXX"
    acx_elemental_save_CPP="$CPP"
    acx_elemental_save_CPPFLAGS="$CPPFLAGS"
@@ -104,26 +98,20 @@ else
    CXX="$MPICXX"
    CXXCPP="$MPICXX -E"
    CPPFLAGS="$CPPFLAGS $ELEMENTAL_CPPFLAGS"
-   LIBS="$ELEMENTAL $acx_elemental_save_LIBS -lm $OPENMP_CXXFLAGS"
+   LIBS="$ELEMENTAL $acx_elemental_save_LIBS $LAPACK_LIBS $BLAS_LIBS $LIBS $FCLIBS -lm $OPENMP_CXXFLAGS"
 
    AC_CHECK_HEADERS([elemental.hpp])
 
-   AC_MSG_CHECKING([for elem::SortEig in user specified location])
+   AC_MSG_CHECKING([for elem::HermitianEig in user specified location])
    AC_LINK_IFELSE([AC_LANG_PROGRAM([
      [#include <elemental.hpp>]
    ],[
       using namespace std;
       using namespace elem;
-      typedef double R;
-      typedef Complex<R> C;
-      int m = 10;
-      int n = 10;
-      DistMatrix<C> A;
-      Uniform( m, n, A );
-      DistMatrix<C> U, V;
-      DistMatrix<R,VR,STAR> s;
-      U = A;
-      SVD( U, s, V );
+      elem::DistMatrix < double, elem::MC, elem::MR > cov ( 4, 4 );
+      elem::DistMatrix < double, elem::MC, elem::MR > W ( 4, 4 );
+      elem::DistMatrix < double, elem::VR, elem::STAR > eigvals ( 4, 1 );
+      elem::HermitianEig ( elem::LOWER, cov, eigvals, W );
    ])],[acx_elemental_ok=yes;AC_DEFINE(HAVE_ELEMENTAL,1,[Define if you have the Elemental library.])])
 
    AC_MSG_RESULT($acx_elemental_ok)
@@ -132,22 +120,16 @@ else
       ELEMENTAL="$acx_elemental_default"
       LIBS="$acx_elemental_default $acx_elemental_save_LIBS -lm $OPENMP_CXXFLAGS"
 
-      AC_MSG_CHECKING([for elem::SortEig in default location])
+      AC_MSG_CHECKING([for elem::HermitianEig in default location])
       AC_LINK_IFELSE([AC_LANG_PROGRAM([
         [#include <elemental.hpp>]
       ],[
          using namespace std;
          using namespace elem;
-         typedef double R;
-         typedef Complex<R> C;
-         int m = 10;
-         int n = 10;
-         DistMatrix<C> A;
-         Uniform( m, n, A );
-         DistMatrix<C> U, V;
-         DistMatrix<R,VR,STAR> s;
-         U = A;
-         SVD( U, s, V );
+         elem::DistMatrix < double, elem::MC, elem::MR > cov ( 4, 4 );
+         elem::DistMatrix < double, elem::MC, elem::MR > W ( 4, 4 );
+         elem::DistMatrix < double, elem::VR, elem::STAR > eigvals ( 4, 1 );
+         elem::HermitianEig ( elem::LOWER, cov, eigvals, W );
       ])],[acx_elemental_ok=yes;AC_DEFINE(HAVE_ELEMENTAL,1,[Define if you have the Elemental library.])])
 
       AC_MSG_RESULT($acx_elemental_ok)
@@ -160,9 +142,10 @@ else
    # Restore environment
 
    CC="$acx_elemental_save_CC"
+   CXX="$acx_elemental_save_CXX"
    CPP="$acx_elemental_save_CPP"
-   LIBS="$acx_elemental_save_LIBS"
    CPPFLAGS="$acx_elemental_save_CPPFLAGS"
+   LIBS="$acx_elemental_save_LIBS"
 
 fi
 

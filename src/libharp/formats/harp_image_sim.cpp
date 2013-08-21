@@ -101,8 +101,7 @@ harp::image_sim::image_sim ( boost::property_tree::ptree const & props ) : image
   double rms;
 
   for ( size_t i = 0; i < npix; ++i ) {
-    //rms = sqrt( 16.0 + signal.Get ( i, 0 ) );
-    rms = 2.0;
+    rms = sqrt( 16.0 + signal.Get ( i, 0 ) );
     invcov_.Set ( i, 0, 1.0 / (rms*rms) );
 
     boost::normal_distribution < double > dist ( 0.0, rms );
