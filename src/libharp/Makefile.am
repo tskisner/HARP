@@ -19,7 +19,7 @@ libharp_la_LDFLAGS = -version-info @HARP_LT_VERSION@
 
 libharp_la_LIBADD = $(AM_LIBS)
 
-#include formats/formats.am
+include formats/formats.am
 
 MAINTAINERCLEANFILES = git-version.cpp
 

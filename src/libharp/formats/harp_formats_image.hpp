@@ -3,23 +3,20 @@
 namespace harp {
   
   class image_fits : public image {
+
+    friend class boost::serialization::access;
     
     public :
       image_fits ( boost::property_tree::ptree const & props );
       ~image_fits ( );
-
-      boost::property_tree::ptree serialize ( );
-
-      size_t rows ( ) { return rows_; }
-      size_t cols ( ) { return cols_; }
-
-      std::vector < bool > sky ( ) { return sky_; }
       
-      void read ( matrix_local & data );
-      void write ( std::string const & path, matrix_local & data );
+      size_t n_rows ( ) { return rows_; }
       
-      void read_noise ( matrix_local & data );
-      void write_noise ( std::string const & path, matrix_local & data );
+      size_t n_cols ( ) { return cols_; }
+      
+      void read ( vector_double & data, vector_double & invvar, std::vector < bool > & sky );
+
+      void write ( std::string const & path, vector_double & data, vector_double & invvar, std::vector < bool > & sky );
     
     private :
     
@@ -35,23 +32,20 @@ namespace harp {
 
 
   class image_sim : public image {
+
+    friend class boost::serialization::access;
     
     public :
       image_sim ( boost::property_tree::ptree const & props );
       ~image_sim ( );
 
-      boost::property_tree::ptree serialize ( );
-
-      size_t rows ( ) { return rows_; }
-      size_t cols ( ) { return cols_; }
-
-      std::vector < bool > sky ( ) { return sky_; }
+      size_t n_rows ( ) { return rows_; }
       
-      void read ( matrix_local & data );
-      void write ( std::string const & path, matrix_local & data );
+      size_t n_cols ( ) { return cols_; }
       
-      void read_noise ( matrix_local & data );
-      void write_noise ( std::string const & path, matrix_local & data );
+      void read ( vector_double & data, vector_double & invvar, std::vector < bool > & sky );
+
+      void write ( std::string const & path, vector_double & data, vector_double & invvar, std::vector < bool > & sky );
     
     private :
     
@@ -59,8 +53,8 @@ namespace harp {
       boost::property_tree::ptree psf_props_;
       size_t rows_;
       size_t cols_;
-      matrix_local measured_;
-      matrix_local invcov_;
+      vector_double measured_;
+      vector_double invcov_;
       std::vector < bool > sky_;
     
   };
