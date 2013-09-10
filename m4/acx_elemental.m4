@@ -117,10 +117,48 @@ else
    AC_MSG_RESULT($acx_elemental_ok)
 
    if test $acx_elemental_ok = no; then
+      ELEMENTAL="$ELEMENTAL -llapack-addons"
+      LIBS="$ELEMENTAL $acx_elemental_save_LIBS $LAPACK_LIBS $BLAS_LIBS $LIBS $FCLIBS -lm $OPENMP_CXXFLAGS"
+
+      AC_MSG_CHECKING([for elem::HermitianEig in user specified location with lapack addons])
+      AC_LINK_IFELSE([AC_LANG_PROGRAM([
+        [#include <elemental.hpp>]
+      ],[
+         using namespace std;
+         using namespace elem;
+         elem::DistMatrix < double, elem::MC, elem::MR > cov ( 4, 4 );
+         elem::DistMatrix < double, elem::MC, elem::MR > W ( 4, 4 );
+         elem::DistMatrix < double, elem::VR, elem::STAR > eigvals ( 4, 1 );
+         elem::HermitianEig ( elem::LOWER, cov, eigvals, W );
+      ])],[acx_elemental_ok=yes;AC_DEFINE(HAVE_ELEMENTAL,1,[Define if you have the Elemental library.])])
+
+      AC_MSG_RESULT($acx_elemental_ok)
+   fi
+
+   if test $acx_elemental_ok = no; then
       ELEMENTAL="$acx_elemental_default"
-      LIBS="$acx_elemental_default $acx_elemental_save_LIBS -lm $OPENMP_CXXFLAGS"
+      LIBS="$ELEMENTAL $acx_elemental_save_LIBS -lm $OPENMP_CXXFLAGS"
 
       AC_MSG_CHECKING([for elem::HermitianEig in default location])
+      AC_LINK_IFELSE([AC_LANG_PROGRAM([
+        [#include <elemental.hpp>]
+      ],[
+         using namespace std;
+         using namespace elem;
+         elem::DistMatrix < double, elem::MC, elem::MR > cov ( 4, 4 );
+         elem::DistMatrix < double, elem::MC, elem::MR > W ( 4, 4 );
+         elem::DistMatrix < double, elem::VR, elem::STAR > eigvals ( 4, 1 );
+         elem::HermitianEig ( elem::LOWER, cov, eigvals, W );
+      ])],[acx_elemental_ok=yes;AC_DEFINE(HAVE_ELEMENTAL,1,[Define if you have the Elemental library.])])
+
+      AC_MSG_RESULT($acx_elemental_ok)
+   fi
+
+   if test $acx_elemental_ok = no; then
+      ELEMENTAL="$acx_elemental_default -llapack-addons"
+      LIBS="$ELEMENTAL $acx_elemental_save_LIBS -lm $OPENMP_CXXFLAGS"
+
+      AC_MSG_CHECKING([for elem::HermitianEig in default location with lapack addons])
       AC_LINK_IFELSE([AC_LANG_PROGRAM([
         [#include <elemental.hpp>]
       ],[

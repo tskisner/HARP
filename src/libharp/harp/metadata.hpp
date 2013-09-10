@@ -6,8 +6,6 @@
 #include <list>
 
 
-#include <boost/property_tree/json_parser.hpp>
-
 namespace harp { namespace meta {
 
   class psfgroup {

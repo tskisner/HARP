@@ -7,44 +7,52 @@
 namespace harp {
 
   class psf : public boost::enable_shared_from_this < psf > {
+
+    friend class boost::serialization::access;
     
     public :
       psf ( boost::property_tree::ptree const & props );
       virtual ~psf ( ) { }
-      void cleanup ( );
 
-      virtual boost::property_tree::ptree serialize ( ) { 
-        HARP_THROW( "fell through to virtual method" );
-        return boost::property_tree::ptree();
-      }
-      
-      virtual size_t nspec ( ) {
+      virtual size_t n_spec ( ) {
         HARP_THROW( "fell through to virtual method" );
         return 0;
       }
       
-      virtual size_t nlambda ( ) {
+      virtual size_t n_lambda ( ) {
         HARP_THROW( "fell through to virtual method" );
         return 0;
       }
 
-      virtual size_t pixrows ( ) {
+      virtual size_t img_rows ( ) {
         HARP_THROW( "fell through to virtual method" );
         return 0;
       }
 
-      virtual size_t pixcols ( ) {
+      virtual size_t img_cols ( ) {
         HARP_THROW( "fell through to virtual method" );
         return 0;
       }
 
-      virtual std::vector < double > lambda ( ) {
+      virtual vector_double lambda ( ) {
         HARP_THROW( "fell through to virtual method" );
-        return std::vector < double > ();
+        return vector_double();
+      }
+
+      virtual void project_lambda2pix ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch ) {
+        HARP_THROW( "fell through to virtual method" );
+        return;
       }
       
-      virtual void projection ( size_t first_spec, size_t last_spec, size_t first_lambda, size_t last_lambda, matrix_sparse & AT ) {
-        HARP_THROW( "fell through to virtual method" );
+      void project ( size_t first_spec, size_t last_spec, size_t first_lambda, size_t last_lambda, matrix_double & A ) {
+        
+        return;
+      }
+
+      void project_transpose ( size_t first_spec, size_t last_spec, size_t first_lambda, size_t last_lambda, matrix_double_sparse & AT ) {
+
+        
+        
         return;
       }
       
@@ -66,6 +74,18 @@ namespace harp {
       }
       
     private :
+
+      template < class Archive >
+      void save ( Archive & ar, const unsigned int version ) const {
+          ar << format_;
+          ar << props_;
+      }
+      template < class Archive >
+      void load ( Archive & ar, const unsigned int version ) {
+          ar >> format_;
+          ar >> props_;
+      }
+      BOOST_SERIALIZATION_SPLIT_MEMBER()
     
       std::string format_;
       boost::property_tree::ptree props_;

@@ -7,34 +7,76 @@
 namespace harp {
 
   class spec : public boost::enable_shared_from_this < spec > {
+
+    friend class boost::serialization::access;
     
     public :
       spec ( boost::property_tree::ptree const & props );
       virtual ~spec ( ) { }
-      void cleanup ( );
 
-      virtual boost::property_tree::ptree serialize ( ) {
-        HARP_THROW( "fell through to virtual method" );
-        return boost::property_tree::ptree();
-      }
-
-      virtual size_t nspec ( ) {
+      virtual size_t n_spec ( ) {
         HARP_THROW( "fell through to virtual method" );
         return 0;
       }
 
-      virtual size_t nlambda ( ) {
+      virtual size_t n_lambda ( ) {
         HARP_THROW( "fell through to virtual method" );
         return 0;
       }
 
-      virtual void read ( matrix_dist & data, std::vector < double > & lambda, std::vector < bool > & sky ) {
+      virtual void read ( vector_double & data, vector_double & lambda, std::vector < bool > & sky ) {
         HARP_THROW( "fell through to virtual method" );
         return;
       }
 
-      virtual void write ( std::string const & path, matrix_dist & data, std::vector < double > const & lambda, std::vector < bool > const & sky ) {
+      virtual void write ( std::string const & path, vector_double & data, vector_double const & lambda, std::vector < bool > const & sky ) {
         HARP_THROW( "fell through to virtual method" );
+        return;
+      }
+
+      void read ( matrix_double & data, vector_double & lambda, std::vector < bool > & sky ) {
+
+        size_t nspec = n_spec();
+        size_t nlambda = n_lambda();
+
+        size_t nelem = nspec * nlambda;
+
+        data.resize ( nspec, nlambda );
+
+        vector_double tempdata ( nelem );
+
+        read ( tempdata, lambda, sky );
+
+        for ( size_t i = 0; i < nspec; ++i ) {
+          for ( size_t j = 0; j < nlambda; ++j ) {
+            data( i, j ) = tempdata[ i * nlambda + j ];
+          }
+        }
+
+        return;
+      }
+
+      void write ( std::string const & path, matrix_double & data, vector_double & lambda, std::vector < bool > & sky ) {
+
+        size_t nspec = n_spec();
+        size_t nlambda = n_lambda();
+
+        size_t nelem = nspec * nlambda;
+
+        if ( ( nlambda != data.size2() ) || ( nspec != data.size1() ) ) {
+          HARP_THROW( "data size does not match spec dimensions" );
+        }
+
+        vector_double tempdata ( nelem );
+
+        for ( size_t i = 0; i < nspec; ++i ) {
+          for ( size_t j = 0; j < nlambda; ++j ) {
+            tempdata[ i * nlambda + j ] = data( i, j );
+          }
+        }
+
+        write ( path, tempdata, lambda, sky );
+
         return;
       }
 
@@ -56,6 +98,18 @@ namespace harp {
       }
       
     private :
+
+      template < class Archive >
+      void save ( Archive & ar, const unsigned int version ) const {
+          ar << format_;
+          ar << props_;
+      }
+      template < class Archive >
+      void load ( Archive & ar, const unsigned int version ) {
+          ar >> format_;
+          ar >> props_;
+      }
+      BOOST_SERIALIZATION_SPLIT_MEMBER()
     
       std::string format_;
       boost::property_tree::ptree props_;

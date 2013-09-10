@@ -9,14 +9,27 @@
 #include <map>
 #include <sstream>
 
+
+#include <boost/numeric/ublas/operation.hpp>
+#include <boost/numeric/ublas/vector.hpp>
+#include <boost/numeric/ublas/vector_proxy.hpp>
+#include <boost/numeric/ublas/matrix.hpp>
+#include <boost/numeric/ublas/matrix_proxy.hpp>
+#include <boost/numeric/ublas/storage.hpp>
+
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/property_tree/ptree_serialization.hpp>
+
+#include <boost/serialization/string.hpp>
+#include <boost/serialization/version.hpp>
+#include <boost/serialization/split_member.hpp>
+
 #include <boost/smart_ptr/shared_ptr.hpp>
 #include <boost/smart_ptr/weak_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/foreach.hpp>
 
-#include <clique.hpp>
+#include <boost/foreach.hpp>
 
 
 namespace harp {
@@ -29,14 +42,6 @@ namespace harp {
     EIG_SQRT,
     EIG_INVSQRT
   } eigen_op;
-
-  // typedefs for linear algebra
-
-  typedef elem::Matrix < double > matrix_local;
-
-  typedef elem::DistMatrix < double, elem::MC, elem::MR > matrix_dist;
-
-  typedef cliq::DistSparseMatrix < double > matrix_sparse;
 
   // Exception handling
 
@@ -71,8 +76,6 @@ namespace harp {
     (*handler) ( e ); \
   }
 
-  void mpi_check ( MPI_Comm comm, int status );
-
   // utilities
 
   std::string ptree_quote ( const std::string & s );
@@ -81,16 +84,15 @@ namespace harp {
   
 }
 
+#include <harp/matrix.hpp>
 
 #include <harp/fits.hpp>
-#include <harp/matrix.hpp>
 
 #include <harp/image.hpp>
 #include <harp/spec.hpp>
 #include <harp/psf.hpp>
 
 #include <harp/extraction.hpp>
-#include <harp/metadata.hpp>
 
 #include <harp/sky.hpp>
 

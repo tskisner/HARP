@@ -13,12 +13,6 @@ harp::psf::psf ( boost::property_tree::ptree const & props ) {
 }
 
 
-void harp::psf::cleanup ( ) {
-  // nothing for now
-  return;
-}
-
-
 string harp::psf::format ( ) {
   return format_;
 }
@@ -33,9 +27,11 @@ psf * harp::psf::create ( boost::property_tree::ptree const & props ) {
   
   string format = props.get < string > ( "format" );
 
+  /*
   if ( format == "gauss" ) {
     return static_cast < psf * > ( new psf_gauss ( props ) );
   }
+  */
   
   std::ostringstream o;
   o << "Cannot create psf of unknown format (" << format << ")";

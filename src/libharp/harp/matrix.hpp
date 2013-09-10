@@ -6,32 +6,29 @@
 
 namespace harp {
 
-  class sparse_block {
+  typedef boost::numeric::ublas::matrix < double, boost::numeric::ublas::column_major > matrix_double;
 
-    public :
-      sparse_block ( matrix_sparse const & orig );
-      sparse_block ( char * packed, size_t nbytes );
-      ~sparse_block () { }
+  typedef boost::numeric::ublas::compressed_matrix < double, boost::numeric::ublas::row_major > matrix_double_sparse;
 
-      char * pack ( size_t & nbytes );
+  typedef boost::numeric::ublas::vector < double > vector_double;
 
-      int global_rows;
-      int local_firstrow;
-      int local_rows;
-      int local_vals;
-      std::vector < int > local_row;
-      std::vector < int > local_col;
-      std::vector < int > local_row_offset;
-      std::vector < int > local_row_nnz;
-      std::vector < double > data;
 
-  };
+  void check_column_major ( boost::numeric::ublas::column_major_tag );
 
-  void dist_matrix_zero ( matrix_dist & mat );
 
-  void local_matrix_zero ( matrix_local & mat );
+  void check_column_major ( boost::numeric::ublas::row_major_tag );
 
-  void eigen_decompose ( matrix_dist const & invcov, matrix_dist & D, matrix_dist & W );
+
+  template < class M >
+  void check_column_major ( boost::numeric::ublas::matrix_expression < M > const & matrix ) {
+    typedef typename M::orientation_category orientation_category;
+    check_column_major ( orientation_category() );
+    return;
+  }
+
+
+  /*
+  void eigen_decompose ( matrix_serial const & invcov, matrix_dist & D, matrix_dist & W );
 
   void eigen_compose ( eigen_op op, matrix_dist const & D, matrix_dist const & W, matrix_dist & out );
 
@@ -46,6 +43,8 @@ namespace harp {
   void gang_distribute ( matrix_dist const & mat, matrix_dist & gmat );
 
   void gang_accum ( matrix_dist const & gmat, matrix_dist & mat );
+
+  */
 
 }
 

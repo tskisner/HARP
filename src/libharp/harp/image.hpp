@@ -8,49 +8,85 @@
 namespace harp {
 
   class image : public boost::enable_shared_from_this < image > {
+
+    friend class boost::serialization::access;
     
     public :
       image ( boost::property_tree::ptree const & props );
       virtual ~image ( ) { }
-      void cleanup ( );
-
-      virtual boost::property_tree::ptree serialize ( ) {
-        HARP_THROW( "fell through to virtual method" );
-        return boost::property_tree::ptree();
-      }
       
-      virtual size_t rows ( ) {
+      virtual size_t n_rows ( ) {
         HARP_THROW( "fell through to virtual method" );
         return 0;
       }
       
-      virtual size_t cols ( ) {
+      virtual size_t n_cols ( ) {
         HARP_THROW( "fell through to virtual method" );
         return 0;
       }
-
-      virtual std::vector < bool > sky ( ) {
-        HARP_THROW( "fell through to virtual method" );
-        return std::vector < bool > ();
-      }
       
-      virtual void read ( matrix_local & data ) {
+      virtual void read ( vector_double & data, vector_double & invvar, std::vector < bool > & sky ) {
         HARP_THROW( "fell through to virtual method" );
         return;
       }
 
-      virtual void write ( std::string const & path, matrix_local & data ) {
+      virtual void write ( std::string const & path, vector_double & data, vector_double & invvar, std::vector < bool > & sky ) {
         HARP_THROW( "fell through to virtual method" );
         return;
       }
       
-      virtual void read_noise ( matrix_local & data ) {
-        HARP_THROW( "fell through to virtual method" );
+      void read ( matrix_double & data, matrix_double & invvar, std::vector < bool > & sky ) {
+
+        size_t imgrows = n_rows();
+        size_t imgcols = n_cols();
+
+        size_t nelem = imgrows * imgcols;
+
+        data.resize ( imgcols, imgrows );
+        invvar.resize ( imgcols, imgrows );
+
+        vector_double tempdata ( nelem );
+        vector_double tempvar ( nelem );
+
+        read ( tempdata, tempvar, sky );
+
+        for ( size_t i = 0; i < imgcols; ++i ) {
+          for ( size_t j = 0; j < imgrows; ++j ) {
+            data( i, j ) = tempdata[ i * imgrows + j ];
+            invvar( i, j ) = tempvar[ i * imgrows + j ];
+          }
+        }
+
         return;
       }
 
-      virtual void write_noise ( std::string const & path, matrix_local & data ) {
-        HARP_THROW( "fell through to virtual method" );
+      void write ( std::string const & path, matrix_double & data, matrix_double & invvar, std::vector < bool > & sky ) {
+
+        size_t imgrows = n_rows();
+        size_t imgcols = n_cols();
+
+        size_t nelem = imgrows * imgcols;
+
+        if ( ( imgrows != data.size2() ) || ( imgcols != data.size1() ) ) {
+          HARP_THROW( "data size does not match image dimensions" );
+        }
+
+        if ( ( imgrows != invvar.size2() ) || ( imgcols != invvar.size1() ) ) {
+          HARP_THROW( "inverse variance size does not match image dimensions" );
+        }
+
+        vector_double tempdata ( nelem );
+        vector_double tempvar ( nelem );
+
+        for ( size_t i = 0; i < imgcols; ++i ) {
+          for ( size_t j = 0; j < imgrows; ++j ) {
+            tempdata[ i * imgrows + j ] = data( i, j );
+            tempvar[ i * imgrows + j ] = invvar( i, j );
+          }
+        }
+
+        write ( path, tempdata, tempvar, sky );
+
         return;
       }
 
@@ -72,6 +108,18 @@ namespace harp {
       }
       
     private :
+
+      template < class Archive >
+      void save ( Archive & ar, const unsigned int version ) const {
+          ar << format_;
+          ar << props_;
+      }
+      template < class Archive >
+      void load ( Archive & ar, const unsigned int version ) {
+          ar >> format_;
+          ar >> props_;
+      }
+      BOOST_SERIALIZATION_SPLIT_MEMBER()
     
       std::string format_;
       boost::property_tree::ptree props_;

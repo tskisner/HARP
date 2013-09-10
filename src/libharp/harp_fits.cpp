@@ -225,7 +225,7 @@ void harp::fits::write_key ( fitsfile * fp, std::string const & keyname, double 
 }
 
 
-int harp::fits::img_seek ( fitsfile * fp, string const & extname ) {
+int harp::fits::seek ( fitsfile * fp, string const & extname ) {
   int hdu;
   
   int ret;
@@ -234,7 +234,7 @@ int harp::fits::img_seek ( fitsfile * fp, string const & extname ) {
   char extcopy[FLEN_VALUE];
   strncpy ( extcopy, extname.c_str(), FLEN_VALUE );
   
-  ret = fits_movnam_hdu ( fp, IMAGE_HDU, extcopy, 0, &status );
+  ret = fits_movnam_hdu ( fp, ANY_HDU, extcopy, 0, &status );
   fits::check ( status );
   
   ret = fits_get_hdu_num ( fp, &hdu );
@@ -310,117 +310,6 @@ void harp::fits::img_seek ( fitsfile * fp, int hdu ) {
 }
 
 
-void harp::fits::img_append ( fitsfile * fp, size_t rows, size_t cols ) {
-  
-  int ret;
-  int status = 0;
-  
-  long naxes[2];
-  naxes[0] = cols;
-  naxes[1] = rows;
-  
-  ret = fits_create_img ( fp, -64, 2, naxes, &status );
-  fits::check ( status );
-  
-  return;
-}
-
-
-void harp::fits::img_write ( fitsfile * fp, matrix_local & data ) {
-  
-  int ret;
-  int status = 0;
-
-  long fpixel[2];
-  
-  fpixel[0] = 1;
-  fpixel[1] = 1;
-
-  long npix = data.Height() * data.Width();
-
-  ret = fits_write_pix ( fp, TDOUBLE, fpixel, npix, data.Buffer(), &status );
-  fits::check ( status );
-  
-  return;
-}
-
-
-void harp::fits::img_dims ( fitsfile * fp, size_t & rows, size_t & cols ) {
-  
-  int ret;
-  int status = 0;
-  int naxis;
-  
-  ret = fits_get_img_dim ( fp, &naxis, &status );
-  fits::check ( status );
-  
-  if ( (naxis > 2) || (naxis <= 0) ) {
-    ostringstream o;
-    o << "FITS image has " << naxis << " dimensions instead of 1 or 2";
-    HARP_THROW( o.str().c_str() );
-  }
-  
-  long naxes[2];
-  
-  ret = fits_get_img_size ( fp, naxis, naxes, &status );
-  fits::check ( status );
-
-  cols = naxes[0];
-  if ( naxis == 1 ) {
-    rows = 1;
-  } else {
-    rows = naxes[1];
-  }
-  
-  return;
-}
-
-
-void harp::fits::img_read ( fitsfile * fp, matrix_local & data ) {
-  
-  int ret;
-  int status = 0;
-  int anynul;
-
-  int naxis;
-
-  ret = fits_get_img_dim ( fp, &naxis, &status );
-  fits::check ( status );
-  
-  if ( (naxis > 2) || (naxis <= 0) ) {
-    ostringstream o;
-    o << "FITS image has " << naxis << " dimensions instead of 1 or 2";
-    HARP_THROW( o.str().c_str() );
-  }
-  
-  long naxes[2];
-  
-  ret = fits_get_img_size ( fp, naxis, naxes, &status );
-  fits::check ( status );
-
-  long nelem = 1;
-  for ( int i = 0; i < naxis; ++i ) {
-    nelem *= naxes[i];
-  }
-
-  if ( data.MemorySize() < nelem ) {
-    ostringstream o;
-    o << "FITS image has " << nelem << " elements, but matrix has space for only " << data.MemorySize();
-    HARP_THROW( o.str().c_str() );
-  }
-
-  long fpixel[2];
-
-  fpixel[0] = 1;
-  fpixel[1] = 1;
-
-  ret = fits_read_pix ( fp, TDOUBLE, fpixel, nelem, NULL, data.Buffer(), &anynul, &status );
-  fits::check ( status );
-  
-  return;
-}
-
-
 int harp::fits::bin_seek ( fitsfile * fp, string const & keyname, string const & keyval ) {
   int hdu;
   
@@ -468,6 +357,56 @@ int harp::fits::bin_seek ( fitsfile * fp, string const & keyname, string const &
 }
 
 
+void harp::fits::bin_seek ( fitsfile * fp, int hdu ) {
+  
+  int ret;
+  int status = 0;
+  int type;
+  
+  ret = fits_movabs_hdu ( fp, hdu, &type, &status );
+  fits::check ( status );
+  
+  if ( type != BINARY_TBL ) {
+    ostringstream o;
+    o << "FITS HDU " << hdu << " is not a binary table";
+    HARP_THROW( o.str().c_str() );
+  }
+  
+  return;
+}
+
+
+void harp::fits::img_dims ( fitsfile * fp, size_t & rows, size_t & cols ) {
+  
+  int ret;
+  int status = 0;
+  int naxis;
+  
+  ret = fits_get_img_dim ( fp, &naxis, &status );
+  fits::check ( status );
+  
+  if ( (naxis > 2) || (naxis <= 0) ) {
+    ostringstream o;
+    o << "FITS image has " << naxis << " dimensions instead of 1 or 2";
+    HARP_THROW( o.str().c_str() );
+  }
+  
+  long naxes[2];
+  
+  ret = fits_get_img_size ( fp, naxis, naxes, &status );
+  fits::check ( status );
+
+  cols = naxes[0];
+  if ( naxis == 1 ) {
+    rows = 1;
+  } else {
+    rows = naxes[1];
+  }
+  
+  return;
+}
+
+
 vector < int > harp::fits::bin_columns ( fitsfile * fp, vector < string > & names ) {
   
   int ret;
@@ -488,99 +427,6 @@ vector < int > harp::fits::bin_columns ( fitsfile * fp, vector < string > & name
   
   return cols;
 } 
-
-
-void harp::fits::bin_seek ( fitsfile * fp, int hdu ) {
-  
-  int ret;
-  int status = 0;
-  int type;
-  
-  ret = fits_movabs_hdu ( fp, hdu, &type, &status );
-  fits::check ( status );
-  
-  if ( type != BINARY_TBL ) {
-    ostringstream o;
-    o << "FITS HDU " << hdu << " is not a binary table";
-    HARP_THROW( o.str().c_str() );
-  }
-  
-  return;
-}
-
-
-void harp::fits::bin_read ( fitsfile * fp, size_t firstrow, size_t lastrow, vector < int > & columns, vector < matrix_local > & data ) {
-  
-  int ret;
-  int status = 0;
-  long offset = (long)firstrow;
-  long nread = (long)lastrow - offset + 1;
-  
-  // find optimal rowsize
-  
-  long optimal;  
-  ret = fits_get_rowsize ( fp, &optimal, &status );
-  fits::check ( status );
-  
-  optimal--;  // decrement by one, just to be safe
-  if (optimal < 1) {
-    optimal = 1;
-  }
-  
-  // get table dimensions
-  
-  long nrows;
-  int tfields;
-  char fitsval[FLEN_VALUE];
-  long pcount;
-  
-  ret = fits_read_btblhdr ( fp, 100, &nrows, &tfields, NULL, NULL, NULL, fitsval, &pcount, &status );
-  fits::check ( status );
-  
-  if ( offset + nread > nrows ) {
-    HARP_THROW( "binary read range is beyond end of table" );
-  } 
-  
-  // check that column numbers are in range
-  
-  vector < int > :: iterator it;
-  
-  int cur = 0;
-  for ( it = columns.begin(); it != columns.end(); ++it ) {
-    if ( ( (*it) >= tfields ) || ( (*it) < 0 ) ) {
-      ostringstream o;
-      o << "cannot read (zero-based) column " << (*it) << " from binary table with " << tfields << " columns";
-      HARP_THROW( o.str().c_str() );
-    }
-    data[ cur ].ResizeTo ( nread, 1 );
-    ++cur;
-  }
-    
-  // read data in a buffered way
-  
-  int anynul;
-  long n = optimal;
-  long dataoffset = 0;
-
-  while ( n == optimal ) {
-    if ( dataoffset + optimal > nread ) {
-      n = nrows - dataoffset;
-    }
-    
-    cur = 0;
-    for ( it = columns.begin(); it != columns.end(); ++it ) {
-      ret = fits_read_col_dbl ( fp, (*it) + 1, offset + 1, 1, n, 0, &(( data[cur].Buffer() )[dataoffset]), &anynul, &status );
-      fits::check ( status );
-      //cerr << "fits::bin_read col " << (*it)+1 << " rows " << offset+1 << "-" << offset+1+n << " = " << (data[cur])[dataoffset] << ", " << (data[cur])[dataoffset+1] << ", " << (data[cur])[dataoffset+2] << endl;
-      ++cur;
-    }
-    
-    offset += optimal;
-    dataoffset += optimal;
-  }
-  
-  return;
-}
 
 
 void harp::fits::bin_read_strings ( fitsfile * fp, size_t firstrow, size_t lastrow, int col, vector < string > & data ) {
@@ -649,81 +495,67 @@ void harp::fits::bin_read_strings ( fitsfile * fp, size_t firstrow, size_t lastr
 }
 
 
-void harp::fits::bin_write ( fitsfile * fp, size_t firstrow, size_t lastrow, std::vector < int > & columns, std::vector < matrix_local > & data ) {
-  
-  HARP_THROW( "binary FITS table writing not yet implemented" );
-  
-  return;
-}
 
 
 void harp::fits::test ( string const & datadir ) {
-
-  int np;
-  int myp;
-
-  MPI_Comm_size ( MPI_COMM_WORLD, &np );
-  MPI_Comm_rank ( MPI_COMM_WORLD, &myp );
   
-  if ( myp == 0 ) {
-    cerr << "Testing FITS operations..." << endl;
+  cerr << "Testing FITS operations..." << endl;
+
+  string imgfile = datadir + "/" + "fits_test_img.fits.out";
   
-    string imgfile = datadir + "/" + "fits_test_img.fits.out";
-    
-    size_t rows = 100;
-    size_t cols = 500;
-    size_t nelems = rows * cols;
-    
-    matrix_local data ( nelems, 1 );
-    
-    for ( size_t i = 0; i < cols; ++i ) {
-      for ( size_t j = 0; j < rows; ++j ) {
-        data.Set ( i*rows+j, 0, (double)(i * rows + j) );
-      }
+  size_t rows = 100;
+  size_t cols = 500;
+  size_t nelems = rows * cols;
+  
+  matrix_double data ( cols, rows );
+  
+  for ( size_t i = 0; i < cols; ++i ) {
+    for ( size_t j = 0; j < rows; ++j ) {
+      data( i, j ) = (double)(i * rows + j);
     }
-
-    fitsfile * fp;
-    
-    fits::open_readwrite ( fp, imgfile );
-    
-    fits::img_append ( fp, rows, cols );
-    
-    fits::img_write ( fp, data );
-
-    fits::close ( fp );
-
-    
-    fits::open_read ( fp, imgfile );
-
-    fits::img_seek ( fp, 1 );
-    
-    size_t checkrows;
-    size_t checkcols;
-    
-    fits::img_dims ( fp, checkrows, checkcols );
-
-    if ( ( checkrows != rows ) || ( checkcols != cols ) ) {
-      cerr << "  (FAILED): img dimensions wrong (" << checkrows << "x" << checkcols << ") != (" << rows << "x" << cols << ")" << endl;
-      exit(1);
-    }
-
-    matrix_local checkdata ( nelems, 1 );
-
-    fits::img_read ( fp, checkdata );
-    
-    for ( size_t i = 0; i < cols; ++i ) {
-      for ( size_t j = 0; j < rows; ++j ) {
-        if ( checkdata.Get( i*rows+j, 0 ) != data.Get( i*rows+j, 0 ) ) {
-          cerr << "  (FAILED): img element (" << i << ", " << j << ") has wrong value (" << checkdata.Get( i*rows+j, 0 ) << " != " << data.Get( i*rows+j, 0 ) << ")" << endl;
-          exit(1);
-        }
-      }
-    }
-
-    fits::close ( fp );
-
-    cerr << "  (PASSED)" << endl;
   }
+
+  fitsfile * fp;
+  
+  fits::open_readwrite ( fp, imgfile );
+  
+  fits::img_append < double > ( fp, rows, cols );
+  
+  fits::img_write ( fp, data );
+
+  fits::close ( fp );
+
+  
+  fits::open_read ( fp, imgfile );
+
+  fits::img_seek ( fp, 1 );
+  
+  size_t checkrows;
+  size_t checkcols;
+  
+  fits::img_dims ( fp, checkrows, checkcols );
+
+  if ( ( checkrows != rows ) || ( checkcols != cols ) ) {
+    cerr << "  (FAILED): img dimensions wrong (" << checkrows << "x" << checkcols << ") != (" << rows << "x" << cols << ")" << endl;
+    exit(1);
+  }
+
+  matrix_double checkdata ( cols, rows );
+
+  fits::img_read ( fp, checkdata );
+  
+  for ( size_t i = 0; i < cols; ++i ) {
+    for ( size_t j = 0; j < rows; ++j ) {
+      if ( checkdata( i, j ) != data( i, j ) ) {
+        cerr << "  (FAILED): img element (" << i << ", " << j << ") has wrong value (" << checkdata( i, j ) << " != " << data( i, j ) << ")" << endl;
+        exit(1);
+      }
+    }
+  }
+
+  fits::close ( fp );
+
+  cerr << "  (PASSED)" << endl;
   
   return;
 }

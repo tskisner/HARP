@@ -21,26 +21,6 @@ const char* harp::exception::what() const throw() {
 }
 
 
-// MPI return value checking
-
-void harp::mpi_check ( MPI_Comm comm, int status ) {
-  if ( status != MPI_SUCCESS ) {
-    int myp;
-    MPI_Comm_rank ( comm, &myp );
-    
-    char msg[ MPI_MAX_ERROR_STRING ];
-    
-    int len;
-    int ret = MPI_Error_string( status, msg, &len );
-    
-    std::ostringstream o;
-    o << "MPI error (process " << myp << "): " << msg;
-    HARP_THROW( o.str().c_str() );
-  }
-  return;
-}
-
-
 // utilities
 
 std::string harp::ptree_quote ( const std::string & s ) {
