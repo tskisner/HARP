@@ -16,9 +16,6 @@ static const char * image_fits_key_cols = "cols";
 
 harp::image_fits::image_fits ( boost::property_tree::ptree const & props ) : image ( props ) {
 
-  //cerr << "image fits props = " << endl;
-  //ptree_print ( props );
-
   sighdu_ = props.get ( image_fits_key_signal, 1 );
 
   nsehdu_ = props.get ( image_fits_key_noise, 2 );
@@ -39,82 +36,51 @@ harp::image_fits::image_fits ( boost::property_tree::ptree const & props ) : ima
     
     // read rows / cols from the FITS header
 
-    int np;
-    int myp;
-
-    MPI_Comm_size ( MPI_COMM_WORLD, &np );
-    MPI_Comm_rank ( MPI_COMM_WORLD, &myp );
-
     fitsfile *fp;
     
-    if ( myp == 0 ) {
+    fits::open_read ( fp, path_ );
 
-      fits::open_read ( fp, path_ );
+    fits::img_seek ( fp, sighdu_ );
+    
+    fits::img_dims ( fp, rows_, cols_ );
 
-      fits::img_seek ( fp, sighdu_ );
-      
-      fits::img_dims ( fp, rows_, cols_ );
+    size_t rowcheck;
+    size_t colcheck;
 
+    fits::img_seek ( fp, nsehdu_ );
+    
+    fits::img_dims ( fp, rowcheck, colcheck );
+
+    if ( ( rowcheck != rows_ ) || ( colcheck != cols_ ) ) {
+      HARP_THROW( "noise variance dimensions do not match data dimensions" );
     }
 
-    int ret = MPI_Bcast ( (void*)(&rows_), 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
-    mpi_check ( MPI_COMM_WORLD, ret );
-
-    ret = MPI_Bcast ( (void*)(&cols_), 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
-    mpi_check ( MPI_COMM_WORLD, ret );
-
-    // read and broadcast the sky flag
+    // read the sky information
 
     size_t nspec;
-    vector < uint8_t > skyflags;
 
-    if ( myp == 0 ) {
-      fits::bin_seek ( fp, skyhdu_ );
+    vector < string > skycolnames(1);
+    skycolnames[0] = "OBJTYPE";
 
-      long nrows;
-      int status = 0;
-      ret = fits_get_num_rows ( fp, &nrows, &status );
-      fits::check ( status );
+    fits::bin_seek ( fp, skyhdu_ );
 
-      nspec = nrows;
-      skyflags.resize( nspec );
+    fits::bin_info ( fp, nspec, skycolnames );
 
-      vector < string > colnames ( 1 );
-      vector < int > cols ( 1 );
-      colnames[0] = "OBJTYPE";
-      cols = fits::bin_columns ( fp, colnames );
+    vector < int > skycols;
+    skycols = fits::bin_columns ( fp, skycolnames );
 
-      vector < string > objnames;
-      fits::bin_read_strings ( fp, 0, nspec - 1, cols[0], objnames );
+    vector < string > objnames;
+    fits::bin_read_column_strings ( fp, 0, nspec - 1, cols[0], objnames );
 
-      for ( size_t i = 0; i < nspec; ++i ) {
-        if ( objnames[i] == "SKY" ) {
-          skyflags[i] = 1;
-        } else {
-          skyflags[i] = 0;
-        }
-      }
-
-      fits::close ( fp );
-    }
-
-    ret = MPI_Bcast ( (void*)(&nspec), 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
-    mpi_check ( MPI_COMM_WORLD, ret );
-
-    if ( myp != 0 ) {
-      skyflags.resize ( nspec );
-    }
-
-    ret = MPI_Bcast ( (void*)(&(skyflags[0])), nspec, MPI_CHAR, 0, MPI_COMM_WORLD );
-    mpi_check ( MPI_COMM_WORLD, ret );
+    fits::close ( fp );
 
     sky_.resize ( nspec );
 
     for ( size_t i = 0; i < nspec; ++i ) {
-      if ( skyflags[i] == 0 ) {
-        sky_[i] = false;
-      } else {
+      if ( objnames[i] == "SKY" ) {
         sky_[i] = true;
+      } else {
+        sky_[i] = false;
       }
     }
     
@@ -124,180 +90,101 @@ harp::image_fits::image_fits ( boost::property_tree::ptree const & props ) : ima
 
 
 harp::image_fits::~image_fits ( ) {
-  
-  cleanup();
-  
+
 }
 
 
-boost::property_tree::ptree harp::image_fits::serialize ( ) {
-  boost::property_tree::ptree ret;
+void read ( vector_double & data, vector_double & invvar, std::vector < bool > & sky ) {
 
-  ret.put ( "format", image::format() );
+  fitsfile *fp;
 
-  if ( sighdu_ != 1 ) {
-    ret.put ( image_fits_key_signal, sighdu_ );
-  }
+  fits::open_read ( fp, path_ );
 
-  if ( nsehdu_ != 2 ) {
-    ret.put ( image_fits_key_noise, nsehdu_ );
-  }
+  fits::img_seek ( fp, sighdu_ );
+    
+  fits::img_read ( fp, data );
 
-  if ( path_ == "" ) {
-    ret.put ( image_fits_key_rows, rows_ );
-    ret.put ( image_fits_key_cols, cols_ );
+  fits::img_seek ( fp, nsehdu_ );
+    
+  fits::img_read ( fp, invvar );
+
+  sky = sky_;
+    
+  fits::close ( fp );
+
+  return;
+}
+
+
+void write ( std::string const & path, vector_double & data, vector_double & invvar, std::vector < bool > & sky ) {
+
+  fitsfile *fp;
+    
+  fits::open_readwrite ( fp, path );
+  
+  int nh = fits::nhdus ( fp );
+
+  if ( nh < sighdu_ ) {
+    while ( nh < sighdu_ ) {
+      fits::img_append ( fp, rows_, cols_ );
+      ++nh;
+    }
   } else {
-    ret.put ( image_fits_key_path, path_ );
-  }
-
-  return ret;
-}
-
-
-void harp::image_fits::read ( matrix_local & data ) {
-
-  int np;
-  int myp;
-
-  MPI_Comm_size ( MPI_COMM_WORLD, &np );
-  MPI_Comm_rank ( MPI_COMM_WORLD, &myp );
-
-  size_t imgsize;
-  
-  if ( myp == 0 ) {
-  
-    fitsfile *fp;
-
-    fits::open_read ( fp, path_ );
-
     fits::img_seek ( fp, sighdu_ );
-    
-    fits::img_read ( fp, data );
-    
-    fits::close ( fp );
-
-    imgsize = data.Height();
-
   }
-
-  int ret = MPI_Bcast ( (void*)(&imgsize), 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
-  mpi_check ( MPI_COMM_WORLD, ret );
-
-  if ( myp != 0 ) {
-    data.ResizeTo ( imgsize, 1 );
-  }
-
-  ret = MPI_Bcast ( (void*)(data.Buffer()), imgsize, MPI_DOUBLE, 0, MPI_COMM_WORLD );
-  mpi_check ( MPI_COMM_WORLD, ret );
   
-  return;
-}
+  fits::img_write ( fp, data );
 
-
-void harp::image_fits::write ( std::string const & path, matrix_local & data ) {
-  
-  int np;
-  int myp;
-
-  MPI_Comm_size ( MPI_COMM_WORLD, &np );
-  MPI_Comm_rank ( MPI_COMM_WORLD, &myp );
-  
-  if ( myp == 0 ) {
-
-    fitsfile *fp;
-    
-    fits::open_readwrite ( fp, path );
-    
-    int nh = fits::nhdus ( fp );
-
-    if ( nh < sighdu_ ) {
-      while ( nh < sighdu_ ) {
-        fits::img_append ( fp, rows_, cols_ );
-        ++nh;
-      }
-    } else {
-      fits::img_seek ( fp, sighdu_ );
+  if ( nh < nsehdu_ ) {
+    while ( nh < nsehdu_ ) {
+      fits::img_append ( fp, rows_, cols_ );
+      ++nh;
     }
-    
-    fits::img_write ( fp, data );
-    
-    fits::close ( fp );
-  }
-  
-  return;
-}
-
-
-void harp::image_fits::read_noise ( matrix_local & data ) {
-
-  int np;
-  int myp;
-
-  MPI_Comm_size ( MPI_COMM_WORLD, &np );
-  MPI_Comm_rank ( MPI_COMM_WORLD, &myp );
-
-  size_t imgsize;
-  
-  if ( myp == 0 ) {
-  
-    fitsfile *fp;
-
-    fits::open_read ( fp, path_ );
-
+  } else {
     fits::img_seek ( fp, nsehdu_ );
-    
-    fits::img_read ( fp, data );
-    
-    fits::close ( fp );
-
-    imgsize = data.Height();
   }
-
-  int ret = MPI_Bcast ( (void*)(&imgsize), 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
-  mpi_check ( MPI_COMM_WORLD, ret );
-
-  if ( myp != 0 ) {
-    data.ResizeTo ( imgsize, 1 );
-  }
-
-  ret = MPI_Bcast ( (void*)(data.Buffer()), imgsize, MPI_DOUBLE, 0, MPI_COMM_WORLD );
-  mpi_check ( MPI_COMM_WORLD, ret );
   
-  return;
-}
+  fits::img_write ( fp, invvar );
 
+  vector < string > colnames ( sky_.size() );
+  vector < string > coltypes ( sky_.size() );
+  vector < string > colunits ( sky_.size() );
 
-void harp::image_fits::write_noise ( std::string const & path, matrix_local & data ) {
-  
-  int np;
-  int myp;
+  colnames[0] = "OBJTYPE";
+  coltypes[0] = "6A";
+  colunits[0] = "None";
 
-  MPI_Comm_size ( MPI_COMM_WORLD, &np );
-  MPI_Comm_rank ( MPI_COMM_WORLD, &myp );
-  
-  if ( myp == 0 ) {
-    fitsfile *fp;
-    
-    fits::open_readwrite ( fp, path );
-    
-    int nh = fits::nhdus ( fp );
+  colnames[0] = "Z";
+  coltypes[0] = "1E";
+  colunits[0] = "None";
 
-    if ( nh < nsehdu_ ) {
-      while ( nh < nsehdu_ ) {
-        fits::img_append ( fp, rows_, cols_ );
-        ++nh;
-      }
-    } else {
-      fits::img_seek ( fp, nsehdu_ );
+  colnames[0] = "O2FLUX";
+  coltypes[0] = "1E";
+  colunits[0] = "None";
+
+  if ( nh < skyhdu_ ) {
+    while ( nh < skyhdu_ ) {
+      bin_create ( fp, string("TARGETINFO"), sky_.size(), colnames, coltypes, colunits );
+      ++nh;
     }
-    
-    fits::img_write ( fp, data );
-    
-    fits::close ( fp );
+  } else {
+    fits::bin_seek ( fp, skyhdu_ );
   }
+
+  vector < string > objnames ( sky_.size() );
+
+  for ( size_t i = 0; i < sky_.size(); ++i ) {
+    if ( sky_[i] ) {
+      objnames[i] == "SKY";
+    } else {
+      objnames[i] = "Unknown";
+    }
+  }
+
+  fits::bin_write_column_strings ( fp, 0, sky.size() - 1, 1, objnames );
   
+  fits::close ( fp );
+
   return;
 }
-
-
 

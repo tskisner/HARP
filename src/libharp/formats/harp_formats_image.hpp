@@ -19,6 +19,30 @@ namespace harp {
       void write ( std::string const & path, vector_double & data, vector_double & invvar, std::vector < bool > & sky );
     
     private :
+
+      template < class Archive >
+      void save ( Archive & ar, const unsigned int version ) const {
+          ar << boost::serialization::base_object < image > (*this);
+          ar << rows_;
+          ar << cols_;
+          ar << path_;
+          ar << sighdu_;
+          ar << nsehdu_;
+          ar << skyhdu_;
+          ar << sky_;
+      }
+      template < class Archive >
+      void load ( Archive & ar, const unsigned int version ) {
+          ar >> boost::serialization::base_object < image > (*this);
+          ar >> rows_;
+          ar >> cols_;
+          ar >> path_;
+          ar >> sighdu_;
+          ar >> nsehdu_;
+          ar >> skyhdu_;
+          ar >> sky_;
+      }
+      BOOST_SERIALIZATION_SPLIT_MEMBER()
     
       size_t rows_;
       size_t cols_;
@@ -48,6 +72,30 @@ namespace harp {
       void write ( std::string const & path, vector_double & data, vector_double & invvar, std::vector < bool > & sky );
     
     private :
+
+      template < class Archive >
+      void save ( Archive & ar, const unsigned int version ) const {
+          ar << boost::serialization::base_object < image > (*this);
+          ar << spec_props_;
+          ar << psf_props_;
+          ar << rows_;
+          ar << cols_;
+          ar << measured_;
+          ar << invcov_;
+          ar << sky_;
+      }
+      template < class Archive >
+      void load ( Archive & ar, const unsigned int version ) {
+          ar >> boost::serialization::base_object < image > (*this);
+          ar >> spec_props_;
+          ar >> psf_props_;
+          ar >> rows_;
+          ar >> cols_;
+          ar >> measured_;
+          ar >> invcov_;
+          ar >> sky_;
+      }
+      BOOST_SERIALIZATION_SPLIT_MEMBER()
     
       boost::property_tree::ptree spec_props_;
       boost::property_tree::ptree psf_props_;

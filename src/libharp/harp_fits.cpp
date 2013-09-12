@@ -407,6 +407,103 @@ void harp::fits::img_dims ( fitsfile * fp, size_t & rows, size_t & cols ) {
 }
 
 
+void harp::fits::bin_create ( fitsfile * fp, std::string extname, size_t nrows, std::vector < std::string > colnames, std::vector < std::string > coltypes, std::vector < std::string > colunits ) {
+
+  size_t ncols = colnames.size();
+
+  if ( ( ncols != coltypes.size() ) || ( ncols != colunits.size() ) ) {
+    HARP_THROW( "vectors of column names, types, and units do not have equal lengths" );
+  }
+
+  char ** ttype;
+  char ** tform;
+  char ** tunit;
+
+  ttype = (char**) malloc ( ncols * sizeof(char*) );
+  tform = (char**) malloc ( ncols * sizeof(char*) );
+  tunit = (char**) malloc ( ncols * sizeof(char*) );
+
+  if ( ! ( ttype && tform && tunit ) ) {
+    ostringstream o;
+    o << "cannot allocate column info for binary table";
+    HARP_THROW( o.str().c_str() );
+  }
+
+  for ( size_t c = 0; c < ncols; ++c ) {
+    ttype[c] = (char*) malloc ( FLEN_VALUE * sizeof(char) );
+    tform[c] = (char*) malloc ( FLEN_VALUE * sizeof(char) );
+    tunit[c] = (char*) malloc ( FLEN_VALUE * sizeof(char) );
+    if ( ! ( ttype[c] && tform[c] && tunit[c] ) ) {
+      ostringstream o;
+      o << "cannot allocate column info for binary table";
+      HARP_THROW( o.str().c_str() );
+    }
+  }
+  for ( size_t i = 0; i < ncols; ++i ) {
+    strncpy ( ttype[i], colnames[i].c_str(), FLEN_VALUE );
+    strncpy ( tform[i], coltypes[i].c_str(), FLEN_VALUE );
+    strncpy ( tunit[i], colunits[i].c_str(), FLEN_VALUE );
+  }
+
+  int status = 0;
+
+  char cextname[ FLEN_VALUE ];
+  strncpy ( cextname, extname.c_str(), FLEN_VALUE );
+
+  ret = fits_create_tbl ( fp, BINARY_TBL, (long)nrows, (int)ncols, ttype, tform, tunit, cextname, &status );
+  fits::check ( status );
+
+  for ( size_t c = 0; c < ncols; ++c ) {
+    free ( ttype[c] );
+    free ( tform[c] );
+    free ( tunit[c] );
+  }
+  free ( ttype );
+  free ( tform );
+  free ( tunit );
+
+  return;
+}
+
+
+void harp::fits::bin_info ( fitsfile * fp, size_t & nrows, vector < string > & colnames ) {
+
+  int ret;
+  int status = 0;
+
+  // get table dimensions
+  
+  long lnrows;
+  int tfields;
+  char fitsval[FLEN_VALUE];
+  long pcount;
+  
+  ret = fits_read_btblhdr ( fp, 100, &lnrows, &tfields, NULL, NULL, NULL, fitsval, &pcount, &status );
+  fits::check ( status );
+  
+  nrows = lnrows;
+
+  colnames.resize ( tfields );
+
+  char templt[FLEN_VALUE];
+  strcpy ( templt, "*" );
+
+  int colnum;
+  char colnam[FLEN_VALUE];
+
+  for ( int i = 0; i < tfields; ++i ) {
+    ret = fits_get_colname ( fp, CASEINSEN, templt, colnam, &colnum, &status );
+    if ( colnum != i + 1 ) {
+      HARP_THROW( "error in binary table column name lookup" );
+    }
+    colnames[i] = colnam;
+  }
+  status = 0;
+
+  return;
+}
+
+
 vector < int > harp::fits::bin_columns ( fitsfile * fp, vector < string > & names ) {
   
   int ret;
@@ -429,7 +526,7 @@ vector < int > harp::fits::bin_columns ( fitsfile * fp, vector < string > & name
 } 
 
 
-void harp::fits::bin_read_strings ( fitsfile * fp, size_t firstrow, size_t lastrow, int col, vector < string > & data ) {
+void harp::fits::bin_read_column_strings ( fitsfile * fp, size_t firstrow, size_t lastrow, int col, vector < string > & data ) {
   
   int ret;
   int status = 0;
@@ -466,7 +563,7 @@ void harp::fits::bin_read_strings ( fitsfile * fp, size_t firstrow, size_t lastr
     HARP_THROW( "cannot allocate temp char array" );
   }
   for ( long i = 0; i < nread; ++i ) {
-    charray[i] = (char*) malloc ( 50 * sizeof (char) );
+    charray[i] = (char*) malloc ( FLEN_VALUE * sizeof (char) );
     if ( ! charray[i] ) {
       HARP_THROW( "cannot allocate temp char array member" );
     }
@@ -487,6 +584,71 @@ void harp::fits::bin_read_strings ( fitsfile * fp, size_t firstrow, size_t lastr
   data.resize ( nread );
   for ( long i = 0; i < nread; ++i ) {
     data[i] = charray[i];
+    free ( charray[i] );
+  }
+  free ( charray );
+
+  return;
+}
+
+
+void harp::fits::bin_write_column_strings ( fitsfile * fp, size_t firstrow, size_t lastrow, int col, vector < string > & data ) {
+  
+  int ret;
+  int status = 0;
+  long offset = (long)firstrow;
+  long nwrite = (long)lastrow - offset + 1;
+  
+  // get table dimensions
+  
+  long nrows;
+  int tfields;
+  char fitsval[FLEN_VALUE];
+  long pcount;
+  
+  ret = fits_read_btblhdr ( fp, 100, &nrows, &tfields, NULL, NULL, NULL, fitsval, &pcount, &status );
+  fits::check ( status );
+  
+  if ( offset + nwrite > nrows ) {
+    HARP_THROW( "binary write range is beyond end of table" );
+  } 
+  
+  // check that column number is in range
+  
+  if ( ( col >= tfields ) || ( col < 0 ) ) {
+    ostringstream o;
+    o << "cannot write (zero-based) column " << col << " from binary table with " << tfields << " columns";
+    HARP_THROW( o.str().c_str() );
+  }
+
+  // temporary char buffer
+
+  char ** charray;
+  charray = (char**) malloc ( nread * sizeof( char* ) );
+  if ( ! charray ) {
+    HARP_THROW( "cannot allocate temp char array" );
+  }
+  for ( long i = 0; i < nread; ++i ) {
+    charray[i] = (char*) malloc ( FLEN_VALUE * sizeof (char) );
+    if ( ! charray[i] ) {
+      HARP_THROW( "cannot allocate temp char array member" );
+    }
+  }
+
+  // copy into output vector
+
+  for ( long i = 0; i < nwrite; ++i ) {
+    strncpy ( charray[i], data[i].c_str(), FLEN_VALUE );
+  }
+
+  // write data in one shot
+
+  ret = fits_write_col_str ( fp, col + 1, offset + 1, 1, nwrite, charray, &status );
+  fits::check ( status );
+
+  // free memory
+
+  for ( long i = 0; i < nwrite; ++i ) {
     free ( charray[i] );
   }
   free ( charray );

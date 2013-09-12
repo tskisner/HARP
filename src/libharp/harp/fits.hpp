@@ -39,42 +39,49 @@ namespace harp { namespace fits {
   struct ftype {
     static int datatype () { return 0; }
     static int bitpix () { return 0; }
+    static std::string coltype () { return string(""); }
   };
 
   template < >
   struct ftype < double > {
     static int datatype () { return TDOUBLE; }
     static int bitpix () { return -64; }
+    static std::string coltype () { return string("D"); }
   };
 
   template < >
   struct ftype < float > {
     static int datatype () { return TFLOAT; }
     static int bitpix () { return -32; }
+    static std::string coltype () { return string("E"); }
   };
 
   template < >
   struct ftype < long long int > {
     static int datatype () { return TLONGLONG; }
     static int bitpix () { return 64; }
+    static std::string coltype () { return string("K"); }
   };
 
   template < >
   struct ftype < int > {
     static int datatype () { return TINT32BIT; }
     static int bitpix () { return 32; }
+    static std::string coltype () { return string("J"); }
   };
 
   template < >
   struct ftype < short int > {
     static int datatype () { return TSHORT; }
     static int bitpix () { return 16; }
+    static std::string coltype () { return string("I"); }
   };
 
   template < >
   struct ftype < unsigned char > {
     static int datatype () { return TBYTE; }
     static int bitpix () { return 8; }
+    static std::string coltype () { return string("B"); }
   };
 
   // seek operations
@@ -233,10 +240,113 @@ namespace harp { namespace fits {
 
 
   // binary table operations
+
+
+  void bin_create ( fitsfile * fp, std::string extname, size_t nrows, std::vector < std::string > colnames, std::vector < std::string > coltypes, std::vector < std::string > colunits );
+
+
+  void bin_info ( fitsfile * fp, size_t & nrows, vector < string > & colnames );
+
   
   std::vector < int > bin_columns ( fitsfile * fp, std::vector < std::string > & names );
 
-  void bin_read_strings ( fitsfile * fp, size_t firstrow, size_t lastrow, int col, std::vector < std::string > & data );
+
+  template < class V >
+  void bin_read_column ( fitsfile * fp, size_t firstrow, size_t lastrow, int column, boost::numeric::ublas::vector_expression < V > & data ) {
+
+    typedef V vector_type;
+    typedef typename vector_type::value_type value_type;
+
+    int fitstype = ftype < value_type > :: datatype();
+
+    int ret;
+    int status = 0;
+    long offset = (long)firstrow;
+    long nread = (long)lastrow - offset + 1;
+
+    // get table dimensions
+    
+    long nrows;
+    int tfields;
+    char fitsval[FLEN_VALUE];
+    long pcount;
+    
+    ret = fits_read_btblhdr ( fp, 100, &nrows, &tfields, NULL, NULL, NULL, fitsval, &pcount, &status );
+    fits::check ( status );
+    
+    if ( offset + nread > nrows ) {
+      HARP_THROW( "binary read range is beyond end of table" );
+    } 
+    
+    // check that column number is in range
+    
+    if ( ( column >= tfields ) || ( column < 0 ) ) {
+      std::ostringstream o;
+      o << "cannot read (zero-based) column " << column << " from binary table with " << tfields << " columns";
+      HARP_THROW( o.str().c_str() );
+    }
+
+    data().resize ( nread );
+
+    int anynul;
+
+    ret = fits_read_col ( fp, fitstype, column + 1, offset + 1, 1, nread, 0, &(data()[dataoffset]), &anynul, &status );
+    fits::check ( status );
+
+    return;
+  }
+
+
+  template < class V >
+  void bin_write_column ( fitsfile * fp, size_t firstrow, size_t lastrow, int column, boost::numeric::ublas::vector_expression < V > & data ) {
+
+    typedef V vector_type;
+    typedef typename vector_type::value_type value_type;
+
+    int fitstype = ftype < value_type > :: datatype();
+
+    int ret;
+    int status = 0;
+    long offset = (long)firstrow;
+    long nwrite = (long)lastrow - offset + 1;
+
+    if ( data().size() < nwrite ) {
+      HARP_THROW( "data vector is shorter than number of rows to write" );
+    }
+
+    // get table dimensions
+    
+    long nrows;
+    int tfields;
+    char fitsval[FLEN_VALUE];
+    long pcount;
+    
+    ret = fits_read_btblhdr ( fp, 100, &nrows, &tfields, NULL, NULL, NULL, fitsval, &pcount, &status );
+    fits::check ( status );
+    
+    if ( offset + nwrite > nrows ) {
+      HARP_THROW( "binary write range is beyond end of table" );
+    } 
+    
+    // check that column number is in range
+    
+    if ( ( column >= tfields ) || ( column < 0 ) ) {
+      std::ostringstream o;
+      o << "cannot write (zero-based) column " << column << " from binary table with " << tfields << " columns";
+      HARP_THROW( o.str().c_str() );
+    }
+
+    ret = fits_write_col ( fp, fitstype, colnum + 1, offset + 1, 1, nwrite, &(data()[dataoffset]), &status );
+    fits::check ( status );
+
+    return;
+  }
+
+
+  void bin_read_column_strings ( fitsfile * fp, size_t firstrow, size_t lastrow, int col, std::vector < std::string > & data );
+
+
+  void bin_write_column_strings ( fitsfile * fp, size_t firstrow, size_t lastrow, int col, std::vector < std::string > & data );
   
   
   template < class V >
@@ -318,17 +428,6 @@ namespace harp { namespace fits {
     return;
   }
 
-  
-  template < class V >
-  void bin_write ( fitsfile * fp, size_t firstrow, size_t lastrow, std::vector < int > & columns, std::vector < boost::numeric::ublas::vector_expression < V > > & data ) {
-
-    typedef V vector_type;
-    typedef typename vector_type::value_type value_type;
-
-    HARP_THROW( "binary FITS table writing not yet implemented" );
-
-    return;
-  }
 
 
   // sanity tests...
