@@ -55,35 +55,6 @@ harp::image_fits::image_fits ( boost::property_tree::ptree const & props ) : ima
       HARP_THROW( "noise variance dimensions do not match data dimensions" );
     }
 
-    // read the sky information
-
-    size_t nspec;
-
-    vector < string > skycolnames(1);
-    skycolnames[0] = "OBJTYPE";
-
-    fits::bin_seek ( fp, skyhdu_ );
-
-    fits::bin_info ( fp, nspec, skycolnames );
-
-    vector < int > skycols;
-    skycols = fits::bin_columns ( fp, skycolnames );
-
-    vector < string > objnames;
-    fits::bin_read_column_strings ( fp, 0, nspec - 1, cols[0], objnames );
-
-    fits::close ( fp );
-
-    sky_.resize ( nspec );
-
-    for ( size_t i = 0; i < nspec; ++i ) {
-      if ( objnames[i] == "SKY" ) {
-        sky_[i] = true;
-      } else {
-        sky_[i] = false;
-      }
-    }
-    
   }  
   
 }
@@ -94,7 +65,7 @@ harp::image_fits::~image_fits ( ) {
 }
 
 
-void read ( vector_double & data, vector_double & invvar, std::vector < bool > & sky ) {
+void harp::image_fits::read ( vector_double & data, vector_double & invvar, std::vector < bool > & sky ) {
 
   fitsfile *fp;
 
@@ -108,81 +79,32 @@ void read ( vector_double & data, vector_double & invvar, std::vector < bool > &
     
   fits::img_read ( fp, invvar );
 
-  sky = sky_;
-    
+  fits::bin_seek ( fp, skyhdu_ );
+
+  specter_read_sky ( fp, sky );
+
   fits::close ( fp );
 
   return;
 }
 
 
-void write ( std::string const & path, vector_double & data, vector_double & invvar, std::vector < bool > & sky ) {
+void harp::image_fits::write ( std::string const & path, vector_double & data, vector_double & invvar, std::vector < bool > & sky ) {
 
-  fitsfile *fp;
+  fitsfile * fp;
     
-  fits::open_readwrite ( fp, path );
+  fits::create ( fp, path );
   
-  int nh = fits::nhdus ( fp );
-
-  if ( nh < sighdu_ ) {
-    while ( nh < sighdu_ ) {
-      fits::img_append ( fp, rows_, cols_ );
-      ++nh;
-    }
-  } else {
-    fits::img_seek ( fp, sighdu_ );
-  }
+  fits::img_append ( fp, rows_, cols_ );
   
   fits::img_write ( fp, data );
 
-  if ( nh < nsehdu_ ) {
-    while ( nh < nsehdu_ ) {
-      fits::img_append ( fp, rows_, cols_ );
-      ++nh;
-    }
-  } else {
-    fits::img_seek ( fp, nsehdu_ );
-  }
+  fits::img_append ( fp, rows_, cols_ );
   
   fits::img_write ( fp, invvar );
 
-  vector < string > colnames ( sky_.size() );
-  vector < string > coltypes ( sky_.size() );
-  vector < string > colunits ( sky_.size() );
+  specter_write_sky ( fp, sky );
 
-  colnames[0] = "OBJTYPE";
-  coltypes[0] = "6A";
-  colunits[0] = "None";
-
-  colnames[0] = "Z";
-  coltypes[0] = "1E";
-  colunits[0] = "None";
-
-  colnames[0] = "O2FLUX";
-  coltypes[0] = "1E";
-  colunits[0] = "None";
-
-  if ( nh < skyhdu_ ) {
-    while ( nh < skyhdu_ ) {
-      bin_create ( fp, string("TARGETINFO"), sky_.size(), colnames, coltypes, colunits );
-      ++nh;
-    }
-  } else {
-    fits::bin_seek ( fp, skyhdu_ );
-  }
-
-  vector < string > objnames ( sky_.size() );
-
-  for ( size_t i = 0; i < sky_.size(); ++i ) {
-    if ( sky_[i] ) {
-      objnames[i] == "SKY";
-    } else {
-      objnames[i] = "Unknown";
-    }
-  }
-
-  fits::bin_write_column_strings ( fp, 0, sky.size() - 1, 1, objnames );
-  
   fits::close ( fp );
 
   return;

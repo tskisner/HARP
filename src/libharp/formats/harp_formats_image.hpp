@@ -80,7 +80,8 @@ namespace harp {
           ar << psf_props_;
           ar << rows_;
           ar << cols_;
-          ar << measured_;
+          ar << signal_;
+          ar << noise_;
           ar << invcov_;
           ar << sky_;
       }
@@ -101,7 +102,8 @@ namespace harp {
       boost::property_tree::ptree psf_props_;
       size_t rows_;
       size_t cols_;
-      vector_double measured_;
+      vector_double signal_;
+      vector_double noise_;
       vector_double invcov_;
       std::vector < bool > sky_;
     

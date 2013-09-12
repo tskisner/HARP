@@ -18,9 +18,6 @@ static const char * spec_sim_key_skymod = "skymod";
 
 
 harp::spec_sim::spec_sim ( boost::property_tree::ptree const & props ) : spec ( props ) {
-
-  //cerr << "spec sim props = " << endl;
-  //ptree_print ( props );
   
   nspec_ = props.get < size_t > ( spec_sim_key_nspec );
 
@@ -49,25 +46,14 @@ harp::spec_sim::spec_sim ( boost::property_tree::ptree const & props ) : spec ( 
 
 harp::spec_sim::~spec_sim ( ) {
   
-  cleanup();
-  
 }
 
 
-boost::property_tree::ptree harp::spec_sim::serialize ( ) {
-  boost::property_tree::ptree ret;
-
-  ret.put ( "format", spec::format() );
-
-
-  return ret;
-}
-
-
-void harp::spec_sim::read ( matrix_dist & data, std::vector < double > & lambda, std::vector < bool > & sky ) {
+void harp::spec_sim::read ( vector_double & data, vector_double & lambda, std::vector < bool > & sky ) {
 
   double PI = std::atan2 ( 0.0, -1.0 );
 
+  data.resize ( size_ );
   lambda.resize ( nlambda_ );
   sky.resize ( nspec_ );
 
@@ -109,7 +95,7 @@ void harp::spec_sim::read ( matrix_dist & data, std::vector < double > & lambda,
         }
       }
 
-      data.Set ( bin, 0, val );
+      data[ bin ] = val;
 
       ++bin;
     }
@@ -120,9 +106,23 @@ void harp::spec_sim::read ( matrix_dist & data, std::vector < double > & lambda,
 }
 
 
-void harp::spec_sim::write ( std::string const & path, matrix_dist & data, std::vector < double > const & lambda, std::vector < bool > const & sky ) {
+void harp::spec_sim::write ( std::string const & path, vector_double & data, vector_double const & lambda, std::vector < bool > const & sky ) {
 
-  HARP_THROW( "sim spec format does not support writing" );
+  fitsfile * fp;
+    
+  fits::create ( fp, path );
+
+  fits::img_append ( fp, nspec_, nlambda_ );
+  fits::write_key ( fp, "EXTNAME", "FLUX", "" );
+  fits::img_write ( fp, data );
+
+  fits::img_append ( fp, 1, nlambda_ );
+  fits::write_key ( fp, "EXTNAME", "WAVELENGTH", "" );
+  fits::img_write ( fp, lambda );
+
+  specter_write_sky ( fp, sky );
+
+  fits::close ( fp );
   
   return;
 }
@@ -146,7 +146,7 @@ void harp::spec_sim::sky_truth ( matrix_dist & data ) {
 
   size_t nbins = nreduced * nlambda_;
 
-  data.ResizeTo ( nbins, 1 );
+  data.resize ( nbins );
 
   size_t bin = 0;
 
@@ -164,7 +164,7 @@ void harp::spec_sim::sky_truth ( matrix_dist & data ) {
           val += objpeak_;
         }
 
-        data.Set ( bin, 0, val );
+        data[ bin ] = val;
 
         ++bin;
       }
@@ -185,7 +185,7 @@ void harp::spec_sim::sky_truth ( matrix_dist & data ) {
       val += atmpeak_;
     }
 
-    data.Set ( bin, 0, val );
+    data[ bin ] = val;
 
     ++bin;
   }
