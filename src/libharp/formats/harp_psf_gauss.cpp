@@ -36,9 +36,6 @@ static const char * psf_gauss_key_fake_gap = "gap";
 
 harp::psf_gauss::psf_gauss ( boost::property_tree::ptree const & props ) : psf ( props ) {
 
-  //cerr << "psf gauss props = " << endl;
-  //ptree_print ( props );
-
   boost::optional < string > fakeval = props.get_optional < string > ( psf_gauss_key_fake );
   string fake = boost::get_optional_value_or ( fakeval, "FALSE" );
   dofake_ = ( fake == "TRUE" );
@@ -50,9 +47,9 @@ harp::psf_gauss::psf_gauss ( boost::property_tree::ptree const & props ) : psf (
     fake_spec_props_ = props.get_child ( psf_gauss_key_fake_spec );
 
     spec_p child_spec ( spec::create ( fake_spec_props_ ) );
-    size_t spec_nspec = child_spec->nspec();
+    size_t spec_nspec = child_spec->n_spec();
 
-    nlambda_ = child_spec->nlambda();
+    nlambda_ = child_spec->n_lambda();
 
     fake_n_bundle_ = props.get < size_t > ( psf_gauss_key_fake_nbundle );
     fake_bundle_size_ = props.get < size_t > ( psf_gauss_key_fake_bundle_size );
@@ -103,56 +100,32 @@ harp::psf_gauss::psf_gauss ( boost::property_tree::ptree const & props ) : psf (
 
     cols_ = props.get < size_t > ( psf_gauss_key_cols );
 
-    int np;
-    int myp;
-
-    MPI_Comm_size ( MPI_COMM_WORLD, &np );
-    MPI_Comm_rank ( MPI_COMM_WORLD, &myp );
-
     fitsfile *fp;
 
-    if ( myp == 0 ) {
+    fits::open_read ( fp, path_ );
 
-      fits::open_read ( fp, path_ );
+    int hdu = fits::img_seek ( fp, psf_gauss_key_name, psf_gauss_hdu_x );
+    hdus_[ psf_gauss_hdu_x ] = hdu;
+    fits::img_dims ( fp, nspec_, nlambda_ );
 
-      int hdu = fits::img_seek ( fp, psf_gauss_key_name, psf_gauss_hdu_x );
-      hdus_[ psf_gauss_hdu_x ] = hdu;
-      fits::img_dims ( fp, nspec_, nlambda_ );
-
-      hdus_[ psf_gauss_hdu_y ] = hdu_info ( fp, psf_gauss_hdu_y );
-      hdus_[ psf_gauss_hdu_lambda ] = hdu_info ( fp, psf_gauss_hdu_lambda );
-      hdus_[ psf_gauss_hdu_amp ] = hdu_info ( fp, psf_gauss_hdu_amp );
-      hdus_[ psf_gauss_hdu_maj ] = hdu_info ( fp, psf_gauss_hdu_maj );
-      hdus_[ psf_gauss_hdu_min ] = hdu_info ( fp, psf_gauss_hdu_min );
-      hdus_[ psf_gauss_hdu_ang ] = hdu_info ( fp, psf_gauss_hdu_ang );
-
-    }
-
-    // broadcast dims
-
-    int ret = MPI_Bcast ( (void*)(&nspec_), 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
-    mpi_check ( MPI_COMM_WORLD, ret );
-
-    ret = MPI_Bcast ( (void*)(&nlambda_), 1, MPI_UNSIGNED_LONG, 0, MPI_COMM_WORLD );
-    mpi_check ( MPI_COMM_WORLD, ret );
+    hdus_[ psf_gauss_hdu_y ] = hdu_info ( fp, psf_gauss_hdu_y );
+    hdus_[ psf_gauss_hdu_lambda ] = hdu_info ( fp, psf_gauss_hdu_lambda );
+    hdus_[ psf_gauss_hdu_amp ] = hdu_info ( fp, psf_gauss_hdu_amp );
+    hdus_[ psf_gauss_hdu_maj ] = hdu_info ( fp, psf_gauss_hdu_maj );
+    hdus_[ psf_gauss_hdu_min ] = hdu_info ( fp, psf_gauss_hdu_min );
+    hdus_[ psf_gauss_hdu_ang ] = hdu_info ( fp, psf_gauss_hdu_ang );
 
     lambda_.resize ( nlambda_ );
 
-    if ( myp == 0 ) {
+    matrix_local iobuffer ( nlambda_, nspec_ );
+    fits::img_seek ( fp, hdus_[ psf_gauss_hdu_lambda ] );      
+    fits::img_read ( fp, iobuffer );
 
-      matrix_local iobuffer ( nlambda_, nspec_ );
-      fits::img_seek ( fp, hdus_[ psf_gauss_hdu_lambda ] );      
-      fits::img_read ( fp, iobuffer );
-
-      for ( size_t i = 0; i < nlambda_; ++i ) {
-        lambda_[i] = pow ( 10.0, iobuffer.Get ( i, 0 ) );
-      }
-
-      fits::close ( fp );
+    for ( size_t i = 0; i < nlambda_; ++i ) {
+      lambda_[i] = pow ( 10.0, iobuffer.Get ( i, 0 ) );
     }
-    
-    ret = MPI_Bcast ( (void*)(&(lambda_[0])), nlambda_, MPI_DOUBLE, 0, MPI_COMM_WORLD );
-    mpi_check ( MPI_COMM_WORLD, ret );    
+
+    fits::close ( fp );
 
   }
 
@@ -185,33 +158,6 @@ int harp::psf_gauss::hdu_info ( fitsfile *fp, const char * psf_gauss_hdu ) {
 
 harp::psf_gauss::~psf_gauss ( ) {
   
-  cleanup();
-  
-}
-
-
-boost::property_tree::ptree harp::psf_gauss::serialize ( ) {
-  boost::property_tree::ptree ret;
-
-  ret.put ( "format", psf::format() );
-
-  if ( dofake_ ) {
-
-    ret.put ( psf_gauss_key_fake, "TRUE" );
-
-    // FIXME: populate all the other parameters...
-
-  } else {
-
-    ret.put ( psf_gauss_key_path, path_ );
-
-    ret.put ( psf_gauss_key_corr, pixcorr_ );
-
-    // FIXME: lots of other keys to add...
-
-  }
-
-  return ret;
 }
 
 

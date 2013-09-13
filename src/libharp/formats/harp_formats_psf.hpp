@@ -4,19 +4,13 @@ namespace harp {
   
   class psf_gauss_resp {
 
+    friend class boost::serialization::access;
+
     public :
 
       psf_gauss_resp ( ) { }
 
-      ~psf_gauss_resp ( ) {
-        x.Empty();
-        y.Empty();
-        lambda.Empty();
-        amp.Empty();
-        maj.Empty();
-        min.Empty();
-        ang.Empty();
-      }
+      ~psf_gauss_resp ( ) { }
 
       psf_gauss_resp ( psf_gauss_resp const & orig ) :
         x( orig.x ),
@@ -40,33 +34,55 @@ namespace harp {
         return *this;
       }
 
-      matrix_local x;
-      matrix_local y;
-      matrix_local lambda;
-      matrix_local amp;
-      matrix_local maj;
-      matrix_local min;
-      matrix_local ang;
+      void sample ( matrix_double & vals, vector_double & xrel, vector_double & yrel );
+
+      matrix_double x;
+      matrix_double y;
+      matrix_double lambda;
+      matrix_double amp;
+      matrix_double maj;
+      matrix_double min;
+      matrix_double ang;
+
+    private :
+
+      template < class Archive >
+      void serialize ( Archive & ar, const unsigned int version ) {
+          ar & x;
+          ar & y;
+          ar & lambda;
+          ar & amp;
+          ar & maj;
+          ar & min;
+          ar & ang;
+      }
+
   };
 
   typedef boost::shared_ptr < psf_gauss_resp > psf_gauss_resp_p;
   
 
   class psf_gauss : public psf {
+
+    friend class boost::serialization::access;
     
     public :
       psf_gauss ( boost::property_tree::ptree const & props );
       ~psf_gauss ( );
 
-      boost::property_tree::ptree serialize ( );
+      size_t n_spec ( ) { return nspec_; }
 
-      size_t nspec ( ) { return nspec_; }
-      size_t nlambda ( ) { return nlambda_; }
-      size_t pixrows ( ) { return rows_; }
-      size_t pixcols ( ) { return cols_; }
-      std::vector < double > lambda ( ) { return lambda_; }
-      void projection ( size_t first_spec, size_t last_spec, size_t first_lambda, size_t last_lambda, matrix_sparse & data );
+      size_t n_lambda ( ) { return nlambda_; }
       
+      size_t img_rows ( ) { return rows_; }
+      
+      size_t img_cols ( ) { return cols_; }
+      
+      vector_double lambda ( ) { return lambda_; }
+
+      void project_lambda2pix ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch );
+      
+
     private :
 
       int hdu_info ( fitsfile *fp, const char * gauss_psf_hdu );
@@ -75,7 +91,7 @@ namespace harp {
 
       void extent ( size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t & firstcol, size_t & firstrow, size_t & lastcol, size_t & lastrow );
       
-      void gauss_sample ( matrix_local & vals, matrix_local & xrel, matrix_local & yrel, double amp, double maj, double min, double ang );
+      
 
       void fake_spec2pix ( size_t spec, size_t bin, size_t & row, size_t & col );
       
