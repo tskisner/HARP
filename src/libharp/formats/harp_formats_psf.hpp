@@ -36,13 +36,13 @@ namespace harp {
 
       void sample ( matrix_double & vals, vector_double & xrel, vector_double & yrel );
 
-      matrix_double x;
-      matrix_double y;
-      matrix_double lambda;
-      matrix_double amp;
-      matrix_double maj;
-      matrix_double min;
-      matrix_double ang;
+      double x;
+      double y;
+      double lambda;
+      double amp;
+      double maj;
+      double min;
+      double ang;
 
     private :
 
@@ -58,8 +58,6 @@ namespace harp {
       }
 
   };
-
-  typedef boost::shared_ptr < psf_gauss_resp > psf_gauss_resp_p;
   
 
   class psf_gauss : public psf {
@@ -68,6 +66,9 @@ namespace harp {
     
     public :
       psf_gauss ( boost::property_tree::ptree const & props );
+
+      psf_gauss ( boost::property_tree::ptree const & props, size_t first_spec, size_t last_spec );
+
       ~psf_gauss ( );
 
       size_t n_spec ( ) { return nspec_; }
@@ -80,14 +81,30 @@ namespace harp {
       
       vector_double lambda ( ) { return lambda_; }
 
-      void project_lambda2pix ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch );
+      void write ( std::string const & path );
+
+      void response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch );
+
+      // This provides a public interface to the gaussian parameters for each flux bin
+
+      psf_gauss_resp & parameters ( size_t spec, size_t lambda ) {
+        size_t bin = spec * nlambda_ + lambda;
+        return resp_[ bin ];
+      }
+
+      psf_gauss_resp & parameters ( size_t bin ) {
+        return resp_[ bin ];
+      }
+
       
 
     private :
 
-      int hdu_info ( fitsfile *fp, const char * gauss_psf_hdu );
+
+
     
-      void cache ( size_t first_spec, size_t last_spec );
+
+      int hdu_info ( fitsfile *fp, const char * gauss_psf_hdu );
 
       void extent ( size_t firstspec, size_t lastspec, size_t firstbin, size_t lastbin, size_t & firstcol, size_t & firstrow, size_t & lastcol, size_t & lastrow );
       
@@ -96,9 +113,6 @@ namespace harp {
       void fake_spec2pix ( size_t spec, size_t bin, size_t & row, size_t & col );
       
       bool dofake_;
-      bool cached_;
-      size_t cached_first_;
-      size_t cached_last_;
       size_t fake_n_bundle_;
       size_t fake_bundle_size_;
       size_t fake_pix_margin_;
@@ -117,10 +131,10 @@ namespace harp {
       size_t nglobal_;
       size_t npix_;
       size_t pixcorr_;
-      std::vector < double > lambda_;
+      vector_double lambda_;
       std::vector < bool > sky_;
       std::map < std::string, int > hdus_;
-      std::map < size_t, psf_gauss_resp_p > resp_;
+      std::vector < psf_gauss_resp > resp_;
       
   };
   

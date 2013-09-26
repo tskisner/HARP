@@ -12,6 +12,7 @@ namespace harp {
     
     public :
       psf ( boost::property_tree::ptree const & props );
+
       virtual ~psf ( ) { }
 
       virtual size_t n_spec ( ) {
@@ -39,17 +40,23 @@ namespace harp {
         return vector_double();
       }
 
-      virtual void project_lambda2pix ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch ) {
+      virtual void response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch ) {
+        HARP_THROW( "fell through to virtual method" );
+        return;
+      }
+
+      virtual void write ( std::string const & path ) {
         HARP_THROW( "fell through to virtual method" );
         return;
       }
       
-      void project ( size_t first_spec, size_t last_spec, size_t first_lambda, size_t last_lambda, matrix_double & A ) {
+      virtual void project ( size_t first_spec, size_t last_spec, size_t first_lambda, size_t last_lambda, matrix_double & A ) {
         
+
         return;
       }
 
-      void project_transpose ( size_t first_spec, size_t last_spec, size_t first_lambda, size_t last_lambda, matrix_double_sparse & AT ) {
+      virtual void project_transpose ( size_t first_spec, size_t last_spec, size_t first_lambda, size_t last_lambda, matrix_double_sparse & AT ) {
 
         
         

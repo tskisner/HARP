@@ -10,6 +10,48 @@ using namespace std;
 using namespace harp;
 
 
+void harp::psf_gauss_resp::sample ( matrix_local & vals, matrix_local & xrel, matrix_local & yrel ) {
+
+  double PI = std::atan2 ( 0.0, -1.0 );
+  
+  amp /= maj_ * min_ * 2.0 * PI;
+  
+  size_t nvals = xrel.Height();
+  
+  double cang = cos ( ang );
+  double sang = sin ( ang );
+  
+  double invmaj = 1.0 / maj;
+  double invmin = 1.0 / min;
+  
+  double xt, yt, exparg;
+  
+  size_t i;
+
+  double norm = 0.0;
+  
+  for ( i = 0; i < nvals; ++i ) {
+    xt = xrel.Get( i, 0 ) * cang + yrel.Get( i, 0 ) * sang;
+    yt = - xrel.Get( i, 0 ) * sang + yrel.Get( i, 0 ) * cang;
+    exparg = - 0.5 * ( xt * xt * invmaj * invmaj + yt * yt * invmin * invmin );
+    vals.Set( i, 0, amp * exp ( exparg ) );
+    norm += vals.Get ( i, 0 );
+  }
+
+  norm = 1.0 / norm;
+
+  double temp;
+
+  for ( i = 0; i < nvals; ++i ) {
+    temp = vals.Get ( i, 0 );
+    temp *= norm;
+    vals.Set ( i, 0, temp );
+  }  
+  
+  return;
+}
+
+
 static const char * psf_gauss_key_path = "path";
 static const char * psf_gauss_key_corr = "corr";
 static const char * psf_gauss_key_rows = "imgrows";
@@ -42,6 +84,8 @@ harp::psf_gauss::psf_gauss ( boost::property_tree::ptree const & props ) : psf (
 
   if ( dofake_ ) {
 
+    // in this case, we initialize the PSF to a symmetric gaussian
+
     path_ = "";
 
     fake_spec_props_ = props.get_child ( psf_gauss_key_fake_spec );
@@ -51,8 +95,8 @@ harp::psf_gauss::psf_gauss ( boost::property_tree::ptree const & props ) : psf (
 
     nlambda_ = child_spec->n_lambda();
 
-    fake_n_bundle_ = props.get < size_t > ( psf_gauss_key_fake_nbundle );
-    fake_bundle_size_ = props.get < size_t > ( psf_gauss_key_fake_bundle_size );
+    fake_n_bundle_ = props.get < size_t > ( psf_gauss_key_fake_nbundle, 20 );
+    fake_bundle_size_ = props.get < size_t > ( psf_gauss_key_fake_bundle_size, 25 );
 
     nspec_ = fake_n_bundle_ * fake_bundle_size_;
 
@@ -62,19 +106,19 @@ harp::psf_gauss::psf_gauss ( boost::property_tree::ptree const & props ) : psf (
       HARP_THROW( o.str().c_str() );
     }
 
-    fake_pix_margin_ = props.get < size_t > ( psf_gauss_key_fake_margin );
+    fake_pix_margin_ = props.get < size_t > ( psf_gauss_key_fake_margin, 10 );
 
-    fake_pix_gap_ = props.get < size_t > ( psf_gauss_key_fake_gap );
+    fake_pix_gap_ = props.get < size_t > ( psf_gauss_key_fake_gap, 7 );
 
     fake_pix_bundle_ = 2 * fake_pix_margin_ + (fake_bundle_size_ - 1) * fake_pix_gap_ + fake_bundle_size_;
 
     // response fwhm
 
-    fake_psf_fwhm_ = props.get < double > ( psf_gauss_key_fake_fwhm );
+    fake_psf_fwhm_ = props.get < double > ( psf_gauss_key_fake_fwhm, 2.2 );
 
     // response correlation length in pixels
 
-    pixcorr_ = props.get < size_t > ( psf_gauss_key_corr );
+    pixcorr_ = props.get < size_t > ( psf_gauss_key_corr, 10 );
 
     cols_ = fake_pix_bundle_ * fake_n_bundle_;
     rows_ = nlambda_ + 2 * pixcorr_;
@@ -89,6 +133,14 @@ harp::psf_gauss::psf_gauss ( boost::property_tree::ptree const & props ) : psf (
 
     fake_first_lambda_ = lambda_[0];
     fake_last_lambda_ = lambda_[ nlambda_ - 1 ];
+
+    hdus_[ psf_gauss_hdu_x ] = 1;
+    hdus_[ psf_gauss_hdu_y ] = 2;
+    hdus_[ psf_gauss_hdu_lambda ] = 3;
+    hdus_[ psf_gauss_hdu_amp ] = 4;
+    hdus_[ psf_gauss_hdu_maj ] = 5;
+    hdus_[ psf_gauss_hdu_min ] = 6;
+    hdus_[ psf_gauss_hdu_ang ] = 7;
  
   } else {
 
@@ -116,27 +168,91 @@ harp::psf_gauss::psf_gauss ( boost::property_tree::ptree const & props ) : psf (
     hdus_[ psf_gauss_hdu_ang ] = hdu_info ( fp, psf_gauss_hdu_ang );
 
     lambda_.resize ( nlambda_ );
-
-    matrix_local iobuffer ( nlambda_, nspec_ );
     fits::img_seek ( fp, hdus_[ psf_gauss_hdu_lambda ] );      
-    fits::img_read ( fp, iobuffer );
-
-    for ( size_t i = 0; i < nlambda_; ++i ) {
-      lambda_[i] = pow ( 10.0, iobuffer.Get ( i, 0 ) );
-    }
+    fits::img_read ( fp, lambda_ );
 
     fits::close ( fp );
 
   }
 
-  cached_ = false;
-  cached_first_ = 0;
-  cached_last_ = 0;
-
   nglobal_ = nspec_ * nlambda_;
 
   npix_ = rows_ * cols_;
-  
+
+  // either read the data or generate it
+
+  resp_.resize ( nglobal_ );
+
+  if ( dofake_ ) {
+
+    size_t xpix;
+    size_t ypix;
+
+    for ( size_t spec = 0; spec < nspec_; ++spec ) {
+      for ( size_t lambda = 0; lambda < nlambda_; ++lambda ) {
+        bin = spec * nlambda_ + lambda;
+
+        fake_spec2pix ( spec, specbin, ypix, xpix );
+
+        resp_[i].x = (double)xpix;
+        resp_[i].y = (double)ypix;
+        resp_[i].lambda = lambda_[ lambda ];
+        resp_[i].amp = 1.0;
+        resp_[i].maj = fake_psf_fwhm_ / 2.0;
+        resp_[i].min = fake_psf_fwhm_ / 2.0;
+        resp_[i].ang = 0.0;
+
+      }
+    }
+
+  } else {
+
+    vector_double buffer;
+
+    fits::img_seek ( fp, hdus_[ psf_gauss_hdu_x ] );      
+    fits::img_read ( fp, buffer );
+
+    for ( size_t i = 0; i < nglobal_; ++i ) {
+      resp_[i].x = buffer[i];
+    }
+
+    fits::img_seek ( fp, hdus_[ psf_gauss_hdu_y ] );      
+    fits::img_read ( fp, buffer );
+
+    for ( size_t i = 0; i < nglobal_; ++i ) {
+      resp_[i].y = buffer[i];
+    }
+
+    fits::img_seek ( fp, hdus_[ psf_gauss_hdu_amp ] );
+    fits::img_read ( fp, buffer );
+
+    for ( size_t i = 0; i < nglobal_; ++i ) {
+      resp_[i].amp = buffer[i];
+    }
+
+    fits::img_seek ( fp, hdus_[ psf_gauss_hdu_maj ] );      
+    fits::img_read ( fp, buffer );
+
+    for ( size_t i = 0; i < nglobal_; ++i ) {
+      resp_[i].maj = buffer[i];
+    }
+
+    fits::img_seek ( fp, hdus_[ psf_gauss_hdu_min ] );      
+    fits::img_read ( fp, buffer );
+
+    for ( size_t i = 0; i < nglobal_; ++i ) {
+      resp_[i].min = buffer[i];
+    }
+
+    fits::img_seek ( fp, hdus_[ psf_gauss_hdu_ang ] );      
+    fits::img_read ( fp, buffer );
+
+    for ( size_t i = 0; i < nglobal_; ++i ) {
+      resp_[i].ang = buffer[i];
+    }
+
+  }
+
 }
 
 
@@ -158,154 +274,6 @@ int harp::psf_gauss::hdu_info ( fitsfile *fp, const char * psf_gauss_hdu ) {
 
 harp::psf_gauss::~psf_gauss ( ) {
   
-}
-
-
-void harp::psf_gauss::cache ( size_t first_spec, size_t last_spec ) {
-
-  size_t nspec = last_spec - first_spec + 1;
-
-  if ( ! cached_ ) {
-
-    cached_ = true;
-    cached_first_ = first_spec;
-    cached_last_ = last_spec;
-
-    for ( size_t i = 0; i < nspec; ++i ) {
-      size_t spec = i + first_spec;
-      resp_[ spec ].reset ( new psf_gauss_resp );
-    }
-
-    if ( dofake_ ) {
-      return;
-    }
-
-    int np;
-    int myp;
-    int ret;
-
-    MPI_Comm_size ( MPI_COMM_WORLD, &np );
-    MPI_Comm_rank ( MPI_COMM_WORLD, &myp );
-    
-    fitsfile *fp;
-
-    if ( myp == 0 ) {
-      fits::open_read ( fp, path_ );
-    }
-
-    matrix_local iobuffer ( nlambda_, nspec_ );
-
-    if ( myp == 0 ) {
-      fits::img_seek ( fp, hdus_[ psf_gauss_hdu_x ] );      
-      fits::img_read ( fp, iobuffer );
-    }
-    ret = MPI_Bcast ( (void*)(iobuffer.Buffer()), nglobal_, MPI_DOUBLE, 0, MPI_COMM_WORLD );
-    mpi_check ( MPI_COMM_WORLD, ret );
-    for ( size_t i = 0; i < nspec; ++i ) {
-      size_t spec = i + first_spec;
-      resp_[ spec ]->x.ResizeTo ( nlambda_, 1 );
-      for ( size_t j = 0; j < nlambda_; ++j ) {
-        resp_[ spec ]->x.Set ( j, 0, iobuffer.Get ( j, spec ) );
-      }
-    }
-
-    if ( myp == 0 ) {
-      fits::img_seek ( fp, hdus_[ psf_gauss_hdu_y ] );      
-      fits::img_read ( fp, iobuffer );
-    }
-    ret = MPI_Bcast ( (void*)(iobuffer.Buffer()), nglobal_, MPI_DOUBLE, 0, MPI_COMM_WORLD );
-    mpi_check ( MPI_COMM_WORLD, ret );
-    for ( size_t i = 0; i < nspec; ++i ) {
-      size_t spec = i + first_spec;
-      resp_[ spec ]->y.ResizeTo ( nlambda_, 1 );
-      for ( size_t j = 0; j < nlambda_; ++j ) {
-        resp_[ spec ]->y.Set ( j, 0, iobuffer.Get ( j, spec ) );
-      }
-    }
-
-    if ( myp == 0 ) {
-      fits::img_seek ( fp, hdus_[ psf_gauss_hdu_lambda ] );      
-      fits::img_read ( fp, iobuffer );
-    }
-    ret = MPI_Bcast ( (void*)(iobuffer.Buffer()), nglobal_, MPI_DOUBLE, 0, MPI_COMM_WORLD );
-    mpi_check ( MPI_COMM_WORLD, ret );
-    for ( size_t i = 0; i < nspec; ++i ) {
-      size_t spec = i + first_spec;
-      resp_[ spec ]->lambda.ResizeTo ( nlambda_, 1 );
-      for ( size_t j = 0; j < nlambda_; ++j ) {
-        resp_[ spec ]->lambda.Set ( j, 0, iobuffer.Get ( j, spec ) );
-      }
-    }
-
-    if ( myp == 0 ) {
-      fits::img_seek ( fp, hdus_[ psf_gauss_hdu_amp ] );      
-      fits::img_read ( fp, iobuffer );
-    }
-    ret = MPI_Bcast ( (void*)(iobuffer.Buffer()), nglobal_, MPI_DOUBLE, 0, MPI_COMM_WORLD );
-    mpi_check ( MPI_COMM_WORLD, ret );
-    for ( size_t i = 0; i < nspec; ++i ) {
-      size_t spec = i + first_spec;
-      resp_[ spec ]->amp.ResizeTo ( nlambda_, 1 );
-      for ( size_t j = 0; j < nlambda_; ++j ) {
-        resp_[ spec ]->amp.Set ( j, 0, iobuffer.Get ( j, spec ) );
-      }
-    }
-
-    if ( myp == 0 ) {
-      fits::img_seek ( fp, hdus_[ psf_gauss_hdu_maj ] );      
-      fits::img_read ( fp, iobuffer );
-    }
-    ret = MPI_Bcast ( (void*)(iobuffer.Buffer()), nglobal_, MPI_DOUBLE, 0, MPI_COMM_WORLD );
-    mpi_check ( MPI_COMM_WORLD, ret );
-    for ( size_t i = 0; i < nspec; ++i ) {
-      size_t spec = i + first_spec;
-      resp_[ spec ]->maj.ResizeTo ( nlambda_, 1 );
-      for ( size_t j = 0; j < nlambda_; ++j ) {
-        resp_[ spec ]->maj.Set ( j, 0, iobuffer.Get ( j, spec ) );
-      }
-    }
-
-    if ( myp == 0 ) {
-      fits::img_seek ( fp, hdus_[ psf_gauss_hdu_min ] );      
-      fits::img_read ( fp, iobuffer );
-    }
-    ret = MPI_Bcast ( (void*)(iobuffer.Buffer()), nglobal_, MPI_DOUBLE, 0, MPI_COMM_WORLD );
-    mpi_check ( MPI_COMM_WORLD, ret );
-    for ( size_t i = 0; i < nspec; ++i ) {
-      size_t spec = i + first_spec;
-      resp_[ spec ]->min.ResizeTo ( nlambda_, 1 );
-      for ( size_t j = 0; j < nlambda_; ++j ) {
-        resp_[ spec ]->min.Set ( j, 0, iobuffer.Get ( j, spec ) );
-      }
-    }
-
-    if ( myp == 0 ) {
-      fits::img_seek ( fp, hdus_[ psf_gauss_hdu_ang ] );      
-      fits::img_read ( fp, iobuffer );
-    }
-    ret = MPI_Bcast ( (void*)(iobuffer.Buffer()), nglobal_, MPI_DOUBLE, 0, MPI_COMM_WORLD );
-    mpi_check ( MPI_COMM_WORLD, ret );
-    for ( size_t i = 0; i < nspec; ++i ) {
-      size_t spec = i + first_spec;
-      resp_[ spec ]->ang.ResizeTo ( nlambda_, 1 );
-      for ( size_t j = 0; j < nlambda_; ++j ) {
-        resp_[ spec ]->ang.Set ( j, 0, iobuffer.Get ( j, spec ) );
-      }
-    }
-    
-    if ( myp == 0 ) {
-      fits::close ( fp );
-    }
-
-  } else {
-    if ( ( cached_first_ != first_spec ) || ( cached_last_ != last_spec ) ) {
-      std::ostringstream o;
-      o << "attempting to change which spectra are cached locally (" << cached_first_ << "-" << cached_last_ << ") --> (" << first_spec << "-" << last_spec << ")";
-      HARP_THROW( o.str().c_str() );
-    }
-  }
-  
-  return;
 }
 
 
@@ -400,46 +368,7 @@ void harp::psf_gauss::extent ( size_t firstspec, size_t lastspec, size_t firstbi
 }
 
 
-void harp::psf_gauss::gauss_sample ( matrix_local & vals, matrix_local & xrel, matrix_local & yrel, double amp, double maj, double min, double ang ) {
 
-  double PI = std::atan2 ( 0.0, -1.0 );
-  
-  amp /= maj * min * 2.0 * PI;
-  
-  size_t nvals = xrel.Height();
-  
-  double cang = cos ( ang );
-  double sang = sin ( ang );
-  
-  double invmaj = 1.0 / maj;
-  double invmin = 1.0 / min;
-  
-  double xt, yt, exparg;
-  
-  size_t i;
-
-  double norm = 0.0;
-  
-  for ( i = 0; i < nvals; ++i ) {
-    xt = xrel.Get( i, 0 ) * cang + yrel.Get( i, 0 ) * sang;
-    yt = - xrel.Get( i, 0 ) * sang + yrel.Get( i, 0 ) * cang;
-    exparg = - 0.5 * ( xt * xt * invmaj * invmaj + yt * yt * invmin * invmin );
-    vals.Set( i, 0, amp * exp ( exparg ) );
-    norm += vals.Get ( i, 0 );
-  }
-
-  norm = 1.0 / norm;
-
-  double temp;
-
-  for ( i = 0; i < nvals; ++i ) {
-    temp = vals.Get ( i, 0 );
-    temp *= norm;
-    vals.Set ( i, 0, temp );
-  }  
-  
-  return;
-}
 
 
 void harp::psf_gauss::projection ( size_t first_spec, size_t last_spec, size_t first_lambda, size_t last_lambda, matrix_sparse & AT ) {
