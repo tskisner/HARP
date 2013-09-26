@@ -92,7 +92,8 @@ namespace harp {
           ar >> psf_props_;
           ar >> rows_;
           ar >> cols_;
-          ar >> measured_;
+          ar >> signal_;
+          ar >> noise_;
           ar >> invcov_;
           ar >> sky_;
       }

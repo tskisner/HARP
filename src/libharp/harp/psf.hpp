@@ -49,19 +49,21 @@ namespace harp {
         HARP_THROW( "fell through to virtual method" );
         return;
       }
+
+      static size_t total_bins ( std::map < size_t, std::set < size_t > > const & speclambda );
+
+      // The base class provides a default implementation of these 2 functions, so that derived classes
+      // only need to implement the response() method.
       
-      virtual void project ( size_t first_spec, size_t last_spec, size_t first_lambda, size_t last_lambda, matrix_double & A ) {
-        
+      virtual void project ( std::map < size_t, std::set < size_t > > const & speclambda, matrix_double & A );
 
-        return;
-      }
+      virtual void project_transpose ( std::map < size_t, std::set < size_t > > const & speclambda, matrix_double_sparse & AT );
 
-      virtual void project_transpose ( size_t first_spec, size_t last_spec, size_t first_lambda, size_t last_lambda, matrix_double_sparse & AT ) {
+      // These are convenience functions if you want the whole projection matrix
 
-        
-        
-        return;
-      }
+      void project ( matrix_double & A );
+
+      void project_transpose ( matrix_double_sparse & AT );
       
       std::string format ( );
       

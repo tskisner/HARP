@@ -9,5 +9,6 @@ libharp_la_SOURCES += \
   formats/harp_spec_sim.cpp \
   formats/harp_image_fits.cpp \
   formats/harp_image_sim.cpp \
-  formats/harp_psf_gauss.cpp
+  formats/harp_psf_gauss.cpp \
+  formats/harp_psf_gauss_sim.cpp
 

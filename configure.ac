@@ -69,14 +69,12 @@ AM_CONDITIONAL([HAVE_AM_PYTHON], [test "x$PYTHON_VERSION" != x])
 dnl +------------------------------------------------
 dnl | Check for BOOST
 dnl +------------------------------------------------
-have_boost=no
 BOOST_REQUIRE([1.40], [AC_MSG_WARN([Could not find BOOST library >= 1.40!])])
-BOOST_PROGRAM_OPTIONS([have_boost=yes], [AC_MSG_WARN([Could not find BOOST program options library])])
-dnl BOOST_REGEX([], [AC_MSG_ERROR([Could not find BOOST REGEX library])])
-if test x"$toast_python" != xno; then
+BOOST_PROGRAM_OPTIONS([harp_boost=yes], [AC_MSG_WARN([Could not find BOOST program options library])])
+if test x"$harp_python" != xno; then
   BOOST_PYTHON
 fi
-AM_CONDITIONAL([HAVE_AM_BOOST], [test $have_boost = yes])
+AM_CONDITIONAL([HAVE_AM_BOOST], [test "x$BOOST_PROGRAM_OPTIONS_LIBS" != x])
 dnl +------------------------------------------------
 dnl | Check for MPI
 dnl +------------------------------------------------
@@ -111,11 +109,11 @@ dnl +------------------------------------------------
 AC_MSG_NOTICE([                                           ])
 AC_MSG_NOTICE([=========== Build Configuration ===========])
 AC_MSG_NOTICE([                                           ])
-AC_MSG_NOTICE([  C++ Compiler           : $CXX])
+AC_MSG_NOTICE([  C++ Compiler              : $CXX])
 if test x"${have_mpi}" = xyes; then
-  AC_MSG_NOTICE([  MPI C++ Compiler           : $MPICXX])
+  AC_MSG_NOTICE([  MPI C++ Compiler          : $MPICXX])
 else
-  AC_MSG_NOTICE([  MPI C++ Compiler           : Not Found])
+  AC_MSG_NOTICE([  MPI C++ Compiler          : Not Found])
 fi
 AC_MSG_NOTICE([  C++ Compile flags         : $CXXFLAGS])
 if test x"${ax_have_openmp}" = xyes; then
@@ -132,10 +130,9 @@ if test x"${PYTHON_VERSION}" != x; then
 else
   AC_MSG_NOTICE([  Python                    : Disabled])
 fi
-if test x"${have_boost}" = xyes; then
+if test x"$BOOST_PROGRAM_OPTIONS_LIBS" != x; then
   AC_MSG_NOTICE([  Boost Compile             : $BOOST_CPPFLAGS])
-  AC_MSG_NOTICE([  Boost Link Flags          : $BOOST_LDFLAGS])
-  AC_MSG_NOTICE([  Boost Program Options     : $BOOST_PROGRAM_OPTIONS_LIB])
+  AC_MSG_NOTICE([  Boost Program Options     : $BOOST_PROGRAM_OPTIONS_LDFLAGS $BOOST_PROGRAM_OPTIONS_LIBS])
 else
   AC_MSG_NOTICE([  Boost                     : Disabled])
 fi

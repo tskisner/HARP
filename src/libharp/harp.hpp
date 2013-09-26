@@ -7,6 +7,7 @@
 #include <memory>
 #include <vector>
 #include <map>
+#include <set>
 #include <sstream>
 
 
@@ -15,6 +16,7 @@
 #include <boost/numeric/ublas/vector_proxy.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
+#include <boost/numeric/ublas/matrix_sparse.hpp>
 #include <boost/numeric/ublas/storage.hpp>
 
 #include <boost/property_tree/ptree.hpp>

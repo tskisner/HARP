@@ -67,7 +67,7 @@ void harp::specter_write_sky ( fitsfile * fp, std::vector < bool > const & sky )
   coltypes[0] = "1E";
   colunits[0] = "None";
 
-  bin_create ( fp, string("TARGETINFO"), sky.size(), colnames, coltypes, colunits );
+  fits::bin_create ( fp, string("TARGETINFO"), sky.size(), colnames, coltypes, colunits );
 
   vector < string > objnames ( sky.size() );
 
@@ -182,11 +182,11 @@ void harp::spec_specter::write ( std::string const & path, vector_double & data,
     
   fits::create ( fp, path );
 
-  fits::img_append ( fp, nspec_, nlambda_ );
+  fits::img_append < double > ( fp, nspec_, nlambda_ );
   fits::write_key ( fp, "EXTNAME", "FLUX", "" );
   fits::img_write ( fp, data );
 
-  fits::img_append ( fp, 1, nlambda_ );
+  fits::img_append < double > ( fp, 1, nlambda_ );
   fits::write_key ( fp, "EXTNAME", "WAVELENGTH", "" );
   fits::img_write ( fp, lambda );
 

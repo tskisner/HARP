@@ -74,7 +74,7 @@ AC_ARG_WITH(elemental, [AC_HELP_STRING([--with-elemental=<PATH>], [use the Eleme
 if test x"$with_elemental" != x; then
    if test x"$with_elemental" != xno; then
       ELEMENTAL_CPPFLAGS="-I$with_elemental/include"
-      ELEMENTAL="-L$with_elemental/lib -lelemental -lpmrrr"
+      ELEMENTAL="-L$with_elemental/lib $acx_elemental_default"
    else
       acx_elemental_ok=disable
    fi
@@ -86,9 +86,8 @@ else
 
    # Save environment
 
-   acx_elemental_save_CC="$CC"
    acx_elemental_save_CXX="$CXX"
-   acx_elemental_save_CPP="$CPP"
+   acx_elemental_save_CXXCPP="$CXXCPP"
    acx_elemental_save_CPPFLAGS="$CPPFLAGS"
    acx_elemental_save_LIBS="$LIBS"
 
@@ -179,9 +178,8 @@ else
 
    # Restore environment
 
-   CC="$acx_elemental_save_CC"
    CXX="$acx_elemental_save_CXX"
-   CPP="$acx_elemental_save_CPP"
+   CXXCPP="$acx_elemental_save_CXXCPP"
    CPPFLAGS="$acx_elemental_save_CPPFLAGS"
    LIBS="$acx_elemental_save_LIBS"
 

@@ -134,22 +134,22 @@ void harp::image_sim::write ( std::string const & path, vector_double & data, ve
     
   fits::create ( fp, path );
   
-  fits::img_append ( fp, rows_, cols_ );
+  fits::img_append < double > ( fp, rows_, cols_ );
   
   fits::img_write ( fp, data );
 
-  fits::img_append ( fp, rows_, cols_ );
+  fits::img_append < double > ( fp, rows_, cols_ );
   
   fits::img_write ( fp, invvar );
 
   specter_write_sky ( fp, sky );
 
-  fits::img_append ( fp, rows_, cols_ );
+  fits::img_append < double > ( fp, rows_, cols_ );
 
   fits::write_key ( fp, "EXTNAME", "signal", "simulated signal" );
   fits::img_write ( fp, signal_ );
 
-  fits::img_append ( fp, rows_, cols_ );
+  fits::img_append < double > ( fp, rows_, cols_ );
 
   fits::write_key ( fp, "EXTNAME", "noise", "simulated noise" );
   fits::img_write ( fp, noise_ );

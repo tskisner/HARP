@@ -39,49 +39,49 @@ namespace harp { namespace fits {
   struct ftype {
     static int datatype () { return 0; }
     static int bitpix () { return 0; }
-    static std::string coltype () { return string(""); }
+    static std::string coltype () { return std::string(""); }
   };
 
   template < >
   struct ftype < double > {
     static int datatype () { return TDOUBLE; }
     static int bitpix () { return -64; }
-    static std::string coltype () { return string("D"); }
+    static std::string coltype () { return std::string("D"); }
   };
 
   template < >
   struct ftype < float > {
     static int datatype () { return TFLOAT; }
     static int bitpix () { return -32; }
-    static std::string coltype () { return string("E"); }
+    static std::string coltype () { return std::string("E"); }
   };
 
   template < >
   struct ftype < long long int > {
     static int datatype () { return TLONGLONG; }
     static int bitpix () { return 64; }
-    static std::string coltype () { return string("K"); }
+    static std::string coltype () { return std::string("K"); }
   };
 
   template < >
   struct ftype < int > {
     static int datatype () { return TINT32BIT; }
     static int bitpix () { return 32; }
-    static std::string coltype () { return string("J"); }
+    static std::string coltype () { return std::string("J"); }
   };
 
   template < >
   struct ftype < short int > {
     static int datatype () { return TSHORT; }
     static int bitpix () { return 16; }
-    static std::string coltype () { return string("I"); }
+    static std::string coltype () { return std::string("I"); }
   };
 
   template < >
   struct ftype < unsigned char > {
     static int datatype () { return TBYTE; }
     static int bitpix () { return 8; }
-    static std::string coltype () { return string("B"); }
+    static std::string coltype () { return std::string("B"); }
   };
 
   // seek operations
@@ -121,7 +121,7 @@ namespace harp { namespace fits {
 
 
   template < class V >
-  void img_write ( fitsfile * fp, boost::numeric::ublas::vector_expression < V > & data ) {
+  void img_write ( fitsfile * fp, boost::numeric::ublas::vector_expression < V > const & data ) {
 
     typedef V vector_type;
     typedef typename vector_type::value_type value_type;
@@ -146,8 +146,21 @@ namespace harp { namespace fits {
 
     int fitstype = ftype < value_type > :: datatype();
 
-    ret = fits_write_pix ( fp, fitstype, fpixel, npix, &( data()[0] ), &status );
+    // copy data to a buffer to work around stupid CFITSIO non-const API
+
+    value_type * buffer = (value_type*) malloc ( npix * sizeof( value_type ) );
+
+    if ( ! buffer ) {
+      HARP_THROW( "cannot allocate img buffer" );
+    }
+    for ( long i = 0; i < npix; ++i ) {
+      buffer[i] = data()[i];
+    }
+
+    ret = fits_write_pix ( fp, fitstype, fpixel, npix, buffer, &status );
     fits::check ( status );
+
+    free ( buffer );
 
     return;
   }
@@ -245,7 +258,7 @@ namespace harp { namespace fits {
   void bin_create ( fitsfile * fp, std::string extname, size_t nrows, std::vector < std::string > colnames, std::vector < std::string > coltypes, std::vector < std::string > colunits );
 
 
-  void bin_info ( fitsfile * fp, size_t & nrows, vector < string > & colnames );
+  void bin_info ( fitsfile * fp, size_t & nrows, std::vector < std::string > & colnames );
 
   
   std::vector < int > bin_columns ( fitsfile * fp, std::vector < std::string > & names );
@@ -290,7 +303,7 @@ namespace harp { namespace fits {
 
     int anynul;
 
-    ret = fits_read_col ( fp, fitstype, column + 1, offset + 1, 1, nread, 0, &(data()[dataoffset]), &anynul, &status );
+    ret = fits_read_col ( fp, fitstype, column + 1, offset + 1, 1, nread, 0, &(data()[0]), &anynul, &status );
     fits::check ( status );
 
     return;
@@ -298,7 +311,7 @@ namespace harp { namespace fits {
 
 
   template < class V >
-  void bin_write_column ( fitsfile * fp, size_t firstrow, size_t lastrow, int column, boost::numeric::ublas::vector_expression < V > & data ) {
+  void bin_write_column ( fitsfile * fp, size_t firstrow, size_t lastrow, int column, boost::numeric::ublas::vector_expression < V > const & data ) {
 
     typedef V vector_type;
     typedef typename vector_type::value_type value_type;
@@ -336,8 +349,21 @@ namespace harp { namespace fits {
       HARP_THROW( o.str().c_str() );
     }
 
-    ret = fits_write_col ( fp, fitstype, colnum + 1, offset + 1, 1, nwrite, &(data()[dataoffset]), &status );
+    // copy data to a buffer to work around stupid CFITSIO non-const API
+
+    value_type * buffer = (value_type*) malloc ( nwrite * sizeof( value_type ) );
+
+    if ( ! buffer ) {
+      HARP_THROW( "cannot allocate bintable buffer" );
+    }
+    for ( long i = 0; i < nwrite; ++i ) {
+      buffer[i] = data()[i];
+    }
+
+    ret = fits_write_col ( fp, fitstype, column + 1, offset + 1, 1, nwrite, buffer, &status );
     fits::check ( status );
+
+    free ( buffer );
 
     return;
   }

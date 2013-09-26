@@ -95,11 +95,11 @@ void harp::image_fits::write ( std::string const & path, vector_double & data, v
     
   fits::create ( fp, path );
   
-  fits::img_append ( fp, rows_, cols_ );
+  fits::img_append < double > ( fp, rows_, cols_ );
   
   fits::img_write ( fp, data );
 
-  fits::img_append ( fp, rows_, cols_ );
+  fits::img_append < double > ( fp, rows_, cols_ );
   
   fits::img_write ( fp, invvar );
 

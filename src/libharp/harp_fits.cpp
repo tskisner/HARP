@@ -450,7 +450,7 @@ void harp::fits::bin_create ( fitsfile * fp, std::string extname, size_t nrows, 
   char cextname[ FLEN_VALUE ];
   strncpy ( cextname, extname.c_str(), FLEN_VALUE );
 
-  ret = fits_create_tbl ( fp, BINARY_TBL, (long)nrows, (int)ncols, ttype, tform, tunit, cextname, &status );
+  int ret = fits_create_tbl ( fp, BINARY_TBL, (long)nrows, (int)ncols, ttype, tform, tunit, cextname, &status );
   fits::check ( status );
 
   for ( size_t c = 0; c < ncols; ++c ) {
@@ -624,11 +624,11 @@ void harp::fits::bin_write_column_strings ( fitsfile * fp, size_t firstrow, size
   // temporary char buffer
 
   char ** charray;
-  charray = (char**) malloc ( nread * sizeof( char* ) );
+  charray = (char**) malloc ( nwrite * sizeof( char* ) );
   if ( ! charray ) {
     HARP_THROW( "cannot allocate temp char array" );
   }
-  for ( long i = 0; i < nread; ++i ) {
+  for ( long i = 0; i < nwrite; ++i ) {
     charray[i] = (char*) malloc ( FLEN_VALUE * sizeof (char) );
     if ( ! charray[i] ) {
       HARP_THROW( "cannot allocate temp char array member" );

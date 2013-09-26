@@ -69,32 +69,12 @@ CLIQUE=""
 
 AC_ARG_WITH(clique, [AC_HELP_STRING([--with-clique=<PATH>], [use the Clique installed in <PATH>.])])
 
-if test x"$with_elemental" != x; then
-   if test x"$with_elemental" != xno; then
-      ELEMENTAL_CPPFLAGS="-I$with_elemental/include"
-      ELEMENTAL="-L$with_elemental/lib -lelemental -lpmrrr"
+if test x"$with_clique" != x; then
+   if test x"$with_clique" != xno; then
+      CLIQUE_CPPFLAGS="-I$with_clique/include"
+      CLIQUE="-L$with_clique/lib $acx_clique_default"
    else
       acx_elemental_ok=disable
-   fi
-fi
-
-AC_ARG_WITH(clique-cpp, [AC_HELP_STRING([--with-clique-cpp=<flags>], [use Clique preprocessing flags <flags>.  Set to "no" to disable.])])
-
-AC_ARG_WITH(clique-libs, [AC_HELP_STRING([--with-clique-libs=<flags>], [use Clique linking flags <flags>.  Set to "no" to disable.])])
-
-if test x"$with_clique_cpp" != x; then
-   if test x"$with_clique_cpp" != xno; then
-      CLIQUE_CPPFLAGS="$with_clique_cpp"
-   else
-      acx_clique_ok=disable
-   fi
-fi
-
-if test x"$with_clique_libs" != x; then
-   if test x"$with_clique_libs" != xno; then
-      CLIQUE="$with_clique_libs"
-   else
-      acx_clique_ok=disable
    fi
 fi
 
@@ -105,7 +85,7 @@ else
    # Save environment
 
    acx_clique_save_CXX="$CXX"
-   acx_clique_save_CPP="$CPP"
+   acx_clique_save_CXXCPP="$CXXCPP"
    acx_clique_save_CPPFLAGS="$CPPFLAGS"
    acx_clique_save_LIBS="$LIBS"
 
@@ -114,8 +94,8 @@ else
 
    CXX="$MPICXX"
    CXXCPP="$MPICXX -E"
-   CPPFLAGS="$CPPFLAGS $CLIQUE_CPPFLAGS"
-   LIBS="$CLIQUE $acx_clique_save_LIBS -lm $OPENMP_CXXFLAGS"
+   CPPFLAGS="$CPPFLAGS $ELEMENTAL_CPPFLAGS $CLIQUE_CPPFLAGS"
+   LIBS="$CLIQUE $acx_clique_save_LIBS $ELEMENTAL $LAPACK_LIBS $BLAS_LIBS $LIBS $FCLIBS -lm $OPENMP_CXXFLAGS"
 
    AC_CHECK_HEADERS([clique.hpp])
 
@@ -133,7 +113,7 @@ else
 
    if test $acx_clique_ok = no; then
       CLIQUE="$acx_clique_default"
-      LIBS="$acx_clique_default $LAPACK_LIBS $BLAS_LIBS $acx_clique_save_LIBS -lm $OPENMP_CXXFLAGS"
+      LIBS="$acx_clique_default $acx_clique_save_LIBS $ELEMENTAL $LAPACK_LIBS $BLAS_LIBS $LIBS $FCLIBS -lm $OPENMP_CXXFLAGS"
 
       AC_MSG_CHECKING([for cliq::DistSparseMatrix::StartAssembly in default location])
       AC_LINK_IFELSE([AC_LANG_PROGRAM([
@@ -154,8 +134,8 @@ else
 
    # Restore environment
 
-   CC="$acx_clique_save_CC"
-   CPP="$acx_clique_save_CPP"
+   CXX="$acx_clique_save_CXX"
+   CXXCPP="$acx_clique_save_CXXCPP"
    LIBS="$acx_clique_save_LIBS"
    CPPFLAGS="$acx_clique_save_CPPFLAGS"
 

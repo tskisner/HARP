@@ -7,9 +7,9 @@ using namespace harp;
 
 
 static const char * spec_sim_key_nspec = "nspec";
-static const char * spec_sim_key_nlambda = "nlambda";
-static const char * spec_sim_key_firstlambda = "first_lambda";
-static const char * spec_sim_key_lastlambda = "last_lambda";
+static const char * spec_sim_key_nlambda = "lambda_n";
+static const char * spec_sim_key_firstlambda = "lambda_start";
+static const char * spec_sim_key_lastlambda = "lambda_stop";
 static const char * spec_sim_key_back = "back";
 static const char * spec_sim_key_atm = "atm";
 static const char * spec_sim_key_obj = "obj";
@@ -21,11 +21,11 @@ harp::spec_sim::spec_sim ( boost::property_tree::ptree const & props ) : spec ( 
   
   nspec_ = props.get < size_t > ( spec_sim_key_nspec );
 
-  nlambda_ = props.get < size_t > ( spec_sim_key_nlambda );
+  nlambda_ = props.get < size_t > ( spec_sim_key_nlambda, 4697 );
 
-  first_lambda_ = props.get < double > ( spec_sim_key_firstlambda );
+  first_lambda_ = props.get < double > ( spec_sim_key_firstlambda, 7460.0 );
 
-  last_lambda_ = props.get < double > ( spec_sim_key_lastlambda );  
+  last_lambda_ = props.get < double > ( spec_sim_key_lastlambda, 9808.0 );  
 
   background_ = props.get < double > ( spec_sim_key_back );
 
@@ -112,11 +112,11 @@ void harp::spec_sim::write ( std::string const & path, vector_double & data, vec
     
   fits::create ( fp, path );
 
-  fits::img_append ( fp, nspec_, nlambda_ );
+  fits::img_append < double > ( fp, nspec_, nlambda_ );
   fits::write_key ( fp, "EXTNAME", "FLUX", "" );
   fits::img_write ( fp, data );
 
-  fits::img_append ( fp, 1, nlambda_ );
+  fits::img_append < double > ( fp, 1, nlambda_ );
   fits::write_key ( fp, "EXTNAME", "WAVELENGTH", "" );
   fits::img_write ( fp, lambda );
 
@@ -128,7 +128,7 @@ void harp::spec_sim::write ( std::string const & path, vector_double & data, vec
 }
 
 
-void harp::spec_sim::sky_truth ( matrix_dist & data ) {
+void harp::spec_sim::sky_truth ( vector_double & data ) {
 
   double PI = std::atan2 ( 0.0, -1.0 );
 
