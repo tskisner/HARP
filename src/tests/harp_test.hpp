@@ -9,7 +9,7 @@ namespace harp {
 
   void test_spec_specter ( std::string const & datadir );
 
-  //void test_spec_sim ( std::string const & datadir );
+  void test_spec_sim ( std::string const & datadir );
 
   //void test_image_fits ( std::string const & datadir );
 

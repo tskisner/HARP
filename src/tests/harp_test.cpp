@@ -15,7 +15,7 @@ int main ( int argc, char *argv[] ) {
 
   test_spec_specter ( datadir );
 
-  //test_spec_sim ( datadir );
+  test_spec_sim ( datadir );
 
   //test_image_sim ( datadir );
 

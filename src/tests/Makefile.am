@@ -13,9 +13,9 @@ TESTS = harp_test
 
 harp_test_SOURCES = \
 	harp_test.cpp \
-	harp_test_spec_specter.cpp
+	harp_test_spec_specter.cpp \
+	harp_test_spec_sim.cpp
 
-#	harp_test_spec_sim.cpp \
 #	harp_test_image_sim.cpp \
 #	harp_test_image_fits.cpp \
 #	harp_test_psf_gauss.cpp \
