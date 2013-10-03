@@ -685,6 +685,70 @@ void harp::fits::test ( string const & datadir ) {
   
   fits::img_write ( fp, data );
 
+  size_t tabrows = 10;
+
+  vector < string > colnames ( 7 );
+  vector < string > coltypes ( 7 );
+  vector < string > colunits ( 7 );
+
+  colnames[0] = "DOUBLE";
+  coltypes[0] = "1" + fits::ftype < double > :: coltype();
+  colunits[0] = "None";
+
+  colnames[1] = "FLOAT";
+  coltypes[1] = "1" + fits::ftype < float > :: coltype();
+  colunits[1] = "None";
+
+  colnames[2] = "LONGLONG";
+  coltypes[2] = "1" + fits::ftype < long long int > :: coltype();
+  colunits[2] = "None";
+
+  colnames[3] = "INT";
+  coltypes[3] = "1" + fits::ftype < int > :: coltype();
+  colunits[3] = "None";
+
+  colnames[4] = "SHORT";
+  coltypes[4] = "1" + fits::ftype < short int > :: coltype();
+  colunits[4] = "None";
+
+  colnames[5] = "CHAR";
+  coltypes[5] = "1" + fits::ftype < unsigned char > :: coltype();
+  colunits[5] = "None";
+
+  colnames[6] = "STRING";
+  coltypes[6] = "6A";
+  colunits[6] = "None";
+
+
+  fits::bin_create ( fp, string("TEST"), tabrows, colnames, coltypes, colunits );
+
+  boost::numeric::ublas::vector < double > data_double ( tabrows );
+  boost::numeric::ublas::vector < float > data_float ( tabrows );
+  boost::numeric::ublas::vector < long long > data_longlong ( tabrows );
+  boost::numeric::ublas::vector < int > data_int ( tabrows );
+  boost::numeric::ublas::vector < short int > data_short ( tabrows );
+  boost::numeric::ublas::vector < unsigned char > data_char ( tabrows );
+  vector < string > names ( rows );
+
+  for ( size_t i = 0; i < tabrows; ++i ) {
+    names[i] = "Blah";
+    data_double[i] = (double)i;
+    data_float[i] = (float)i;
+    data_longlong[i] = (long long)i;
+    data_int[i] = (int)i;
+    data_short[i] = (short)i;
+    data_char[i] = (unsigned char)i;
+  }
+
+  fits::bin_write_column ( fp, 0, tabrows - 1, 0, data_double );
+  fits::bin_write_column ( fp, 0, tabrows - 1, 1, data_float );
+  fits::bin_write_column ( fp, 0, tabrows - 1, 2, data_longlong );
+  fits::bin_write_column ( fp, 0, tabrows - 1, 3, data_int );
+  fits::bin_write_column ( fp, 0, tabrows - 1, 4, data_short );
+  fits::bin_write_column ( fp, 0, tabrows - 1, 5, data_char ); 
+
+  fits::bin_write_column_strings ( fp, 0, tabrows - 1, 6, names );
+
   fits::close ( fp );
 
   
@@ -716,6 +780,8 @@ void harp::fits::test ( string const & datadir ) {
   }
 
   fits::close ( fp );
+
+
 
   cerr << "  (PASSED)" << endl;
   

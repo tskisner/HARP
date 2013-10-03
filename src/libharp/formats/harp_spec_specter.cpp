@@ -33,8 +33,6 @@ void harp::specter_read_sky ( fitsfile * fp, std::vector < bool > & sky ) {
   vector < string > objnames;
   fits::bin_read_column_strings ( fp, 0, nspec - 1, skycols[0], objnames );
 
-  fits::close ( fp );
-
   sky.resize ( nspec );
 
   for ( size_t i = 0; i < nspec; ++i ) {
@@ -51,21 +49,21 @@ void harp::specter_read_sky ( fitsfile * fp, std::vector < bool > & sky ) {
 
 void harp::specter_write_sky ( fitsfile * fp, std::vector < bool > const & sky ) {
 
-  vector < string > colnames ( sky.size() );
-  vector < string > coltypes ( sky.size() );
-  vector < string > colunits ( sky.size() );
+  vector < string > colnames ( 3 );
+  vector < string > coltypes ( 3 );
+  vector < string > colunits ( 3 );
 
   colnames[0] = "OBJTYPE";
   coltypes[0] = "6A";
   colunits[0] = "None";
 
-  colnames[0] = "Z";
-  coltypes[0] = "1E";
-  colunits[0] = "None";
+  colnames[1] = "Z";
+  coltypes[1] = "1E";
+  colunits[1] = "None";
 
-  colnames[0] = "O2FLUX";
-  coltypes[0] = "1E";
-  colunits[0] = "None";
+  colnames[2] = "O2FLUX";
+  coltypes[2] = "1E";
+  colunits[2] = "None";
 
   fits::bin_create ( fp, string("TARGETINFO"), sky.size(), colnames, coltypes, colunits );
 
@@ -73,13 +71,13 @@ void harp::specter_write_sky ( fitsfile * fp, std::vector < bool > const & sky )
 
   for ( size_t i = 0; i < sky.size(); ++i ) {
     if ( sky[i] ) {
-      objnames[i] == "SKY";
+      objnames[i] = "SKY";
     } else {
-      objnames[i] = "Unknown";
+      objnames[i] = "NA";
     }
   }
 
-  fits::bin_write_column_strings ( fp, 0, sky.size() - 1, 1, objnames );
+  fits::bin_write_column_strings ( fp, 0, sky.size() - 1, 0, objnames );
 
   return;
 }
