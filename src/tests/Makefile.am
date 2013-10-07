@@ -5,7 +5,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/src/libharp -I$(top_srcdir)/src/libharp/formats -I
 AM_LDFLAGS =
 AM_LIBS = $(top_builddir)/src/libharp/libharp.la $(BOOST_LDFLAGS) $(CFITSIO) $(CLIQUE) $(OPENMP_CXXFLAGS) -lm
 
-noinst_HEADERS = harp_test.hpp
+noinst_HEADERS = harp_test.hpp harp_test_serialize.hpp
 
 bin_PROGRAMS = harp_test
 
@@ -13,6 +13,7 @@ TESTS = harp_test
 
 harp_test_SOURCES = \
 	harp_test.cpp \
+	harp_test_serialize.cpp \
 	harp_test_spec_specter.cpp \
 	harp_test_spec_sim.cpp
 

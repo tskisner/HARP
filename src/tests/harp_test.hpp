@@ -5,6 +5,8 @@
 
 #include <harp_internal.hpp>
 
+#include <harp_test_serialize.hpp>
+
 // boost serialization headers for dump / load tests
 #include <fstream>
 #include <boost/archive/xml_oarchive.hpp>
@@ -13,6 +15,8 @@
 #include <boost/archive/binary_iarchive.hpp>
 
 namespace harp {
+
+  void test_serialize ( std::string const & datadir );
 
   void test_spec_specter ( std::string const & datadir );
 
