@@ -37,6 +37,20 @@ void harp::test_spec_specter ( string const & datadir ) {
 
     spec_p testspec ( spec::create ( props ) );
 
+    // immediately serialize and restore, so that any issues with that process will impact the code that follows
+
+    string serialpath = datadir + "/test_specter_serialize.xml.out";
+    {
+      ofstream ofs ( serialpath.c_str() );
+      boost::archive::binary_oarchive oa ( ofs );
+      oa << testspec;
+    }
+    {
+      ifstream ifs ( serialpath.c_str() );
+      boost::archive::binary_iarchive ia ( ifs );
+      ia >> testspec;
+    }
+
     size_t nspec = testspec->n_spec();
     if ( nspec != 500 ) {
       cerr << "FAIL:  number of spectra (" << nspec << ") is not 500" << endl;

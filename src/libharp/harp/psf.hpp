@@ -11,6 +11,11 @@ namespace harp {
     friend class boost::serialization::access;
     
     public :
+
+      psf ( ) {
+        format_ = "";
+      }
+
       psf ( boost::property_tree::ptree const & props );
 
       virtual ~psf ( ) { }
@@ -85,22 +90,23 @@ namespace harp {
     private :
 
       template < class Archive >
-      void save ( Archive & ar, const unsigned int version ) const {
-          ar << format_;
-          ar << props_;
+      void serialize ( Archive & ar, const unsigned int version ) const {
+        ar & BOOST_SERIALIZATION_NVP(format_);
+        ar & BOOST_SERIALIZATION_NVP(props_);
+        return;
       }
-      template < class Archive >
-      void load ( Archive & ar, const unsigned int version ) {
-          ar >> format_;
-          ar >> props_;
-      }
-      BOOST_SERIALIZATION_SPLIT_MEMBER()
     
       std::string format_;
       boost::property_tree::ptree props_;
       
       
   };
+
+  //BOOST_CLASS_EXPORT_GUID(psf, "psf")
+
+  BOOST_SERIALIZATION_ASSUME_ABSTRACT(psf)
+
+  BOOST_SERIALIZATION_SHARED_PTR(psf)
   
   typedef boost::shared_ptr < harp::psf > psf_p;
   typedef boost::weak_ptr < harp::psf > psf_wp;

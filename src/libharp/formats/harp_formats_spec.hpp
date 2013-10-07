@@ -7,7 +7,23 @@ namespace harp {
     friend class boost::serialization::access;
     
     public :
+
+      spec_sim ( ) : spec () {
+        size_ = 0;
+        nspec_ = 0;
+        nlambda_ = 0;
+        background_ = 0.0;
+        atmpeak_ = 0.0;
+        objpeak_ = 0.0;
+        atmspace_ = 0;
+        objspace_ = 0;
+        skymod_ = 0;
+        first_lambda_ = 0.0;
+        last_lambda_ = 0.0;
+      }
+
       spec_sim ( boost::property_tree::ptree const & props );
+      
       ~spec_sim ( );
       
       size_t n_spec ( ) { return nspec_; }
@@ -23,36 +39,21 @@ namespace harp {
     private :
 
       template < class Archive >
-      void save ( Archive & ar, const unsigned int version ) const {
-          ar << boost::serialization::base_object < spec > (*this);
-          ar << size_;
-          ar << nspec_;
-          ar << nlambda_;
-          ar << background_;
-          ar << atmpeak_;
-          ar << objpeak_;
-          ar << atmspace_;
-          ar << objspace_;
-          ar << skymod_;
-          ar << first_lambda_;
-          ar << last_lambda_;
+      void serialize ( Archive & ar, const unsigned int version ) const {
+        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(spec);
+        ar & BOOST_SERIALIZATION_NVP(size_);
+        ar & BOOST_SERIALIZATION_NVP(nspec_);
+        ar & BOOST_SERIALIZATION_NVP(nlambda_);
+        ar & BOOST_SERIALIZATION_NVP(background_);
+        ar & BOOST_SERIALIZATION_NVP(atmpeak_);
+        ar & BOOST_SERIALIZATION_NVP(objpeak_);
+        ar & BOOST_SERIALIZATION_NVP(atmspace_);
+        ar & BOOST_SERIALIZATION_NVP(objspace_);
+        ar & BOOST_SERIALIZATION_NVP(skymod_);
+        ar & BOOST_SERIALIZATION_NVP(first_lambda_);
+        ar & BOOST_SERIALIZATION_NVP(last_lambda_);
+        return;
       }
-      template < class Archive >
-      void load ( Archive & ar, const unsigned int version ) {
-          ar >> boost::serialization::base_object < spec > (*this);
-          ar >> size_;
-          ar >> nspec_;
-          ar >> nlambda_;
-          ar >> background_;
-          ar >> atmpeak_;
-          ar >> objpeak_;
-          ar >> atmspace_;
-          ar >> objspace_;
-          ar >> skymod_;
-          ar >> first_lambda_;
-          ar >> last_lambda_;
-      }
-      BOOST_SERIALIZATION_SPLIT_MEMBER()
     
       size_t size_;
       size_t nspec_;
@@ -68,6 +69,8 @@ namespace harp {
     
   };
 
+  //BOOST_CLASS_EXPORT_GUID(spec_sim, "spec_sim")
+
 
   void specter_read_sky ( fitsfile * fp, std::vector < bool > & sky );
 
@@ -80,7 +83,21 @@ namespace harp {
     friend class boost::serialization::access;
     
     public :
+
+      spec_specter ( ) : spec () {
+        size_ = 0;
+        nspec_ = 0;
+        nlambda_ = 0;
+        nglobal_ = 0;
+        path_ = "";
+        objonly_ = false;
+        spechdu_ = -1;
+        lambdahdu_ = -1;
+        targethdu_ = -1;
+      }
+
       spec_specter ( boost::property_tree::ptree const & props );
+      
       ~spec_specter ( );
       
       size_t n_spec ( ) { return nspec_; }
@@ -94,32 +111,19 @@ namespace harp {
     private :
 
       template < class Archive >
-      void save ( Archive & ar, const unsigned int version ) const {
-          ar << boost::serialization::base_object < spec > (*this);
-          ar << size_;
-          ar << nspec_;
-          ar << nlambda_;
-          ar << nglobal_;
-          ar << path_;
-          ar << objonly_;
-          ar << spechdu_;
-          ar << lambdahdu_;
-          ar << targethdu_;
+      void serialize ( Archive & ar, const unsigned int version ) const {
+        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(spec);
+        ar & BOOST_SERIALIZATION_NVP(size_);
+        ar & BOOST_SERIALIZATION_NVP(nspec_);
+        ar & BOOST_SERIALIZATION_NVP(nlambda_);
+        ar & BOOST_SERIALIZATION_NVP(nglobal_);
+        ar & BOOST_SERIALIZATION_NVP(path_);
+        ar & BOOST_SERIALIZATION_NVP(objonly_);
+        ar & BOOST_SERIALIZATION_NVP(spechdu_);
+        ar & BOOST_SERIALIZATION_NVP(lambdahdu_);
+        ar & BOOST_SERIALIZATION_NVP(targethdu_);
+        return;
       }
-      template < class Archive >
-      void load ( Archive & ar, const unsigned int version ) {
-          ar >> boost::serialization::base_object < spec > (*this);
-          ar >> size_;
-          ar >> nspec_;
-          ar >> nlambda_;
-          ar >> nglobal_;
-          ar >> path_;
-          ar >> objonly_;
-          ar >> spechdu_;
-          ar >> lambdahdu_;
-          ar >> targethdu_;
-      }
-      BOOST_SERIALIZATION_SPLIT_MEMBER()
     
       size_t size_;
       size_t nspec_;
@@ -132,6 +136,8 @@ namespace harp {
       int targethdu_;
     
   };
+
+  //BOOST_CLASS_EXPORT_GUID(spec_specter, "spec_specter")
   
   
 }

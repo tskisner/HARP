@@ -12,7 +12,13 @@ namespace harp {
     friend class boost::serialization::access;
     
     public :
+
+      image ( ) {
+        format_ = "";
+      }
+
       image ( boost::property_tree::ptree const & props );
+      
       virtual ~image ( ) { }
       
       virtual size_t n_rows ( ) {
@@ -110,22 +116,23 @@ namespace harp {
     private :
 
       template < class Archive >
-      void save ( Archive & ar, const unsigned int version ) const {
-          ar << format_;
-          ar << props_;
+      void serialize ( Archive & ar, const unsigned int version ) const {
+        ar & BOOST_SERIALIZATION_NVP(format_);
+        ar & BOOST_SERIALIZATION_NVP(props_);
+        return;
       }
-      template < class Archive >
-      void load ( Archive & ar, const unsigned int version ) {
-          ar >> format_;
-          ar >> props_;
-      }
-      BOOST_SERIALIZATION_SPLIT_MEMBER()
     
       std::string format_;
       boost::property_tree::ptree props_;
       
       
   };
+
+  //BOOST_CLASS_EXPORT_GUID(image, "image")
+
+  BOOST_SERIALIZATION_ASSUME_ABSTRACT(image)
+
+  BOOST_SERIALIZATION_SHARED_PTR(image)
   
   typedef boost::shared_ptr < harp::image > image_p;
   typedef boost::weak_ptr < harp::image > image_wp;

@@ -7,7 +7,18 @@ namespace harp {
     friend class boost::serialization::access;
     
     public :
+
+      image_fits ( ) : image () {
+        rows_ = 0;
+        cols_ = 0;
+        path_ = "";
+        sighdu_ = -1;
+        nsehdu_ = -1;
+        skyhdu_ = -1;
+      }
+      
       image_fits ( boost::property_tree::ptree const & props );
+      
       ~image_fits ( );
       
       size_t n_rows ( ) { return rows_; }
@@ -21,28 +32,17 @@ namespace harp {
     private :
 
       template < class Archive >
-      void save ( Archive & ar, const unsigned int version ) const {
-          ar << boost::serialization::base_object < image > (*this);
-          ar << rows_;
-          ar << cols_;
-          ar << path_;
-          ar << sighdu_;
-          ar << nsehdu_;
-          ar << skyhdu_;
-          ar << sky_;
+      void serialize ( Archive & ar, const unsigned int version ) const {
+        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(image);
+        ar & BOOST_SERIALIZATION_NVP(rows_);
+        ar & BOOST_SERIALIZATION_NVP(cols_);
+        ar & BOOST_SERIALIZATION_NVP(path_);
+        ar & BOOST_SERIALIZATION_NVP(sighdu_);
+        ar & BOOST_SERIALIZATION_NVP(nsehdu_);
+        ar & BOOST_SERIALIZATION_NVP(skyhdu_);
+        ar & BOOST_SERIALIZATION_NVP(sky_);
+        return;
       }
-      template < class Archive >
-      void load ( Archive & ar, const unsigned int version ) {
-          ar >> boost::serialization::base_object < image > (*this);
-          ar >> rows_;
-          ar >> cols_;
-          ar >> path_;
-          ar >> sighdu_;
-          ar >> nsehdu_;
-          ar >> skyhdu_;
-          ar >> sky_;
-      }
-      BOOST_SERIALIZATION_SPLIT_MEMBER()
     
       size_t rows_;
       size_t cols_;
@@ -54,13 +54,22 @@ namespace harp {
     
   };
 
+  //BOOST_CLASS_EXPORT_GUID(image_fits, "image_fits")
+
 
   class image_sim : public image {
 
     friend class boost::serialization::access;
     
     public :
+
+      image_sim ( ) : image () {
+        rows_ = 0;
+        cols_ = 0;
+      }
+
       image_sim ( boost::property_tree::ptree const & props );
+      
       ~image_sim ( );
 
       size_t n_rows ( ) { return rows_; }
@@ -74,30 +83,18 @@ namespace harp {
     private :
 
       template < class Archive >
-      void save ( Archive & ar, const unsigned int version ) const {
-          ar << boost::serialization::base_object < image > (*this);
-          ar << spec_props_;
-          ar << psf_props_;
-          ar << rows_;
-          ar << cols_;
-          ar << signal_;
-          ar << noise_;
-          ar << invcov_;
-          ar << sky_;
+      void serialize ( Archive & ar, const unsigned int version ) const {
+        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(image);
+        ar & BOOST_SERIALIZATION_NVP(spec_props_);
+        ar & BOOST_SERIALIZATION_NVP(psf_props_);
+        ar & BOOST_SERIALIZATION_NVP(rows_);
+        ar & BOOST_SERIALIZATION_NVP(cols_);
+        ar & BOOST_SERIALIZATION_NVP(signal_);
+        ar & BOOST_SERIALIZATION_NVP(noise_);
+        ar & BOOST_SERIALIZATION_NVP(invcov_);
+        ar & BOOST_SERIALIZATION_NVP(sky_);
+        return;
       }
-      template < class Archive >
-      void load ( Archive & ar, const unsigned int version ) {
-          ar >> boost::serialization::base_object < image > (*this);
-          ar >> spec_props_;
-          ar >> psf_props_;
-          ar >> rows_;
-          ar >> cols_;
-          ar >> signal_;
-          ar >> noise_;
-          ar >> invcov_;
-          ar >> sky_;
-      }
-      BOOST_SERIALIZATION_SPLIT_MEMBER()
     
       boost::property_tree::ptree spec_props_;
       boost::property_tree::ptree psf_props_;
@@ -109,6 +106,8 @@ namespace harp {
       std::vector < bool > sky_;
     
   };
+
+  //BOOST_CLASS_EXPORT_GUID(image_sim, "image_sim")
   
   
 }

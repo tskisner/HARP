@@ -51,19 +51,19 @@ namespace harp {
 
       template < class Archive >
       void serialize ( Archive & ar, const unsigned int version ) {
-          ar & x;
-          ar & y;
-          ar & lambda;
-          ar & amp;
-          ar & maj;
-          ar & min;
-          ar & ang;
+        ar & BOOST_SERIALIZATION_NVP(x);
+        ar & BOOST_SERIALIZATION_NVP(y);
+        ar & BOOST_SERIALIZATION_NVP(lambda);
+        ar & BOOST_SERIALIZATION_NVP(amp);
+        ar & BOOST_SERIALIZATION_NVP(maj);
+        ar & BOOST_SERIALIZATION_NVP(min);
+        ar & BOOST_SERIALIZATION_NVP(ang);
+        return;
       }
 
   };
-  
-  // common function to project a
 
+  //BOOST_CLASS_EXPORT_GUID(psf_gauss_resp, "psf_gauss_resp")
 
 
   // elliptical gaussian class read from a file
@@ -73,6 +73,18 @@ namespace harp {
     friend class boost::serialization::access;
     
     public :
+
+      psf_gauss ( ) : psf () {
+        nspec_ = 0;
+        nlambda_ = 0;
+        rows_ = 0;
+        cols_ = 0;
+        nglobal_ = 0;
+        npix_ = 0;
+        pixcorr_ = 0;
+        path_ = "";
+      }
+
       psf_gauss ( boost::property_tree::ptree const & props );
 
       ~psf_gauss ( );
@@ -105,36 +117,21 @@ namespace harp {
     private :
 
       template < class Archive >
-      void save ( Archive & ar, const unsigned int version ) const {
-          ar << boost::serialization::base_object < psf > (*this);
-          ar << path_;
-          ar << nspec_;
-          ar << nlambda_;
-          ar << rows_;
-          ar << cols_;
-          ar << nglobal_;
-          ar << npix_;
-          ar << pixcorr_;
-          ar << lambda_;
-          ar << hdus_;
-          ar << resp_;
+      void serialize ( Archive & ar, const unsigned int version ) const {
+        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(psf);
+        ar & BOOST_SERIALIZATION_NVP(path_);
+        ar & BOOST_SERIALIZATION_NVP(nspec_);
+        ar & BOOST_SERIALIZATION_NVP(nlambda_);
+        ar & BOOST_SERIALIZATION_NVP(rows_);
+        ar & BOOST_SERIALIZATION_NVP(cols_);
+        ar & BOOST_SERIALIZATION_NVP(nglobal_);
+        ar & BOOST_SERIALIZATION_NVP(npix_);
+        ar & BOOST_SERIALIZATION_NVP(pixcorr_);
+        ar & BOOST_SERIALIZATION_NVP(lambda_);
+        ar & BOOST_SERIALIZATION_NVP(hdus_);
+        ar & BOOST_SERIALIZATION_NVP(resp_);
+        return;
       }
-      template < class Archive >
-      void load ( Archive & ar, const unsigned int version ) {
-          ar >> boost::serialization::base_object < psf > (*this);
-          ar >> path_;
-          ar >> nspec_;
-          ar >> nlambda_;
-          ar >> rows_;
-          ar >> cols_;
-          ar >> nglobal_;
-          ar >> npix_;
-          ar >> pixcorr_;
-          ar >> lambda_;
-          ar >> hdus_;
-          ar >> resp_;
-      }
-      BOOST_SERIALIZATION_SPLIT_MEMBER()
 
       int hdu_info ( fitsfile *fp, const char * gauss_psf_hdu );
 
@@ -151,7 +148,9 @@ namespace harp {
       std::vector < psf_gauss_resp > resp_;
       
   };
-  
+
+  //BOOST_CLASS_EXPORT_GUID(psf_gauss, "psf_gauss")
+
 
   // simulated elliptical gaussian PSF
 
@@ -160,6 +159,26 @@ namespace harp {
     friend class boost::serialization::access;
     
     public :
+
+      psf_gauss_sim ( ) : psf () {
+        nspec_ = 0;
+        nlambda_ = 0;
+        rows_ = 0;
+        cols_ = 0;
+        nglobal_ = 0;
+        npix_ = 0;
+        pixcorr_ = 0;
+        n_bundle_ = 0;
+        bundle_size_ = 0;
+        pix_margin_ = 0.0;
+        pix_gap_ = 0.0;
+        pix_bundle_ = 0.0;
+        pix_offset_ = 0.0;
+        psf_fwhm_ = 0.0;
+        first_lambda_ = 0.0;
+        last_lambda_ = 0.0;
+      }
+
       psf_gauss_sim ( boost::property_tree::ptree const & props );
 
       ~psf_gauss_sim ( );
@@ -192,54 +211,30 @@ namespace harp {
     private :
 
       template < class Archive >
-      void save ( Archive & ar, const unsigned int version ) const {
-          ar << boost::serialization::base_object < psf > (*this);
-          ar << nspec_;
-          ar << nlambda_;
-          ar << rows_;
-          ar << cols_;
-          ar << nglobal_;
-          ar << npix_;
-          ar << pixcorr_;
-          ar << lambda_;
-          ar << hdus_;
-          ar << resp_;
-          ar << n_bundle_;
-          ar << bundle_size_;
-          ar << pix_margin_;
-          ar << pix_gap_;
-          ar << pix_bundle_;
-          ar << pix_offset_;
-          ar << psf_fwhm_;
-          ar << first_lambda_;
-          ar << last_lambda_;
-          ar << lambda_spec_props_;
+      void serialize ( Archive & ar, const unsigned int version ) const {
+        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(psf);
+        ar & BOOST_SERIALIZATION_NVP(nspec_);
+        ar & BOOST_SERIALIZATION_NVP(nlambda_);
+        ar & BOOST_SERIALIZATION_NVP(rows_);
+        ar & BOOST_SERIALIZATION_NVP(cols_);
+        ar & BOOST_SERIALIZATION_NVP(nglobal_);
+        ar & BOOST_SERIALIZATION_NVP(npix_);
+        ar & BOOST_SERIALIZATION_NVP(pixcorr_);
+        ar & BOOST_SERIALIZATION_NVP(lambda_);
+        ar & BOOST_SERIALIZATION_NVP(hdus_);
+        ar & BOOST_SERIALIZATION_NVP(resp_);
+        ar & BOOST_SERIALIZATION_NVP(n_bundle_);
+        ar & BOOST_SERIALIZATION_NVP(bundle_size_);
+        ar & BOOST_SERIALIZATION_NVP(pix_margin_);
+        ar & BOOST_SERIALIZATION_NVP(pix_gap_);
+        ar & BOOST_SERIALIZATION_NVP(pix_bundle_);
+        ar & BOOST_SERIALIZATION_NVP(pix_offset_);
+        ar & BOOST_SERIALIZATION_NVP(psf_fwhm_);
+        ar & BOOST_SERIALIZATION_NVP(first_lambda_);
+        ar & BOOST_SERIALIZATION_NVP(last_lambda_);
+        ar & BOOST_SERIALIZATION_NVP(lambda_spec_props_);
+        return;
       }
-      template < class Archive >
-      void load ( Archive & ar, const unsigned int version ) {
-          ar >> boost::serialization::base_object < psf > (*this);
-          ar >> nspec_;
-          ar >> nlambda_;
-          ar >> rows_;
-          ar >> cols_;
-          ar >> nglobal_;
-          ar >> npix_;
-          ar >> pixcorr_;
-          ar >> lambda_;
-          ar >> hdus_;
-          ar >> resp_;
-          ar >> n_bundle_;
-          ar >> bundle_size_;
-          ar >> pix_margin_;
-          ar >> pix_gap_;
-          ar >> pix_bundle_;
-          ar >> pix_offset_;
-          ar >> psf_fwhm_;
-          ar >> first_lambda_;
-          ar >> last_lambda_;
-          ar >> lambda_spec_props_;
-      }
-      BOOST_SERIALIZATION_SPLIT_MEMBER()
 
       void spec2pix ( size_t spec, size_t bin, double & x, double & y );
       
@@ -266,7 +261,9 @@ namespace harp {
       std::vector < psf_gauss_resp > resp_;
       
   };
-  
+
+  //BOOST_CLASS_EXPORT_GUID(psf_gauss_sim, "psf_gauss_sim")
+
 
 }
 
