@@ -29,9 +29,16 @@ AC_CANONICAL_HOST
 AC_PROG_INSTALL
 AC_PROG_LIBTOOL
 AC_PROG_CXX
-AC_PROG_FC
-AC_FC_LIBRARY_LDFLAGS
-AC_FC_WRAPPERS
+harp_fortran=yes
+AC_ARG_ENABLE(fortran, [AC_HELP_STRING([--disable-fortran], [Disable features that depend on fortran])], [harp_fortran=$enable_fortran])
+if test x"$harp_fortran" != xno; then
+  AC_PROG_FC
+  AC_FC_LIBRARY_LDFLAGS
+  AC_FC_WRAPPERS
+  ACX_FC_PP_DEFINE
+  ACX_BLAS
+  ACX_LAPACK
+fi
 AC_LANG([C++])
 AC_CHECK_HEADERS([iostream iostream.h])
 AC_CHECK_HEADERS([iomanip iomanip.h])
@@ -52,9 +59,9 @@ dnl | Check for CFITSIO
 dnl +------------------------------------------------
 ACX_CFITSIO([], [AC_MSG_ERROR([Could not find the CFITSIO library!])])
 dnl +------------------------------------------------
-dnl | Check for BLAS / LAPACK
+dnl | Check for CBLAS
 dnl +------------------------------------------------
-ACX_LAPACK([], [AC_MSG_ERROR([Could not find LAPACK library!])])
+AX_CBLAS([], [AC_MSG_ERROR([Could not find CBLAS library!])])
 dnl +------------------------------------------------
 dnl | Check for Python
 dnl +------------------------------------------------
@@ -69,12 +76,13 @@ AM_CONDITIONAL([HAVE_AM_PYTHON], [test "x$PYTHON_VERSION" != x])
 dnl +------------------------------------------------
 dnl | Check for BOOST
 dnl +------------------------------------------------
-BOOST_REQUIRE([1.40], [AC_MSG_WARN([Could not find BOOST library >= 1.40!])])
-BOOST_PROGRAM_OPTIONS([harp_boost=yes], [AC_MSG_WARN([Could not find BOOST program options library])])
+BOOST_REQUIRE([1.53], [AC_MSG_ERROR([Could not find BOOST library >= 1.53!])])
+BOOST_SERIALIZATION([], [AC_MSG_ERROR([Could not find BOOST serialization library])])
+BOOST_PROGRAM_OPTIONS([], [AC_MSG_ERROR([Could not find BOOST program options library])])
 if test x"$harp_python" != xno; then
   BOOST_PYTHON
 fi
-AM_CONDITIONAL([HAVE_AM_BOOST], [test "x$BOOST_PROGRAM_OPTIONS_LIBS" != x])
+AM_CONDITIONAL([HAVE_AM_BOOST_PYTHON], [test "x$BOOST_PYTHON_LIBS" != x])
 dnl +------------------------------------------------
 dnl | Check for MPI
 dnl +------------------------------------------------
@@ -84,10 +92,14 @@ AM_CONDITIONAL([HAVE_AM_MPI], [test $have_mpi = yes])
 dnl +------------------------------------------------
 dnl | Check for Clique, Elemental and any dependencies
 dnl +------------------------------------------------
-ACX_ELEMENTAL
-AM_CONDITIONAL([HAVE_AM_ELEMENTAL], [test $acx_elemental_ok = yes])
-ACX_CLIQUE
-AM_CONDITIONAL([HAVE_AM_CLIQUE], [test $acx_clique_ok = yes])
+harp_elemental=no
+harp_clique=no
+if test x"$harp_fortran" != xno; then
+  ACX_ELEMENTAL([harp_elemental=yes], [AC_MSG_WARN([Could not find Elemental library])])
+  ACX_CLIQUE([harp_clique=yes], [AC_MSG_WARN([Could not find Clique library])])
+fi
+AM_CONDITIONAL([HAVE_AM_ELEMENTAL], [test $harp_elemental = yes])
+AM_CONDITIONAL([HAVE_AM_CLIQUE], [test $harp_clique = yes])
 dnl +------------------------------------------------
 dnl | Set outputs
 dnl +------------------------------------------------
@@ -123,6 +135,7 @@ else
 fi
 AC_MSG_NOTICE([  CFITSIO Compile           : $CFITSIO_CPPFLAGS])
 AC_MSG_NOTICE([  CFITSIO Link              : $CFITSIO])
+AC_MSG_NOTICE([  CBLAS Link                 : $CBLAS_LIBS])
 AC_MSG_NOTICE([  BLAS Link                 : $BLAS_LIBS])
 AC_MSG_NOTICE([  LAPACK Link               : $LAPACK_LIBS])
 if test x"${PYTHON_VERSION}" != x; then
@@ -133,6 +146,7 @@ fi
 if test x"$BOOST_PROGRAM_OPTIONS_LIBS" != x; then
   AC_MSG_NOTICE([  Boost Compile             : $BOOST_CPPFLAGS])
   AC_MSG_NOTICE([  Boost Program Options     : $BOOST_PROGRAM_OPTIONS_LDFLAGS $BOOST_PROGRAM_OPTIONS_LIBS])
+  AC_MSG_NOTICE([  Boost Serialization       : $BOOST_SERIALIZATION_LDFLAGS $BOOST_SERIALIZATION_LIBS])
 else
   AC_MSG_NOTICE([  Boost                     : Disabled])
 fi
