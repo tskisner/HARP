@@ -5,6 +5,8 @@
 
 #include <harp_test.hpp>
 
+#include <harp_serialization.hpp>
+
 #include <boost/random.hpp>
 
 extern "C" {
@@ -39,19 +41,17 @@ void harp::test_spec_specter ( string const & datadir ) {
 
     // immediately serialize and restore, so that any issues with that process will impact the code that follows
 
-    /*
     string serialpath = datadir + "/test_specter_serialize.xml.out";
     {
       ofstream ofs ( serialpath.c_str() );
-      boost::archive::binary_oarchive oa ( ofs );
-      oa << testspec;
+      boost::archive::xml_oarchive oa ( ofs );
+      oa << BOOST_SERIALIZATION_NVP(testspec);
     }
     {
       ifstream ifs ( serialpath.c_str() );
-      boost::archive::binary_iarchive ia ( ifs );
-      ia >> testspec;
+      boost::archive::xml_iarchive ia ( ifs );
+      ia >> BOOST_SERIALIZATION_NVP(testspec);
     }
-    */
 
     size_t nspec = testspec->n_spec();
     if ( nspec != 500 ) {

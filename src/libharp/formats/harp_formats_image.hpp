@@ -54,7 +54,7 @@ namespace harp {
     
   };
 
-  //BOOST_CLASS_EXPORT_GUID(image_fits, "image_fits")
+  BOOST_SERIALIZATION_SHARED_PTR(image_fits)
 
 
   class image_sim : public image {
@@ -107,7 +107,7 @@ namespace harp {
     
   };
 
-  //BOOST_CLASS_EXPORT_GUID(image_sim, "image_sim")
+  BOOST_SERIALIZATION_SHARED_PTR(image_sim)
   
   
 }

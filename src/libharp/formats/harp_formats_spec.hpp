@@ -69,7 +69,8 @@ namespace harp {
     
   };
 
-  //BOOST_CLASS_EXPORT_GUID(spec_sim, "spec_sim")
+  BOOST_SERIALIZATION_SHARED_PTR(spec_sim)
+
 
 
   void specter_read_sky ( fitsfile * fp, std::vector < bool > & sky );
@@ -85,7 +86,6 @@ namespace harp {
     public :
 
       spec_specter ( ) : spec () {
-        size_ = 0;
         nspec_ = 0;
         nlambda_ = 0;
         nglobal_ = 0;
@@ -113,7 +113,6 @@ namespace harp {
       template < class Archive >
       void serialize ( Archive & ar, const unsigned int version ) {
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(spec);
-        ar & BOOST_SERIALIZATION_NVP(size_);
         ar & BOOST_SERIALIZATION_NVP(nspec_);
         ar & BOOST_SERIALIZATION_NVP(nlambda_);
         ar & BOOST_SERIALIZATION_NVP(nglobal_);
@@ -125,7 +124,6 @@ namespace harp {
         return;
       }
     
-      size_t size_;
       size_t nspec_;
       size_t nlambda_;
       size_t nglobal_;
@@ -137,8 +135,8 @@ namespace harp {
     
   };
 
-  //BOOST_CLASS_EXPORT_GUID(spec_specter, "spec_specter")
-  
+  BOOST_SERIALIZATION_SHARED_PTR(spec_specter)
+
   
 }
 

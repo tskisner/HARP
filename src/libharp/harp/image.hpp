@@ -128,8 +128,6 @@ namespace harp {
       
   };
 
-  //BOOST_CLASS_EXPORT_GUID(image, "image")
-
   BOOST_SERIALIZATION_ASSUME_ABSTRACT(image)
 
   BOOST_SERIALIZATION_SHARED_PTR(image)

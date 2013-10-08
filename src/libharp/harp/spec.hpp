@@ -118,8 +118,6 @@ namespace harp {
       
   };
 
-  //BOOST_CLASS_EXPORT_GUID(spec, "spec")
-
   BOOST_SERIALIZATION_ASSUME_ABSTRACT(spec)
 
   BOOST_SERIALIZATION_SHARED_PTR(spec)

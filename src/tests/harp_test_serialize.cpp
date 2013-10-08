@@ -55,8 +55,8 @@ class fake {
 
 
 BOOST_CLASS_EXPORT(fake)
-BOOST_CLASS_EXPORT(data_base)
-BOOST_CLASS_EXPORT(data_one)
+BOOST_CLASS_EXPORT(harp::data_base)
+BOOST_CLASS_EXPORT(harp::data_one)
 
 
 void harp::test_serialize ( string const & datadir ) {

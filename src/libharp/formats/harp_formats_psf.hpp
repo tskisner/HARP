@@ -63,7 +63,7 @@ namespace harp {
 
   };
 
-  //BOOST_CLASS_EXPORT_GUID(psf_gauss_resp, "psf_gauss_resp")
+  BOOST_SERIALIZATION_SHARED_PTR(psf_gauss_resp)
 
 
   // elliptical gaussian class read from a file
@@ -149,7 +149,7 @@ namespace harp {
       
   };
 
-  //BOOST_CLASS_EXPORT_GUID(psf_gauss, "psf_gauss")
+  BOOST_SERIALIZATION_SHARED_PTR(psf_gauss)
 
 
   // simulated elliptical gaussian PSF
@@ -262,7 +262,7 @@ namespace harp {
       
   };
 
-  //BOOST_CLASS_EXPORT_GUID(psf_gauss_sim, "psf_gauss_sim")
+  BOOST_SERIALIZATION_SHARED_PTR(psf_gauss_sim)
 
 
 }

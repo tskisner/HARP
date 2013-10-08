@@ -102,8 +102,6 @@ namespace harp {
       
   };
 
-  //BOOST_CLASS_EXPORT_GUID(psf, "psf")
-
   BOOST_SERIALIZATION_ASSUME_ABSTRACT(psf)
 
   BOOST_SERIALIZATION_SHARED_PTR(psf)

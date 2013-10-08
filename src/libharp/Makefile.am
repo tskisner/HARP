@@ -3,7 +3,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/src/libharp -I$(top_srcdir)/src/libharp/formats $(
 AM_LDFLAGS =
 AM_LIBS =
 
-noinst_HEADERS = harp_internal.hpp
+noinst_HEADERS = harp_internal.hpp harp_serialization.hpp
 include_HEADERS = harp.hpp
 
 lib_LTLIBRARIES = libharp.la
