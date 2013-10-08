@@ -7,6 +7,11 @@ using namespace std;
 using namespace harp;
 
 
+// serialization class exports (should only be placed in front of a main() !!! )
+
+#include <harp_serialization.hpp>
+
+
 int main ( int argc, char *argv[] ) {
 
   string datadir = "testdata";
@@ -17,7 +22,7 @@ int main ( int argc, char *argv[] ) {
 
   test_spec_specter ( datadir );
 
-  //test_spec_sim ( datadir );
+  test_spec_sim ( datadir );
 
   //test_image_sim ( datadir );
 

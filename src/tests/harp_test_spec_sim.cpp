@@ -39,6 +39,20 @@ void harp::test_spec_sim ( string const & datadir ) {
   spec_props.put ( "skymod", 25 );
   spec_p testspec ( spec::create ( spec_props ) );
 
+  // immediately serialize and restore, so that any issues with that process will impact the code that follows
+
+  string serialpath = datadir + "/test_specsim_serialize.xml.out";
+  {
+    ofstream ofs ( serialpath.c_str() );
+    boost::archive::xml_oarchive oa ( ofs );
+    oa << BOOST_SERIALIZATION_NVP(testspec);
+  }
+  {
+    ifstream ifs ( serialpath.c_str() );
+    boost::archive::xml_iarchive ia ( ifs );
+    ia >> BOOST_SERIALIZATION_NVP(testspec);
+  }
+
   if ( nspec != testspec->n_spec() ) {
     cerr << "FAIL:  simulated spec nspec (" << testspec->n_spec() << ") does not match input (" << nspec << ")" << endl;
     exit(1);

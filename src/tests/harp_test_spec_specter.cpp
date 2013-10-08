@@ -5,7 +5,6 @@
 
 #include <harp_test.hpp>
 
-#include <harp_serialization.hpp>
 
 #include <boost/random.hpp>
 
