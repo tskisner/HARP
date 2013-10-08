@@ -15,20 +15,16 @@ harp_test_SOURCES = \
 	harp_test.cpp \
 	harp_test_serialize.cpp \
 	harp_test_spec_specter.cpp \
-	harp_test_spec_sim.cpp
-
-#	harp_test_image_sim.cpp \
-#	harp_test_image_fits.cpp \
-#	harp_test_psf_gauss.cpp \
-#	harp_test_psf_gauss_sim.cpp
+	harp_test_spec_sim.cpp \
+	harp_test_psf_gauss_sim.cpp
 
 harp_test_LDADD = $(AM_LIBS)
 
 # Manual dependency on the data directory
 
-harp_test.$(OBJEXT) : testdata/test_small_psf.fits
+harp_test.$(OBJEXT) : testdata/test.txt
 
-testdata/test_small_psf.fits :
+testdata/test.txt :
 	@BUNZIP=`which bunzip2`; if [ x"$${BUNZIP}" = x ]; then \
 	echo "bunzip2 not found."; else \
 	for bzfile in `ls testdata/*.bz2`; do \

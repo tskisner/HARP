@@ -19,8 +19,8 @@ using namespace harp;
 
 void harp::test_spec_specter ( string const & datadir ) {
 
-  string filepath = datadir + "/test_specter_20120212.fits";
-  string outpath = datadir + "/test_specter_20120212_check.fits.out";
+  string filepath = datadir + "/spec_sim.fits.out";
+  string outpath = datadir + "/spec_specter_check.fits.out";
 
   int statret;
   struct stat statbuf;
@@ -40,7 +40,7 @@ void harp::test_spec_specter ( string const & datadir ) {
 
     // immediately serialize and restore, so that any issues with that process will impact the code that follows
 
-    string serialpath = datadir + "/test_specter_serialize.xml.out";
+    string serialpath = datadir + "/spec_specter_serialize.xml.out";
     {
       ofstream ofs ( serialpath.c_str() );
       boost::archive::xml_oarchive oa ( ofs );
@@ -53,13 +53,13 @@ void harp::test_spec_specter ( string const & datadir ) {
     }
 
     size_t nspec = testspec->n_spec();
-    if ( nspec != 500 ) {
+    if ( nspec != 100 ) {
       cerr << "FAIL:  number of spectra (" << nspec << ") is not 500" << endl;
       exit(1);
     }
 
     size_t nlambda = testspec->n_lambda();
-    if ( nlambda != 4697 ) {
+    if ( nlambda != 50 ) {
       cerr << "FAIL:  number of wavelength points (" << nlambda << ") is not 4697" << endl;
       exit(1);
     }

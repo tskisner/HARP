@@ -1,0 +1,4 @@
+#!/bin/bash
+
+CXX=g++ CXXFLAGS="-O0 -g" ./configure --disable-fortran --disable-python $@
+

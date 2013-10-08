@@ -27,11 +27,13 @@ psf * harp::psf::create ( boost::property_tree::ptree const & props ) {
   
   string format = props.get < string > ( "format" );
 
-  /*
+  if ( format == "gauss_sim" ) {
+    return static_cast < psf * > ( new psf_gauss_sim ( props ) );
+  }
+
   if ( format == "gauss" ) {
     return static_cast < psf * > ( new psf_gauss ( props ) );
   }
-  */
   
   std::ostringstream o;
   o << "Cannot create psf of unknown format (" << format << ")";

@@ -20,9 +20,11 @@ int main ( int argc, char *argv[] ) {
 
   test_serialize ( datadir );
 
+  test_spec_sim ( datadir );
+
   test_spec_specter ( datadir );
 
-  test_spec_sim ( datadir );
+  test_psf_gauss_sim ( datadir );
 
   //test_image_sim ( datadir );
 
@@ -30,7 +32,6 @@ int main ( int argc, char *argv[] ) {
 
   //test_psf_gauss ( datadir );
 
-  //test_psf_gauss_sim ( datadir );
   
   return 0;
 }

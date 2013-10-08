@@ -135,7 +135,7 @@ else
 fi
 AC_MSG_NOTICE([  CFITSIO Compile           : $CFITSIO_CPPFLAGS])
 AC_MSG_NOTICE([  CFITSIO Link              : $CFITSIO])
-AC_MSG_NOTICE([  CBLAS Link                 : $CBLAS_LIBS])
+AC_MSG_NOTICE([  CBLAS Link                : $CBLAS_LIBS])
 AC_MSG_NOTICE([  BLAS Link                 : $BLAS_LIBS])
 AC_MSG_NOTICE([  LAPACK Link               : $LAPACK_LIBS])
 if test x"${PYTHON_VERSION}" != x; then

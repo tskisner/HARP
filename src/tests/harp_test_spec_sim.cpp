@@ -41,7 +41,7 @@ void harp::test_spec_sim ( string const & datadir ) {
 
   // immediately serialize and restore, so that any issues with that process will impact the code that follows
 
-  string serialpath = datadir + "/test_specsim_serialize.xml.out";
+  string serialpath = datadir + "/spec_sim_serialize.xml.out";
   {
     ofstream ofs ( serialpath.c_str() );
     boost::archive::xml_oarchive oa ( ofs );

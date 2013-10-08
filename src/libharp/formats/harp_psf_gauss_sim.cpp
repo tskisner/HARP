@@ -67,6 +67,12 @@ harp::psf_gauss_sim::psf_gauss_sim ( boost::property_tree::ptree const & props )
 
     nlambda_ = props.get < size_t > ( psf_gauss_sim_key_lambda_n, 4697 );
 
+    lambda_.resize ( nlambda_ );
+    double incr = ( last_lambda_ - first_lambda_ ) / (double)( nlambda_ - 1 );
+    for ( size_t i = 0; i < nlambda_; ++i ) {
+      lambda_[i] = incr * (double)i;
+    }
+
   }
 
   // fiber spacing
