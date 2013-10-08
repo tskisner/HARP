@@ -78,19 +78,19 @@ namespace harp {
       
       template < class T >
       boost::shared_ptr < T > shared_ref ( ) {
-        return boost::shared_polymorphic_downcast < T, psf > ( shared_from_this ( ) );
+        return boost::dynamic_pointer_cast < T, psf > ( shared_from_this ( ) );
       }
       
       template < class T >
       boost::weak_ptr < T > weak_ref ( ) {
-        boost::shared_ptr < T > temp = boost::shared_polymorphic_downcast < T, psf > ( shared_from_this() );
+        boost::shared_ptr < T > temp = boost::dynamic_pointer_cast < T, psf > ( shared_from_this() );
         return boost::weak_ptr < T > ( temp );
       }
       
     private :
 
       template < class Archive >
-      void serialize ( Archive & ar, const unsigned int version ) const {
+      void serialize ( Archive & ar, const unsigned int version ) {
         ar & BOOST_SERIALIZATION_NVP(format_);
         ar & BOOST_SERIALIZATION_NVP(props_);
         return;

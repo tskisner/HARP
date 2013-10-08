@@ -62,12 +62,12 @@ namespace harp {
       
       template < class T >
       boost::shared_ptr < T > shared_ref ( ) {
-        return boost::shared_polymorphic_downcast < T, image > ( shared_from_this ( ) );
+        return boost::dynamic_pointer_cast < T, image > ( shared_from_this ( ) );
       }
       
       template < class T >
       boost::weak_ptr < T > weak_ref ( ) {
-        boost::shared_ptr < T > temp = boost::shared_polymorphic_downcast < T, image > ( shared_from_this() );
+        boost::shared_ptr < T > temp = boost::dynamic_pointer_cast < T, image > ( shared_from_this() );
         return boost::weak_ptr < T > ( temp );
       }
       

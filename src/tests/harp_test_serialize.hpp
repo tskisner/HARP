@@ -3,14 +3,6 @@
 #ifndef HARP_TEST_SERIALIZE_HPP
 #define HARP_TEST_SERIALIZE_HPP
 
-#include <harp_internal.hpp>
-
-// boost serialization headers for dump / load tests
-#include <fstream>
-#include <boost/archive/xml_oarchive.hpp>
-#include <boost/archive/xml_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/binary_iarchive.hpp>
 
 namespace harp {
   
@@ -25,7 +17,10 @@ namespace harp {
 	      format_ = "";
 	    }
 
-	    data_base ( boost::property_tree::ptree const & props );
+	    data_base ( boost::property_tree::ptree const & props ) {
+        format_ = props.get < std::string > ( "format", "" );
+        props_ = props;
+      }
 	    
 	    virtual ~data_base ( ) { }
 
@@ -43,19 +38,19 @@ namespace harp {
 	    
 	    template < class T >
 	    boost::shared_ptr < T > shared_ref ( ) {
-	      return boost::shared_polymorphic_downcast < T, data_base > ( shared_from_this ( ) );
+	      return boost::dynamic_pointer_cast < T, data_base > ( shared_from_this ( ) );
 	    }
 	    
 	    template < class T >
 	    boost::weak_ptr < T > weak_ref ( ) {
-	      boost::shared_ptr < T > temp = boost::shared_polymorphic_downcast < T, data_base > ( shared_from_this() );
+	      boost::shared_ptr < T > temp = boost::dynamic_pointer_cast < T, data_base > ( shared_from_this() );
 	      return boost::weak_ptr < T > ( temp );
 	    }
 	    
 	  private :
 
 	    template < class Archive >
-	    void serialize ( Archive & ar, const unsigned int version ) const {
+	    void serialize ( Archive & ar, const unsigned int version ) {
 	      ar & BOOST_SERIALIZATION_NVP(format_);
 	      ar & BOOST_SERIALIZATION_NVP(props_);
 	      return;
@@ -66,14 +61,13 @@ namespace harp {
 	    
 	};
 
-	//BOOST_CLASS_EXPORT_GUID(data_base, "data_base")
+  BOOST_SERIALIZATION_SHARED_PTR(data_base)
 
 	BOOST_SERIALIZATION_ASSUME_ABSTRACT(data_base)
 
-	BOOST_SERIALIZATION_SHARED_PTR(data_base)
-
 	typedef boost::shared_ptr < data_base > data_base_p;
 	typedef boost::weak_ptr < data_base > data_base_wp;
+
 
 
 	class data_one : public data_base {
@@ -88,8 +82,8 @@ namespace harp {
 	    }
 
 	    data_one ( boost::property_tree::ptree const & props ) : data_base ( props ) {
-	      sizet_val_ = props.get ( "sizet", 0 );
-	      double_val_ = props.get ( "double", 0.0 );
+	      sizet_val_ = props.get < size_t > ( "sizet", 0 );
+	      double_val_ = props.get < double > ( "double", 0.0 );
 	    }
 	    
 	    ~data_one ( ) { }
@@ -105,7 +99,7 @@ namespace harp {
 	  private :
 
 	    template < class Archive >
-	    void serialize ( Archive & ar, const unsigned int version ) const {
+	    void serialize ( Archive & ar, const unsigned int version ) {
 	      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(data_base);
 	      ar & BOOST_SERIALIZATION_NVP(sizet_val_);
 	      ar & BOOST_SERIALIZATION_NVP(double_val_);
@@ -117,7 +111,7 @@ namespace harp {
 
 	};
 
-	//BOOST_CLASS_EXPORT_GUID(data_one, "data_one")
+  BOOST_SERIALIZATION_SHARED_PTR(data_one)
 
 
 }

@@ -39,7 +39,7 @@ namespace harp {
     private :
 
       template < class Archive >
-      void serialize ( Archive & ar, const unsigned int version ) const {
+      void serialize ( Archive & ar, const unsigned int version ) {
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(spec);
         ar & BOOST_SERIALIZATION_NVP(size_);
         ar & BOOST_SERIALIZATION_NVP(nspec_);
@@ -111,7 +111,7 @@ namespace harp {
     private :
 
       template < class Archive >
-      void serialize ( Archive & ar, const unsigned int version ) const {
+      void serialize ( Archive & ar, const unsigned int version ) {
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(spec);
         ar & BOOST_SERIALIZATION_NVP(size_);
         ar & BOOST_SERIALIZATION_NVP(nspec_);

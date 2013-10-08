@@ -39,6 +39,7 @@ void harp::test_spec_specter ( string const & datadir ) {
 
     // immediately serialize and restore, so that any issues with that process will impact the code that follows
 
+    /*
     string serialpath = datadir + "/test_specter_serialize.xml.out";
     {
       ofstream ofs ( serialpath.c_str() );
@@ -50,6 +51,7 @@ void harp::test_spec_specter ( string const & datadir ) {
       boost::archive::binary_iarchive ia ( ifs );
       ia >> testspec;
     }
+    */
 
     size_t nspec = testspec->n_spec();
     if ( nspec != 500 ) {
