@@ -112,10 +112,6 @@ harp::psf_gauss::psf_gauss ( boost::property_tree::ptree const & props ) : psf (
   hdus_[ psf_gauss_hdu_min ] = hdu_info ( fp, psf_gauss_hdu_min );
   hdus_[ psf_gauss_hdu_ang ] = hdu_info ( fp, psf_gauss_hdu_ang );
 
-  lambda_.resize ( nlambda_ );
-  fits::img_seek ( fp, hdus_[ psf_gauss_hdu_lambda ] );      
-  fits::img_read ( fp, lambda_ );
-
   // global dimensions
 
   nglobal_ = nspec_ * nlambda_;
@@ -126,7 +122,30 @@ harp::psf_gauss::psf_gauss ( boost::property_tree::ptree const & props ) : psf (
 
   resp_.resize ( nglobal_ );
 
+  // verify that the wavelength solution for all spectra is equal
+  // this is a requirement for HARP in order to allow for operations
+  // that work simultaneously across all spectra.
+
+  lambda_.resize ( nlambda_ );
+
   vector_double buffer;
+
+  fits::img_seek ( fp, hdus_[ psf_gauss_hdu_lambda ] );      
+  fits::img_read ( fp, buffer );
+
+  for ( size_t j = 0; j < nlambda_; ++j ) {
+    lambda_[j] = buffer[j];
+    resp_[j].lambda = lambda_[j];
+  }
+
+  for ( size_t i = 1; i < nspec_; ++i ) {
+    for ( size_t j = 0; j < nlambda_; ++j ) {
+      if ( fabs ( buffer[ i * nlambda_ + j ] - lambda_[j] ) / lambda_[j] > 1.0e-6 ) {
+        HARP_THROW( "wavelength solution is not constant across all spectra" );
+      }
+      resp_[ i * nlambda_ + j ].lambda = lambda_[j];
+    }
+  }
 
   fits::img_seek ( fp, hdus_[ psf_gauss_hdu_x ] );      
   fits::img_read ( fp, buffer );
