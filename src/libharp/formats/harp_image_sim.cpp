@@ -62,6 +62,15 @@ harp::image_sim::image_sim ( boost::property_tree::ptree const & props ) : image
 
   // get design matrix from PSF and project
 
+  matrix_double A;
+
+  child_psf->project ( A );
+
+  vector_double img_data ( npix );
+
+  // multiply to get signal data
+
+
   /*
   matrix_sparse design;
 
@@ -117,6 +126,11 @@ harp::image_sim::~image_sim ( ) {
 
 
 void harp::image_sim::read ( vector_double & data, vector_double & invvar, std::vector < bool > & sky ) {
+
+  size_t npix = rows_ * cols_;
+
+  data.resize ( npix );
+  invvar.resize ( npix );
 
   data = signal_ + noise_;
 

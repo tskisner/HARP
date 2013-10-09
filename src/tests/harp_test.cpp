@@ -28,10 +28,9 @@ int main ( int argc, char *argv[] ) {
 
   test_psf_gauss ( datadir );
 
-  //test_image_sim ( datadir );
+  test_image_sim ( datadir );
 
-  //test_image_fits ( datadir );
-
+  test_image_fits ( datadir );
 
   return 0;
 }
