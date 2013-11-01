@@ -1,0 +1,19 @@
+#!/bin/sh
+
+# you should call this script with extra options.  At the
+# very least, you should specify the install prefix.
+# For example:
+#
+# $> ./platforms/macports --prefix=/my/install/dir
+
+OPTS=$@
+
+# Link to macports packages
+
+CXX="g++" \
+MPICXX="mpic++" \
+CXXFLAGS="-O3" \
+CPPFLAGS="-I/opt/local/include" \
+LDFLAGS="-L/opt/local/lib" \
+./configure --disable-fortran --disable-python ${OPTS}
+

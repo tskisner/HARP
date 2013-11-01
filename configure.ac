@@ -18,9 +18,9 @@ dnl | have been removed since the last public release, then set age to 0.
 dnl +-------------------------
 HARP_LT_VERSION="0:0:0"
 AC_SUBST(HARP_LT_VERSION)
-dnl +---------------------
-dnl | Compiler features
-dnl +---------------------
+dnl +----------------------------------------
+dnl | Compiler features and BLAS / LAPACK
+dnl +----------------------------------------
 dnl Set default optimization to '-O3' instead of the default '-g -O2'
 if test x"${CXXFLAGS}" = x; then
    CXXFLAGS="-O3"
@@ -36,17 +36,12 @@ if test x"$harp_fortran" != xno; then
   AC_FC_LIBRARY_LDFLAGS
   AC_FC_WRAPPERS
   ACX_FC_PP_DEFINE
-  ACX_BLAS
-  ACX_LAPACK
 fi
 AC_LANG([C++])
 AC_CHECK_HEADERS([iostream iostream.h])
 AC_CHECK_HEADERS([iomanip iomanip.h])
 AC_CHECK_HEADERS([cmath math.h])
 AC_CHECK_HEADERS([cstdlib stdlib.h])
-dnl +------------------------------------------------
-dnl | Check for OpenMP
-dnl +------------------------------------------------
 harp_openmp=yes
 ax_have_openmp=no
 AC_ARG_ENABLE(openmp, [AC_HELP_STRING([--disable-openmp], [Disable OpenMP])], [harp_openmp=$enable_openmp])
@@ -55,13 +50,14 @@ if test x"$harp_openmp" != xno; then
 fi
 AM_CONDITIONAL([HAVE_AM_OPENMP], [test $ax_have_openmp = yes])
 dnl +------------------------------------------------
+dnl | BLAS / LAPACK
+dnl +------------------------------------------------
+AX_CHECK_BLAS(,AC_MSG_ERROR([Could not find a BLAS library!]))
+AX_CHECK_LAPACK(,AC_MSG_ERROR([Could not find a LAPACK library!]))
+dnl +------------------------------------------------
 dnl | Check for CFITSIO
 dnl +------------------------------------------------
 ACX_CFITSIO([], [AC_MSG_ERROR([Could not find the CFITSIO library!])])
-dnl +------------------------------------------------
-dnl | Check for CBLAS
-dnl +------------------------------------------------
-AX_CBLAS([], [AC_MSG_ERROR([Could not find CBLAS library!])])
 dnl +------------------------------------------------
 dnl | Check for Python
 dnl +------------------------------------------------
@@ -105,6 +101,7 @@ dnl | Set outputs
 dnl +------------------------------------------------
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([src/Makefile])
+AC_CONFIG_FILES([src/libharp/math/Makefile])
 AC_CONFIG_FILES([src/libharp/Makefile])
 AC_CONFIG_FILES([src/tests/Makefile])
 dnl AC_CONFIG_FILES([src/apps/Makefile])

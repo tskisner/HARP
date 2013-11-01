@@ -1,5 +1,7 @@
 
-AM_CPPFLAGS = -I$(top_srcdir)/src/libharp -I$(top_srcdir)/src/libharp/formats $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS) $(OPENMP_CXXFLAGS)
+SUBDIRS = math
+
+AM_CPPFLAGS = -I$(top_srcdir)/src/libharp/math -I$(top_srcdir)/src/libharp -I$(top_srcdir)/src/libharp/formats $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS) $(OPENMP_CXXFLAGS)
 AM_LDFLAGS =
 AM_LIBS =
 
@@ -16,7 +18,7 @@ libharp_la_SOURCES = harp.cpp harp_matrix.cpp harp_image.cpp harp_spec.cpp harp_
 
 libharp_la_LDFLAGS = -version-info @HARP_LT_VERSION@
 
-libharp_la_LIBADD = $(AM_LIBS)
+libharp_la_LIBADD = $(top_builddir)/src/libharp/math/libharpmath.la
 
 include formats/formats.am
 

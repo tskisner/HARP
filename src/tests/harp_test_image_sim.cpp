@@ -101,6 +101,8 @@ void harp::test_image_sim ( string const & datadir ) {
 
   img->read ( img_data, img_inv, sky );
 
+  cerr << "sim image len = " << img_data.size() << endl;
+
   for ( size_t i = 0; i < sky.size(); ++i ) {
     if ( sky[i] != check_sky[i] ) {
       cerr << "FAIL:  image sky element " << i << " does not match original value" << endl;

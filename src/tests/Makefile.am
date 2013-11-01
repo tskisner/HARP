@@ -1,9 +1,9 @@
 
 EXTRA_DIST = testdata
 
-AM_CPPFLAGS = -I$(top_srcdir)/src/libharp -I$(top_srcdir)/src/libharp/formats -I$(top_srcdir)/src/tests $(BOOST_CPPFLAGS) $(CLIQUE_CPPFLAGS) $(CFITSIO_CPPFLAGS) $(OPENMP_CXXFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir)/src/libharp/math -I$(top_srcdir)/src/libharp -I$(top_srcdir)/src/libharp/formats -I$(top_srcdir)/src/tests $(BOOST_CPPFLAGS) $(CFITSIO_CPPFLAGS) $(OPENMP_CXXFLAGS)
 AM_LDFLAGS =
-AM_LIBS = $(top_builddir)/src/libharp/libharp.la $(BOOST_SERIALIZATION_LDFLAGS) $(BOOST_PROGRAM_OPTIONS_LDFLAGS) $(BOOST_SERIALIZATION_LIBS) $(BOOST_PROGRAM_OPTIONS_LIB) $(CFITSIO) $(CLIQUE) $(OPENMP_CXXFLAGS) -lm
+AM_LIBS = $(top_builddir)/src/libharp/libharp.la $(BOOST_SERIALIZATION_LDFLAGS) $(BOOST_PROGRAM_OPTIONS_LDFLAGS) $(BOOST_SERIALIZATION_LIBS) $(BOOST_PROGRAM_OPTIONS_LIB) $(CFITSIO) $(LAPACK_LIBS) $(BLAS_LIBS) $(OPENMP_CXXFLAGS) -lm
 
 noinst_HEADERS = harp_test.hpp harp_test_serialize.hpp
 
