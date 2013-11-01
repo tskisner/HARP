@@ -37,8 +37,6 @@ harp::image_sim::image_sim ( boost::property_tree::ptree const & props ) : image
   rows_ = child_psf->img_rows();
   cols_ = child_psf->img_cols();
 
-  cerr << "child psf img " << rows_ << " x " << cols_ << endl;
-
   size_t npix = rows_ * cols_;
 
   size_t nglobal = spec_nspec * spec_nlambda;
@@ -71,6 +69,10 @@ harp::image_sim::image_sim ( boost::property_tree::ptree const & props ) : image
   vector_double img_data ( npix );
 
   // multiply to get signal data
+
+  signal_.resize ( npix );
+  noise_.resize ( npix );
+  invcov_.resize ( npix );
 
 
   /*
@@ -128,13 +130,6 @@ harp::image_sim::~image_sim ( ) {
 
 
 void harp::image_sim::read ( vector_double & data, vector_double & invvar, std::vector < bool > & sky ) {
-
-  size_t npix = rows_ * cols_;
-
-  cerr << "read npix = " << rows_ << " x " << cols_ << " = " << npix << endl;
-
-  data.resize ( npix );
-  invvar.resize ( npix );
 
   data = signal_ + noise_;
 

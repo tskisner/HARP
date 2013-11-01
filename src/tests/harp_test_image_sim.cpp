@@ -62,8 +62,6 @@ void harp::test_image_sim ( string const & datadir ) {
   img_props.put_child ( "spec", spec_props );
   img_props.put_child ( "psf", gauss_props );
 
-  cerr << "creating sim image" << endl;
-
   image_p img ( image::create ( img_props ) );
 
   // immediately serialize and restore, so that any issues with that process will impact the code that follows
@@ -102,8 +100,6 @@ void harp::test_image_sim ( string const & datadir ) {
   vector < bool > sky;
 
   img->read ( img_data, img_inv, sky );
-
-  cerr << "sim image len = " << img_data.size() << endl;
 
   for ( size_t i = 0; i < sky.size(); ++i ) {
     if ( sky[i] != check_sky[i] ) {

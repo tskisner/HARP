@@ -141,7 +141,6 @@ namespace harp { namespace fits {
     img_dims ( fp, rows, cols );
 
     if ( rows * cols != data().size() ) {
-      std::cerr << "data size " << data().size() << " not = " << rows << " x " << cols << std::endl;
       HARP_THROW( "data vector size not consistent with image dimensions" );
     }
 
