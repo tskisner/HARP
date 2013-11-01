@@ -53,6 +53,10 @@ namespace harp {
 
 }
 
+#include <boost/numeric/bindings/ublas.hpp>
+#include <boost/numeric/bindings/blas.hpp>
+#include <boost/numeric/bindings/lapack.hpp>
+
 #include <harp/linalg.hpp>
 
 

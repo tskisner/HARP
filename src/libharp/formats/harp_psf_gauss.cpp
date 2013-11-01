@@ -72,6 +72,9 @@ static const char * psf_gauss_key_corr = "corr";
 static const char * psf_gauss_key_rows = "imgrows";
 static const char * psf_gauss_key_cols = "imgcols";
 
+static const char * psf_gauss_key_nspec = "n_spec";
+static const char * psf_gauss_key_nlambda = "n_lambda";
+
 static const char * psf_gauss_key_name = "EXTNAME";
 
 // HDU names for writing
@@ -87,7 +90,7 @@ static const char * psf_gauss_hdu_ang = "Angle";
 
 harp::psf_gauss::psf_gauss ( boost::property_tree::ptree const & props ) : psf ( props ) {
 
-  path_ = props.get < string > ( psf_gauss_key_path );
+  path_ = props.get < string > ( psf_gauss_key_path, "" );
 
   pixcorr_ = props.get < int > ( psf_gauss_key_corr );
 
@@ -95,101 +98,133 @@ harp::psf_gauss::psf_gauss ( boost::property_tree::ptree const & props ) : psf (
 
   cols_ = props.get < size_t > ( psf_gauss_key_cols );
 
-  // look up HDU indices
+  if ( path_ == "" ) {
+    // if a path is not specified, it probably means that the calling code is going to manually set
+    // the elliptical gaussian response using psf_gauss::parameters().  In that case, we set up the
+    // HDU order to the default.  In this case, the calling code must also specify the number
+    // of spectra and wavelength points.
 
-  fitsfile *fp;
+    nspec_ = props.get < size_t > ( psf_gauss_key_nspec );
 
-  fits::open_read ( fp, path_ );
+    nlambda_ = props.get < size_t > ( psf_gauss_key_nlambda );
 
-  int hdu = fits::img_seek ( fp, psf_gauss_key_name, psf_gauss_hdu_x );
-  hdus_[ psf_gauss_hdu_x ] = hdu;
-  fits::img_dims ( fp, nspec_, nlambda_ );
+    hdus_[ psf_gauss_hdu_x ] = 1;
+    hdus_[ psf_gauss_hdu_y ] = 2;
+    hdus_[ psf_gauss_hdu_lambda ] = 3;
+    hdus_[ psf_gauss_hdu_amp ] = 4;
+    hdus_[ psf_gauss_hdu_maj ] = 5;
+    hdus_[ psf_gauss_hdu_min ] = 6;
+    hdus_[ psf_gauss_hdu_ang ] = 7;
 
-  hdus_[ psf_gauss_hdu_y ] = hdu_info ( fp, psf_gauss_hdu_y );
-  hdus_[ psf_gauss_hdu_lambda ] = hdu_info ( fp, psf_gauss_hdu_lambda );
-  hdus_[ psf_gauss_hdu_amp ] = hdu_info ( fp, psf_gauss_hdu_amp );
-  hdus_[ psf_gauss_hdu_maj ] = hdu_info ( fp, psf_gauss_hdu_maj );
-  hdus_[ psf_gauss_hdu_min ] = hdu_info ( fp, psf_gauss_hdu_min );
-  hdus_[ psf_gauss_hdu_ang ] = hdu_info ( fp, psf_gauss_hdu_ang );
+    // global dimensions
 
-  // global dimensions
+    nglobal_ = nspec_ * nlambda_;
 
-  nglobal_ = nspec_ * nlambda_;
+    npix_ = rows_ * cols_;
 
-  npix_ = rows_ * cols_;
+    resp_.resize ( nglobal_ );
 
-  // read the data
+    lambda_.resize ( nlambda_ );
 
-  resp_.resize ( nglobal_ );
+  } else {
 
-  // verify that the wavelength solution for all spectra is equal
-  // this is a requirement for HARP in order to allow for operations
-  // that work simultaneously across all spectra.
+    // look up HDU indices
 
-  lambda_.resize ( nlambda_ );
+    fitsfile *fp;
 
-  vector_double buffer;
+    fits::open_read ( fp, path_ );
 
-  fits::img_seek ( fp, hdus_[ psf_gauss_hdu_lambda ] );      
-  fits::img_read ( fp, buffer );
+    int hdu = fits::img_seek ( fp, psf_gauss_key_name, psf_gauss_hdu_x );
+    hdus_[ psf_gauss_hdu_x ] = hdu;
+    fits::img_dims ( fp, nspec_, nlambda_ );
 
-  for ( size_t j = 0; j < nlambda_; ++j ) {
-    lambda_[j] = buffer[j];
-    resp_[j].lambda = lambda_[j];
-  }
+    hdus_[ psf_gauss_hdu_y ] = hdu_info ( fp, psf_gauss_hdu_y );
+    hdus_[ psf_gauss_hdu_lambda ] = hdu_info ( fp, psf_gauss_hdu_lambda );
+    hdus_[ psf_gauss_hdu_amp ] = hdu_info ( fp, psf_gauss_hdu_amp );
+    hdus_[ psf_gauss_hdu_maj ] = hdu_info ( fp, psf_gauss_hdu_maj );
+    hdus_[ psf_gauss_hdu_min ] = hdu_info ( fp, psf_gauss_hdu_min );
+    hdus_[ psf_gauss_hdu_ang ] = hdu_info ( fp, psf_gauss_hdu_ang );
 
-  for ( size_t i = 1; i < nspec_; ++i ) {
+    // global dimensions
+
+    nglobal_ = nspec_ * nlambda_;
+
+    npix_ = rows_ * cols_;
+
+    // read the data
+
+    resp_.resize ( nglobal_ );
+
+    // verify that the wavelength solution for all spectra is equal
+    // this is a requirement for HARP in order to allow for operations
+    // that work simultaneously across all spectra.
+
+    lambda_.resize ( nlambda_ );
+
+    vector_double buffer;
+
+    fits::img_seek ( fp, hdus_[ psf_gauss_hdu_lambda ] );      
+    fits::img_read ( fp, buffer );
+
     for ( size_t j = 0; j < nlambda_; ++j ) {
-      if ( fabs ( buffer[ i * nlambda_ + j ] - lambda_[j] ) / lambda_[j] > 1.0e-6 ) {
-        HARP_THROW( "wavelength solution is not constant across all spectra" );
-      }
-      resp_[ i * nlambda_ + j ].lambda = lambda_[j];
+      lambda_[j] = buffer[j];
+      resp_[j].lambda = lambda_[j];
     }
+
+    for ( size_t i = 1; i < nspec_; ++i ) {
+      for ( size_t j = 0; j < nlambda_; ++j ) {
+        if ( fabs ( buffer[ i * nlambda_ + j ] - lambda_[j] ) / lambda_[j] > 1.0e-6 ) {
+          HARP_THROW( "wavelength solution is not constant across all spectra" );
+        }
+        resp_[ i * nlambda_ + j ].lambda = lambda_[j];
+      }
+    }
+
+    fits::img_seek ( fp, hdus_[ psf_gauss_hdu_x ] );      
+    fits::img_read ( fp, buffer );
+
+    for ( size_t i = 0; i < nglobal_; ++i ) {
+      resp_[i].x = buffer[i];
+    }
+
+    fits::img_seek ( fp, hdus_[ psf_gauss_hdu_y ] );      
+    fits::img_read ( fp, buffer );
+
+    for ( size_t i = 0; i < nglobal_; ++i ) {
+      resp_[i].y = buffer[i];
+    }
+
+    fits::img_seek ( fp, hdus_[ psf_gauss_hdu_amp ] );
+    fits::img_read ( fp, buffer );
+
+    for ( size_t i = 0; i < nglobal_; ++i ) {
+      resp_[i].amp = buffer[i];
+    }
+
+    fits::img_seek ( fp, hdus_[ psf_gauss_hdu_maj ] );      
+    fits::img_read ( fp, buffer );
+
+    for ( size_t i = 0; i < nglobal_; ++i ) {
+      resp_[i].maj = buffer[i];
+    }
+
+    fits::img_seek ( fp, hdus_[ psf_gauss_hdu_min ] );      
+    fits::img_read ( fp, buffer );
+
+    for ( size_t i = 0; i < nglobal_; ++i ) {
+      resp_[i].min = buffer[i];
+    }
+
+    fits::img_seek ( fp, hdus_[ psf_gauss_hdu_ang ] );      
+    fits::img_read ( fp, buffer );
+
+    for ( size_t i = 0; i < nglobal_; ++i ) {
+      resp_[i].ang = buffer[i];
+    }
+
+    fits::close ( fp );
+
   }
-
-  fits::img_seek ( fp, hdus_[ psf_gauss_hdu_x ] );      
-  fits::img_read ( fp, buffer );
-
-  for ( size_t i = 0; i < nglobal_; ++i ) {
-    resp_[i].x = buffer[i];
-  }
-
-  fits::img_seek ( fp, hdus_[ psf_gauss_hdu_y ] );      
-  fits::img_read ( fp, buffer );
-
-  for ( size_t i = 0; i < nglobal_; ++i ) {
-    resp_[i].y = buffer[i];
-  }
-
-  fits::img_seek ( fp, hdus_[ psf_gauss_hdu_amp ] );
-  fits::img_read ( fp, buffer );
-
-  for ( size_t i = 0; i < nglobal_; ++i ) {
-    resp_[i].amp = buffer[i];
-  }
-
-  fits::img_seek ( fp, hdus_[ psf_gauss_hdu_maj ] );      
-  fits::img_read ( fp, buffer );
-
-  for ( size_t i = 0; i < nglobal_; ++i ) {
-    resp_[i].maj = buffer[i];
-  }
-
-  fits::img_seek ( fp, hdus_[ psf_gauss_hdu_min ] );      
-  fits::img_read ( fp, buffer );
-
-  for ( size_t i = 0; i < nglobal_; ++i ) {
-    resp_[i].min = buffer[i];
-  }
-
-  fits::img_seek ( fp, hdus_[ psf_gauss_hdu_ang ] );      
-  fits::img_read ( fp, buffer );
-
-  for ( size_t i = 0; i < nglobal_; ++i ) {
-    resp_[i].ang = buffer[i];
-  }
-
-  fits::close ( fp );
 
 }
 
@@ -218,6 +253,42 @@ int harp::psf_gauss::hdu_info ( fitsfile *fp, const char * psf_gauss_hdu ) {
 void harp::psf_gauss::response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch ) {
 
   size_t bin = spec * nlambda_ + lambda;
+
+  double xmin = resp_[ bin ].x - (double)pixcorr_;
+  double xmax = resp_[ bin ].x + (double)pixcorr_;
+
+  double ymin = resp_[ bin ].y - (double)pixcorr_;
+  double ymax = resp_[ bin ].y + (double)pixcorr_;
+
+  if ( xmin < 0.0 ) {
+    x_offset = 0;
+  } else {
+    x_offset = (size_t)xmin;
+  }
+
+  if ( ymin < 0.0 ) {
+    y_offset = 0;
+  } else {
+    y_offset = (size_t)ymin;
+  }
+
+  size_t x_size;
+  size_t y_size;
+
+  if ( xmax > (double)(cols_ - 1) ) {
+    x_size = ( cols_ - 1 ) - x_offset;
+  } else {
+    x_size = (size_t)xmax - x_offset;
+  }
+
+  if ( ymax > (double)(rows_ - 1) ) {
+    y_size = ( rows_ - 1 ) - y_offset;
+  } else {
+    y_size = (size_t)ymax - y_offset;
+  }
+
+  patch.resize ( y_size, x_size );
+  patch.clear();
 
   resp_[ bin ].sample ( x_offset, y_offset, patch );
 

@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to HARP's documentation!
+HARP Documentation
 ================================
 
 Contents:
@@ -11,6 +11,13 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
+   intro
+   install
+   io
+   extract
+   mpiio
+   mpiextract
+   cli
 
 
 Indices and tables

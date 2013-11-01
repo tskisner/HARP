@@ -66,41 +66,17 @@ harp::image_sim::image_sim ( boost::property_tree::ptree const & props ) : image
 
   child_psf->project ( A );
 
-  vector_double img_data ( npix );
-
   // multiply to get signal data
 
   signal_.resize ( npix );
+
+  boost::numeric::ublas::axpy_prod ( spec_data, A, signal_, true );
+  //boost::numeric::bindings::blas::gemv ( 1.0, A, spec_data, 0.0, signal_ );
+
+  // construct noise
+
   noise_.resize ( npix );
   invcov_.resize ( npix );
-
-
-  /*
-  matrix_sparse design;
-
-  matrix_local signal ( npix, 1 );
-  local_matrix_zero ( signal );
-
-  child_psf->projection ( 0, psf_nspec - 1, 0, psf_nlambda - 1, design );
-
-  spec_project ( design, specdata, signal );
-
-  fitsfile * fp;
-
-  */
-
-  // add noise to get measured image
-
-  /*
-
-  matrix_local noise ( npix, 1 );
-  local_matrix_zero ( noise );
-
-  measured_.ResizeTo ( npix, 1 );
-  local_matrix_zero ( measured_ );
-
-  invcov_.ResizeTo ( npix, 1 );
-  local_matrix_zero ( invcov_ );
 
   typedef boost::ecuyer1988 base_generator_type;
   base_generator_type generator(42u);
@@ -108,18 +84,14 @@ harp::image_sim::image_sim ( boost::property_tree::ptree const & props ) : image
   double rms;
 
   for ( size_t i = 0; i < npix; ++i ) {
-    rms = sqrt( 16.0 + signal.Get ( i, 0 ) );
-    invcov_.Set ( i, 0, 1.0 / (rms*rms) );
+    rms = sqrt( 16.0 + signal_[i] );
+    invcov_[i] = 1.0 / (rms*rms);
 
     boost::normal_distribution < double > dist ( 0.0, rms );
     boost::variate_generator < base_generator_type&, boost::normal_distribution < double > > gauss ( generator, dist );
 
-    noise.Set ( i, 0, gauss() );
-
-    measured_.Set ( i, 0, signal.Get(i,0) + noise.Get(i,0) );
+    noise_[i] = gauss();
   }
-
-  */
   
 }
 

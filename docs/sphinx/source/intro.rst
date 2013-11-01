@@ -1,0 +1,53 @@
+
+.. _intro:
+
+Introduction
+===============
+
+The High performance Astrophysical Reconstruction and Processing (HARP) software suite is designed to serve as both a platform for production...  HARP has a number of design goals, including:
+
+* Abstraction of instrument-specific features (data formats and data selection) into modular pieces so that it is easy to extend support to multiple receivers.
+* Fast simulations of timestream data and processing, to enable Monte Carlo analyses.
+* Scalability to the largest production supercomputers.
+* Provide a rich collection of map making operations which are important for modern experiments.
+
+.. _introio:
+
+Serial Data I/O
+---------------------
+
+HARP provides several base classes for reading and writing relevant data objects.  In these terms, "reading" might include simulating data as needed.
+
+
+.. _intromath:
+
+Serial Math Operations
+----------------------------
+
+
+.. _introextract:
+
+Serial Spectral Extraction
+----------------------------------
+
+As a toy example, HARP includes serial spectral extraction functions.  These are mainly for testing algorithms and are not performant enough for real data processing.  See the :ref:`extractmpi` section for parallel tools for spectral extraction.
+
+
+.. _intrompiio:
+
+Parallel Data I/O
+---------------------
+
+
+.. _intromath:
+
+Parallel Math Operations
+------------------------------
+
+
+.. _introextract:
+
+Parallel Spectral Extraction
+----------------------------------
+
+

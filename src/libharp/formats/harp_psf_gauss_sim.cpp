@@ -129,7 +129,7 @@ harp::psf_gauss_sim::psf_gauss_sim ( boost::property_tree::ptree const & props )
 
       size_t bin = spec * nlambda_ + lambda;
 
-      spec2pix ( spec, lambda, ypix, xpix );
+      spec2pix ( spec, lambda, xpix, ypix );
 
       resp_[ bin ].x = xpix;
       resp_[ bin ].y = ypix;
@@ -167,6 +167,42 @@ void harp::psf_gauss_sim::spec2pix ( size_t spec, size_t specbin, double & x, do
 void harp::psf_gauss_sim::response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch ) {
 
   size_t bin = spec * nlambda_ + lambda;
+
+  double xmin = resp_[ bin ].x - (double)pixcorr_;
+  double xmax = resp_[ bin ].x + (double)pixcorr_;
+
+  double ymin = resp_[ bin ].y - (double)pixcorr_;
+  double ymax = resp_[ bin ].y + (double)pixcorr_;
+
+  if ( xmin < 0.0 ) {
+    x_offset = 0;
+  } else {
+    x_offset = (size_t)xmin;
+  }
+
+  if ( ymin < 0.0 ) {
+    y_offset = 0;
+  } else {
+    y_offset = (size_t)ymin;
+  }
+
+  size_t x_size;
+  size_t y_size;
+
+  if ( xmax > (double)(cols_ - 1) ) {
+    x_size = ( cols_ - 1 ) - x_offset;
+  } else {
+    x_size = (size_t)xmax - x_offset;
+  }
+
+  if ( ymax > (double)(rows_ - 1) ) {
+    y_size = ( rows_ - 1 ) - y_offset;
+  } else {
+    y_size = (size_t)ymax - y_offset;
+  }
+
+  patch.resize ( y_size, x_size );
+  patch.clear();
 
   resp_[ bin ].sample ( x_offset, y_offset, patch );
 

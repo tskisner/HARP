@@ -43,6 +43,10 @@ master_doc = 'index'
 project = u'HARP'
 copyright = u'2013, Theodore Kisner'
 
+# breathe
+breathe_projects = { "HARP": "../xml/" }
+breathe_default_project = "HARP"
+
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
