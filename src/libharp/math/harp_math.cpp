@@ -1,6 +1,6 @@
 // @COPYRIGHT@
 
-#include <harp/math.hpp>
+#include <harp_math_internal.hpp>
 
 
 using namespace std;
