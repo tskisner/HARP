@@ -265,5 +265,78 @@ namespace harp {
   BOOST_SERIALIZATION_SHARED_PTR(psf_gauss_sim)
 
 
+  // Gauss-Hermite PSF
+
+  class psf_gh : public psf {
+
+    friend class boost::serialization::access;
+    
+    public :
+
+      psf_gh ( ) : psf () {
+        nspec_ = 0;
+        nlambda_ = 0;
+        rows_ = 0;
+        cols_ = 0;
+        nglobal_ = 0;
+        npix_ = 0;
+        pixcorr_ = 0;
+        path_ = "";
+      }
+
+      psf_gh ( boost::property_tree::ptree const & props );
+
+      ~psf_gh ( );
+
+      size_t n_spec ( ) { return nspec_; }
+
+      size_t n_lambda ( ) { return nlambda_; }
+      
+      size_t img_rows ( ) { return rows_; }
+      
+      size_t img_cols ( ) { return cols_; }
+      
+      vector_double lambda ( ) { return lambda_; }
+
+      void write ( std::string const & path );
+
+      void response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch );
+
+      // Other public methods for updating internal data structures here..
+      
+
+
+    private :
+
+      template < class Archive >
+      void serialize ( Archive & ar, const unsigned int version ) {
+        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(psf);
+        ar & BOOST_SERIALIZATION_NVP(path_);
+        ar & BOOST_SERIALIZATION_NVP(nspec_);
+        ar & BOOST_SERIALIZATION_NVP(nlambda_);
+        ar & BOOST_SERIALIZATION_NVP(rows_);
+        ar & BOOST_SERIALIZATION_NVP(cols_);
+        ar & BOOST_SERIALIZATION_NVP(nglobal_);
+        ar & BOOST_SERIALIZATION_NVP(npix_);
+        ar & BOOST_SERIALIZATION_NVP(pixcorr_);
+        ar & BOOST_SERIALIZATION_NVP(lambda_);
+        return;
+      }
+
+      std::string path_;
+      size_t nspec_;
+      size_t nlambda_;
+      size_t rows_;
+      size_t cols_;
+      size_t nglobal_;
+      size_t npix_;
+      size_t pixcorr_;
+      vector_double lambda_;
+      
+  };
+
+  BOOST_SERIALIZATION_SHARED_PTR(psf_gh)
+
+
 }
 
