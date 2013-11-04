@@ -11,43 +11,20 @@ The High performance Astrophysical Reconstruction and Processing (HARP) software
 * Scalability to the largest production supercomputers.
 * Provide a rich collection of map making operations which are important for modern experiments.
 
-.. _introio:
+.. _introserial:
 
-Serial Data I/O
+Serial Operations
 ---------------------
 
 HARP provides several base classes for reading and writing relevant data objects.  In these terms, "reading" might include simulating data as needed.
 
-
-.. _intromath:
-
-Serial Math Operations
-----------------------------
-
-
-.. _introextract:
-
-Serial Spectral Extraction
-----------------------------------
-
 As a toy example, HARP includes serial spectral extraction functions.  These are mainly for testing algorithms and are not performant enough for real data processing.  See the :ref:`extractmpi` section for parallel tools for spectral extraction.
 
 
-.. _intrompiio:
+.. _intrompi:
 
-Parallel Data I/O
----------------------
+Parallel Operations
+------------------------
 
-
-.. _intromath:
-
-Parallel Math Operations
-------------------------------
-
-
-.. _introextract:
-
-Parallel Spectral Extraction
-----------------------------------
 
 

@@ -99,22 +99,33 @@ namespace harp { namespace fits {
 
   // image operations
 
+  bool img_colmajor ( fitsfile * fp );
+
 
   void img_dims ( fitsfile * fp, size_t & rows, size_t & cols );
 
 
   template < typename T >
-  void img_append ( fitsfile * fp, size_t rows, size_t cols ) {
+  void img_append ( fitsfile * fp, size_t rows, size_t cols, bool col_major = false ) {
 
     int ret;
     int status = 0;
     
     long naxes[2];
-    naxes[0] = cols;
-    naxes[1] = rows;
+    if ( col_major ) {
+      naxes[0] = rows;
+      naxes[1] = cols;
+    } else {
+      naxes[0] = cols;
+      naxes[1] = rows;
+    }
     
     ret = fits_create_img ( fp, ftype< T >::bitpix(), 2, naxes, &status );
     fits::check ( status );
+
+    if ( col_major ) {
+      write_key ( fp, "HRPCOLMJ", "TRUE", "Whether the data is column-major" );
+    }
 
     return;
   }
@@ -146,6 +157,8 @@ namespace harp { namespace fits {
 
     int fitstype = ftype < value_type > :: datatype();
 
+    bool colmajor = img_colmajor ( fp );
+
     // copy data to a buffer to work around stupid CFITSIO non-const API
 
     value_type * buffer = (value_type*) malloc ( npix * sizeof( value_type ) );
@@ -153,8 +166,21 @@ namespace harp { namespace fits {
     if ( ! buffer ) {
       HARP_THROW( "cannot allocate img buffer" );
     }
-    for ( long i = 0; i < npix; ++i ) {
-      buffer[i] = data()[i];
+
+    if ( colmajor ) {
+      // we can just copy
+      for ( long i = 0; i < npix; ++i ) {
+        buffer[i] = data()[i];
+      }
+    } else {
+      // we need to remap the memory
+
+      for ( size_t i = 0; i < rows; ++i ) {
+        for ( size_t j = 0; j < cols; ++j ) {
+          buffer[ i * cols + j ] = data()[ j * rows + i ];
+        }
+      }
+
     }
 
     ret = fits_write_pix ( fp, fitstype, fpixel, npix, buffer, &status );
@@ -172,15 +198,16 @@ namespace harp { namespace fits {
     typedef M matrix_type;
     typedef typename matrix_type::value_type value_type;
 
-    check_column_major ( data() );
-
     boost::numeric::ublas::vector < value_type > buffer ( data().size1() * data().size2() );
 
-    // transpose data when copying
+    // copy data
+
+    size_t elem = 0;
 
     for ( size_t col = 0; col < data().size1(); ++col ) {
       for ( size_t row = 0; row < data().size2(); ++row ) {
-        buffer[ row * data().size1() + col ] = data()( col, row );
+        buffer[ elem ] = data()( col, row );
+        ++elem;
       }
     }
 
@@ -215,8 +242,35 @@ namespace harp { namespace fits {
 
     int fitstype = ftype < value_type > :: datatype();
 
-    ret = fits_read_pix ( fp, fitstype, fpixel, nelem, NULL, &( data()[0] ), &anynul, &status );
-    fits::check ( status );
+    bool colmajor = img_colmajor ( fp );
+
+    if ( colmajor ) {
+      // we can just read it directly
+
+      ret = fits_read_pix ( fp, fitstype, fpixel, nelem, NULL, &( data()[0] ), &anynul, &status );
+      fits::check ( status );
+
+    } else {
+      // we need to remap the memory
+
+      value_type * buffer = (value_type*) malloc ( nelem * sizeof( value_type ) );
+
+      if ( ! buffer ) {
+        HARP_THROW( "cannot allocate img buffer" );
+      }
+
+      ret = fits_read_pix ( fp, fitstype, fpixel, nelem, NULL, buffer, &anynul, &status );
+      fits::check ( status );
+
+      for ( size_t i = 0; i < rows; ++i ) {
+        for ( size_t j = 0; j < cols; ++j ) {
+          data()[ j * rows + i ] = buffer[ i * cols + j ];
+        }
+      }
+
+      free ( buffer );
+
+    }
 
     return;
   }
@@ -228,8 +282,6 @@ namespace harp { namespace fits {
     typedef M matrix_type;
     typedef typename matrix_type::value_type value_type;
 
-    check_column_major ( data() );
-
     size_t rows;
     size_t cols;
     img_dims ( fp, rows, cols );
@@ -240,11 +292,13 @@ namespace harp { namespace fits {
 
     img_read ( fp, buffer );
 
-    // transpose data when copying
+    // copy data
 
+    size_t elem = 0;
     for ( size_t col = 0; col < data().size1(); ++col ) {
       for ( size_t row = 0; row < data().size2(); ++row ) {
-        data()( col, row ) = buffer[ row * data().size1() + col ];
+        data()( col, row ) = buffer[ elem ];
+        ++elem;
       }
     }
 
