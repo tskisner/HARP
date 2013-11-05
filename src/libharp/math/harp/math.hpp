@@ -49,6 +49,9 @@ namespace harp {
     (*handler) ( e ); \
   }
 
+  // helper wrapper to gettimeofday
+
+  double wtime ( );
 
 
 }
