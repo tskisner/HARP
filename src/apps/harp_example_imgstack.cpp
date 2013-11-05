@@ -7,7 +7,7 @@
   files created in HARP/src/tests/testdata/.  If you "cd" into that directory, you can test this example
   by running:
 
-  $>  harp_example_imgstack imgstack.json
+  $>  harp_example_imgstack --par imgstack.json
 
   NOTE:  this is just an example, and does not have several checks on the input JSON document that would
   be required for production code.  For example, this code does not check that the first operation is a
