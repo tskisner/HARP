@@ -50,10 +50,7 @@ harp::psf_gauss_sim::psf_gauss_sim ( boost::property_tree::ptree const & props )
 
     nlambda_ = child_spec->n_lambda();
 
-    vector_double child_spec_data;
-    std::vector < bool > child_spec_sky;
-
-    child_spec->read ( child_spec_data, lambda_, child_spec_sky );
+    child_spec->lambda ( lambda_ );
 
     first_lambda_ = lambda_[0];
     last_lambda_ = lambda_[ nlambda_ - 1 ];
@@ -133,8 +130,8 @@ harp::psf_gauss_sim::psf_gauss_sim ( boost::property_tree::ptree const & props )
 
       resp_[ bin ].x = xpix;
       resp_[ bin ].y = ypix;
-      resp_[ bin ].lambda = lambda_[ lambda ];
       resp_[ bin ].amp = 1.0;
+      resp_[ bin ].lambda = lambda_[ lambda ];
       resp_[ bin ].maj = psf_fwhm_ / 2.0;
       resp_[ bin ].min = psf_fwhm_ / 2.0;
       resp_[ bin ].ang = 0.0;
@@ -164,7 +161,7 @@ void harp::psf_gauss_sim::spec2pix ( size_t spec, size_t specbin, double & x, do
 }
 
 
-void harp::psf_gauss_sim::response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch ) {
+void harp::psf_gauss_sim::response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch ) const {
 
   size_t bin = spec * nlambda_ + lambda;
 

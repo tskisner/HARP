@@ -21,27 +21,32 @@ namespace harp {
       
       virtual ~image ( ) { }
       
-      virtual size_t n_rows ( ) {
+      virtual size_t n_rows ( ) const {
         HARP_THROW( "fell through to virtual method" );
         return 0;
       }
       
-      virtual size_t n_cols ( ) {
+      virtual size_t n_cols ( ) const {
         HARP_THROW( "fell through to virtual method" );
         return 0;
       }
       
-      virtual void read ( vector_double & data, vector_double & invvar, std::vector < bool > & sky ) {
+      virtual void values ( vector_double & data ) const {
         HARP_THROW( "fell through to virtual method" );
         return;
       }
 
-      virtual void write ( std::string const & path, vector_double & data, vector_double & invvar, std::vector < bool > & sky ) {
+      virtual void inv_variance ( vector_double & invvar ) const {
+        HARP_THROW( "fell through to virtual method" );
+        return;
+      }
+
+      virtual void sky ( std::vector < bool > & sky ) const {
         HARP_THROW( "fell through to virtual method" );
         return;
       }
       
-      void read ( matrix_double & data, matrix_double & invvar, std::vector < bool > & sky ) {
+      void values ( matrix_double & data ) const {
 
         size_t imgrows = n_rows();
         size_t imgcols = n_cols();
@@ -49,16 +54,35 @@ namespace harp {
         size_t nelem = imgrows * imgcols;
 
         data.resize ( imgcols, imgrows );
-        invvar.resize ( imgcols, imgrows );
 
         vector_double tempdata ( nelem );
-        vector_double tempvar ( nelem );
 
-        read ( tempdata, tempvar, sky );
+        values ( tempdata );
 
         for ( size_t i = 0; i < imgcols; ++i ) {
           for ( size_t j = 0; j < imgrows; ++j ) {
             data( i, j ) = tempdata[ i * imgrows + j ];
+          }
+        }
+
+        return;
+      }
+
+      void inv_variance ( matrix_double & invvar ) const {
+
+        size_t imgrows = n_rows();
+        size_t imgcols = n_cols();
+
+        size_t nelem = imgrows * imgcols;
+
+        invvar.resize ( imgcols, imgrows );
+
+        vector_double tempvar ( nelem );
+
+        inv_variance ( tempvar );
+
+        for ( size_t i = 0; i < imgcols; ++i ) {
+          for ( size_t j = 0; j < imgrows; ++j ) {
             invvar( i, j ) = tempvar[ i * imgrows + j ];
           }
         }
@@ -66,37 +90,7 @@ namespace harp {
         return;
       }
 
-      void write ( std::string const & path, matrix_double & data, matrix_double & invvar, std::vector < bool > & sky ) {
-
-        size_t imgrows = n_rows();
-        size_t imgcols = n_cols();
-
-        size_t nelem = imgrows * imgcols;
-
-        if ( ( imgrows != data.size2() ) || ( imgcols != data.size1() ) ) {
-          HARP_THROW( "data size does not match image dimensions" );
-        }
-
-        if ( ( imgrows != invvar.size2() ) || ( imgcols != invvar.size1() ) ) {
-          HARP_THROW( "inverse variance size does not match image dimensions" );
-        }
-
-        vector_double tempdata ( nelem );
-        vector_double tempvar ( nelem );
-
-        for ( size_t i = 0; i < imgcols; ++i ) {
-          for ( size_t j = 0; j < imgrows; ++j ) {
-            tempdata[ i * imgrows + j ] = data( i, j );
-            tempvar[ i * imgrows + j ] = invvar( i, j );
-          }
-        }
-
-        write ( path, tempdata, tempvar, sky );
-
-        return;
-      }
-
-      std::string format ( );
+      std::string format ( ) const;
       
       static image * create ( boost::property_tree::ptree const & props );
       

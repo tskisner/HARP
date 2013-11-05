@@ -69,7 +69,7 @@ harp::psf_gh::~psf_gh ( ) {
 }
 
 
-void harp::psf_gh::response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch ) {
+void harp::psf_gh::response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch ) const {
 
   size_t bin = spec * nlambda_ + lambda;
 

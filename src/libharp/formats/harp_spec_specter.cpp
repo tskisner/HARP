@@ -141,13 +141,10 @@ harp::spec_specter::~spec_specter ( ) {
 }
 
 
-void harp::spec_specter::read ( vector_double & data, vector_double & lambda, std::vector < bool > & sky ) {
+void harp::spec_specter::values ( vector_double & data ) const {
 
   data.resize ( nglobal_ );
   data.clear();
-
-  lambda.resize ( nlambda_ );
-  sky.resize ( nspec_ );
 
   fitsfile * fp;
 
@@ -158,10 +155,38 @@ void harp::spec_specter::read ( vector_double & data, vector_double & lambda, st
   fits::img_seek ( fp, spechdu_ );   
   fits::img_read ( fp, data );
 
+  fits::close ( fp );
+
+  return;
+}
+
+
+void harp::spec_specter::lambda ( vector_double & lambda ) const {
+
+  lambda.resize ( nlambda_ );
+
+  fitsfile * fp;
+
+  fits::open_read ( fp, path_ );
+
   // read the wavelength vector
 
   fits::img_seek ( fp, lambdahdu_ );
   fits::img_read ( fp, lambda );
+
+  fits::close ( fp );
+
+  return;
+}
+
+
+void harp::spec_specter::sky ( std::vector < bool > & sky ) const {
+
+  sky.resize ( nspec_ );
+
+  fitsfile * fp;
+
+  fits::open_read ( fp, path_ );
 
   // read the sky flag
 
@@ -191,6 +216,28 @@ void harp::spec_specter::write ( std::string const & path, vector_double & data,
   specter_write_sky ( fp, sky );
 
   fits::close ( fp );
+
+  return;
+}
+
+
+void harp::spec_specter::write ( std::string const & path, matrix_double & data, vector_double & lambda, std::vector < bool > & sky ) {
+
+  size_t nelem = nspec_ * nlambda_;
+
+  if ( ( nlambda_ != data.size2() ) || ( nspec_ != data.size1() ) ) {
+    HARP_THROW( "data size does not match spec dimensions" );
+  }
+
+  vector_double tempdata ( nelem );
+
+  for ( size_t i = 0; i < nspec_; ++i ) {
+    for ( size_t j = 0; j < nlambda_; ++j ) {
+      tempdata[ i * nlambda_ + j ] = data( i, j );
+    }
+  }
+
+  write ( path, tempdata, lambda, sky );
 
   return;
 }

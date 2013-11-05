@@ -49,19 +49,11 @@ harp::spec_sim::~spec_sim ( ) {
 }
 
 
-void harp::spec_sim::read ( vector_double & data, vector_double & lambda, std::vector < bool > & sky ) {
+void harp::spec_sim::values ( vector_double & data ) const {
 
   double PI = std::atan2 ( 0.0, -1.0 );
 
   data.resize ( size_ );
-  lambda.resize ( nlambda_ );
-  sky.resize ( nspec_ );
-
-  double incr = (last_lambda_ - first_lambda_) / (double)( nlambda_ - 1 );
-
-  for ( size_t j = 0; j < nlambda_; ++j ) {
-    lambda[j] = first_lambda_ + incr * (double)j;
-  }
 
   size_t bin = 0;
 
@@ -69,11 +61,7 @@ void harp::spec_sim::read ( vector_double & data, vector_double & lambda, std::v
 
   for ( size_t i = 0; i < nspec_; ++i ) {
 
-    if ( i % skymod_ == 0 ) {
-      sky[ i ] = true;
-    } else {
-      sky[ i ] = false;
-    }
+    bool dosky = ( i % skymod_ == 0 ) ? true : false;
 
     size_t objoff = 2 * i;
 
@@ -89,7 +77,7 @@ void harp::spec_sim::read ( vector_double & data, vector_double & lambda, std::v
         val += atmpeak_;
       }
 
-      if ( ! sky[i] ) {
+      if ( ! dosky ) {
         if ( ( ( j + objoff ) % objspace_ ) == 0 ) {
           val += objpeak_;
         }
@@ -100,35 +88,44 @@ void harp::spec_sim::read ( vector_double & data, vector_double & lambda, std::v
       ++bin;
     }
   }
-
   
   return;
 }
 
 
-void harp::spec_sim::write ( std::string const & path, vector_double & data, vector_double const & lambda, std::vector < bool > const & sky ) {
+void harp::spec_sim::lambda ( vector_double & lambda ) const {
 
-  fitsfile * fp;
-    
-  fits::create ( fp, path );
+  lambda.resize ( nlambda_ );
 
-  fits::img_append < double > ( fp, nspec_, nlambda_ );
-  fits::write_key ( fp, "EXTNAME", "FLUX", "" );
-  fits::img_write ( fp, data );
+  double incr = (last_lambda_ - first_lambda_) / (double)( nlambda_ - 1 );
 
-  fits::img_append < double > ( fp, 1, nlambda_ );
-  fits::write_key ( fp, "EXTNAME", "WAVELENGTH", "" );
-  fits::img_write ( fp, lambda );
-
-  specter_write_sky ( fp, sky );
-
-  fits::close ( fp );
+  for ( size_t j = 0; j < nlambda_; ++j ) {
+    lambda[j] = first_lambda_ + incr * (double)j;
+  }
   
   return;
 }
 
 
-void harp::spec_sim::sky_truth ( vector_double & data ) {
+void harp::spec_sim::sky ( std::vector < bool > & sky ) const {
+
+  sky.resize ( nspec_ );
+
+  for ( size_t i = 0; i < nspec_; ++i ) {
+
+    if ( i % skymod_ == 0 ) {
+      sky[ i ] = true;
+    } else {
+      sky[ i ] = false;
+    }
+
+  }
+  
+  return;
+}
+
+
+void harp::spec_sim::sky_truth ( vector_double & data ) const {
 
   double PI = std::atan2 ( 0.0, -1.0 );
 

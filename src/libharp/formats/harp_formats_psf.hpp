@@ -37,7 +37,7 @@ namespace harp {
         return *this;
       }
 
-      void sample ( size_t x_offset, size_t y_offset, matrix_double & patch );
+      void sample ( size_t x_offset, size_t y_offset, matrix_double & patch ) const;
 
       double x;
       double y;
@@ -89,30 +89,21 @@ namespace harp {
 
       ~psf_gauss ( );
 
-      size_t n_spec ( ) { return nspec_; }
-
-      size_t n_lambda ( ) { return nlambda_; }
-      
-      size_t img_rows ( ) { return rows_; }
-      
-      size_t img_cols ( ) { return cols_; }
-      
-      vector_double lambda ( ) { return lambda_; }
-
       void write ( std::string const & path );
 
-      void response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch );
+      // overloaded virtual methods from base class
 
-      // This provides a public interface to the gaussian parameters for each flux bin
+      size_t n_spec ( ) const { return nspec_; }
 
-      psf_gauss_resp & parameters ( size_t spec, size_t lambda ) {
-        size_t bin = spec * nlambda_ + lambda;
-        return resp_[ bin ];
-      }
+      size_t n_lambda ( ) const { return nlambda_; }
+      
+      size_t img_rows ( ) const { return rows_; }
+      
+      size_t img_cols ( ) const { return cols_; }
+      
+      vector_double lambda ( ) const { return lambda_; }
 
-      psf_gauss_resp & parameters ( size_t bin ) {
-        return resp_[ bin ];
-      }
+      void response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch ) const;
 
     private :
 
@@ -183,30 +174,21 @@ namespace harp {
 
       ~psf_gauss_sim ( );
 
-      size_t n_spec ( ) { return nspec_; }
-
-      size_t n_lambda ( ) { return nlambda_; }
-      
-      size_t img_rows ( ) { return rows_; }
-      
-      size_t img_cols ( ) { return cols_; }
-      
-      vector_double lambda ( ) { return lambda_; }
-
       void write ( std::string const & path );
 
-      void response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch );
+      // overloaded virtual methods from base class
 
-      // This provides a public interface to the gaussian parameters for each flux bin
+      size_t n_spec ( ) const { return nspec_; }
 
-      psf_gauss_resp & parameters ( size_t spec, size_t lambda ) {
-        size_t bin = spec * nlambda_ + lambda;
-        return resp_[ bin ];
-      }
+      size_t n_lambda ( ) const { return nlambda_; }
+      
+      size_t img_rows ( ) const { return rows_; }
+      
+      size_t img_cols ( ) const { return cols_; }
+      
+      vector_double lambda ( ) const { return lambda_; }
 
-      psf_gauss_resp & parameters ( size_t bin ) {
-        return resp_[ bin ];
-      }
+      void response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch ) const;
 
     private :
 
@@ -288,23 +270,24 @@ namespace harp {
 
       ~psf_gh ( );
 
-      size_t n_spec ( ) { return nspec_; }
-
-      size_t n_lambda ( ) { return nlambda_; }
-      
-      size_t img_rows ( ) { return rows_; }
-      
-      size_t img_cols ( ) { return cols_; }
-      
-      vector_double lambda ( ) { return lambda_; }
-
       void write ( std::string const & path );
 
-      void response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch );
-
       // Other public methods for updating internal data structures here..
-      
 
+
+      // overloaded virtual methods from base class
+
+      size_t n_spec ( ) const { return nspec_; }
+
+      size_t n_lambda ( ) const { return nlambda_; }
+      
+      size_t img_rows ( ) const { return rows_; }
+      
+      size_t img_cols ( ) const { return cols_; }
+      
+      vector_double lambda ( ) const { return lambda_; }
+
+      void response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch ) const;
 
     private :
 

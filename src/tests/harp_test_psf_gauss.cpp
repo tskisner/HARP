@@ -37,7 +37,9 @@ void harp::test_psf_gauss ( string const & datadir ) {
   vector_double check_lambda;
   vector < bool > check_sky;
 
-  checkspec->read( check_data, check_lambda, check_sky );
+  checkspec->values ( check_data );
+  checkspec->lambda ( check_lambda );
+  checkspec->sky ( check_sky );
 
   // create the psf
 
@@ -48,7 +50,7 @@ void harp::test_psf_gauss ( string const & datadir ) {
   gauss_props.put ( "imgrows", 70 );
   gauss_props.put ( "imgcols", 853 );
 
-  psf_p gauss_psf ( psf::create ( gauss_props ) );
+  psf_gauss gauss_psf ( gauss_props );
 
   // immediately serialize and restore, so that any issues with that process will impact the code that follows
 
@@ -64,8 +66,8 @@ void harp::test_psf_gauss ( string const & datadir ) {
     ia >> BOOST_SERIALIZATION_NVP(gauss_psf);
   }
 
-  size_t psf_nspec = gauss_psf->n_spec();
-  size_t psf_nlambda = gauss_psf->n_lambda();
+  size_t psf_nspec = gauss_psf.n_spec();
+  size_t psf_nlambda = gauss_psf.n_lambda();
 
   if ( psf_nspec != 100 ) {
     cerr << "FAIL:  gauss psf nspec (" << psf_nspec << ") does not match input (" << 100 << ")" << endl;
@@ -77,8 +79,8 @@ void harp::test_psf_gauss ( string const & datadir ) {
     exit(1);
   }
 
-  size_t gauss_rows = gauss_psf->img_rows();
-  size_t gauss_cols = gauss_psf->img_cols();
+  size_t gauss_rows = gauss_psf.img_rows();
+  size_t gauss_cols = gauss_psf.img_cols();
 
   // pixel dimensions should match the default spectral spacing in the psf class
 
@@ -94,7 +96,7 @@ void harp::test_psf_gauss ( string const & datadir ) {
 
   // check wavelength solution
 
-  vector_double gauss_lambda = gauss_psf->lambda();
+  vector_double gauss_lambda = gauss_psf.lambda();
 
   for ( size_t i = 0; i < gauss_lambda.size(); ++i ) {
     if ( fabs ( check_lambda[i] - gauss_lambda[i] ) / check_lambda[i] > 1.0e-5 ) {
@@ -105,7 +107,7 @@ void harp::test_psf_gauss ( string const & datadir ) {
 
   // write out
 
-  gauss_psf->write ( outpath );
+  gauss_psf.write ( outpath );
 
   cerr << "  (PASSED)" << endl;
 

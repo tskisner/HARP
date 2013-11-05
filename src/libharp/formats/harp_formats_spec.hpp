@@ -25,16 +25,20 @@ namespace harp {
       spec_sim ( boost::property_tree::ptree const & props );
       
       ~spec_sim ( );
+
+      void sky_truth ( vector_double & data ) const;
       
-      size_t n_spec ( ) { return nspec_; }
+      // overloaded virtual methods from base class
 
-      size_t n_lambda ( ) { return nlambda_; }
+      size_t n_spec ( ) const { return nspec_; }
 
-      void read ( vector_double & data, vector_double & lambda, std::vector < bool > & sky );
-      
-      void write ( std::string const & path, vector_double & data, vector_double const & lambda, std::vector < bool > const & sky );
+      size_t n_lambda ( ) const { return nlambda_; }
 
-      void sky_truth ( vector_double & data );
+      void values ( vector_double & data ) const;
+
+      void lambda ( vector_double & lambda ) const;
+
+      void sky ( std::vector < bool > & sky ) const;
     
     private :
 
@@ -99,14 +103,22 @@ namespace harp {
       spec_specter ( boost::property_tree::ptree const & props );
       
       ~spec_specter ( );
-      
-      size_t n_spec ( ) { return nspec_; }
 
-      size_t n_lambda ( ) { return nlambda_; }
-
-      void read ( vector_double & data, vector_double & lambda, std::vector < bool > & sky );
-      
       void write ( std::string const & path, vector_double & data, vector_double const & lambda, std::vector < bool > const & sky );
+
+      void write ( std::string const & path, matrix_double & data, vector_double & lambda, std::vector < bool > & sky );
+
+      // overloaded virtual methods from base class
+      
+      size_t n_spec ( ) const { return nspec_; }
+
+      size_t n_lambda ( ) const { return nlambda_; }
+
+      void values ( vector_double & data ) const;
+
+      void lambda ( vector_double & lambda ) const;
+
+      void sky ( std::vector < bool > & sky ) const;
     
     private :
 

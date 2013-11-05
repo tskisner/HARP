@@ -1,6 +1,6 @@
 
-.. _iompi:
+.. _parallel:
 
-Parallel I/O
+Parallel Operations
 ==================================
 

@@ -20,15 +20,23 @@ namespace harp {
       image_fits ( boost::property_tree::ptree const & props );
       
       ~image_fits ( );
-      
-      size_t n_rows ( ) { return rows_; }
-      
-      size_t n_cols ( ) { return cols_; }
-      
-      void read ( vector_double & data, vector_double & invvar, std::vector < bool > & sky );
 
       void write ( std::string const & path, vector_double & data, vector_double & invvar, std::vector < bool > & sky );
-    
+
+      void write ( std::string const & path, matrix_double & data, matrix_double & invvar, std::vector < bool > & sky );
+
+      // overloaded virtual methods from base class
+      
+      size_t n_rows ( ) const { return rows_; }
+      
+      size_t n_cols ( ) const { return cols_; }
+      
+      void values ( vector_double & data ) const;
+
+      void inv_variance ( vector_double & invvar ) const;
+
+      void sky ( std::vector < bool > & sky ) const;
+
     private :
 
       template < class Archive >
@@ -72,13 +80,17 @@ namespace harp {
       
       ~image_sim ( );
 
-      size_t n_rows ( ) { return rows_; }
-      
-      size_t n_cols ( ) { return cols_; }
-      
-      void read ( vector_double & data, vector_double & invvar, std::vector < bool > & sky );
+      // overloaded virtual methods from base class
 
-      void write ( std::string const & path, vector_double & data, vector_double & invvar, std::vector < bool > & sky );
+      size_t n_rows ( ) const { return rows_; }
+      
+      size_t n_cols ( ) const { return cols_; }
+
+      void values ( vector_double & data ) const;
+
+      void inv_variance ( vector_double & invvar ) const;
+
+      void sky ( std::vector < bool > & sky ) const;
     
     private :
 

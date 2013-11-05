@@ -20,27 +20,32 @@ namespace harp {
       
       virtual ~spec ( ) { }
 
-      virtual size_t n_spec ( ) {
+      virtual size_t n_spec ( ) const {
         HARP_THROW( "fell through to virtual method" );
         return 0;
       }
 
-      virtual size_t n_lambda ( ) {
+      virtual size_t n_lambda ( ) const {
         HARP_THROW( "fell through to virtual method" );
         return 0;
       }
 
-      virtual void read ( vector_double & data, vector_double & lambda, std::vector < bool > & sky ) {
+      virtual void values ( vector_double & data ) const {
         HARP_THROW( "fell through to virtual method" );
         return;
       }
 
-      virtual void write ( std::string const & path, vector_double & data, vector_double const & lambda, std::vector < bool > const & sky ) {
+      virtual void lambda ( vector_double & lambda ) const {
         HARP_THROW( "fell through to virtual method" );
         return;
       }
 
-      void read ( matrix_double & data, vector_double & lambda, std::vector < bool > & sky ) {
+      virtual void sky ( std::vector < bool > & sky ) const {
+        HARP_THROW( "fell through to virtual method" );
+        return;
+      }
+
+      void values ( matrix_double & data ) const {
 
         size_t nspec = n_spec();
         size_t nlambda = n_lambda();
@@ -51,7 +56,7 @@ namespace harp {
 
         vector_double tempdata ( nelem );
 
-        read ( tempdata, lambda, sky );
+        values ( tempdata );
 
         for ( size_t i = 0; i < nspec; ++i ) {
           for ( size_t j = 0; j < nlambda; ++j ) {
@@ -62,31 +67,7 @@ namespace harp {
         return;
       }
 
-      void write ( std::string const & path, matrix_double & data, vector_double & lambda, std::vector < bool > & sky ) {
-
-        size_t nspec = n_spec();
-        size_t nlambda = n_lambda();
-
-        size_t nelem = nspec * nlambda;
-
-        if ( ( nlambda != data.size2() ) || ( nspec != data.size1() ) ) {
-          HARP_THROW( "data size does not match spec dimensions" );
-        }
-
-        vector_double tempdata ( nelem );
-
-        for ( size_t i = 0; i < nspec; ++i ) {
-          for ( size_t j = 0; j < nlambda; ++j ) {
-            tempdata[ i * nlambda + j ] = data( i, j );
-          }
-        }
-
-        write ( path, tempdata, lambda, sky );
-
-        return;
-      }
-
-      std::string format ( );
+      std::string format ( ) const;
       
       static spec * create ( boost::property_tree::ptree const & props );
       

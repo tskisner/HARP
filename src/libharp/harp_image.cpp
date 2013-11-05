@@ -13,7 +13,7 @@ harp::image::image ( boost::property_tree::ptree const & props ) {
 }
 
 
-string harp::image::format ( ) {
+string harp::image::format ( ) const {
   return format_;
 }
 

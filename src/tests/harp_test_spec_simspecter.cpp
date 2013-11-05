@@ -14,7 +14,7 @@ using namespace std;
 using namespace harp;
 
 
-void harp::test_spec_sim ( string const & datadir ) {
+void harp::test_spec_simspecter ( string const & datadir ) {
 
   cerr << "Testing simulated spec generation..." << endl;
 
@@ -67,11 +67,30 @@ void harp::test_spec_sim ( string const & datadir ) {
   vector_double lambda;
   vector < bool > sky;
 
-  testspec->read( data, lambda, sky );
+  testspec->values ( data );
+  testspec->lambda ( lambda );
+  testspec->sky ( sky );
+
+
+  // we now write out the data to a specter format file
 
   string outfile = datadir + "/spec_sim.fits.out";
 
-  testspec->write ( outfile, data, lambda, sky );
+  boost::property_tree::ptree props;
+  props.put ( "format", "specter" );
+  props.put ( "nspec", nspec );
+  props.put ( "nlambda", nlambda );
+
+  spec_specter outspec ( props );
+
+  outspec.write ( outfile, data, lambda, sky );
+
+  cerr << "  (PASSED)" << endl;
+
+
+  // now read it back in and check values
+
+  cerr << "Testing spec_specter operations..." << endl;
 
   spec_props.clear();
   spec_props.put ( "format", "specter" );
@@ -79,13 +98,25 @@ void harp::test_spec_sim ( string const & datadir ) {
 
   spec_p checkspec ( spec::create ( spec_props ) );
 
+  serialpath = datadir + "/spec_specter_serialize.xml.out";
+  {
+    ofstream ofs ( serialpath.c_str() );
+    boost::archive::xml_oarchive oa ( ofs );
+    oa << BOOST_SERIALIZATION_NVP(checkspec);
+  }
+  {
+    ifstream ifs ( serialpath.c_str() );
+    boost::archive::xml_iarchive ia ( ifs );
+    ia >> BOOST_SERIALIZATION_NVP(checkspec);
+  }
+
   if ( nspec != checkspec->n_spec() ) {
-    cerr << "FAIL:  simulated spec written nspec (" << checkspec->n_spec() << ") does not match input (" << nspec << ")" << endl;
+    cerr << "FAIL:  specter written nspec (" << checkspec->n_spec() << ") does not match input (" << nspec << ")" << endl;
     exit(1);
   }
 
   if ( nlambda != checkspec->n_lambda() ) {
-    cerr << "FAIL:  simulated spec written nlambda (" << checkspec->n_lambda() << ") does not match input (" << nlambda << ")" << endl;
+    cerr << "FAIL:  specter written nlambda (" << checkspec->n_lambda() << ") does not match input (" << nlambda << ")" << endl;
     exit(1);
   }
 
@@ -93,18 +124,20 @@ void harp::test_spec_sim ( string const & datadir ) {
   vector_double check_lambda;
   vector < bool > check_sky;
 
-  checkspec->read( check_data, check_lambda, check_sky );
+  checkspec->values ( check_data );
+  checkspec->lambda ( check_lambda );
+  checkspec->sky ( check_sky );
 
   for ( size_t i = 0; i < sky.size(); ++i ) {
     if ( check_sky[i] != sky[i] ) {
-      cerr << "FAIL:  written sky element " << i << " does not match original value" << endl;
+      cerr << "FAIL:  specter written sky element " << i << " does not match original value" << endl;
       exit(1);
     }
   }
 
   for ( size_t i = 0; i < lambda.size(); ++i ) {
     if ( fabs ( check_lambda[i] - lambda[i] ) / lambda[i] > 1.0e-5 ) {
-      cerr << "FAIL:  written lambda element " << i << " does not match original value" << endl;
+      cerr << "FAIL:  specter written lambda element " << i << " does not match original value" << endl;
       exit(1);
     }
   }
@@ -115,7 +148,7 @@ void harp::test_spec_sim ( string const & datadir ) {
       double check = check_data[ i * nlambda + j ];
 
       if ( fabs ( check - orig ) / orig > 1.0e-5 ) {
-        cerr << "FAIL:  written spec " << i << ", bin " << j << " does not match original value" << endl;
+        cerr << "FAIL:  specter written spec " << i << ", bin " << j << " does not match original value" << endl;
         exit(1);
       }
     }

@@ -13,7 +13,7 @@ harp::psf::psf ( boost::property_tree::ptree const & props ) {
 }
 
 
-string harp::psf::format ( ) {
+string harp::psf::format ( ) const {
   return format_;
 }
 
@@ -62,7 +62,7 @@ size_t harp::psf::total_bins ( std::map < size_t, std::set < size_t > > const & 
 }
 
 
-void harp::psf::project ( std::map < size_t, std::set < size_t > > const & speclambda, matrix_double & A ) {
+void harp::psf::project ( std::map < size_t, std::set < size_t > > const & speclambda, matrix_double & A ) const {
 
   size_t total = total_bins ( speclambda );
 
@@ -122,7 +122,7 @@ void harp::psf::project ( std::map < size_t, std::set < size_t > > const & specl
 }
 
 
-void harp::psf::project_transpose ( std::map < size_t, std::set < size_t > > const & speclambda, matrix_double_sparse & AT ) {
+void harp::psf::project_transpose ( std::map < size_t, std::set < size_t > > const & speclambda, matrix_double_sparse & AT ) const {
 
   size_t total = total_bins ( speclambda );
 
@@ -182,7 +182,7 @@ void harp::psf::project_transpose ( std::map < size_t, std::set < size_t > > con
 }
 
 
-void harp::psf::project ( matrix_double & A ) {
+void harp::psf::project ( matrix_double & A ) const {
 
   std::map < size_t, std::set < size_t > > speclambda;
 
@@ -198,7 +198,7 @@ void harp::psf::project ( matrix_double & A ) {
 }
 
 
-void harp::psf::project_transpose ( matrix_double_sparse & AT ) {
+void harp::psf::project_transpose ( matrix_double_sparse & AT ) const {
 
   std::map < size_t, std::set < size_t > > speclambda;
 

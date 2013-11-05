@@ -46,7 +46,9 @@ harp::image_sim::image_sim ( boost::property_tree::ptree const & props ) : image
   vector_double spec_data ( nglobal );
   vector_double spec_lambda ( spec_nlambda );
 
-  child_spec->read ( spec_data, spec_lambda, sky_ );
+  child_spec->values ( spec_data );
+  child_spec->lambda ( spec_lambda );
+  child_spec->sky ( sky_ );
 
   // check wavelength solution against the one from the PSF
 
@@ -101,45 +103,25 @@ harp::image_sim::~image_sim ( ) {
 }
 
 
-void harp::image_sim::read ( vector_double & data, vector_double & invvar, std::vector < bool > & sky ) {
+void harp::image_sim::values ( vector_double & data ) const {
 
   data = signal_ + noise_;
-
-  invvar = invcov_;
-
-  sky = sky_;
 
   return;
 }
 
 
-void harp::image_sim::write ( std::string const & path, vector_double & data, vector_double & invvar, std::vector < bool > & sky ) {
+void harp::image_sim::inv_variance ( vector_double & invvar ) const {
 
-  fitsfile * fp;
-    
-  fits::create ( fp, path );
-  
-  fits::img_append < double > ( fp, rows_, cols_ );
-  
-  fits::img_write ( fp, data );
+  invvar = invcov_;
 
-  fits::img_append < double > ( fp, rows_, cols_ );
-  
-  fits::img_write ( fp, invvar );
+  return;
+}
 
-  specter_write_sky ( fp, sky );
 
-  fits::img_append < double > ( fp, rows_, cols_ );
+void harp::image_sim::sky ( std::vector < bool > & sky ) const {
 
-  fits::write_key ( fp, "EXTNAME", "signal", "simulated signal" );
-  fits::img_write ( fp, signal_ );
-
-  fits::img_append < double > ( fp, rows_, cols_ );
-
-  fits::write_key ( fp, "EXTNAME", "noise", "simulated noise" );
-  fits::img_write ( fp, noise_ );
-
-  fits::close ( fp );
+  sky = sky_;
 
   return;
 }

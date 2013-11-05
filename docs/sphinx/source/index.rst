@@ -13,11 +13,12 @@ Contents:
 
    intro
    install
-   io
-   extract
-   mpiio
-   mpiextract
+   serial
+   parallel
    cli
+   dev
+
+.. todolist::
 
 
 Indices and tables

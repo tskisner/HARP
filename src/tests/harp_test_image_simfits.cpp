@@ -14,15 +14,13 @@ using namespace std;
 using namespace harp;
 
 
-void harp::test_image_fits ( string const & datadir ) {
-
+void harp::test_image_simfits ( string const & datadir ) {
 
   string specpath = datadir + "/spec_sim.fits.out";
   string psfpath = datadir + "/psf_gauss_sim.fits.out";
   string imgpath = datadir + "/image_sim.fits.out";
-  string fitspath = datadir + "/image_fits.fits.out";
 
-  cerr << "Testing FITS image..." << endl;
+  cerr << "Testing simulated image..." << endl;
 
   // instantiate the spec
 
@@ -40,7 +38,9 @@ void harp::test_image_fits ( string const & datadir ) {
   vector_double check_lambda;
   vector < bool > check_sky;
 
-  checkspec->read( check_data, check_lambda, check_sky );
+  checkspec->values ( check_data );
+  checkspec->lambda ( check_lambda );
+  checkspec->sky ( check_sky );
 
   // instantiate the PSF
 
@@ -60,14 +60,15 @@ void harp::test_image_fits ( string const & datadir ) {
   // instantiate image
 
   boost::property_tree::ptree img_props;
-  img_props.put ( "format", "fits" );
-  img_props.put ( "path", imgpath );
+  img_props.put ( "format", "sim" );
+  img_props.put_child ( "spec", spec_props );
+  img_props.put_child ( "psf", gauss_props );
 
   image_p img ( image::create ( img_props ) );
 
   // immediately serialize and restore, so that any issues with that process will impact the code that follows
 
-  string serialpath = datadir + "/image_fits_serialize.xml.out";
+  string serialpath = datadir + "/image_sim_serialize.xml.out";
   {
     ofstream ofs ( serialpath.c_str() );
     boost::archive::xml_oarchive oa ( ofs );
@@ -94,13 +95,15 @@ void harp::test_image_fits ( string const & datadir ) {
     exit(1);
   }
 
-  // read / write test
+  // read test
 
   vector_double img_data;
   vector_double img_inv;
   vector < bool > sky;
-  
-  img->read ( img_data, img_inv, sky );
+
+  img->values ( img_data );
+  img->inv_variance ( img_inv );
+  img->sky ( sky );
 
   for ( size_t i = 0; i < sky.size(); ++i ) {
     if ( sky[i] != check_sky[i] ) {
@@ -109,10 +112,76 @@ void harp::test_image_fits ( string const & datadir ) {
     }
   }
 
-  img->write ( fitspath, img_data, img_inv, sky );
+  cerr << "  (PASSED)" << endl;
+
+
+  cerr << "Testing FITS image..." << endl;
+
+  img_props.clear();
+  img_props.put ( "format", "fits" );
+  img_props.put ( "rows", psf_imgrows );
+  img_props.put ( "cols", psf_imgcols );
+
+  image_fits outimg ( img_props );
+
+  // immediately serialize and restore, so that any issues with that process will impact the code that follows
+
+  serialpath = datadir + "/image_fits_serialize.xml.out";
+  {
+    ofstream ofs ( serialpath.c_str() );
+    boost::archive::xml_oarchive oa ( ofs );
+    oa << BOOST_SERIALIZATION_NVP(outimg);
+  }
+  {
+    ifstream ifs ( serialpath.c_str() );
+    boost::archive::xml_iarchive ia ( ifs );
+    ia >> BOOST_SERIALIZATION_NVP(outimg);
+  }
+
+  img_nrows = outimg.n_rows();
+  img_ncols = outimg.n_cols();
+
+  // pixel dimensions should match the psf class
+
+  if ( img_nrows != psf_imgrows ) {
+    cerr << "FAIL:  FITS image rows (" << img_nrows << ") does not equal psf rows (" << psf_imgrows << ")" << endl;
+    exit(1);
+  }
+
+  if ( img_ncols != psf_imgcols ) {
+    cerr << "FAIL:  FITS image cols (" << img_ncols << ") does not equal psf cols (" << psf_imgcols << ")" << endl;
+    exit(1);
+  }
+
+  // write test
+
+  outimg.write ( imgpath, img_data, img_inv, sky );
+
+  // read test
+
+  img_props.clear();
+  img_props.put ( "format", "fits" );
+  img_props.put ( "path", imgpath );
+
+  image_p checkimg ( image::create ( img_props ) );
+
+  vector_double check_img_data;
+  vector_double check_img_inv;
+  vector < bool > check_img_sky;
+
+  checkimg->values ( check_img_data );
+  checkimg->inv_variance ( check_img_inv );
+  checkimg->sky ( check_img_sky );
+  
+  for ( size_t i = 0; i < sky.size(); ++i ) {
+    if ( sky[i] != check_img_sky[i] ) {
+      cerr << "FAIL:  image sky element " << i << " does not match original value" << endl;
+      exit(1);
+    }
+  }
 
   cerr << "  (PASSED)" << endl;
-     
+
   return;
 }
 

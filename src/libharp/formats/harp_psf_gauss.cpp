@@ -10,11 +10,9 @@ using namespace std;
 using namespace harp;
 
 
-void harp::psf_gauss_resp::sample ( size_t x_offset, size_t y_offset, matrix_double & patch ) {
+void harp::psf_gauss_resp::sample ( size_t x_offset, size_t y_offset, matrix_double & patch ) const {
 
   double PI = std::atan2 ( 0.0, -1.0 );
-  
-  amp /= maj * min * 2.0 * PI;
   
   double cang = cos ( ang );
   double sang = sin ( ang );
@@ -250,7 +248,7 @@ int harp::psf_gauss::hdu_info ( fitsfile *fp, const char * psf_gauss_hdu ) {
 }
 
 
-void harp::psf_gauss::response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch ) {
+void harp::psf_gauss::response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch ) const {
 
   size_t bin = spec * nlambda_ + lambda;
 

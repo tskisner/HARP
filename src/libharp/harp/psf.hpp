@@ -20,37 +20,32 @@ namespace harp {
 
       virtual ~psf ( ) { }
 
-      virtual size_t n_spec ( ) {
+      virtual size_t n_spec ( ) const {
         HARP_THROW( "fell through to virtual method" );
         return 0;
       }
       
-      virtual size_t n_lambda ( ) {
+      virtual size_t n_lambda ( ) const {
         HARP_THROW( "fell through to virtual method" );
         return 0;
       }
 
-      virtual size_t img_rows ( ) {
+      virtual size_t img_rows ( ) const {
         HARP_THROW( "fell through to virtual method" );
         return 0;
       }
 
-      virtual size_t img_cols ( ) {
+      virtual size_t img_cols ( ) const {
         HARP_THROW( "fell through to virtual method" );
         return 0;
       }
 
-      virtual vector_double lambda ( ) {
+      virtual vector_double lambda ( ) const {
         HARP_THROW( "fell through to virtual method" );
         return vector_double();
       }
 
-      virtual void response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch ) {
-        HARP_THROW( "fell through to virtual method" );
-        return;
-      }
-
-      virtual void write ( std::string const & path ) {
+      virtual void response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch ) const {
         HARP_THROW( "fell through to virtual method" );
         return;
       }
@@ -60,17 +55,17 @@ namespace harp {
       // The base class provides a default implementation of these 2 functions, so that derived classes
       // only need to implement the response() method.
       
-      virtual void project ( std::map < size_t, std::set < size_t > > const & speclambda, matrix_double & A );
+      virtual void project ( std::map < size_t, std::set < size_t > > const & speclambda, matrix_double & A ) const;
 
-      virtual void project_transpose ( std::map < size_t, std::set < size_t > > const & speclambda, matrix_double_sparse & AT );
+      virtual void project_transpose ( std::map < size_t, std::set < size_t > > const & speclambda, matrix_double_sparse & AT ) const;
 
       // These are convenience functions if you want the whole projection matrix
 
-      void project ( matrix_double & A );
+      void project ( matrix_double & A ) const;
 
-      void project_transpose ( matrix_double_sparse & AT );
+      void project_transpose ( matrix_double_sparse & AT ) const;
       
-      std::string format ( );
+      std::string format ( ) const;
       
       static psf * create ( boost::property_tree::ptree const & props );
       

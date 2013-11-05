@@ -13,7 +13,7 @@ harp::spec::spec ( boost::property_tree::ptree const & props ) {
 }
 
 
-string harp::spec::format ( ) {
+string harp::spec::format ( ) const {
   return format_;
 }
 
