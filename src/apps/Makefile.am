@@ -1,14 +1,19 @@
-CXX = @MPICXX@
 
 AM_CPPFLAGS = -I$(top_srcdir)/src/libharp/math -I$(top_srcdir)/src/libharp -I$(top_srcdir)/src/apps $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS) $(OPENMP_CXXFLAGS)
 
 AM_LDFLAGS =
 
-AM_LIBS = $(top_builddir)/src/libharp/libharp.la $(CFITSIO) $(BOOST_SERIALIZATION_LDFLAGS) $(BOOST_PROGRAM_OPTIONS_LDFLAGS) $(BOOST_SERIALIZATION_LIBS) $(BOOST_PROGRAM_OPTIONS_LIB) $(LAPACK_LIBS) $(BLAS_LIBS) $(FCLIBS) $(OPENMP_CXXFLAGS) -lm
+AM_LIBS = $(top_builddir)/src/libharp/libharp.la $(CFITSIO) $(BOOST_SERIALIZATION_LDFLAGS) $(BOOST_PROGRAM_OPTIONS_LDFLAGS) $(BOOST_SERIALIZATION_LIBS) $(BOOST_PROGRAM_OPTIONS_LIBS) $(LAPACK_LIBS) $(BLAS_LIBS) $(FCLIBS) $(OPENMP_CXXFLAGS) -lm
 
 bin_SCRIPTS =
 BUILT_SOURCES =
 CLEANFILES =
+
+bin_PROGRAMS = harp_example_imgstack
+
+harp_example_imgstack_SOURCES = harp_example_imgstack.cpp
+harp_example_imgstack_LDADD = $(AM_LIBS)
+
 
 if HAVE_AM_PYTHON
 	bin_SCRIPTS += harp_slice_psf.py harp_slice_spec.py

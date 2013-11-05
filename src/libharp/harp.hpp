@@ -46,6 +46,10 @@ namespace harp {
 #include <harp/spec.hpp>
 #include <harp/psf.hpp>
 
+#include <harp/formats_image.hpp>
+#include <harp/formats_spec.hpp>
+#include <harp/formats_psf.hpp>
+
 #include <harp/extraction.hpp>
 
 #include <harp/sky.hpp>

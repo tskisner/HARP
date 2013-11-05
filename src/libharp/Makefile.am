@@ -1,7 +1,7 @@
 
 SUBDIRS = math
 
-AM_CPPFLAGS = -I$(top_srcdir)/src/libharp/math -I$(top_srcdir)/src/libharp -I$(top_srcdir)/src/libharp/formats $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS) $(OPENMP_CXXFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir)/src/libharp/math -I$(top_srcdir)/src/libharp $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS) $(OPENMP_CXXFLAGS)
 AM_LDFLAGS =
 AM_LIBS =
 
@@ -20,7 +20,21 @@ libharp_la_LDFLAGS = -version-info @HARP_LT_VERSION@
 
 libharp_la_LIBADD = $(top_builddir)/src/libharp/math/libharpmath.la
 
-include formats/formats.am
+# Add new formats here
+
+libharp_la_include_HEADERS += \
+  harp/formats_spec.hpp \
+  harp/formats_image.hpp \
+  harp/formats_psf.hpp
+
+libharp_la_SOURCES += \
+  harp_spec_specter.cpp \
+  harp_spec_sim.cpp \
+  harp_image_fits.cpp \
+  harp_image_sim.cpp \
+  harp_psf_gauss.cpp \
+  harp_psf_gauss_sim.cpp \
+  harp_psf_gh.cpp
 
 MAINTAINERCLEANFILES = git-version.cpp
 

@@ -61,7 +61,7 @@ namespace harp {
 	    
 	};
 
-  BOOST_SERIALIZATION_SHARED_PTR(data_base)
+    BOOST_SERIALIZATION_SHARED_PTR(data_base)
 
 	BOOST_SERIALIZATION_ASSUME_ABSTRACT(data_base)
 
