@@ -1,0 +1,149 @@
+#!/bin/sh
+
+# This script provides include and linking flags for
+# the serial and MPI HARP libraries, as well as
+# information about the compile flags used and location
+# of the python bindings.
+
+# Install locations
+
+CXX="@CXX@"
+CXXFLAGS="@CXXFLAGS@"
+CPPFLAGS="@CPPFLAGS@"
+LDFLAGS="@LDFLAGS@"
+LIBS="@LIBS@"
+MPICXX="@MPICXX@"
+MPILIBS="@MPILIBS@"
+PYPATH="@PYPATH@"
+
+# Print out usage information
+
+help() {
+  echo " "
+  echo "Usage:  harpconfig"
+  echo "        [ --help (print this help info) ]"
+  echo "        [ --cxx (print compiler used) ]"
+  echo "        [ --cxxflags (print compiler optimizations used) ]"
+  echo "        [ --cppflags (print include flags) ]"
+  echo "        [ --ldflags (print library include path) ]"
+  echo "        [ --libs (print serial linking flags) ]"
+  echo "        [ --link (print full serial link command) ]"
+  echo "        [ --mpicxx (print MPI compiler used) ]"
+  echo "        [ --mpilibs (print MPI linking flags) ]"
+  echo "        [ --mpilink (print full MPI link command) ]"
+  echo "        [ --python (print python module location for PYTHONPATH) ]"
+  echo " "
+  exit $1
+}
+
+# Check that we have at least one option
+
+if [ $# -eq 0 ]
+then
+  help 1
+fi
+
+# Parse simple command line options.
+
+DOCXX=no
+DOCXXFLAGS=no
+DOCPPFLAGS=no
+DOLDFLAGS=no
+DOLIBS=no
+DOLINK=no
+DOMPICXX=no
+DOMPILIBS=no
+DOMPILINK=no
+DOPYTHON=no
+
+while [ $# -gt 0 ]; do
+  case $1 in
+    --help) 
+      help 0
+      ;;
+    --cxx)
+      DOCXX=yes
+      ;;
+    --cxxflags)
+      DOCXXFLAGS=yes
+      ;;
+    --cppflags)
+      DOCPPFLAGS=yes
+      ;;
+    --ldflags)
+      DOLDFLAGS=yes
+      ;;
+    --libs)
+      DOLIBS=yes
+      ;;
+    --link)
+      DOLINK=yes
+      ;;
+    --mpicxx)
+      DOMPICXX=yes
+      ;;
+    --mpilibs)
+      DOMPILIBS=yes
+      ;;
+    --mpilink)
+      DOMPILINK=yes
+      ;;
+    --python)
+      DOPYTHON=yes
+      ;;
+    *) 
+      help 1
+      ;;
+  esac
+  shift
+done
+
+if [ $DOMPILINK = yes ]; then
+  DOMPILIBS=yes
+  DOLINK=yes
+fi
+
+if [ $DOLINK = yes ]; then
+  DOLDFLAGS=yes
+  DOLIBS=yes
+fi
+
+# Print out requested info
+
+OUT=""
+
+if [ $DOPYTHON = yes ]; then
+  OUT="${PYPATH}"
+fi
+
+if [ $DOCXX = yes ]; then
+  OUT="${CXX}"
+fi
+
+if [ $DOMPICXX = yes ]; then
+  OUT="${MPICXX}"
+fi
+
+if [ $DOCXXFLAGS = yes ]; then
+  OUT="${OUT} ${CXXFLAGS}"
+fi
+
+if [ $DOCPPFLAGS = yes ]; then
+  OUT="${OUT} ${CPPFLAGS}"
+fi
+
+if [ $DOLDFLAGS = yes ]; then
+  OUT="${OUT} ${LDFLAGS}"
+fi
+
+if [ $DOMPILIBS = yes ]; then
+  OUT="${OUT} ${MPILIBS}"
+fi
+
+if [ $DOLIBS = yes ]; then
+  OUT="${OUT} ${LIBS}"
+fi
+
+echo "${OUT}"
+
+exit 0
