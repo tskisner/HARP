@@ -17,21 +17,41 @@ fi
 
 clique="${clique_LIBS_MPICXX} ${elemental_LIBS_MPICXX} ${lapack_LIBS_CXX} ${blas_LIBS_CXX} ${HPCP_FCLIBS} ${HPCP_LDFLAGS} ${HPCP_LIBS}"
 
-CC="${HPCP_CC}" \
-CXX="${HPCP_CXX}" \
-F77="${HPCP_F77}" \
-FC="${HPCP_FC}" \
-MPICC="${HPCP_MPICC}" \
-MPICXX="${HPCP_MPICXX}" \
-MPIF77="${HPCP_MPIF77}" \
-MPIFC="${HPCP_MPIFC}" \
-CXXFLAGS="-g -O0 -fPIC" \
-LDFLAGS="${HPCP_LDFLAGS}" \
-LIBS="${HPCP_LIBS}" \
-./configure ${sharedopt} ${OPTS} \
---with-blas="${blas_LIBS_CXX}" \
---with-lapack="${lapack_LIBS_CXX}" \
---with-cfitsio="${cfitsio_PREFIX}" \
---with-boost="${boost_PREFIX}" \
---with-elemental="${elemental_PREFIX}" \
---with-clique="${clique_PREFIX}"
+if [ "x${HPCP_FC}" = x ]; then
+
+	CC="${HPCP_CC}" \
+	CXX="${HPCP_CXX}" \
+	MPICC="${HPCP_MPICC}" \
+	MPICXX="${HPCP_MPICXX}" \
+	CXXFLAGS="-g -O0 -fPIC" \
+	LDFLAGS="${HPCP_LDFLAGS}" \
+	LIBS="${HPCP_LIBS}" \
+	./configure ${sharedopt} ${OPTS} \
+	--disable-fortran \
+	--with-blas="${blas_LIBS_CXX}" \
+	--with-lapack="${lapack_LIBS_CXX}" \
+	--with-cfitsio="${cfitsio_PREFIX}" \
+	--with-boost="${boost_PREFIX}" \
+
+else
+
+	CC="${HPCP_CC}" \
+	CXX="${HPCP_CXX}" \
+	F77="${HPCP_F77}" \
+	FC="${HPCP_FC}" \
+	MPICC="${HPCP_MPICC}" \
+	MPICXX="${HPCP_MPICXX}" \
+	MPIF77="${HPCP_MPIF77}" \
+	MPIFC="${HPCP_MPIFC}" \
+	CXXFLAGS="-g -O0 -fPIC" \
+	LDFLAGS="${HPCP_LDFLAGS}" \
+	LIBS="${HPCP_LIBS}" \
+	./configure ${sharedopt} ${OPTS} \
+	--with-blas="${blas_LIBS_CXX}" \
+	--with-lapack="${lapack_LIBS_CXX}" \
+	--with-cfitsio="${cfitsio_PREFIX}" \
+	--with-boost="${boost_PREFIX}" \
+	--with-elemental="${elemental_PREFIX}" \
+	--with-clique="${clique_PREFIX}"
+
+fi

@@ -1,5 +1,5 @@
 # ===========================================================================
-#            http://www.nongnu.org/autoconf-archive/ax_openmp.html
+#         http://www.gnu.org/software/autoconf-archive/ax_openmp.html
 # ===========================================================================
 #
 # SYNOPSIS
@@ -21,9 +21,9 @@
 #
 #   If you want to compile everything with OpenMP, you should set:
 #
-#       CFLAGS="$CFLAGS $OPENMP_CFLAGS"
-#       #OR#  CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"
-#       #OR#  FFLAGS="$FFLAGS $OPENMP_FFLAGS"
+#     CFLAGS="$CFLAGS $OPENMP_CFLAGS"
+#     #OR#  CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"
+#     #OR#  FFLAGS="$FFLAGS $OPENMP_FFLAGS"
 #
 #   (depending on the selected language).
 #
@@ -65,6 +65,8 @@
 #   modified version of the Autoconf Macro, you may extend this special
 #   exception to the GPL to apply to your modified version as well.
 
+#serial 9
+
 AC_DEFUN([AX_OPENMP], [
 AC_PREREQ(2.59) dnl for _AC_LANG_PREFIX
 
@@ -81,14 +83,21 @@ for ax_openmp_flag in $ax_openmp_flags; do
     none) []_AC_LANG_PREFIX[]FLAGS=$save[]_AC_LANG_PREFIX[] ;;
     *) []_AC_LANG_PREFIX[]FLAGS="$save[]_AC_LANG_PREFIX[]FLAGS $ax_openmp_flag" ;;
   esac
-  AC_TRY_LINK_FUNC(omp_get_num_threads,
-	[ax_cv_[]_AC_LANG_ABBREV[]_openmp=$ax_openmp_flag; break])
+  AC_TRY_LINK([#ifdef __cplusplus
+extern "C"
+#endif
+void omp_set_num_threads(int);], [const int N = 100000;
+  int i, arr[N];
+
+  omp_set_num_threads(2);
+
+  #pragma omp parallel for
+  for (i = 0; i < N; i++) {
+    arr[i] = i;
+  }], [ax_cv_[]_AC_LANG_ABBREV[]_openmp=$ax_openmp_flag; break])
 done
 []_AC_LANG_PREFIX[]FLAGS=$save[]_AC_LANG_PREFIX[]FLAGS
 ])
-AC_SUBST(OPENMP_CFLAGS)
-AC_SUBST(OPENMP_CXXFLAGS)
-AC_SUBST(OPENMP_FFLAGS)
 if test "x$ax_cv_[]_AC_LANG_ABBREV[]_openmp" = "xunknown"; then
   m4_default([$2],:)
 else

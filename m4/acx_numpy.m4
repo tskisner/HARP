@@ -5,46 +5,43 @@
 #
 # DESCRIPTION
 #
-#   This macro checks for NumPy and sets the $(NUMPY_CPPFLAGS) 
+#   This macro checks for NumPy headers and sets the NUMPY_CPPFLAGS
 #   output variable. 
 #
-# LICENSE
+# LAST MODIFICATION
 #
-#   Copyright (c) 2011 Ted Kisner <tskisner.public@gmail.com>
+#   2013-11-07
 #
-#   This program is free software: you can redistribute it and/or modify it
-#   under the terms of the GNU General Public License as published by the
-#   Free Software Foundation, either version 3 of the License, or (at your
-#   option) any later version.
+# COPYING
 #
-#   This program is distributed in the hope that it will be useful, but
-#   WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
-#   Public License for more details.
+#   Copyright (c) 2013 Theodore Kisner <tskisner@lbl.gov>
 #
-#   You should have received a copy of the GNU General Public License along
-#   with this program. If not, see <http://www.gnu.org/licenses/>.
+#   All rights reserved.
 #
-#   As a special exception, the respective Autoconf Macro's copyright owner
-#   gives unlimited permission to copy, distribute and modify the configure
-#   scripts that are the output of Autoconf when processing the Macro. You
-#   need not follow the terms of the GNU General Public License when using
-#   or distributing such scripts, even though portions of the text of the
-#   Macro appear in them. The GNU General Public License (GPL) does govern
-#   all other use of the material that constitutes the Autoconf Macro.
+#   Redistribution and use in source and binary forms, with or without modification,
+#   are permitted provided that the following conditions are met:
 #
-#   This special exception to the GPL applies to versions of the Autoconf
-#   Macro released by the Autoconf Archive. When you make and distribute a
-#   modified version of the Autoconf Macro, you may extend this special
-#   exception to the GPL to apply to your modified version as well.
+#   o  Redistributions of source code must retain the above copyright notice, 
+#      this list of conditions and the following disclaimer.
+#
+#   o  Redistributions in binary form must reproduce the above copyright notice, 
+#      this list of conditions and the following disclaimer in the documentation
+#      and/or other materials provided with the distribution.
+#
+#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
+#   ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
+#   WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
+#   IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, 
+#   INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, 
+#   BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, 
+#   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
+#   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE 
+#   OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+#   OF THE POSSIBILITY OF SUCH DAMAGE.
+#
 
 AC_DEFUN([ACX_NUMPY],[
-
-  AC_PATH_PROG([PYTHON],[python[$PYTHON_VERSION]])
-  if test -z "$PYTHON"; then
-    AC_MSG_ERROR([Cannot find python$PYTHON_VERSION in your system path])
-    PYTHON_VERSION=""
-  fi
+  AC_REQUIRE([ACX_PYTHON_DEV])
 
   acx_numpy_ok="no"
 
@@ -69,16 +66,18 @@ EOF
     AC_MSG_RESULT([$NUMPY_CPPFLAGS])
     AC_SUBST([NUMPY_CPPFLAGS])
 
-    saved_cppflags=$CPPFLAGS
-    CPPFLAGS="${CPPFLAGS} ${PYTHON_CPPFLAGS} ${NUMPY_CPPFLAGS}"
+    acx_numpy_save_CPPFLAGS=$CPPFLAGS
+
+    CPPFLAGS="$CPPFLAGS $PYTHON_CPPFLAGS $NUMPY_CPPFLAGS"
     AC_CHECK_HEADERS([numpy/arrayobject.h],,[acx_numpy_ok="no"],[
-#include<Python.h>
-])
-    CPPFLAGS=$saved_cppflags
+      #include<Python.h>
+    ])
+
+    CPPFLAGS=$acx_numpy_save_CPPFLAGS
   fi
 
   if test "x$acx_numpy_ok" = "xyes"; then
-    AC_DEFINE([HAVE_NUMPY], [], [ Define to to enable NumPy support in the Python bindings ])
+    AC_DEFINE([HAVE_NUMPY], [1], [Define if we have NumPy header files])
   fi
 
 ])
