@@ -12,6 +12,10 @@
 #include <boost/numeric/ublas/matrix_sparse.hpp>
 #include <boost/numeric/ublas/storage.hpp>
 
+#include <boost/numeric/bindings/ublas.hpp>
+#include <boost/numeric/bindings/blas.hpp>
+#include <boost/numeric/bindings/lapack.hpp>
+
 
 namespace harp {
 

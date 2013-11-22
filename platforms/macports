@@ -15,5 +15,5 @@ MPICXX="mpic++" \
 CXXFLAGS="-O3" \
 CPPFLAGS="-I/opt/local/include" \
 LDFLAGS="-L/opt/local/lib" \
-./configure --disable-fortran --disable-python ${OPTS}
+./configure --disable-fortran ${OPTS}
 

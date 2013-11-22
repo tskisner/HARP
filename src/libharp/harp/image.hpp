@@ -53,7 +53,7 @@ namespace harp {
 
         size_t nelem = imgrows * imgcols;
 
-        data.resize ( imgcols, imgrows );
+        data.resize ( imgrows, imgcols );
 
         vector_double tempdata ( nelem );
 
@@ -61,7 +61,7 @@ namespace harp {
 
         for ( size_t i = 0; i < imgcols; ++i ) {
           for ( size_t j = 0; j < imgrows; ++j ) {
-            data( i, j ) = tempdata[ i * imgrows + j ];
+            data( j, i ) = tempdata[ i * imgrows + j ];
           }
         }
 
@@ -75,7 +75,7 @@ namespace harp {
 
         size_t nelem = imgrows * imgcols;
 
-        invvar.resize ( imgcols, imgrows );
+        invvar.resize ( imgrows, imgcols );
 
         vector_double tempvar ( nelem );
 
@@ -83,7 +83,7 @@ namespace harp {
 
         for ( size_t i = 0; i < imgcols; ++i ) {
           for ( size_t j = 0; j < imgrows; ++j ) {
-            invvar( i, j ) = tempvar[ i * imgrows + j ];
+            invvar( j, i ) = tempvar[ i * imgrows + j ];
           }
         }
 

@@ -52,7 +52,7 @@ namespace harp {
 
         size_t nelem = nspec * nlambda;
 
-        data.resize ( nspec, nlambda );
+        data.resize ( nlambda, nspec );
 
         vector_double tempdata ( nelem );
 
@@ -60,7 +60,7 @@ namespace harp {
 
         for ( size_t i = 0; i < nspec; ++i ) {
           for ( size_t j = 0; j < nlambda; ++j ) {
-            data( i, j ) = tempdata[ i * nlambda + j ];
+            data( j, i ) = tempdata[ i * nlambda + j ];
           }
         }
 

@@ -28,9 +28,9 @@ void harp::psf_gauss_resp::sample ( size_t x_offset, size_t y_offset, matrix_dou
 
   double val;
 
-  for ( size_t patch_col = 0; patch_col < patch.size1(); ++patch_col ) {
+  for ( size_t patch_col = 0; patch_col < patch.size2(); ++patch_col ) {
 
-    for ( size_t patch_row = 0; patch_row < patch.size2(); ++patch_row ) {
+    for ( size_t patch_row = 0; patch_row < patch.size1(); ++patch_row ) {
 
       xrel = (double)( x_offset + patch_col ) - x;
       yrel = (double)( y_offset + patch_row ) - y;
@@ -41,7 +41,7 @@ void harp::psf_gauss_resp::sample ( size_t x_offset, size_t y_offset, matrix_dou
       val = amp * exp ( exparg );
       norm += val;
 
-      patch ( patch_col, patch_row ) = val;
+      patch ( patch_row, patch_col ) = val;
 
     }
 
@@ -49,12 +49,12 @@ void harp::psf_gauss_resp::sample ( size_t x_offset, size_t y_offset, matrix_dou
 
   norm = 1.0 / norm;
 
-  for ( size_t patch_col = 0; patch_col < patch.size1(); ++patch_col ) {
-    for ( size_t patch_row = 0; patch_row < patch.size2(); ++patch_row ) {
+  for ( size_t patch_col = 0; patch_col < patch.size2(); ++patch_col ) {
+    for ( size_t patch_row = 0; patch_row < patch.size1(); ++patch_row ) {
 
-      val = patch ( patch_col, patch_row );
+      val = patch ( patch_row, patch_col );
       val *= norm;
-      patch ( patch_col, patch_row ) = val;
+      patch ( patch_row, patch_col ) = val;
 
     }
   }

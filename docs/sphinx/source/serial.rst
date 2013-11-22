@@ -7,6 +7,18 @@ Serial Operations
 The serial HARP library provides basic classes for reading and writing objects used in astrophysical data processing.  It also provides some useful math functions and a C++ interface to BLAS/LAPACK operations.  If python and numpy are available at compile time, python bindings to most classes will be created.
 
 
+.. _serial-math:
+
+Low-Level Math
+------------------
+
+
+C++ BLAS / LAPACK Interface
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+http://svn.boost.org/svn/boost/sandbox/numeric_bindings/libs/numeric/bindings/doc/html/index.html
+
+
 .. _serial-io:
 
 Data I/O

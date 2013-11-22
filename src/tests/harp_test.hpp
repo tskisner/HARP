@@ -20,6 +20,8 @@ namespace harp {
 
   void test_serialize ( std::string const & datadir );
 
+  void test_lapack ( std::string const & datadir );
+
   void test_spec_simspecter ( std::string const & datadir );
 
   void test_psf_gauss_sim ( std::string const & datadir );

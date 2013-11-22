@@ -72,7 +72,7 @@ void harp::psf::project ( std::map < size_t, std::set < size_t > > const & specl
 
   // resize output to correct dimensions
 
-  A.resize ( total, pixtotal );
+  A.resize ( pixtotal, total );
   A.clear();
 
   // iterate over spectral bins and populate the matrix elements
@@ -90,19 +90,19 @@ void harp::psf::project ( std::map < size_t, std::set < size_t > > const & specl
 
       response ( itspec->first, (*itlambda), xoff, yoff, patch );
 
-      for ( size_t patch_col = 0; patch_col < patch.size1(); ++patch_col ) {
+      for ( size_t patch_col = 0; patch_col < patch.size2(); ++patch_col ) {
 
         if ( xoff + patch_col < pixcols ) {
           // this column is within the image dimensions
 
-          for ( size_t patch_row = 0; patch_row < patch.size2(); ++patch_row ) {
+          for ( size_t patch_row = 0; patch_row < patch.size1(); ++patch_row ) {
 
             if ( yoff + patch_row < pixrows ) {
               // this row is within the image dimensions
 
               row = ( xoff + patch_col ) * pixrows + yoff + patch_row;
 
-              A ( col, row ) = patch ( patch_col, patch_row );
+              A ( row, col ) = patch ( patch_row, patch_col );
 
             }
 
@@ -150,19 +150,19 @@ void harp::psf::project_transpose ( std::map < size_t, std::set < size_t > > con
 
       response ( itspec->first, (*itlambda), xoff, yoff, patch );
 
-      for ( size_t patch_col = 0; patch_col < patch.size1(); ++patch_col ) {
+      for ( size_t patch_col = 0; patch_col < patch.size2(); ++patch_col ) {
 
         if ( xoff + patch_col < pixcols ) {
           // this column is within the image dimensions
 
-          for ( size_t patch_row = 0; patch_row < patch.size2(); ++patch_row ) {
+          for ( size_t patch_row = 0; patch_row < patch.size1(); ++patch_row ) {
 
             if ( yoff + patch_row < pixrows ) {
               // this row is within the image dimensions
 
               col = ( xoff + patch_col ) * pixrows + yoff + patch_row;
 
-              AT ( row, col ) = patch ( patch_col, patch_row );
+              AT ( row, col ) = patch ( patch_row, patch_col );
 
             }
 

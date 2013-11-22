@@ -20,6 +20,8 @@ int main ( int argc, char *argv[] ) {
 
   test_serialize ( datadir );
 
+  test_lapack ( datadir );
+
   test_spec_simspecter ( datadir );
 
   test_psf_gauss_sim ( datadir );

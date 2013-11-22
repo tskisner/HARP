@@ -72,8 +72,8 @@ harp::image_sim::image_sim ( boost::property_tree::ptree const & props ) : image
 
   signal_.resize ( npix );
 
-  boost::numeric::ublas::axpy_prod ( spec_data, A, signal_, true );
-  //boost::numeric::bindings::blas::gemv ( 1.0, A, spec_data, 0.0, signal_ );
+  //boost::numeric::ublas::axpy_prod ( spec_data, A, signal_, true );
+  boost::numeric::bindings::blas::gemv ( 1.0, A, spec_data, 0.0, signal_ );
 
   // construct noise
 
