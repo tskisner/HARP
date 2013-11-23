@@ -102,6 +102,12 @@ harp::image_sim::~image_sim ( ) {
 }
 
 
+boost::property_tree::ptree harp::image_sim::metadata ( ) const {
+
+
+}
+
+
 void harp::image_sim::values ( vector_double & data ) const {
 
   data = signal_ + noise_;

@@ -30,6 +30,8 @@ namespace harp {
       
       // overloaded virtual methods from base class
 
+      boost::property_tree::ptree metadata ( ) const;
+
       size_t n_spec ( ) const { return nspec_; }
 
       size_t n_lambda ( ) const { return nlambda_; }
@@ -109,6 +111,8 @@ namespace harp {
       void write ( std::string const & path, matrix_double & data, vector_double & lambda, std::vector < target > const & target_list );
 
       // overloaded virtual methods from base class
+
+      boost::property_tree::ptree metadata ( ) const;
       
       size_t n_spec ( ) const { return nspec_; }
 

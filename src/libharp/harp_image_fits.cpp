@@ -62,6 +62,12 @@ harp::image_fits::~image_fits ( ) {
 }
 
 
+boost::property_tree::ptree harp::image_fits::metadata ( ) const {
+
+
+}
+
+
 void harp::image_fits::values ( vector_double & data ) const {
 
   fitsfile *fp;

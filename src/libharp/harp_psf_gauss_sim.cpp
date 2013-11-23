@@ -161,6 +161,12 @@ void harp::psf_gauss_sim::spec2pix ( size_t spec, size_t specbin, double & x, do
 }
 
 
+boost::property_tree::ptree harp::psf_gauss_sim::metadata ( ) const {
+
+
+}
+
+
 void harp::psf_gauss_sim::response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch ) const {
 
   size_t bin = spec * nlambda_ + lambda;
