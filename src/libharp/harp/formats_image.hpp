@@ -21,9 +21,9 @@ namespace harp {
       
       ~image_fits ( );
 
-      void write ( std::string const & path, vector_double & data, vector_double & invvar, std::vector < bool > & sky );
+      void write ( std::string const & path, vector_double & data, vector_double & invvar );
 
-      void write ( std::string const & path, matrix_double & data, matrix_double & invvar, std::vector < bool > & sky );
+      void write ( std::string const & path, matrix_double & data, matrix_double & invvar );
 
       // overloaded virtual methods from base class
       
@@ -34,8 +34,6 @@ namespace harp {
       void values ( vector_double & data ) const;
 
       void inv_variance ( vector_double & invvar ) const;
-
-      void sky ( std::vector < bool > & sky ) const;
 
     private :
 
@@ -90,8 +88,6 @@ namespace harp {
 
       void inv_variance ( vector_double & invvar ) const;
 
-      void sky ( std::vector < bool > & sky ) const;
-    
     private :
 
       template < class Archive >

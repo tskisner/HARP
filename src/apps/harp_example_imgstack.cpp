@@ -155,9 +155,8 @@ int main ( int argc, char *argv[] ) {
   for ( size_t i = 0; i < fake_invvar.size(); ++i ) {
     fake_invvar[i] = 1.0;
   }
-  std::vector < bool > fake_sky(1);
 
-  outimg.write ( outfile, stack[0], fake_invvar, fake_sky );
+  outimg.write ( outfile, stack[0], fake_invvar );
 
   return 0;
 }

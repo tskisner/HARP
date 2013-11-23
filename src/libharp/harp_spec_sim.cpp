@@ -107,16 +107,16 @@ void harp::spec_sim::lambda ( vector_double & lambda ) const {
 }
 
 
-void harp::spec_sim::sky ( std::vector < bool > & sky ) const {
+void harp::spec_sim::targets ( std::vector < target > & target_list ) const {
 
-  sky.resize ( nspec_ );
+  target_list.clear();
 
   for ( size_t i = 0; i < nspec_; ++i ) {
 
     if ( i % skymod_ == 0 ) {
-      sky[ i ] = true;
+      target_list.push_back ( target ( TARGET_SKY, "sky" ) );
     } else {
-      sky[ i ] = false;
+      target_list.push_back ( target ( TARGET_UNKNOWN, "object" ) );
     }
 
   }

@@ -38,7 +38,7 @@ namespace harp {
 
       void lambda ( vector_double & lambda ) const;
 
-      void sky ( std::vector < bool > & sky ) const;
+      void targets ( std::vector < target > & target_list ) const;
     
     private :
 
@@ -77,10 +77,10 @@ namespace harp {
 
 
 
-  void specter_read_sky ( fitsfile * fp, std::vector < bool > & sky );
+  void specter_read_targets ( fitsfile * fp, std::vector < target > & target_list );
 
 
-  void specter_write_sky ( fitsfile * fp, std::vector < bool > const & sky );
+  void specter_write_targets ( fitsfile * fp, std::vector < target > const & target_list );
   
 
   class spec_specter : public spec {
@@ -104,9 +104,9 @@ namespace harp {
       
       ~spec_specter ( );
 
-      void write ( std::string const & path, vector_double & data, vector_double const & lambda, std::vector < bool > const & sky );
+      void write ( std::string const & path, vector_double & data, vector_double const & lambda, std::vector < target > const & target_list );
 
-      void write ( std::string const & path, matrix_double & data, vector_double & lambda, std::vector < bool > & sky );
+      void write ( std::string const & path, matrix_double & data, vector_double & lambda, std::vector < target > const & target_list );
 
       // overloaded virtual methods from base class
       
@@ -118,7 +118,7 @@ namespace harp {
 
       void lambda ( vector_double & lambda ) const;
 
-      void sky ( std::vector < bool > & sky ) const;
+      void targets ( std::vector < target > & target_list ) const;
     
     private :
 

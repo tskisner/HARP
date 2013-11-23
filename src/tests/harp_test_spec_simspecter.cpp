@@ -65,11 +65,11 @@ void harp::test_spec_simspecter ( string const & datadir ) {
 
   vector_double data;
   vector_double lambda;
-  vector < bool > sky;
+  vector < target > target_list;
 
   testspec->values ( data );
   testspec->lambda ( lambda );
-  testspec->sky ( sky );
+  testspec->targets ( target_list );
 
 
   // we now write out the data to a specter format file
@@ -83,7 +83,7 @@ void harp::test_spec_simspecter ( string const & datadir ) {
 
   spec_specter outspec ( props );
 
-  outspec.write ( outfile, data, lambda, sky );
+  outspec.write ( outfile, data, lambda, target_list );
 
   cerr << "  (PASSED)" << endl;
 
@@ -122,15 +122,15 @@ void harp::test_spec_simspecter ( string const & datadir ) {
 
   vector_double check_data;
   vector_double check_lambda;
-  vector < bool > check_sky;
+  vector < target > check_target_list;
 
   checkspec->values ( check_data );
   checkspec->lambda ( check_lambda );
-  checkspec->sky ( check_sky );
+  checkspec->targets ( check_target_list );
 
-  for ( size_t i = 0; i < sky.size(); ++i ) {
-    if ( check_sky[i] != sky[i] ) {
-      cerr << "FAIL:  specter written sky element " << i << " does not match original value" << endl;
+  for ( size_t i = 0; i < target_list.size(); ++i ) {
+    if ( check_target_list[i].type() != target_list[i].type() ) {
+      cerr << "FAIL:  specter written target element " << i << " does not match original value" << endl;
       exit(1);
     }
   }

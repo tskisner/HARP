@@ -48,7 +48,6 @@ harp::image_sim::image_sim ( boost::property_tree::ptree const & props ) : image
 
   child_spec->values ( spec_data );
   child_spec->lambda ( spec_lambda );
-  child_spec->sky ( sky_ );
 
   // check wavelength solution against the one from the PSF
 
@@ -114,14 +113,6 @@ void harp::image_sim::values ( vector_double & data ) const {
 void harp::image_sim::inv_variance ( vector_double & invvar ) const {
 
   invvar = invcov_;
-
-  return;
-}
-
-
-void harp::image_sim::sky ( std::vector < bool > & sky ) const {
-
-  sky = sky_;
 
   return;
 }

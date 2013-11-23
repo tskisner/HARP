@@ -28,11 +28,11 @@ libharp_la_includedir = $(includedir)/harp
 
 libharp_la_include_HEADERS = \
 	harp/fits.hpp \
+	harp/target.hpp \
 	harp/image.hpp \
 	harp/spec.hpp \
 	harp/psf.hpp \
-	harp/extraction.hpp \
-	harp/sky.hpp
+	harp/extraction.hpp
 
 libharp_la_SOURCES = \
 	harp.cpp \

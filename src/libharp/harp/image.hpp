@@ -40,11 +40,6 @@ namespace harp {
         HARP_THROW( "fell through to virtual method" );
         return;
       }
-
-      virtual void sky ( std::vector < bool > & sky ) const {
-        HARP_THROW( "fell through to virtual method" );
-        return;
-      }
       
       void values ( matrix_double & data ) const {
 

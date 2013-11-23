@@ -36,11 +36,11 @@ void harp::test_image_simfits ( string const & datadir ) {
 
   vector_double check_data;
   vector_double check_lambda;
-  vector < bool > check_sky;
+  vector < target > check_target_list;
 
   checkspec->values ( check_data );
   checkspec->lambda ( check_lambda );
-  checkspec->sky ( check_sky );
+  checkspec->targets ( check_target_list );
 
   // instantiate the PSF
 
@@ -99,18 +99,9 @@ void harp::test_image_simfits ( string const & datadir ) {
 
   vector_double img_data;
   vector_double img_inv;
-  vector < bool > sky;
 
   img->values ( img_data );
   img->inv_variance ( img_inv );
-  img->sky ( sky );
-
-  for ( size_t i = 0; i < sky.size(); ++i ) {
-    if ( sky[i] != check_sky[i] ) {
-      cerr << "FAIL:  image sky element " << i << " does not match original value" << endl;
-      exit(1);
-    }
-  }
 
   cerr << "  (PASSED)" << endl;
 
@@ -155,7 +146,7 @@ void harp::test_image_simfits ( string const & datadir ) {
 
   // write test
 
-  outimg.write ( imgpath, img_data, img_inv, sky );
+  outimg.write ( imgpath, img_data, img_inv );
 
   // read test
 
@@ -167,18 +158,9 @@ void harp::test_image_simfits ( string const & datadir ) {
 
   vector_double check_img_data;
   vector_double check_img_inv;
-  vector < bool > check_img_sky;
 
   checkimg->values ( check_img_data );
   checkimg->inv_variance ( check_img_inv );
-  checkimg->sky ( check_img_sky );
-  
-  for ( size_t i = 0; i < sky.size(); ++i ) {
-    if ( sky[i] != check_img_sky[i] ) {
-      cerr << "FAIL:  image sky element " << i << " does not match original value" << endl;
-      exit(1);
-    }
-  }
 
   cerr << "  (PASSED)" << endl;
 

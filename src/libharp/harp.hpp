@@ -42,6 +42,7 @@ namespace harp {
 
 #include <harp/fits.hpp>
 
+#include <harp/target.hpp>
 #include <harp/image.hpp>
 #include <harp/spec.hpp>
 #include <harp/psf.hpp>
@@ -51,8 +52,6 @@ namespace harp {
 #include <harp/formats_psf.hpp>
 
 #include <harp/extraction.hpp>
-
-#include <harp/sky.hpp>
 
 #endif
 
