@@ -49,6 +49,12 @@ harp::spec_sim::~spec_sim ( ) {
 }
 
 
+boost::property_tree::ptree harp::spec_sim::metadata ( ) const {
+
+
+}
+
+
 void harp::spec_sim::values ( vector_double & data ) const {
 
   double PI = std::atan2 ( 0.0, -1.0 );
