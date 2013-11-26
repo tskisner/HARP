@@ -128,7 +128,7 @@ LIBS="$LIBS $FLIBS"
 
 # First, check BLAS_LIBS environment variable
 if test x$ax_blas_ok = xno; then
-  if test x$BLAS_LIBS != x; then
+  if test "x$BLAS_LIBS" != x; then
     save_LIBS="$LIBS"; LIBS="$BLAS_LIBS $LIBS"
     AC_MSG_CHECKING([for ]sgemm[ in $BLAS_LIBS])
     AC_TRY_LINK_FUNC(sgemm, [ax_blas_ok=yes], [BLAS_LIBS=""])

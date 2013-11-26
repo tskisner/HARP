@@ -24,7 +24,7 @@ if [ "x${HPCP_FC}" = x ]; then
 	MPICC="${HPCP_MPICC}" \
 	MPICXX="${HPCP_MPICXX}" \
 	CXXFLAGS="${HPCP_CXXFLAGS}" \
-	LDFLAGS="${HPCP_LDFLAGS}" \
+	LDFLAGS="${HPCP_LDFLAGS} ${HPCP_OMPFLAGS}" \
 	LIBS="${HPCP_LIBS}" \
 	./configure ${sharedopt} ${OPTS} \
 	--disable-fortran \
@@ -44,7 +44,7 @@ else
 	MPIF77="${HPCP_MPIF77}" \
 	MPIFC="${HPCP_MPIFC}" \
 	CXXFLAGS="${HPCP_CXXFLAGS}" \
-	LDFLAGS="${HPCP_LDFLAGS}" \
+	LDFLAGS="${HPCP_LDFLAGS} ${HPCP_OMPFLAGS}" \
 	LIBS="${HPCP_LIBS}" \
 	./configure ${sharedopt} ${OPTS} \
 	--with-blas="${blas_LIBS_CXX}" \

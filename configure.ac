@@ -33,9 +33,9 @@ harp_fortran=yes
 AC_ARG_ENABLE(fortran, [AC_HELP_STRING([--disable-fortran], [Disable features that depend on fortran])], [harp_fortran=$enable_fortran])
 if test x"$harp_fortran" != xno; then
   AC_PROG_FC
-  AC_FC_LIBRARY_LDFLAGS
-  AC_FC_WRAPPERS
-  ACX_FC_PP_DEFINE
+dnl  AC_FC_LIBRARY_LDFLAGS
+dnl  AC_FC_WRAPPERS
+dnl  ACX_FC_PP_DEFINE
 fi
 AC_LANG([C++])
 AC_CHECK_HEADERS([iostream iostream.h])
