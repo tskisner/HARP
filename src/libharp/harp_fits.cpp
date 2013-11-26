@@ -111,6 +111,27 @@ int harp::fits::nhdus ( fitsfile * fp ) {
 }
 
 
+void harp::fits::key_strclean ( std::string & val ) {
+
+  // remove extraneous characters
+
+  size_t nchar = 2;
+  static const char extra[] = { '\'', '\"', '\040' };
+
+  for ( size_t i = 0; i < nchar; ++i ) {
+    size_t pos = 0;
+    while ( pos != string::npos ) {
+      pos = val.find ( extra[i], 0 );
+      if ( pos != string::npos ) {
+        val.erase ( pos, 1 );
+      }
+    }
+  }
+
+  return;
+}
+
+
 void harp::fits::key_read ( fitsfile * fp, std::string const & keyname, std::string & val ) {
 
   int ret;
@@ -128,6 +149,7 @@ void harp::fits::key_read ( fitsfile * fp, std::string const & keyname, std::str
   } else {
     val = "";
   }
+  key_strclean ( val );
 
   return;
 }
@@ -204,6 +226,12 @@ void harp::fits::key_write ( fitsfile * fp, std::string const & keyname, bool co
 boost::property_tree::ptree harp::fits::key_read_all ( fitsfile * fp ) {
   boost::property_tree::ptree keys;
 
+  set < string > exclude;
+  exclude.insert ( "SIMPLE" );
+  exclude.insert ( "BITPIX" );
+  exclude.insert ( "NAXIS" );
+  exclude.insert ( "COMMENT" );
+
   int ret;
   int status = 0;
 
@@ -224,51 +252,77 @@ boost::property_tree::ptree harp::fits::key_read_all ( fitsfile * fp ) {
 
   boost::property_tree::ptree subtree;
 
+  cerr << "found " << nkeys << " keys" << endl;
+
   for ( int i = 0; i < nkeys; ++i ) {
 
-    ret = fits_read_keyn ( fp, i, keyname, keyval, keycom, &status );
+    ret = fits_read_keyn ( fp, i+1, keyname, keyval, keycom, &status );
     fits::check ( status );
 
-    ret = fits_get_keytype ( keyval, &dtype, &status );
-    fits::check ( status );
+    bool ignore = false;
+    string keystr = keyname;
 
-    subtree.clear();
-    subtree.put ( "COM", string(keycom) );
-
-    int iconvert;
-    double dconvert;
-    long long int lconvert;
-
-    switch ( dtype ) {
-      case 'C':
-        subtree.put < string > ( "TYPE", "C" );
-        subtree.put < string > ( "VAL", string(keyval) );
-        break;
-      case 'L':
-        iconvert = atoi ( keyval );
-        if ( iconvert == 0 ) {
-          subtree.put < bool > ( "VAL", false );
-        } else {
-          subtree.put < bool > ( "VAL", true );
-        }
-        subtree.put < string > ( "TYPE", "L" );
-        break;
-      case 'I':
-        lconvert = atoll ( keyval );
-        subtree.put < long long int > ( "VAL", lconvert );
-        subtree.put < string > ( "TYPE", "I" );
-        break;
-      case 'F':
-        dconvert = atof ( keyval );
-        subtree.put < double > ( "VAL", dconvert );
-        subtree.put < string > ( "TYPE", "F" );
-        break;
-      default:
-        cerr << "WARNING: skipping read of keyword \"" << keyname << "\" with unsupported type \"" << dtype << "\"" << endl;
-        break;
+    for ( set < string > :: const_iterator it = exclude.begin(); it != exclude.end(); ++it ) {
+      if ( keystr.find ( (*it) ) != std::string::npos ) {
+        ignore = true;
+      }
     }
 
-    boost::property_tree::ptree & treeref = keys.put_child ( string( keyname ), subtree );
+    if ( ! ignore ) {
+
+      ret = fits_get_keytype ( keyval, &dtype, &status );
+      if ( status != 0 ) {
+        // cannot detect type- must be an empty string
+        dtype = 'C';
+        status = 0;
+      }
+
+      subtree.clear();
+      subtree.put ( "COM", string(keycom) );
+
+      int iconvert;
+      double dconvert;
+      long long int lconvert;
+      string clean;
+
+      switch ( dtype ) {
+        case 'C':
+          clean = keyval;
+          key_strclean ( clean );
+          subtree.put < string > ( "TYPE", "C" );
+          subtree.put < string > ( "VAL", clean );
+          cerr << string(keyname) << " = " << clean << " : " << string(keycom) << endl;
+          break;
+        case 'L':
+          iconvert = atoi ( keyval );
+          if ( iconvert == 0 ) {
+            subtree.put < bool > ( "VAL", false );
+          } else {
+            subtree.put < bool > ( "VAL", true );
+          }
+          subtree.put < string > ( "TYPE", "L" );
+          cerr << string(keyname) << " = " << (subtree.get < bool > ("VAL")) << " : " << string(keycom) << endl;
+          break;
+        case 'I':
+          lconvert = atoll ( keyval );
+          subtree.put < long long int > ( "VAL", lconvert );
+          subtree.put < string > ( "TYPE", "I" );
+          cerr << string(keyname) << " = " << lconvert << " : " << string(keycom) << endl;
+          break;
+        case 'F':
+          dconvert = atof ( keyval );
+          subtree.put < double > ( "VAL", dconvert );
+          subtree.put < string > ( "TYPE", "F" );
+          cerr << string(keyname) << " = " << dconvert << " : " << string(keycom) << endl;
+          break;
+        default:
+          cerr << "WARNING: skipping read of keyword \"" << keyname << "\" with unsupported type \"" << dtype << "\"" << endl;
+          break;
+      }
+
+      boost::property_tree::ptree & treeref = keys.put_child ( string( keyname ), subtree );
+
+    }
 
   }
 
@@ -781,13 +835,29 @@ void harp::fits::test ( string const & datadir ) {
     }
   }
 
+  boost::property_tree::ptree header;
+  boost::property_tree::ptree key;
+  boost::property_tree::ptree check_header;
+
+  string keytest_str = "strval";
+  long long int keytest_ll = 12345678910000;
+  bool keytest_log = true;
+  double keytest_d = 1.23456789e10;
+
   fitsfile * fp;
   
   fits::create ( fp, imgfile );
   
   fits::img_append < double > ( fp, rows, cols );
+
+  fits::key_write ( fp, "key1", keytest_str, "string key test" );
+  fits::key_write ( fp, "key2", keytest_ll, "long long key test" );
+  fits::key_write ( fp, "key3", keytest_log, "logical key test" );
+  fits::key_write ( fp, "key4", keytest_d, "double key test" );
   
   fits::img_write ( fp, data );
+
+  header = fits::key_read_all ( fp );
 
   size_t tabrows = 10;
 
@@ -826,6 +896,8 @@ void harp::fits::test ( string const & datadir ) {
 
   fits::bin_create ( fp, string("TEST"), tabrows, colnames, coltypes, colunits );
 
+  fits::key_write_all ( fp, header );
+
   boost::numeric::ublas::vector < double > data_double ( tabrows );
   boost::numeric::ublas::vector < float > data_float ( tabrows );
   boost::numeric::ublas::vector < long long > data_longlong ( tabrows );
@@ -853,7 +925,14 @@ void harp::fits::test ( string const & datadir ) {
 
   fits::bin_write_column_strings ( fp, 0, tabrows - 1, 6, names );
 
+  check_header = fits::key_read_all ( fp );
+
   fits::close ( fp );
+
+  if ( header != check_header ) {
+    cerr << "  (FAILED): fits keywords corrupted" << endl;
+    exit(1);
+  }
 
   
   fits::open_read ( fp, imgfile );

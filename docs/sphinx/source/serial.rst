@@ -19,6 +19,16 @@ C++ BLAS / LAPACK Interface
 http://svn.boost.org/svn/boost/sandbox/numeric_bindings/libs/numeric/bindings/doc/html/index.html
 
 
+.. _serial-fits:
+
+FITS Helper Tools
+---------------------
+
+.. doxygenclass:: image
+   :members:
+
+
+
 .. _serial-io:
 
 Data I/O

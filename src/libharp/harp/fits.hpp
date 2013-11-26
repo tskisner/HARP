@@ -104,6 +104,8 @@ namespace harp { namespace fits {
 
   // keyword access
 
+  void key_strclean ( std::string & val );
+
   boost::property_tree::ptree key_read_all ( fitsfile * fp );
 
   void key_write_all ( fitsfile * fp, boost::property_tree::ptree const & keys );
