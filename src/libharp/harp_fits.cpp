@@ -111,7 +111,8 @@ int harp::fits::nhdus ( fitsfile * fp ) {
 }
 
 
-void harp::fits::read_key ( fitsfile * fp, std::string const & keyname, std::string & keyval ) {
+void harp::fits::key_read ( fitsfile * fp, std::string const & keyname, std::string & val ) {
+
   int ret;
   int status = 0;
   
@@ -121,63 +122,46 @@ void harp::fits::read_key ( fitsfile * fp, std::string const & keyname, std::str
   char value[FLEN_VALUE];
   char comment[FLEN_VALUE];
   
-  ret = fits_read_key ( fp, TSTRING, keycopy, value, comment, &status );
+  ret = fits_read_key ( fp, TSTRING, keycopy, (void*)value, comment, &status );
   if ( status == 0 ) {
-    keyval = value;
+    val = value;
   } else {
-    keyval = "";
+    val = "";
   }
 
   return;
 }
 
+void harp::fits::key_read ( fitsfile * fp, std::string const & keyname, bool & val ) {
 
-void harp::fits::read_key ( fitsfile * fp, std::string const & keyname, long & keyval ) {
+  int ival;
   int ret;
   int status = 0;
   
   char keycopy[FLEN_VALUE];
   strncpy ( keycopy, keyname.c_str(), FLEN_VALUE );
-  
-  long value;
+
   char comment[FLEN_VALUE];
   
-  ret = fits_read_key ( fp, TLONG, keycopy, &value, comment, &status );
+  ret = fits_read_key ( fp, TLOGICAL, keycopy, (void*)&ival, comment, &status );
   if ( status == 0 ) {
-    keyval = value;
+    if ( ival == 0 ) {
+      val = false;
+    } else {
+      val = true;
+    }
   } else {
-    keyval = std::numeric_limits < long > :: min();
-  }
-  
-  return;
-}
-
-
-void harp::fits::read_key ( fitsfile * fp, std::string const & keyname, double & keyval ) {
-  int ret;
-  int status = 0;
-  
-  char keycopy[FLEN_VALUE];
-  strncpy ( keycopy, keyname.c_str(), FLEN_VALUE );
-  
-  double value;
-  char comment[FLEN_VALUE];
-  
-  ret = fits_read_key ( fp, TDOUBLE, keycopy, &value, comment, &status );
-  if ( status == 0 ) {
-    keyval = value;
-  } else {
-    keyval = std::numeric_limits < double > :: quiet_NaN();
+    val = false;
   }
 
   return;
 }
 
+void harp::fits::key_write ( fitsfile * fp, std::string const & keyname, std::string const & keyval, std::string const & keycom ) {
 
-void harp::fits::write_key ( fitsfile * fp, std::string const & keyname, std::string const & keyval, std::string const & keycom ) {
   int ret;
   int status = 0;
-  
+
   char keycopy[FLEN_VALUE];
   strncpy ( keycopy, keyname.c_str(), FLEN_VALUE );
   
@@ -193,41 +177,132 @@ void harp::fits::write_key ( fitsfile * fp, std::string const & keyname, std::st
   return;
 }
 
+void harp::fits::key_write ( fitsfile * fp, std::string const & keyname, bool const & keyval, std::string const & keycom ) {
 
-void harp::fits::write_key ( fitsfile * fp, std::string const & keyname, long const & keyval, std::string const & keycom ) {
   int ret;
   int status = 0;
-  
+
   char keycopy[FLEN_VALUE];
   strncpy ( keycopy, keyname.c_str(), FLEN_VALUE );
-
+  
   char comment[FLEN_VALUE];
   strncpy ( comment, keycom.c_str(), FLEN_VALUE );
-  
-  long value = keyval;
-  
-  ret = fits_update_key ( fp, TLONG, keycopy, &value, comment, &status );
+
+  int value;
+  if ( keyval ) {
+    value = 1;
+  } else {
+    value = 0;
+  }
+
+  ret = fits_update_key ( fp, TLOGICAL, keycopy, (void*)&value, comment, &status );
   fits::check ( status );
-  
+
   return;
 }
 
+boost::property_tree::ptree harp::fits::key_read_all ( fitsfile * fp ) {
+  boost::property_tree::ptree keys;
 
-void harp::fits::write_key ( fitsfile * fp, std::string const & keyname, double const & keyval, std::string const & keycom ) {
   int ret;
   int status = 0;
-  
-  char keycopy[FLEN_VALUE];
-  strncpy ( keycopy, keyname.c_str(), FLEN_VALUE );
 
-  char comment[FLEN_VALUE];
-  strncpy ( comment, keycom.c_str(), FLEN_VALUE );
-  
-  double value = keyval;
-  
-  ret = fits_update_key ( fp, TDOUBLE, keycopy, &value, comment, &status );
+  // get the total number of keys in this HDU
+
+  int nkeys;
+  int morekeys;
+  ret = fits_get_hdrspace ( fp, &nkeys, &morekeys, &status );
   fits::check ( status );
-  
+
+  // get each key in order and append to the ptree
+
+  char keyname[FLEN_VALUE];
+  char keyval[FLEN_VALUE];
+  char keycom[FLEN_VALUE];
+
+  char dtype;
+
+  boost::property_tree::ptree subtree;
+
+  for ( int i = 0; i < nkeys; ++i ) {
+
+    ret = fits_read_keyn ( fp, i, keyname, keyval, keycom, &status );
+    fits::check ( status );
+
+    ret = fits_get_keytype ( keyval, &dtype, &status );
+    fits::check ( status );
+
+    subtree.clear();
+    subtree.put ( "COM", string(keycom) );
+
+    int iconvert;
+    double dconvert;
+    long long int lconvert;
+
+    switch ( dtype ) {
+      case 'C':
+        subtree.put < string > ( "TYPE", "C" );
+        subtree.put < string > ( "VAL", string(keyval) );
+        break;
+      case 'L':
+        iconvert = atoi ( keyval );
+        if ( iconvert == 0 ) {
+          subtree.put < bool > ( "VAL", false );
+        } else {
+          subtree.put < bool > ( "VAL", true );
+        }
+        subtree.put < string > ( "TYPE", "L" );
+        break;
+      case 'I':
+        lconvert = atoll ( keyval );
+        subtree.put < long long int > ( "VAL", lconvert );
+        subtree.put < string > ( "TYPE", "I" );
+        break;
+      case 'F':
+        dconvert = atof ( keyval );
+        subtree.put < double > ( "VAL", dconvert );
+        subtree.put < string > ( "TYPE", "F" );
+        break;
+      default:
+        cerr << "WARNING: skipping read of keyword \"" << keyname << "\" with unsupported type \"" << dtype << "\"" << endl;
+        break;
+    }
+
+    boost::property_tree::ptree & treeref = keys.put_child ( string( keyname ), subtree );
+
+  }
+
+  return keys;
+}
+
+
+void harp::fits::key_write_all ( fitsfile * fp, boost::property_tree::ptree const & keys ) {
+
+  int ret;
+  int status = 0;
+
+  // iterate over all keys and write them to the current header
+
+  boost::property_tree::ptree::const_iterator v = keys.begin();
+
+  while ( v != keys.end() ) {
+    boost::property_tree::ptree const & child = v->second;
+
+    if ( child.get < string > ("TYPE") == "C" ) {
+      key_write ( fp, v->first, child.get < string > ("VAL"), child.get < string > ("COM") );
+    } else if ( child.get < string > ("TYPE") == "L" ) {
+      key_write ( fp, v->first, child.get < bool > ("VAL"), child.get < string > ("COM") );
+    } else if ( child.get < string > ("TYPE") == "I" ) {
+      key_write ( fp, v->first, child.get < long long int > ("VAL"), child.get < string > ("COM") );
+    } else if ( child.get < string > ("TYPE") == "F" ) {
+      key_write ( fp, v->first, child.get < double > ("VAL"), child.get < string > ("COM") );
+    } else {
+      HARP_THROW( "unknown FITS key type" );
+    }
+
+    ++v;
+  }
+
   return;
 }
 
@@ -251,16 +326,10 @@ int harp::fits::seek ( fitsfile * fp, string const & extname ) {
 
 
 bool harp::fits::img_colmajor ( fitsfile * fp ) {
-    bool ret;
-    std::string str;
-    read_key ( fp, "HRPCOLMJ", str );
-    if ( str == "TRUE" ) {
-      ret = true;
-    } else {
-      ret = false;
-    }
-    return ret;
-  }
+  bool val;
+  fits::key_read ( fp, string("HRPCOLMJ"), val );
+  return val;
+}
 
 
 int harp::fits::img_seek ( fitsfile * fp, std::string const & keyname, std::string const & keyval ) {

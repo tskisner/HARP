@@ -225,49 +225,49 @@ void harp::psf_gauss_sim::write ( std::string const & path ) {
     buffer[i] = resp_[i].x;
   }
   fits::img_append < double > ( fp, nspec_, nlambda_ );
-  fits::write_key ( fp, "EXTNAME", psf_gauss_sim_hdu_x, "" );
+  fits::key_write ( fp, "EXTNAME", psf_gauss_sim_hdu_x, "" );
   fits::img_write ( fp, buffer );
 
   for ( size_t i = 0; i < nglobal_; ++i ) {
     buffer[i] = resp_[i].y;
   }
   fits::img_append < double > ( fp, nspec_, nlambda_ );
-  fits::write_key ( fp, "EXTNAME", psf_gauss_sim_hdu_y, "" );
+  fits::key_write ( fp, "EXTNAME", psf_gauss_sim_hdu_y, "" );
   fits::img_write ( fp, buffer );
 
   for ( size_t i = 0; i < nglobal_; ++i ) {
     buffer[i] = resp_[i].lambda;
   }
   fits::img_append < double > ( fp, nspec_, nlambda_ );
-  fits::write_key ( fp, "EXTNAME", psf_gauss_sim_hdu_lambda, "" );
+  fits::key_write ( fp, "EXTNAME", psf_gauss_sim_hdu_lambda, "" );
   fits::img_write ( fp, buffer );
 
   for ( size_t i = 0; i < nglobal_; ++i ) {
     buffer[i] = resp_[i].amp;
   }
   fits::img_append < double > ( fp, nspec_, nlambda_ );
-  fits::write_key ( fp, "EXTNAME", psf_gauss_sim_hdu_amp, "" );
+  fits::key_write ( fp, "EXTNAME", psf_gauss_sim_hdu_amp, "" );
   fits::img_write ( fp, buffer );
 
   for ( size_t i = 0; i < nglobal_; ++i ) {
     buffer[i] = resp_[i].maj;
   }
   fits::img_append < double > ( fp, nspec_, nlambda_ );
-  fits::write_key ( fp, "EXTNAME", psf_gauss_sim_hdu_maj, "" );
+  fits::key_write ( fp, "EXTNAME", psf_gauss_sim_hdu_maj, "" );
   fits::img_write ( fp, buffer );
 
   for ( size_t i = 0; i < nglobal_; ++i ) {
     buffer[i] = resp_[i].min;
   }
   fits::img_append < double > ( fp, nspec_, nlambda_ );
-  fits::write_key ( fp, "EXTNAME", psf_gauss_sim_hdu_min, "" );
+  fits::key_write ( fp, "EXTNAME", psf_gauss_sim_hdu_min, "" );
   fits::img_write ( fp, buffer );
 
   for ( size_t i = 0; i < nglobal_; ++i ) {
     buffer[i] = resp_[i].ang;
   }
   fits::img_append < double > ( fp, nspec_, nlambda_ );
-  fits::write_key ( fp, "EXTNAME", psf_gauss_sim_hdu_ang, "" );
+  fits::key_write ( fp, "EXTNAME", psf_gauss_sim_hdu_ang, "" );
   fits::img_write ( fp, buffer );
 
   fits::close ( fp );

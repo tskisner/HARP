@@ -25,13 +25,6 @@ namespace harp { namespace fits {
   
   int nhdus ( fitsfile * fp );
 
-  void read_key ( fitsfile * fp, std::string const & keyname, std::string & keyval );
-  void read_key ( fitsfile * fp, std::string const & keyname, long & keyval );
-  void read_key ( fitsfile * fp, std::string const & keyname, double & keyval );
-
-  void write_key ( fitsfile * fp, std::string const & keyname, std::string const & keyval, std::string const & keycom );
-  void write_key ( fitsfile * fp, std::string const & keyname, long const & keyval, std::string const & keycom );
-  void write_key ( fitsfile * fp, std::string const & keyname, double const & keyval, std::string const & keycom );
   
   // FITS data type map
 
@@ -84,6 +77,19 @@ namespace harp { namespace fits {
     static std::string coltype () { return std::string("B"); }
   };
 
+  template < >
+  struct ftype < bool > {
+    static int datatype () { return TLOGICAL; }
+    static int bitpix () { return 8; }
+    static std::string coltype () { return std::string("L"); }
+  };
+
+  template < typename T >
+  struct ftype < T > d2f ( T const & test ) {
+    return ftype < T > ();
+  }
+
+
   // seek operations
 
   int seek ( fitsfile * fp, std::string const & extname );
@@ -95,6 +101,57 @@ namespace harp { namespace fits {
   int bin_seek ( fitsfile * fp, std::string const & keyname, std::string const & keyval );
   
   void bin_seek ( fitsfile * fp, int hdu );
+
+  // keyword access
+
+  boost::property_tree::ptree key_read_all ( fitsfile * fp );
+
+  void key_write_all ( fitsfile * fp, boost::property_tree::ptree const & keys );
+
+  template < typename T >
+  void key_read ( fitsfile * fp, std::string const & keyname, T & val ) {
+    int ret;
+    int status = 0;
+    
+    char keycopy[FLEN_VALUE];
+    strncpy ( keycopy, keyname.c_str(), FLEN_VALUE );
+    
+    char comment[FLEN_VALUE];
+    
+    ret = fits_read_key ( fp, d2f(val).datatype(), keycopy, (void*)val, comment, &status );
+    if ( status != 0 ) {
+      val = 0;
+    }
+
+    return;
+  }
+
+  void key_read ( fitsfile * fp, std::string const & keyname, std::string & val );
+
+  void key_read ( fitsfile * fp, std::string const & keyname, bool & val );
+
+
+  template < typename T >
+  void key_write ( fitsfile * fp, std::string const & keyname, T const & keyval, std::string const & keycom = "" ) {
+
+    int ret;
+    int status = 0;
+
+    char keycopy[FLEN_VALUE];
+    strncpy ( keycopy, keyname.c_str(), FLEN_VALUE );
+    
+    char comment[FLEN_VALUE];
+    strncpy ( comment, keycom.c_str(), FLEN_VALUE );
+
+    ret = fits_update_key ( fp, d2f(keyval).datatype(), keycopy, (void*)&keyval, comment, &status );
+    fits::check ( status );
+
+    return;
+  }
+
+  void key_write ( fitsfile * fp, std::string const & keyname, std::string const & keyval, std::string const & keycom );
+
+  void key_write ( fitsfile * fp, std::string const & keyname, bool const & keyval, std::string const & keycom );
 
 
   // image operations
@@ -124,7 +181,7 @@ namespace harp { namespace fits {
     fits::check ( status );
 
     if ( col_major ) {
-      write_key ( fp, "HRPCOLMJ", "TRUE", "Whether the data is column-major" );
+      key_write ( fp, "HRPCOLMJ", true, "Whether the data is column-major" );
     }
 
     return;
