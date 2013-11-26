@@ -65,7 +65,7 @@ harp_python=yes
 AC_ARG_ENABLE(python, [AC_HELP_STRING([--disable-python], [Disable python bindings])], [harp_python=$enable_python])
 if test x"$harp_python" != xno; then
   AM_PATH_PYTHON
-  ACX_PYTHON_DEVEL
+  ACX_PYTHON_DEV
   ACX_NUMPY
 fi
 AM_CONDITIONAL([HAVE_AM_PYTHON], [test "x$PYTHON_VERSION" != x])
