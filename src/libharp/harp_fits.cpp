@@ -3,7 +3,11 @@
 #include <harp_internal.hpp>
 
 #include <cstdio>
+#include <cctype>
 #include <limits>
+#include <algorithm>
+
+#include <boost/archive/xml_oarchive.hpp>
 
 extern "C" {
   #include <sys/stat.h>
@@ -116,10 +120,12 @@ void harp::fits::key_strclean ( std::string & val ) {
   // remove extraneous characters
 
   size_t nchar = 2;
-  static const char extra[] = { '\'', '\"', '\040' };
+  static const char extra[] = { '\'', '\"' };
+
+  size_t pos;
 
   for ( size_t i = 0; i < nchar; ++i ) {
-    size_t pos = 0;
+    pos = 0;
     while ( pos != string::npos ) {
       pos = val.find ( extra[i], 0 );
       if ( pos != string::npos ) {
@@ -128,7 +134,43 @@ void harp::fits::key_strclean ( std::string & val ) {
     }
   }
 
+  // remove whitespace
+
+  val.erase ( remove_if ( val.begin(), val.end(), ::isspace ), val.end() );
+
   return;
+}
+
+
+bool harp::fits::key_exclude ( std::string const & name ) {
+
+  static bool init = true;
+  static set < string > exclude;
+
+  if ( init ) {
+    exclude.insert ( "SIMPLE" );
+    exclude.insert ( "BITPIX" );
+    exclude.insert ( "NAXIS" );
+    exclude.insert ( "COMMENT" );
+    exclude.insert ( "EXTEND" );
+    exclude.insert ( "EXTNAME" );
+    exclude.insert ( "TFIELDS" );
+    exclude.insert ( "TTYPE" );
+    exclude.insert ( "TFORM" );
+    exclude.insert ( "TUNIT" );
+    exclude.insert ( "XTENSION" );
+    exclude.insert ( "PCOUNT" );
+    exclude.insert ( "GCOUNT" );
+    init = false;
+  }
+
+  for ( set < string > :: const_iterator it = exclude.begin(); it != exclude.end(); ++it ) {
+    if ( name.find ( (*it) ) != std::string::npos ) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 
@@ -153,6 +195,7 @@ void harp::fits::key_read ( fitsfile * fp, std::string const & keyname, std::str
 
   return;
 }
+
 
 void harp::fits::key_read ( fitsfile * fp, std::string const & keyname, bool & val ) {
 
@@ -179,58 +222,153 @@ void harp::fits::key_read ( fitsfile * fp, std::string const & keyname, bool & v
   return;
 }
 
+
+void harp::fits::key_read ( fitsfile * fp, std::string const & keyname, double & val ) {
+
+  int ret;
+  int status = 0;
+  
+  char keycopy[FLEN_VALUE];
+  strncpy ( keycopy, keyname.c_str(), FLEN_VALUE );
+
+  char comment[FLEN_VALUE];
+  
+  ret = fits_read_key ( fp, TDOUBLE, keycopy, (void*)&val, comment, &status );
+  if ( status != 0 ) {
+    val = 0.0;
+  }
+
+  return;
+}
+
+
+void harp::fits::key_read ( fitsfile * fp, std::string const & keyname, long long int & val ) {
+
+  int ret;
+  int status = 0;
+  
+  char keycopy[FLEN_VALUE];
+  strncpy ( keycopy, keyname.c_str(), FLEN_VALUE );
+
+  char comment[FLEN_VALUE];
+  
+  ret = fits_read_key ( fp, TLONGLONG, keycopy, (void*)&val, comment, &status );
+  if ( status != 0 ) {
+    val = 0;
+  }
+
+  return;
+}
+
+
 void harp::fits::key_write ( fitsfile * fp, std::string const & keyname, std::string const & keyval, std::string const & keycom ) {
 
   int ret;
   int status = 0;
 
-  char keycopy[FLEN_VALUE];
-  strncpy ( keycopy, keyname.c_str(), FLEN_VALUE );
-  
-  char comment[FLEN_VALUE];
-  strncpy ( comment, keycom.c_str(), FLEN_VALUE );
+  if ( key_exclude ( keyname ) ) {
+    cerr << "WARNING:  ignoring attempt to write non-modifiable keyword \"" << keyname << "\"" << endl;
+  } else {
 
-  char value[FLEN_VALUE];
-  strncpy ( value, keyval.c_str(), FLEN_VALUE );  
+    char keycopy[FLEN_VALUE];
+    strncpy ( keycopy, keyname.c_str(), FLEN_VALUE );
+    
+    char comment[FLEN_VALUE];
+    strncpy ( comment, keycom.c_str(), FLEN_VALUE );
 
-  ret = fits_update_key ( fp, TSTRING, keycopy, value, comment, &status );
-  fits::check ( status );
+    char value[FLEN_VALUE];
+    strncpy ( value, keyval.c_str(), FLEN_VALUE );  
+
+    ret = fits_update_key ( fp, TSTRING, keycopy, value, comment, &status );
+    fits::check ( status );
+
+  }
 
   return;
 }
+
 
 void harp::fits::key_write ( fitsfile * fp, std::string const & keyname, bool const & keyval, std::string const & keycom ) {
 
   int ret;
   int status = 0;
 
-  char keycopy[FLEN_VALUE];
-  strncpy ( keycopy, keyname.c_str(), FLEN_VALUE );
-  
-  char comment[FLEN_VALUE];
-  strncpy ( comment, keycom.c_str(), FLEN_VALUE );
-
-  int value;
-  if ( keyval ) {
-    value = 1;
+  if ( key_exclude ( keyname ) ) {
+    cerr << "WARNING:  ignoring attempt to write non-modifiable keyword \"" << keyname << "\"" << endl;
   } else {
-    value = 0;
-  }
 
-  ret = fits_update_key ( fp, TLOGICAL, keycopy, (void*)&value, comment, &status );
-  fits::check ( status );
+    char keycopy[FLEN_VALUE];
+    strncpy ( keycopy, keyname.c_str(), FLEN_VALUE );
+    
+    char comment[FLEN_VALUE];
+    strncpy ( comment, keycom.c_str(), FLEN_VALUE );
+
+    int value;
+    if ( keyval ) {
+      value = 1;
+    } else {
+      value = 0;
+    }
+
+    ret = fits_update_key ( fp, TLOGICAL, keycopy, (void*)&value, comment, &status );
+    fits::check ( status );
+
+  }
 
   return;
 }
 
+
+void harp::fits::key_write ( fitsfile * fp, std::string const & keyname, double const & keyval, std::string const & keycom ) {
+
+  int ret;
+  int status = 0;
+
+  if ( key_exclude ( keyname ) ) {
+    cerr << "WARNING:  ignoring attempt to write non-modifiable keyword \"" << keyname << "\"" << endl;
+  } else {
+
+    char keycopy[FLEN_VALUE];
+    strncpy ( keycopy, keyname.c_str(), FLEN_VALUE );
+    
+    char comment[FLEN_VALUE];
+    strncpy ( comment, keycom.c_str(), FLEN_VALUE );
+
+    ret = fits_update_key ( fp, TDOUBLE, keycopy, (void*)&keyval, comment, &status );
+    fits::check ( status );
+
+  }
+
+  return;
+}
+
+
+void harp::fits::key_write ( fitsfile * fp, std::string const & keyname, long long int const & keyval, std::string const & keycom ) {
+
+  int ret;
+  int status = 0;
+
+  if ( key_exclude ( keyname ) ) {
+    cerr << "WARNING:  ignoring attempt to write non-modifiable keyword \"" << keyname << "\"" << endl;
+  } else {
+
+    char keycopy[FLEN_VALUE];
+    strncpy ( keycopy, keyname.c_str(), FLEN_VALUE );
+    
+    char comment[FLEN_VALUE];
+    strncpy ( comment, keycom.c_str(), FLEN_VALUE );
+
+    ret = fits_update_key ( fp, TLONGLONG, keycopy, (void*)&keyval, comment, &status );
+    fits::check ( status );
+
+  }
+
+  return;
+}
+
+
 boost::property_tree::ptree harp::fits::key_read_all ( fitsfile * fp ) {
   boost::property_tree::ptree keys;
-
-  set < string > exclude;
-  exclude.insert ( "SIMPLE" );
-  exclude.insert ( "BITPIX" );
-  exclude.insert ( "NAXIS" );
-  exclude.insert ( "COMMENT" );
 
   int ret;
   int status = 0;
@@ -252,77 +390,62 @@ boost::property_tree::ptree harp::fits::key_read_all ( fitsfile * fp ) {
 
   boost::property_tree::ptree subtree;
 
-  cerr << "found " << nkeys << " keys" << endl;
-
   for ( int i = 0; i < nkeys; ++i ) {
 
     ret = fits_read_keyn ( fp, i+1, keyname, keyval, keycom, &status );
     fits::check ( status );
 
-    bool ignore = false;
-    string keystr = keyname;
-
-    for ( set < string > :: const_iterator it = exclude.begin(); it != exclude.end(); ++it ) {
-      if ( keystr.find ( (*it) ) != std::string::npos ) {
-        ignore = true;
-      }
+    ret = fits_get_keytype ( keyval, &dtype, &status );
+    if ( status != 0 ) {
+      // cannot detect type- must be an empty string
+      dtype = 'C';
+      status = 0;
     }
 
-    if ( ! ignore ) {
+    subtree.clear();
+    subtree.put ( "COM", string(keycom) );
 
-      ret = fits_get_keytype ( keyval, &dtype, &status );
-      if ( status != 0 ) {
-        // cannot detect type- must be an empty string
-        dtype = 'C';
-        status = 0;
-      }
+    int iconvert;
+    double dconvert;
+    long long int lconvert;
+    string clean;
 
-      subtree.clear();
-      subtree.put ( "COM", string(keycom) );
-
-      int iconvert;
-      double dconvert;
-      long long int lconvert;
-      string clean;
-
-      switch ( dtype ) {
-        case 'C':
-          clean = keyval;
-          key_strclean ( clean );
-          subtree.put < string > ( "TYPE", "C" );
-          subtree.put < string > ( "VAL", clean );
-          cerr << string(keyname) << " = " << clean << " : " << string(keycom) << endl;
-          break;
-        case 'L':
-          iconvert = atoi ( keyval );
-          if ( iconvert == 0 ) {
-            subtree.put < bool > ( "VAL", false );
-          } else {
-            subtree.put < bool > ( "VAL", true );
-          }
-          subtree.put < string > ( "TYPE", "L" );
-          cerr << string(keyname) << " = " << (subtree.get < bool > ("VAL")) << " : " << string(keycom) << endl;
-          break;
-        case 'I':
-          lconvert = atoll ( keyval );
-          subtree.put < long long int > ( "VAL", lconvert );
-          subtree.put < string > ( "TYPE", "I" );
-          cerr << string(keyname) << " = " << lconvert << " : " << string(keycom) << endl;
-          break;
-        case 'F':
-          dconvert = atof ( keyval );
-          subtree.put < double > ( "VAL", dconvert );
-          subtree.put < string > ( "TYPE", "F" );
-          cerr << string(keyname) << " = " << dconvert << " : " << string(keycom) << endl;
-          break;
-        default:
-          cerr << "WARNING: skipping read of keyword \"" << keyname << "\" with unsupported type \"" << dtype << "\"" << endl;
-          break;
-      }
-
-      boost::property_tree::ptree & treeref = keys.put_child ( string( keyname ), subtree );
-
+    switch ( dtype ) {
+      case 'C':
+        clean = keyval;
+        key_strclean ( clean );
+        subtree.put < string > ( "TYPE", "C" );
+        subtree.put < string > ( "VAL", clean );
+        //cerr << string(keyname) << " = " << clean << " : " << string(keycom) << endl;
+        break;
+      case 'L':
+        iconvert = atoi ( keyval );
+        if ( iconvert == 0 ) {
+          subtree.put < bool > ( "VAL", false );
+        } else {
+          subtree.put < bool > ( "VAL", true );
+        }
+        subtree.put < string > ( "TYPE", "L" );
+        //cerr << string(keyname) << " = " << (subtree.get < bool > ("VAL")) << " : " << string(keycom) << endl;
+        break;
+      case 'I':
+        lconvert = atoll ( keyval );
+        subtree.put < long long int > ( "VAL", lconvert );
+        subtree.put < string > ( "TYPE", "I" );
+        //cerr << string(keyname) << " = " << lconvert << " : " << string(keycom) << endl;
+        break;
+      case 'F':
+        dconvert = atof ( keyval );
+        subtree.put < double > ( "VAL", dconvert );
+        subtree.put < string > ( "TYPE", "F" );
+        //cerr << string(keyname) << " = " << dconvert << " : " << string(keycom) << endl;
+        break;
+      default:
+        cerr << "WARNING: skipping read of keyword \"" << keyname << "\" with unsupported type \"" << dtype << "\"" << endl;
+        break;
     }
+
+    boost::property_tree::ptree & treeref = keys.put_child ( string( keyname ), subtree );
 
   }
 
@@ -410,19 +533,19 @@ int harp::fits::img_seek ( fitsfile * fp, std::string const & keyname, std::stri
   
   for ( int i = 0; i < nhdu; ++i ) {
     hdu = 1 + i;
-    //cerr << "image seek, looking for " << valcopy << endl;
+    cerr << "image seek, looking for " << valcopy << endl;
     
     ret = fits_movabs_hdu ( fp, hdu, &type, &status );
     fits::check ( status );
     
     if ( type == IMAGE_HDU ) {
       ret = fits_read_key ( fp, TSTRING, keycopy, valcheck, comment, &status );
-      //cerr << "key compare " << keycopy << ": " << valcheck << " =? " << valcopy << endl;
+      cerr << "key compare " << keycopy << ": " << valcheck << " =? " << valcopy << endl;
       if ( status == 0 ) {
         // keyword exists
         if ( strncasecmp ( valcheck, valcopy, strlen ( valcopy ) ) == 0 ) {
           // a match!
-          //cerr << "  match! hdu = " << hdu << endl;
+          cerr << "  match! hdu = " << hdu << endl;
           return hdu;
         }
       }
@@ -930,10 +1053,22 @@ void harp::fits::test ( string const & datadir ) {
   fits::close ( fp );
 
   if ( header != check_header ) {
-    cerr << "  (FAILED): fits keywords corrupted" << endl;
+    //cerr << "  (FAILED): fits keywords corrupted" << endl;
+
+    string headfile = datadir + "/" + "fits_test_head.xml.out";
+
+    ofstream headofs ( headfile.c_str() );
+    boost::archive::xml_oarchive headoa ( headofs );
+    headoa << BOOST_SERIALIZATION_NVP(header);
+
+    string checkfile = datadir + "/" + "fits_test_headcheck.xml.out";
+
+    ofstream checkofs ( checkfile.c_str() );
+    boost::archive::xml_oarchive checkoa ( checkofs );
+    checkoa << BOOST_SERIALIZATION_NVP(check_header);
+
     exit(1);
   }
-
   
   fits::open_read ( fp, imgfile );
 
@@ -957,7 +1092,7 @@ void harp::fits::test ( string const & datadir ) {
     for ( size_t j = 0; j < rows; ++j ) {
       if ( checkdata( i, j ) != data( i, j ) ) {
         cerr << "  (FAILED): img element (" << i << ", " << j << ") has wrong value (" << checkdata( i, j ) << " != " << data( i, j ) << ")" << endl;
-        //exit(1);
+        exit(1);
       }
     }
   }

@@ -104,56 +104,29 @@ namespace harp { namespace fits {
 
   // keyword access
 
+  bool key_exclude ( std::string const & name );
+
   void key_strclean ( std::string & val );
 
   boost::property_tree::ptree key_read_all ( fitsfile * fp );
 
   void key_write_all ( fitsfile * fp, boost::property_tree::ptree const & keys );
 
-  template < typename T >
-  void key_read ( fitsfile * fp, std::string const & keyname, T & val ) {
-    int ret;
-    int status = 0;
-    
-    char keycopy[FLEN_VALUE];
-    strncpy ( keycopy, keyname.c_str(), FLEN_VALUE );
-    
-    char comment[FLEN_VALUE];
-    
-    ret = fits_read_key ( fp, d2f(val).datatype(), keycopy, (void*)val, comment, &status );
-    if ( status != 0 ) {
-      val = 0;
-    }
-
-    return;
-  }
-
   void key_read ( fitsfile * fp, std::string const & keyname, std::string & val );
 
   void key_read ( fitsfile * fp, std::string const & keyname, bool & val );
 
+  void key_read ( fitsfile * fp, std::string const & keyname, long long int & val );
 
-  template < typename T >
-  void key_write ( fitsfile * fp, std::string const & keyname, T const & keyval, std::string const & keycom = "" ) {
-
-    int ret;
-    int status = 0;
-
-    char keycopy[FLEN_VALUE];
-    strncpy ( keycopy, keyname.c_str(), FLEN_VALUE );
-    
-    char comment[FLEN_VALUE];
-    strncpy ( comment, keycom.c_str(), FLEN_VALUE );
-
-    ret = fits_update_key ( fp, d2f(keyval).datatype(), keycopy, (void*)&keyval, comment, &status );
-    fits::check ( status );
-
-    return;
-  }
+  void key_read ( fitsfile * fp, std::string const & keyname, double & val );
 
   void key_write ( fitsfile * fp, std::string const & keyname, std::string const & keyval, std::string const & keycom );
 
   void key_write ( fitsfile * fp, std::string const & keyname, bool const & keyval, std::string const & keycom );
+
+  void key_write ( fitsfile * fp, std::string const & keyname, long long int const & keyval, std::string const & keycom );
+
+  void key_write ( fitsfile * fp, std::string const & keyname, double const & keyval, std::string const & keycom );
 
 
   // image operations
