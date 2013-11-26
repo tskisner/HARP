@@ -14,9 +14,9 @@
 #
 #   The user may use:
 # 
-#       --with-cfitsio-cpp=<flags> --with-cfitsio-libs=<flags> 
+#       --with-cfitsio=<path> 
 #
-#   to manually specify the CFITSIO include and linking flags.
+#   to manually specify the path to the cfitsio installation.
 #
 #   ACTION-IF-FOUND is a list of shell commands to run if an CFITSIO library is
 #   found, and ACTION-IF-NOT-FOUND is a list of commands to run it if it is
@@ -27,37 +27,36 @@
 #
 # LAST MODIFICATION
 #
-#   2009-07-08
+#   2013-03-09
 #
-# COPYLEFT
+# COPYING
 #
-#   Copyright (c) 2009 Theodore Kisner <tskisner@lbl.gov>
+#   Copyright (c) 2013 Theodore Kisner <tskisner@lbl.gov>
 #
-#   This program is free software: you can redistribute it and/or modify it
-#   under the terms of the GNU General Public License as published by the
-#   Free Software Foundation, either version 3 of the License, or (at your
-#   option) any later version.
+#   All rights reserved.
 #
-#   This program is distributed in the hope that it will be useful, but
-#   WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
-#   Public License for more details.
+#   Redistribution and use in source and binary forms, with or without modification,
+#   are permitted provided that the following conditions are met:
 #
-#   You should have received a copy of the GNU General Public License along
-#   with this program. If not, see <http://www.gnu.org/licenses/>.
+#   o  Redistributions of source code must retain the above copyright notice, 
+#      this list of conditions and the following disclaimer.
 #
-#   As a special exception, the respective Autoconf Macro's copyright owner
-#   gives unlimited permission to copy, distribute and modify the configure
-#   scripts that are the output of Autoconf when processing the Macro. You
-#   need not follow the terms of the GNU General Public License when using
-#   or distributing such scripts, even though portions of the text of the
-#   Macro appear in them. The GNU General Public License (GPL) does govern
-#   all other use of the material that constitutes the Autoconf Macro.
+#   o  Redistributions in binary form must reproduce the above copyright notice, 
+#      this list of conditions and the following disclaimer in the documentation
+#      and/or other materials provided with the distribution.
 #
-#   This special exception to the GPL applies to versions of the Autoconf
-#   Macro released by the Autoconf Macro Archive. When you make and
-#   distribute a modified version of the Autoconf Macro, you may extend this
-#   special exception to the GPL to apply to your modified version as well.
+#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
+#   ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
+#   WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
+#   IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, 
+#   INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, 
+#   BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, 
+#   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
+#   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE 
+#   OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+#   OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+
 
 AC_DEFUN([ACX_CFITSIO], [
 AC_PREREQ(2.50)
@@ -68,21 +67,12 @@ acx_cfitsio_default="-lcfitsio"
 CFITSIO_CPPFLAGS=""
 CFITSIO=""
 
-AC_ARG_WITH(cfitsio-cpp, [AC_HELP_STRING([--with-cfitsio-cpp=<flags>], [use serial CFITSIO preprocessing flags <flags>.  Set to "no" to disable.])])
+AC_ARG_WITH(cfitsio, [AC_HELP_STRING([--with-cfitsio=<PATH>], [use CFITSIO installed in <path>.])])
 
-AC_ARG_WITH(cfitsio-libs, [AC_HELP_STRING([--with-cfitsio-libs=<flags>], [use serial CFITSIO linking flags <flags>.  Set to "no" to disable.])])
-
-if test x"$with_cfitsio_cpp" != x; then
-   if test x"$with_cfitsio_cpp" != xno; then
-      CFITSIO_CPPFLAGS="$with_cfitsio_cpp"
-   else
-      acx_cfitsio_ok=disable
-   fi
-fi
-
-if test x"$with_cfitsio_libs" != x; then
-   if test x"$with_cfitsio_libs" != xno; then
-      CFITSIO="$with_cfitsio_libs"
+if test x"$with_cfitsio" != x; then
+   if test x"$with_cfitsio" != xno; then
+      CFITSIO_CPPFLAGS="-I$with_cfitsio/include"
+      CFITSIO="-L$with_cfitsio/lib -lcfitsio"
    else
       acx_cfitsio_ok=disable
    fi
