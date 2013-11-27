@@ -30,5 +30,7 @@ int main ( int argc, char *argv[] ) {
 
   test_image_simfits ( datadir );
 
+  test_specslice ( datadir );
+
   return 0;
 }

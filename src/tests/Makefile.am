@@ -18,7 +18,8 @@ harp_test_SOURCES = \
 	harp_test_spec_simspecter.cpp \
 	harp_test_psf_gauss_sim.cpp \
 	harp_test_psf_gauss.cpp \
-	harp_test_image_simfits.cpp
+	harp_test_image_simfits.cpp \
+	harp_test_specslice.cpp
 
 harp_test_LDADD = $(AM_LIBS)
 

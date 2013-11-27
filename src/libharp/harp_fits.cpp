@@ -153,7 +153,6 @@ bool harp::fits::key_exclude ( std::string const & name ) {
     exclude.insert ( "NAXIS" );
     exclude.insert ( "COMMENT" );
     exclude.insert ( "EXTEND" );
-    exclude.insert ( "EXTNAME" );
     exclude.insert ( "TFIELDS" );
     exclude.insert ( "TTYPE" );
     exclude.insert ( "TFORM" );
@@ -279,11 +278,26 @@ void harp::fits::key_write ( fitsfile * fp, std::string const & keyname, std::st
     char value[FLEN_VALUE];
     strncpy ( value, keyval.c_str(), FLEN_VALUE );  
 
-    ret = fits_update_key ( fp, TSTRING, keycopy, value, comment, &status );
+    ret = fits_update_key ( fp, TSTRING, keycopy, (void*)&value, comment, &status );
     fits::check ( status );
 
   }
 
+  return;
+}
+
+
+// extra overloads for mapping literal strings
+
+void harp::fits::key_write ( fitsfile * fp, std::string const & keyname, char * keyval, std::string const & keycom ) {
+  string keystr = keyval;
+  key_write ( fp, keyname, keystr, keycom );
+  return;
+}
+
+void harp::fits::key_write ( fitsfile * fp, std::string const & keyname, char const * keyval, std::string const & keycom ) {
+  string keystr = keyval;
+  key_write ( fp, keyname, keystr, keycom );
   return;
 }
 
@@ -533,19 +547,17 @@ int harp::fits::img_seek ( fitsfile * fp, std::string const & keyname, std::stri
   
   for ( int i = 0; i < nhdu; ++i ) {
     hdu = 1 + i;
-    cerr << "image seek, looking for " << valcopy << endl;
     
     ret = fits_movabs_hdu ( fp, hdu, &type, &status );
     fits::check ( status );
     
     if ( type == IMAGE_HDU ) {
       ret = fits_read_key ( fp, TSTRING, keycopy, valcheck, comment, &status );
-      cerr << "key compare " << keycopy << ": " << valcheck << " =? " << valcopy << endl;
+
       if ( status == 0 ) {
         // keyword exists
         if ( strncasecmp ( valcheck, valcopy, strlen ( valcopy ) ) == 0 ) {
           // a match!
-          cerr << "  match! hdu = " << hdu << endl;
           return hdu;
         }
       }
@@ -1066,8 +1078,6 @@ void harp::fits::test ( string const & datadir ) {
     ofstream checkofs ( checkfile.c_str() );
     boost::archive::xml_oarchive checkoa ( checkofs );
     checkoa << BOOST_SERIALIZATION_NVP(check_header);
-
-    exit(1);
   }
   
   fits::open_read ( fp, imgfile );
@@ -1098,8 +1108,6 @@ void harp::fits::test ( string const & datadir ) {
   }
 
   fits::close ( fp );
-
-
 
   cerr << "  (PASSED)" << endl;
   

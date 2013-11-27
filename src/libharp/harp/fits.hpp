@@ -122,6 +122,10 @@ namespace harp { namespace fits {
 
   void key_write ( fitsfile * fp, std::string const & keyname, std::string const & keyval, std::string const & keycom );
 
+  void key_write ( fitsfile * fp, std::string const & keyname, char * keyval, std::string const & keycom );
+
+  void key_write ( fitsfile * fp, std::string const & keyname, char const * keyval, std::string const & keycom );
+
   void key_write ( fitsfile * fp, std::string const & keyname, bool const & keyval, std::string const & keycom );
 
   void key_write ( fitsfile * fp, std::string const & keyname, long long int const & keyval, std::string const & keycom );

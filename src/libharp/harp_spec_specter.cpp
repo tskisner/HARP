@@ -213,11 +213,11 @@ void harp::spec_specter::write ( std::string const & path, vector_double & data,
   fits::create ( fp, path );
 
   fits::img_append < double > ( fp, nspec_, nlambda_ );
-  fits::key_write ( fp, "EXTNAME", "FLUX", "" );
+  fits::key_write ( fp, "EXTNAME", string("FLUX"), "" );
   fits::img_write ( fp, data );
 
   fits::img_append < double > ( fp, 1, nlambda_ );
-  fits::key_write ( fp, "EXTNAME", "WAVELENGTH", "" );
+  fits::key_write ( fp, "EXTNAME", string("WAVELENGTH"), "" );
   fits::img_write ( fp, lambda );
 
   specter_write_targets ( fp, target_list );

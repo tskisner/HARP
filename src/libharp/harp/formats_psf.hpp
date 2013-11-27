@@ -11,7 +11,14 @@ namespace harp {
 
     public :
 
-      psf_gauss_resp ( ) { }
+      psf_gauss_resp ( ) :
+        x( 0.0 ),
+        y( 0.0 ),
+        lambda( 0.0 ),
+        amp( 0.0 ),
+        maj( 0.0 ),
+        min( 0.0 ),
+        ang( 0.0 ) { }
 
       ~psf_gauss_resp ( ) { }
 

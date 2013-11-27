@@ -51,6 +51,7 @@ namespace harp {
 #include <harp/formats_spec.hpp>
 #include <harp/formats_psf.hpp>
 
+#include <harp/spec_slice.hpp>
 #include <harp/extraction.hpp>
 
 #endif
