@@ -15,5 +15,8 @@ MPICXX="mpic++" \
 CXXFLAGS="-O0 -g" \
 CPPFLAGS="-I/opt/local/include" \
 LDFLAGS="-L/opt/local/lib" \
-./configure --disable-fortran ${OPTS}
+./configure \
+--with-boost=/opt/local \
+--with-cfitsio=/opt/local \
+--disable-fortran ${OPTS}
 
