@@ -28,7 +28,7 @@ void harp::eigen_decompose ( matrix_double const & invcov, vector_double & D, ma
 
   boost::numeric::ublas::vector < int > support ( 2 * invcov.size1() );
 
-  //boost::numeric::bindings::lapack::syevr ( 'V', 'A', temp, 0.0, 0.0, 0, 0, 0.0, nfound, D, W, support );
+  boost::numeric::bindings::lapack::syevr ( 'V', 'A', boost::numeric::bindings::lower ( temp ), 0.0, 0.0, 0, 0, 0.0, nfound, D, W, support );
 
   return;
 }

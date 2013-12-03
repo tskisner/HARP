@@ -15,6 +15,7 @@
 #include <boost/numeric/bindings/ublas.hpp>
 #include <boost/numeric/bindings/blas.hpp>
 #include <boost/numeric/bindings/lapack.hpp>
+#include <boost/numeric/bindings/views.hpp>
 
 
 namespace harp {
