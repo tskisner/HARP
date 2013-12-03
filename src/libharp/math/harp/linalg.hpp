@@ -31,6 +31,12 @@ namespace harp {
 
   typedef boost::numeric::ublas::vector < double > vector_double;
 
+  typedef boost::numeric::ublas::matrix < float, boost::numeric::ublas::column_major > matrix_float;
+
+  typedef boost::numeric::ublas::compressed_matrix < float, boost::numeric::ublas::row_major > matrix_float_sparse;
+
+  typedef boost::numeric::ublas::vector < float > vector_float;
+
 
   void check_column_major ( boost::numeric::ublas::column_major_tag );
 
@@ -46,25 +52,17 @@ namespace harp {
   }
 
 
-  /*
-  void eigen_decompose ( matrix_serial const & invcov, matrix_dist & D, matrix_dist & W );
+  void eigen_decompose ( matrix_double const & invcov, vector_double & D, matrix_double & W );
 
-  void eigen_compose ( eigen_op op, matrix_dist const & D, matrix_dist const & W, matrix_dist & out );
+  void eigen_compose ( eigen_op op, vector_double const & D, matrix_double const & W, matrix_double & out );
 
-  void column_norm ( matrix_dist const & mat, matrix_dist & S );
+  void column_norm ( matrix_double const & mat, vector_double & S );
 
-  void apply_norm ( matrix_dist const & S, matrix_dist & mat );
+  void apply_norm ( vector_double const & S, matrix_double & mat );
 
-  void apply_inverse_norm ( matrix_dist const & S, matrix_dist & mat );
+  void apply_inverse_norm ( vector_double const & S, matrix_double & mat );
 
-  void norm ( matrix_dist const & D, matrix_dist const & W, matrix_dist & S );
-
-  void gang_distribute ( matrix_dist const & mat, matrix_dist & gmat );
-
-  void gang_accum ( matrix_dist const & gmat, matrix_dist & mat );
-
-  */
-
+  void norm ( vector_double const & D, matrix_double const & W, vector_double & S );
 
 
 }
