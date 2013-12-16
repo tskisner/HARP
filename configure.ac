@@ -28,7 +28,19 @@ fi
 AC_CANONICAL_HOST
 AC_PROG_INSTALL
 AC_PROG_LIBTOOL
-AC_PROG_CXX
+dnl +-------------------------
+dnl | Option to perform full static linking of executables, not just
+dnl | building of static libraries.
+dnl +-------------------------
+harp_static=no
+AC_ARG_ENABLE([all-static], [AC_HELP_STRING([--enable-all-static], [force static linking of executables.])])
+if test x"$enable_all_static" = x"yes"; then
+  if test x"$enable_static" != x"yes"; then
+    AC_MSG_ERROR([Cannot perform static linking of executables if static libraries are disabled!])
+  fi
+  harp_static=yes
+fi
+AM_CONDITIONAL([USE_AM_ALLSTATIC], [test "$harp_static" = "yes"])
 harp_fortran=yes
 AC_ARG_ENABLE(fortran, [AC_HELP_STRING([--disable-fortran], [Disable features that depend on fortran])], [harp_fortran=$enable_fortran])
 if test x"$harp_fortran" != xno; then
@@ -37,6 +49,7 @@ dnl  AC_FC_LIBRARY_LDFLAGS
 dnl  AC_FC_WRAPPERS
 dnl  ACX_FC_PP_DEFINE
 fi
+AC_PROG_CXX
 AC_LANG([C++])
 AC_CHECK_HEADERS([iostream iostream.h])
 AC_CHECK_HEADERS([iomanip iomanip.h])
