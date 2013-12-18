@@ -99,16 +99,13 @@ have_mpi=no
 ACX_MPI([have_mpi=yes], [AC_MSG_WARN([Could not find the MPI C++ compiler])])
 AM_CONDITIONAL([HAVE_AM_MPI], [test $have_mpi = yes])
 dnl +------------------------------------------------
-dnl | Check for Clique, Elemental and any dependencies
+dnl | Check for Elemental and any dependencies
 dnl +------------------------------------------------
 harp_elemental=no
-harp_clique=no
 if test x"$harp_fortran" != xno; then
   ACX_ELEMENTAL([harp_elemental=yes], [AC_MSG_WARN([Could not find Elemental library])])
-  ACX_CLIQUE([harp_clique=yes], [AC_MSG_WARN([Could not find Clique library])])
 fi
 AM_CONDITIONAL([HAVE_AM_ELEMENTAL], [test $harp_elemental = yes])
-AM_CONDITIONAL([HAVE_AM_CLIQUE], [test $harp_clique = yes])
 dnl +------------------------------------------------
 dnl | Set outputs
 dnl +------------------------------------------------
@@ -165,11 +162,5 @@ if test x"${acx_elemental_ok}" = xyes; then
   AC_MSG_NOTICE([  Elemental Link            : $ELEMENTAL])
 else
   AC_MSG_NOTICE([  Elemental                 : Disabled])
-fi
-if test x"${acx_elemental_ok}" = xyes; then
-  AC_MSG_NOTICE([  Clique Compile            : $CLIQUE_CPPFLAGS])
-  AC_MSG_NOTICE([  Clique Link               : $CLIQUE])
-else
-  AC_MSG_NOTICE([  Clique                    : Disabled])
 fi
 AC_MSG_NOTICE([                                           ])
