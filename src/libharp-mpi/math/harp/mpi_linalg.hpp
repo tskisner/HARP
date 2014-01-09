@@ -3,6 +3,8 @@
 #ifndef HARP_MPI_LINALG_HPP
 #define HARP_MPI_LINALG_HPP
 
+#include <elemental.hpp>
+
 
 namespace harp {
 
@@ -76,7 +78,7 @@ namespace harp {
       size_t rows_;
       size_t cols_;
 
-  }
+  };
 
 
   void mpi_matrix_zero ( mpi_matrix & mat );

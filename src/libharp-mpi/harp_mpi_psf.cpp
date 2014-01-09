@@ -137,7 +137,7 @@ void harp::mpi_psf::project_transpose ( std::map < size_t, std::set < size_t > >
 
         block.row [ elem ] = row;
         block.col [ elem ] = col;
-        blocl.data [ elem ] = (*colit);
+        block.data [ elem ] = (*colit);
 
         ++block.row_nnz [ row ];
         ++elem;

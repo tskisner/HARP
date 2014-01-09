@@ -52,7 +52,7 @@ namespace harp {
 
       virtual size_t response_nnz_estimate ( ) const {
         HARP_THROW( "fell through to virtual method" );
-        return;
+        return 0;
       }
 
       static size_t total_bins ( std::map < size_t, std::set < size_t > > const & speclambda );
