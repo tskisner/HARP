@@ -6,88 +6,7 @@
 
 namespace harp {
 
-
-  // class for a single slice point
-
-  class spec_slice_region {
-
-    friend class boost::serialization::access;
-
-    public :
-
-      spec_slice_region ( ) :
-        overlap_spec( 0 ),
-        overlap_lambda( 0 ),
-        first_spec( 0 ),
-        first_lambda( 0 ),
-        first_good_spec( 0 ),
-        first_good_lambda( 0 ),
-        n_spec( 0 ),
-        n_lambda( 0 ),
-        n_good_spec( 0 ),
-        n_good_lambda( 0 ) { }
-
-      ~spec_slice_region ( ) { }
-
-      spec_slice_region ( spec_slice_region const & orig ) :
-        overlap_spec( orig.overlap_spec ),
-        overlap_lambda( orig.overlap_lambda ),
-        first_spec( orig.first_spec ),
-        first_lambda( orig.first_lambda ),
-        first_good_spec( orig.first_good_spec ),
-        first_good_lambda( orig.first_good_lambda ),
-        n_spec( orig.n_spec ),
-        n_lambda( orig.n_lambda ),
-        n_good_spec( orig.n_good_spec ),
-        n_good_lambda( orig.n_good_lambda ) { }
-
-      spec_slice_region & operator= ( spec_slice_region const & rhs ) {
-        if ( &rhs != this ) {
-          overlap_spec = rhs.overlap_spec;
-          overlap_lambda = rhs.overlap_lambda;
-          first_spec = rhs.first_spec;
-          first_lambda = rhs.first_lambda;
-          first_good_spec = rhs.first_good_spec;
-          first_good_lambda = rhs.first_good_lambda;
-          n_spec = rhs.n_spec;
-          n_lambda = rhs.n_lambda;
-          n_good_spec = rhs.n_good_spec;
-          n_good_lambda = rhs.n_good_lambda;
-        }
-        return *this;
-      }
-
-      size_t overlap_spec;
-      size_t overlap_lambda;
-      size_t first_spec;
-      size_t first_lambda;
-      size_t first_good_spec;
-      size_t first_good_lambda;
-      size_t n_spec;
-      size_t n_lambda;
-      size_t n_good_spec;
-      size_t n_good_lambda;
-
-    private :
-
-      template < class Archive >
-      void serialize ( Archive & ar, const unsigned int version ) {
-        ar & BOOST_SERIALIZATION_NVP(overlap_spec);
-        ar & BOOST_SERIALIZATION_NVP(overlap_lambda);
-        ar & BOOST_SERIALIZATION_NVP(first_spec);
-        ar & BOOST_SERIALIZATION_NVP(first_lambda);
-        ar & BOOST_SERIALIZATION_NVP(first_good_spec);
-        ar & BOOST_SERIALIZATION_NVP(first_good_lambda);
-        ar & BOOST_SERIALIZATION_NVP(n_spec);
-        ar & BOOST_SERIALIZATION_NVP(n_lambda);
-        ar & BOOST_SERIALIZATION_NVP(n_good_spec);
-        ar & BOOST_SERIALIZATION_NVP(n_good_lambda);
-        return;
-      }
-
-  };
-
-  BOOST_SERIALIZATION_SHARED_PTR(spec_slice_region)
+  /*
 
 
   class spec_slice : public boost::enable_shared_from_this < spec_slice > {
@@ -148,6 +67,8 @@ namespace harp {
   BOOST_SERIALIZATION_SHARED_PTR(spec_slice)
   
   typedef boost::shared_ptr < harp::spec_slice > spec_slice_p;
+
+  */
 
 }
 

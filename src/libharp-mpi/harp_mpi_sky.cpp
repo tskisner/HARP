@@ -1,6 +1,6 @@
 // @COPYRIGHT@
 
-#include <harp_internal.hpp>
+#include <harp_mpi_internal.hpp>
 
 
 using namespace std;

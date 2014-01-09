@@ -6,6 +6,8 @@
 
 namespace harp { namespace fits {
 
+  /*
+
   // general manipulation of files and keywords
 
   void check ( int status );
@@ -544,6 +546,8 @@ namespace harp { namespace fits {
   // sanity tests...
   
   void test ( std::string const & datadir );
+
+  */
 
 } }
 

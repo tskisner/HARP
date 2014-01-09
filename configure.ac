@@ -81,7 +81,11 @@ if test x"$harp_python" != xno; then
   ACX_PYTHON_DEV
   ACX_NUMPY
 fi
-AM_CONDITIONAL([HAVE_AM_PYTHON], [test "x$PYTHON_VERSION" != x])
+dnl +------------------------------------------------
+dnl | Check for MPI
+dnl +------------------------------------------------
+have_mpi=no
+ACX_MPI([have_mpi=yes], [AC_MSG_WARN([Could not find the MPI C++ compiler, MPI tools will not be built])])
 dnl +------------------------------------------------
 dnl | Check for BOOST
 dnl +------------------------------------------------
@@ -89,23 +93,23 @@ BOOST_REQUIRE([1.53], [AC_MSG_ERROR([Could not find BOOST library >= 1.53!])])
 BOOST_SERIALIZATION([], [AC_MSG_ERROR([Could not find BOOST serialization library])])
 BOOST_PROGRAM_OPTIONS([], [AC_MSG_ERROR([Could not find BOOST program options library])])
 if test x"$harp_python" != xno; then
-  BOOST_PYTHON
+  BOOST_PYTHON([], [AC_MSG_WARN([Could not find boost::python, bindings will not be built])])
 fi
-AM_CONDITIONAL([HAVE_AM_BOOST_PYTHON], [test "x$BOOST_PYTHON_LIBS" != x])
-dnl +------------------------------------------------
-dnl | Check for MPI
-dnl +------------------------------------------------
-have_mpi=no
-ACX_MPI([have_mpi=yes], [AC_MSG_WARN([Could not find the MPI C++ compiler])])
-AM_CONDITIONAL([HAVE_AM_MPI], [test $have_mpi = yes])
+if test x"${MPICXX}" != x; then
+  BOOST_MPI([], [AC_MSG_WARN([Could not find boost::mpi, MPI tools will not be built])])
+fi
 dnl +------------------------------------------------
 dnl | Check for Elemental and any dependencies
 dnl +------------------------------------------------
 harp_elemental=no
 if test x"$harp_fortran" != xno; then
-  ACX_ELEMENTAL([harp_elemental=yes], [AC_MSG_WARN([Could not find Elemental library])])
+  ACX_ELEMENTAL([harp_elemental=yes], [AC_MSG_WARN([Could not find Elemental library, MPI tools will not be built])])
 fi
-AM_CONDITIONAL([HAVE_AM_ELEMENTAL], [test $harp_elemental = yes])
+dnl +------------------------------------------------------------------------
+dnl | Set automake variables which control building of python and MPI tools
+dnl +------------------------------------------------------------------------
+AM_CONDITIONAL([HAVE_AM_PYTHON], [test "x$PYTHON_VERSION" != x && test "x$BOOST_PYTHON_LIBS" != x])
+AM_CONDITIONAL([HAVE_AM_MPI], [test "x$MPICXX" != x && test "x$BOOST_MPI_LIBS" != x && test "x$ELEMENTAL" != x])
 dnl +------------------------------------------------
 dnl | Set outputs
 dnl +------------------------------------------------
@@ -150,12 +154,13 @@ if test x"${PYTHON_VERSION}" != x; then
 else
   AC_MSG_NOTICE([  Python                    : Disabled])
 fi
-if test x"$BOOST_PROGRAM_OPTIONS_LIBS" != x; then
-  AC_MSG_NOTICE([  Boost Compile             : $BOOST_CPPFLAGS])
-  AC_MSG_NOTICE([  Boost Program Options     : $BOOST_PROGRAM_OPTIONS_LDFLAGS $BOOST_PROGRAM_OPTIONS_LIBS])
-  AC_MSG_NOTICE([  Boost Serialization       : $BOOST_SERIALIZATION_LDFLAGS $BOOST_SERIALIZATION_LIBS])
+AC_MSG_NOTICE([  Boost Compile             : $BOOST_CPPFLAGS])
+AC_MSG_NOTICE([  Boost Program Options     : $BOOST_PROGRAM_OPTIONS_LDFLAGS $BOOST_PROGRAM_OPTIONS_LIBS])
+AC_MSG_NOTICE([  Boost Serialization       : $BOOST_SERIALIZATION_LDFLAGS $BOOST_SERIALIZATION_LIBS])
+if test x"$BOOST_MPI_LIBS" != x; then
+  AC_MSG_NOTICE([  Boost MPI                 : $BOOST_MPI_LDFLAGS $BOOST_MPI_LIBS])
 else
-  AC_MSG_NOTICE([  Boost                     : Disabled])
+  AC_MSG_NOTICE([  Boost MPI                 : Disabled])
 fi
 if test x"${acx_elemental_ok}" = xyes; then
   AC_MSG_NOTICE([  Elemental Compile         : $ELEMENTAL_CPPFLAGS])
