@@ -34,10 +34,11 @@
 #
 # LAST MODIFICATION
 #
-#   2009-10-8
+#   2014-01-09
 #
 # COPYLEFT
 #
+#   Copyright (c) 2014 Theodore Kisner <tskisner.public@gmail.com>
 #   Copyright (c) 2009 Patrick O. Perry  <patperry@stanfordalumni.org>
 #   Copyright (c) 2008 Steven G. Johnson <stevenj@alum.mit.edu>
 #
@@ -70,24 +71,33 @@
 AC_DEFUN([AX_CHECK_BLAS], [
 AC_PREREQ(2.50)
 ax_blas_ok=no
- 
-AC_ARG_WITH([blas],
-	[AC_HELP_STRING([--with-blas=<lib>], [use BLAS library <lib>])])
-case $with_blas in
-	yes | "") ;;
-	no) ax_blas_ok=disable ;;
-	-* | */* | *.a | *.so | *.so.* | *.o) BLAS_LIBS="$with_blas" ;;
-	*) BLAS_LIBS="-l$with_blas" ;;
-esac
 
-_AX_CHECK_BLAS([gemm_])
-if test x$ax_blas_ok = xyes; then
-  ax_blas_underscore=yes
+BLAS_LIBS=""
+
+AC_ARG_WITH([blas], [AC_HELP_STRING([--with-blas=<link command>], [use specified BLAS link command.  Set to "no" to disable.])])
+
+if test x"$with_blas" != x; then
+   if test x"$with_blas" != xno; then
+      BLAS_LIBS="$with_blas"
+   else
+      ax_blas_ok=disable
+   fi
+fi
+
+if test $ax_blas_ok = disable; then
+   echo "**** BLAS explicitly disabled by configure."
 else
-  _AX_CHECK_BLAS([gemm])
+
+  _AX_CHECK_BLAS([gemm_])
   if test x$ax_blas_ok = xyes; then
-    ax_blas_undersore=no
+    ax_blas_underscore=yes
+  else
+    _AX_CHECK_BLAS([gemm])
+    if test x$ax_blas_ok = xyes; then
+      ax_blas_undersore=no
+    fi
   fi
+
 fi
 AC_SUBST([BLAS_LIBS])
 
@@ -166,7 +176,7 @@ fi
 if test x$ax_blas_ok = xno; then
   save_LIBS="$LIBS"; LIBS="-framework vecLib $LIBS"
   unset ac_cv_func_[]sgemm
-  AC_CHECK_FUNC(sgemm, [ax_blas_ok=yes;BLAS_LIBS="-lblas"])
+  AC_CHECK_FUNC(sgemm, [ax_blas_ok=yes;BLAS_LIBS="-framework vecLib"])
   LIBS="$save_LIBS"
 fi
 

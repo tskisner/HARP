@@ -19,7 +19,7 @@ dnl +-------------------------
 HARP_LT_VERSION="0:0:0"
 AC_SUBST(HARP_LT_VERSION)
 dnl +----------------------------------------
-dnl | Compiler features and BLAS / LAPACK
+dnl | Compiler features
 dnl +----------------------------------------
 dnl Set default optimization to '-O3' instead of the default '-g -O2'
 if test x"${CXXFLAGS}" = x; then
@@ -41,20 +41,13 @@ if test x"$enable_all_static" = x"yes"; then
   harp_static=yes
 fi
 AM_CONDITIONAL([USE_AM_ALLSTATIC], [test "$harp_static" = "yes"])
-harp_fortran=yes
-AC_ARG_ENABLE(fortran, [AC_HELP_STRING([--disable-fortran], [Disable features that depend on fortran])], [harp_fortran=$enable_fortran])
-if test x"$harp_fortran" != xno; then
-  AC_PROG_FC
-dnl  AC_FC_LIBRARY_LDFLAGS
-dnl  AC_FC_WRAPPERS
-dnl  ACX_FC_PP_DEFINE
-fi
 AC_PROG_CXX
+AC_PROG_CC
 AC_LANG([C++])
-AC_CHECK_HEADERS([iostream iostream.h])
-AC_CHECK_HEADERS([iomanip iomanip.h])
-AC_CHECK_HEADERS([cmath math.h])
-AC_CHECK_HEADERS([cstdlib stdlib.h])
+AC_CHECK_HEADERS([iostream])
+AC_CHECK_HEADERS([iomanip])
+AC_CHECK_HEADERS([cmath])
+AC_CHECK_HEADERS([cstdlib])
 harp_openmp=yes
 ax_have_openmp=no
 AC_ARG_ENABLE(openmp, [AC_HELP_STRING([--disable-openmp], [Disable OpenMP])], [harp_openmp=$enable_openmp])
@@ -62,15 +55,20 @@ if test x"$harp_openmp" != xno; then
   AX_OPENMP([ax_have_openmp=yes;AC_DEFINE(HAVE_OPENMP,1,[Define if OpenMP is enabled])])
 fi
 AM_CONDITIONAL([HAVE_AM_OPENMP], [test $ax_have_openmp = yes])
+dnl
+dnl =========================================
+dnl Do these checks with the C compiler
+dnl
+AC_LANG_PUSH([C])
+dnl +------------------------------------------------
+dnl | Check for CFITSIO
+dnl +------------------------------------------------
+ACX_CFITSIO([], [AC_MSG_ERROR([Could not find the CFITSIO library!])])
 dnl +------------------------------------------------
 dnl | BLAS / LAPACK
 dnl +------------------------------------------------
 AX_CHECK_BLAS(,AC_MSG_ERROR([Could not find a BLAS library!]))
 AX_CHECK_LAPACK(,AC_MSG_ERROR([Could not find a LAPACK library!]))
-dnl +------------------------------------------------
-dnl | Check for CFITSIO
-dnl +------------------------------------------------
-ACX_CFITSIO([], [AC_MSG_ERROR([Could not find the CFITSIO library!])])
 dnl +------------------------------------------------
 dnl | Check for Python
 dnl +------------------------------------------------
@@ -81,6 +79,12 @@ if test x"$harp_python" != xno; then
   ACX_PYTHON_DEV
   ACX_NUMPY
 fi
+AC_LANG_POP([C])
+dnl 
+dnl End C language checks
+dnl
+dnl ==========================================
+dnl
 dnl +------------------------------------------------
 dnl | Check for MPI
 dnl +------------------------------------------------
@@ -102,9 +106,7 @@ dnl +------------------------------------------------
 dnl | Check for Elemental and any dependencies
 dnl +------------------------------------------------
 harp_elemental=no
-if test x"$harp_fortran" != xno; then
-  ACX_ELEMENTAL([harp_elemental=yes], [AC_MSG_WARN([Could not find Elemental library, MPI tools will not be built])])
-fi
+ACX_ELEMENTAL([harp_elemental=yes], [AC_MSG_WARN([Could not find Elemental library, MPI tools will not be built])])
 dnl +------------------------------------------------------------------------
 dnl | Set automake variables which control building of python and MPI tools
 dnl +------------------------------------------------------------------------
@@ -121,6 +123,8 @@ AC_CONFIG_FILES([src/tests/Makefile])
 AC_CONFIG_FILES([src/apps/Makefile])
 dnl AC_CONFIG_FILES([src/python/Makefile])
 dnl AC_CONFIG_FILES([src/tests-python/Makefile])
+AC_CONFIG_FILES([src/libharp-mpi/math/Makefile])
+AC_CONFIG_FILES([src/libharp-mpi/Makefile])
 AC_CONFIG_FILES([docs/Makefile])
 dnl +------------------------------------------------
 dnl | Generate Makefiles
@@ -146,7 +150,6 @@ else
 fi
 AC_MSG_NOTICE([  CFITSIO Compile           : $CFITSIO_CPPFLAGS])
 AC_MSG_NOTICE([  CFITSIO Link              : $CFITSIO])
-AC_MSG_NOTICE([  CBLAS Link                : $CBLAS_LIBS])
 AC_MSG_NOTICE([  BLAS Link                 : $BLAS_LIBS])
 AC_MSG_NOTICE([  LAPACK Link               : $LAPACK_LIBS])
 if test x"${PYTHON_VERSION}" != x; then
