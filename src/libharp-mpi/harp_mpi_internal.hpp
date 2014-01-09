@@ -1,14 +1,10 @@
 // @COPYRIGHT@
 
-#ifndef HARP_INTERNAL_HPP
-#define HARP_INTERNAL_HPP
+#ifndef HARP_MPI_INTERNAL_HPP
+#define HARP_MPI_INTERNAL_HPP
 
-#include <config.h>
-#include <harp.hpp>
-
-#include <harp_formats_spec.hpp>
-#include <harp_formats_image.hpp>
-#include <harp_formats_psf.hpp>
+#include <harp_mpi_math_internal.hpp>
+#include <harp_internal.hpp>
 
 
 namespace harp {

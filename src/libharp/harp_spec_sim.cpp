@@ -99,14 +99,14 @@ void harp::spec_sim::values ( vector_double & data ) const {
 }
 
 
-void harp::spec_sim::lambda ( vector_double & lambda ) const {
+void harp::spec_sim::lambda ( vector_double & lambda_vals ) const {
 
-  lambda.resize ( nlambda_ );
+  lambda_vals.resize ( nlambda_ );
 
   double incr = (last_lambda_ - first_lambda_) / (double)( nlambda_ - 1 );
 
   for ( size_t j = 0; j < nlambda_; ++j ) {
-    lambda[j] = first_lambda_ + incr * (double)j;
+    lambda_vals[j] = first_lambda_ + incr * (double)j;
   }
   
   return;

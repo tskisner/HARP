@@ -1,52 +1,75 @@
 // @COPYRIGHT@
 
-#include <harp_internal.hpp>
+#include <harp_mpi_internal.hpp>
 
 
 using namespace std;
 using namespace harp;
 
 
-harp::image::image ( boost::property_tree::ptree const & props ) {
-  props_ = props;
-  format_ = props.get < string > ( "format" );
+harp::mpi_image::mpi_image ( boost::mpi::communicator const & comm, boost::property_tree::ptree const & props ) {
+
+  comm_ = comm;
+
+  int rank = comm.rank();
+
+  if ( rank == 0 ) {
+    // instantiate
+    local_.reset ( image::create ( props ) );
+  }
+    
+  // broadcast to all processes
+
+  boost::mpi::broadcast ( comm_, local_, 0 );
+
+}
+
+      
+size_t harp::mpi_image::n_rows ( ) const {
+  return local_->n_rows();
+}
+
+      
+size_t harp::mpi_image::n_cols ( ) const {
+  return local_->n_cols();
 }
 
 
-void harp::image::cleanup ( ) {
-  // nothing for now
+void harp::mpi_image::values ( vector_double & data ) const {
+  local_->values ( data );
   return;
 }
 
 
-string harp::image::format ( ) {
-  return format_;
+void harp::mpi_image::inv_variance ( vector_double & invvar ) const {
+  local_->inv_variance ( invvar );
+  return;
 }
 
 
-image * harp::image::clone ( ) {
-  return create ( props_ );
+boost::property_tree::ptree harp::mpi_image::metadata ( ) const {
+  return local_->metadata();
 }
 
 
-image * harp::image::create ( boost::property_tree::ptree const & props ) {
-
-  string format = props.get < string > ( "format" );
-
-  if ( format == "fits" ) {
-    return static_cast < image * > ( new image_fits ( props ) );
-  }
-
-  if ( format == "sim" ) {
-    return static_cast < image * > ( new image_sim ( props ) );
-  }
-  
-  std::ostringstream o;
-  o << "Cannot create image of unknown format (" << format << ")";
-  HARP_THROW( o.str().c_str() );
-
-  return NULL;
-  
+void harp::mpi_image::values ( matrix_double & data ) const {
+  local_->values ( data );
+  return;
 }
+
+
+void harp::mpi_image::inv_variance ( matrix_double & invvar ) const {
+  local_->inv_variance ( invvar );
+  return;
+}
+
+
+std::string harp::mpi_image::format ( ) const {
+  return local_->format();
+}
+
+
+
+
 
 

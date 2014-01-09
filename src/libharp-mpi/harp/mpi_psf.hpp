@@ -1,0 +1,52 @@
+// @COPYRIGHT@
+
+#ifndef HARP_MPI_PSF_HPP
+#define HARP_MPI_PSF_HPP
+
+
+namespace harp {
+
+  class mpi_psf {
+    
+    public :
+
+      mpi_psf ( boost::mpi::communicator const & comm, boost::property_tree::ptree const & props );
+
+      ~mpi_psf ( ) { }
+
+      size_t n_spec ( ) const;
+      
+      size_t n_lambda ( ) const;
+
+      size_t img_rows ( ) const;
+
+      size_t img_cols ( ) const;
+
+      vector_double lambda ( ) const;
+
+      // The base class provides a default implementation of these 2 functions, so that derived classes
+      // only need to implement the response() method.
+      
+      void project_transpose ( std::map < size_t, std::set < size_t > > const & speclambda, mpi_matrix_sparse & AT ) const;
+
+      // These are convenience functions if you want the whole projection matrix
+
+      void project_transpose ( mpi_matrix_sparse & AT ) const;
+      
+      std::string format ( ) const;
+      
+    private :
+    
+      boost::mpi::communicator comm_;
+      psf_p local_;      
+      
+  };
+  
+  typedef boost::shared_ptr < harp::mpi_psf > mpi_psf_p;
+  typedef boost::weak_ptr < harp::mpi_psf > mpi_psf_wp;
+
+}
+
+
+#endif
+

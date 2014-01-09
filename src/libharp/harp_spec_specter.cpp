@@ -170,9 +170,9 @@ void harp::spec_specter::values ( vector_double & data ) const {
 }
 
 
-void harp::spec_specter::lambda ( vector_double & lambda ) const {
+void harp::spec_specter::lambda ( vector_double & lambda_vals ) const {
 
-  lambda.resize ( nlambda_ );
+  lambda_vals.resize ( nlambda_ );
 
   fitsfile * fp;
 
@@ -181,7 +181,7 @@ void harp::spec_specter::lambda ( vector_double & lambda ) const {
   // read the wavelength vector
 
   fits::img_seek ( fp, lambdahdu_ );
-  fits::img_read ( fp, lambda );
+  fits::img_read ( fp, lambda_vals );
 
   fits::close ( fp );
 

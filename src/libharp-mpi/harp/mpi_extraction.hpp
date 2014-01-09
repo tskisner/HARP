@@ -1,7 +1,7 @@
 // @COPYRIGHT@
 
-#ifndef HARP_EXTRACT_HPP
-#define HARP_EXTRACT_HPP
+#ifndef HARP_MPI_EXTRACT_HPP
+#define HARP_MPI_EXTRACT_HPP
 
 
 namespace harp {

@@ -35,7 +35,7 @@ namespace harp {
         return;
       }
 
-      virtual void lambda ( vector_double & lambda ) const {
+      virtual void lambda ( vector_double & lambda_vals ) const {
         HARP_THROW( "fell through to virtual method" );
         return;
       }

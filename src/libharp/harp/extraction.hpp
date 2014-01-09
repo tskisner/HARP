@@ -1,12 +1,11 @@
 // @COPYRIGHT@
 
-#ifndef HARP_EXTRACT_HPP
-#define HARP_EXTRACT_HPP
+#ifndef HARP_EXTRACTION_HPP
+#define HARP_EXTRACTION_HPP
 
 
 namespace harp {
 
-  /*
   void sub_spec ( matrix_dist const & in, size_t total_nspec, size_t first_spec, size_t nspec, size_t first_lambda, size_t nlambda, matrix_dist & out );
 
   void accum_spec ( matrix_dist & full, size_t total_nspec, size_t first_spec, size_t nspec, size_t first_lambda, size_t nlambda, matrix_dist const & chunk );
@@ -19,8 +18,7 @@ namespace harp {
 
   void resolution ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_dist & R );
 
-  void extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_dist & z, matrix_dist & Rf, matrix_dist & f );
-  */
+  void extract_region ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_dist & z, matrix_dist & Rf, matrix_dist & f );
 
 }
 

@@ -38,7 +38,7 @@ namespace harp {
 
       void values ( vector_double & data ) const;
 
-      void lambda ( vector_double & lambda ) const;
+      void lambda ( vector_double & lambda_vals ) const;
 
       void targets ( std::vector < target > & target_list ) const;
     
@@ -120,7 +120,7 @@ namespace harp {
 
       void values ( vector_double & data ) const;
 
-      void lambda ( vector_double & lambda ) const;
+      void lambda ( vector_double & lambda_vals ) const;
 
       void targets ( std::vector < target > & target_list ) const;
     
