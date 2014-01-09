@@ -135,6 +135,14 @@ void harp::psf::project_transpose ( std::map < size_t, std::set < size_t > > con
   AT.resize ( total, pixtotal );
   AT.clear();
 
+  // we use the estimated number of non-zeros per row times the number 
+  // of rows to reserve space in the sparse matrix.
+
+  size_t nnz_estimate = response_nnz_estimate();
+  nnz_estimate *= total;
+
+  AT.reserve ( nnz_estimate, false );
+
   // iterate over spectral bins and populate the matrix elements
 
   matrix_double patch;

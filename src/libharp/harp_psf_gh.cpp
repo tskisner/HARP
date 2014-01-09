@@ -75,6 +75,13 @@ boost::property_tree::ptree harp::psf_gh::metadata ( ) const {
 }
 
 
+size_t harp::psf_gh::response_nnz_estimate ( ) const {
+  size_t est = 2 * pixcorr_ + 1;
+  est *= est;
+  return est;
+}
+
+
 void harp::psf_gh::response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch ) const {
 
   size_t bin = spec * nlambda_ + lambda;

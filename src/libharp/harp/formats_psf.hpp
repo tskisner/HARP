@@ -114,6 +114,8 @@ namespace harp {
 
       void response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch ) const;
 
+      size_t response_nnz_estimate ( ) const;
+
     private :
 
       template < class Archive >
@@ -200,6 +202,8 @@ namespace harp {
       vector_double lambda ( ) const { return lambda_; }
 
       void response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch ) const;
+
+      size_t response_nnz_estimate ( ) const;
 
     private :
 
@@ -301,6 +305,8 @@ namespace harp {
       vector_double lambda ( ) const { return lambda_; }
 
       void response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch ) const;
+
+      size_t response_nnz_estimate ( ) const;
 
     private :
 

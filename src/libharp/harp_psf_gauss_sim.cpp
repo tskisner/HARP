@@ -167,6 +167,13 @@ boost::property_tree::ptree harp::psf_gauss_sim::metadata ( ) const {
 }
 
 
+size_t harp::psf_gauss_sim::response_nnz_estimate ( ) const {
+  size_t est = 2 * pixcorr_ + 1;
+  est *= est;
+  return est;
+}
+
+
 void harp::psf_gauss_sim::response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch ) const {
 
   size_t bin = spec * nlambda_ + lambda;
