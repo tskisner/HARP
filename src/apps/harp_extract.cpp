@@ -33,7 +33,7 @@ int main ( int argc, char *argv[] ) {
   size_t spec_width = 1;
   size_t spec_overlap = 1;
   
-  string outfile = "extracted.fits";
+  string outroot = "harp_";
 
   string jsonpar = "";
 
@@ -43,6 +43,8 @@ int main ( int argc, char *argv[] ) {
   bool debug = false;
   
   fitsfile * fp;
+
+  double global_start = wtime();
   
   // Declare options
   
@@ -52,7 +54,7 @@ int main ( int argc, char *argv[] ) {
   ( "help,h", "display usage information" )
   ( "quiet,q", "supress information printing" )
   ( "debug,d", "write out intermediate data products for debugging" )
-  ( "out", popts::value<string>( &outfile ), "output spectra file" )
+  ( "out", popts::value<string>( &outroot ), "root path of output files (default = \"harp_\")" )
   ( "spec_width", popts::value < size_t > ( &spec_width ), "number of spectra to solve at once" )
   ( "spec_overlap", popts::value < size_t > ( &spec_overlap ), "minimum spectra to overlap" )
   ( "lambda_width", popts::value < size_t > ( &lambda_width ), "number of wavelength points to solve at once" )
@@ -108,17 +110,17 @@ int main ( int argc, char *argv[] ) {
   boost::property_tree::ptree psf_props;
   psf_props = par.get_child ( "psf" );
 
-  psf_p epsf ( psf::create ( psf_props ) );
+  psf_p design ( psf::create ( psf_props ) );
 
-  size_t psf_imgrows = epsf->img_rows();
-  size_t psf_imgcols = epsf->img_cols();
+  size_t psf_imgrows = design->img_rows();
+  size_t psf_imgcols = design->img_cols();
   size_t psf_npix = psf_imgrows * psf_imgcols;
 
-  size_t psf_nspec = epsf->n_spec();
-  size_t psf_nlambda = epsf->n_lambda();
+  size_t psf_nspec = design->n_spec();
+  size_t psf_nlambda = design->n_lambda();
   size_t psf_nbins = psf_nspec * psf_nlambda;
 
-  vector < double > lambda = epsf->lambda();
+  vector_double lambda = design->lambda();
 
   tstop = wtime();
 
@@ -138,7 +140,7 @@ int main ( int argc, char *argv[] ) {
   tstart = wtime();
 
   boost::property_tree::ptree img_props;
-  img_props = conf.get_child ( "image" );
+  img_props = par.get_child ( "image" );
 
   image_p img ( image::create ( img_props ) );
 
@@ -187,7 +189,7 @@ int main ( int argc, char *argv[] ) {
 
     tstart = wtime();
 
-    string out_img_path = "harp_debug_input_image.fits";
+    string out_img_path = outroot + "debug_input_image.fits";
 
     boost::property_tree::ptree out_img_props;
 
@@ -208,38 +210,42 @@ int main ( int argc, char *argv[] ) {
 
   }
 
-  // Divide spectral data into overlapping regions
 
-  spec_slice_p slice ( new spec_slice ( 1, psf_nspec, psf_nlambda, spec_width, lambda_width, spec_overlap, lambda_overlap ) );
+  // target list
 
-  vector < spec_slice_region > regions = slice->regions ( 0 );
+  // eventually we will read a target list and this will be used for sky subtraction and will
+  // be written to the output spectral files.  For now, we create a fake list here.
 
-  if ( ! quiet ) {
-    cout << prefix << "Extracting " << regions.size() << " spectral chunks, each with " << spec_width << " spectra and " << lambda_width << " lambda points ( overlap = " << lambda_overlap << " )" << endl;
+  vector < target > target_list ( psf_nspec );
+
+  for ( size_t i = 0; i < psf_nspec; ++i ) {
+    target_list[i] = target ( TARGET_UNKNOWN, "target" );
   }
+
 
   // output spectral products
 
-  vector_double full_f ( psf_nbins );
-  full_f.clear();
+  vector_double data_f ( psf_nbins );
+  data_f.clear();
 
-  vector_double full_Rf ( psf_nbins );
-  full_Rf.clear();
+  vector_double data_Rf ( psf_nbins );
+  data_Rf.clear();
 
-  vector_double full_err ( psf_nbins );
-  full_err.clear();
+  vector_double data_err ( psf_nbins );
+  data_err.clear();
 
-  vector_double full_truth ( psf_nbins );
-  full_truth.clear();
+  vector_double data_truth ( psf_nbins );
+  data_truth.clear();
 
-  vector_double full_Rtruth ( psf_nbins );
-  full_Rtruth.clear();
+  vector_double data_Rtruth ( psf_nbins );
+  data_Rtruth.clear();
+
 
   // read truth spectra, if provided
 
   bool dotruth = false;
 
-  if ( conf.count ( "truth" ) > 0 ) {
+  if ( par.count ( "truth" ) > 0 ) {
 
     if ( ! quiet ) {
       cout << prefix << "Reading input truth spectra..." << endl;
@@ -247,7 +253,7 @@ int main ( int argc, char *argv[] ) {
 
     tstart = wtime();
 
-    boost::property_tree::ptree truth_props = conf.get_child ( "truth" );
+    boost::property_tree::ptree truth_props = par.get_child ( "truth" );
 
     spec_p truth_spec ( spec::create ( truth_props ) );
     size_t truth_nspec = truth_spec->n_spec();
@@ -263,9 +269,9 @@ int main ( int argc, char *argv[] ) {
     vector_double truth_lambda;
     vector < target > truth_target_list;
 
-    testspec->values ( full_truth );
-    testspec->lambda ( truth_lambda );
-    testspec->targets ( truth_target_list );
+    truth_spec->values ( data_truth );
+    truth_spec->lambda ( truth_lambda );
+    truth_spec->targets ( truth_target_list );
 
     for ( size_t i = 0; i < psf_nlambda; ++i ) {
       if ( fabs ( truth_lambda[i] - lambda[i] ) / lambda[i] > 1.0e-5 ) {
@@ -288,522 +294,185 @@ int main ( int argc, char *argv[] ) {
 
   }
 
-  // timing
 
-  double tot_design = 0.0;
-  double time_design;
-  double tot_inverse = 0.0;
-  double time_inverse;
-  double tot_eigen = 0.0;
-  double time_eigen;
-  double tot_norm = 0.0;
-  double time_norm;
-  double tot_nsespec = 0.0;
-  double time_nsespec;
-  double tot_extract = 0.0;
-  double time_extract;
-  double time_chunk;
+  // Divide spectral data into overlapping regions
+
+  spec_slice_p slice ( new spec_slice ( 1, psf_nspec, psf_nlambda, spec_width, lambda_width, spec_overlap, lambda_overlap ) );
+
+  vector < spec_slice_region > regions = slice->regions ( 0 );
+
+  if ( ! quiet ) {
+    cout << prefix << "Extracting " << regions.size() << " spectral chunks, each with " << spec_width << " spectra and " << lambda_width << " lambda points ( overlap = " << lambda_overlap << " )" << endl;
+  }
+
+
+  // timing results
+
+  map < string, double > timing;
+
 
   // Process all spectral slices
 
-  for ( vector < spec_slice_region > :: iterator regit = regions.begin(); regit != regions.end(); ++regit ) {
-
-    tstart = wtime();
-    double tsubstart = tstart;
-
-    size_t nbins = regit->n_spec * regit->n_lambda;
-
-    // build the list of spectral points we want for the projection
-
-    std::map < size_t, std::set < size_t > > speclambda;
-
-    for ( size_t s = 0; s < regit->n_spec; ++s ) {
-      for ( size_t l = 0; l < regit->n_lambda; ++l ) {
-        speclambda[ s + regit->first_spec ].insert ( l + regit->first_lambda );
-      }
-    }
-
-    // get the projection matrix for this slice
-
-    matrix_double_sparse AT;
-
-    epsf->project_transpose ( speclambda, AT );
-
-    double tsubstop = wtime();
-    time_design = ( tsubstop - tsubstart );
-
-    // build the inverse spectral covariance for this slice
-
-    matrix_double inv ( nbins, nbins );
-
-    
-
-
-
-
-    size_t overlap_spec;
-      size_t overlap_lambda;
-      size_t first_spec;
-      size_t first_lambda;
-      size_t first_good_spec;
-      size_t first_good_lambda;
-      size_t n_spec;
-      size_t n_lambda;
-      size_t n_good_spec;
-      size_t n_good_lambda;
-
-
-
-    tsubstart = MPI_Wtime();
-    
-    matrix_dist inv ( nbins_solve, nbins_solve, gang_grid );
-
-    if ( skystuff ) {
-      inverse_covariance ( design_sky, invnoise, inv );
-    } else {
-      inverse_covariance ( design, invnoise, inv );
-    }
-
-    tsubstop = MPI_Wtime();
-    time_inverse = ( tsubstop - tsubstart );
-
-    tsubstart = MPI_Wtime();
-
-    matrix_dist W ( nbins_solve, nbins_solve, gang_grid );
-    
-    matrix_dist D ( nbins_solve, 1, gang_grid );
-
-    eigen_decompose ( inv, D, W );
-
-    elem::Write ( D, "eigen", "dbg_eigevals.txt" );
-
-    tsubstop = MPI_Wtime();
-    time_eigen = ( tsubstop - tsubstart );
-
-    matrix_dist S ( nbins_solve, 1, gang_grid );
-
-    matrix_dist out_spec ( nspec_solve * band_write [ band ], 1, gang_grid );
-
-    if ( dotruth ) {
-
-      tsubstart = MPI_Wtime();
-
-      // since we need the explicit resolution matrix anyway, compute it
-      // here along with the normalization vector
-
-      matrix_dist Rtruth ( nbins_solve, 1, gang_grid );
-      dist_matrix_zero ( Rtruth );
-
-      matrix_dist truth_band ( nbins_solve, 1, gang_grid );
-      dist_matrix_zero ( truth_band );
-
-      sub_spec ( gang_fulltruth, psf_nspec_solve, spec_start_solve, nspec_solve, band_start[ band ], bandsize, truth_band );
-
-      matrix_dist R ( W );
-
-      resolution ( D, W, S, R );
-
-      elem::Gemv ( elem::NORMAL, 1.0, R, truth_band, 0.0, Rtruth );
-      
-      // accumulate to global resolution convolved truth
-
-      sub_spec ( Rtruth, nspec_solve, 0, nspec_solve, band_out[ band ] - band_start[ band ], band_write[ band ], out_spec );
-
-      accum_spec ( gang_fullRtruth, psf_nspec_solve, spec_start_solve, nspec_solve, band_out[ band ], band_write[ band ], out_spec );
-
-      tsubstop = MPI_Wtime();
-      time_norm = ( tsubstop - tsubstart );
-
-    } else {
-
-      // we just need the norm
-
-      tsubstart = MPI_Wtime();
-
-      norm ( D, W, S );
-
-      tsubstop = MPI_Wtime();
-      time_norm = ( tsubstop - tsubstart );
-
-    }
-
-    matrix_dist z ( nbins_solve, 1, gang_grid );
-    dist_matrix_zero ( z );
-
-    matrix_dist Rf ( nbins_solve, 1, gang_grid );
-    dist_matrix_zero ( Rf );
-
-    matrix_dist f ( nbins_solve, 1, gang_grid );
-    dist_matrix_zero ( f );
-
-    tsubstart = MPI_Wtime();
-
-    if ( skystuff ) {
-      noise_weighted_spec ( design_sky, invnoise, measured, z );
-    } else {
-      noise_weighted_spec ( design, invnoise, measured, z );
-    }
-
-    tsubstop = MPI_Wtime();
-    time_nsespec = ( tsubstop - tsubstart );
-
-    tsubstart = MPI_Wtime();
-  
-    extract ( D, W, S, z, Rf, f );
-
-    // accumulate to global solution
-
-    sub_spec ( f, nspec_solve, 0, nspec_solve, band_out[ band ] - band_start[ band ], band_write[ band ], out_spec );
-    accum_spec ( gang_fullf, psf_nspec_solve, spec_start_solve, nspec_solve, band_out[ band ], band_write[ band ], out_spec );
-
-    MPI_Barrier ( gcomm );
-
-    sub_spec ( Rf, nspec_solve, 0, nspec_solve, band_out[ band ] - band_start[ band ], band_write[ band ], out_spec );
-    accum_spec ( gang_fullRf, psf_nspec_solve, spec_start_solve, nspec_solve, band_out[ band ], band_write[ band ], out_spec );
-
-    MPI_Barrier ( gcomm );
-
-    sub_spec ( S, nspec_solve, 0, nspec_solve, band_out[ band ] - band_start[ band ], band_write[ band ], out_spec );
-    accum_spec ( gang_fullerr, psf_nspec_solve, spec_start_solve, nspec_solve, band_out[ band ], band_write[ band ], out_spec );
-
-    tsubstop = MPI_Wtime();
-    time_extract = ( tsubstop - tsubstart );
-
-    tstop = tsubstop;
-
-    time_chunk = tstop - tstart;
-
-    if ( ( grank == 0 ) && ( ! quiet ) ) {
-
-      ret = MPI_Win_lock ( MPI_LOCK_EXCLUSIVE, 0, 0, printlock );
-      mpi_check ( grootcomm, ret );
-
-      cout << prefix << "  gang " << gang << ": finished chunk " << (gang_offset + gchunk) << endl;
-      cout << prefix << "    computing A^T = " << time_design << " seconds" << endl;
-      cout << prefix << "    building inverse covariance = " << time_inverse << " seconds" << endl;
-      cout << prefix << "    eigendecompose inverse covariance = " << time_eigen << " seconds" << endl;
-      if ( dotruth ) {
-        cout << prefix << "    compute column norm and resolution convolved truth = " << time_norm << " seconds" << endl;
-      } else {
-        cout << prefix << "    compute column norm = " << time_norm << " seconds" << endl;
-      }
-      cout << prefix << "    compute noise weighted spec = " << time_nsespec << " seconds" << endl;
-      cout << prefix << "    extraction = " << time_extract << " seconds" << endl;
-      cout << prefix << "    total band time = " << time_chunk << " seconds" << endl;
-
-      // free the lock
-      ret = MPI_Win_unlock ( 0, printlock );
-      mpi_check ( grootcomm, ret );
-
-      tot_design += time_design;
-      tot_inverse += time_inverse;
-      tot_eigen += time_eigen;
-      tot_norm += time_norm;
-      tot_nsespec += time_nsespec;
-      tot_extract += time_extract;
-
-    }
-
-    MPI_Barrier ( gcomm );
-
+  string extract_prefix = "";
+  if ( ! quiet ) {
+    extract_prefix = prefix;
   }
 
-  if ( grank == 0 ) {
-    MPI_Win_free ( &printlock );
-    if ( gang == 0 ) {
-      ret = MPI_Free_mem ( (void*)root_lockbuf );
-      mpi_check ( grootcomm, ret );
-    }
-  }
-  
-  // Merge gang-wise outputs
+  extract_slices ( slice, design, measured, invnoise, data_truth, data_Rf, data_f, data_err, data_Rtruth, timing, false, prefix );
 
-  gang_accum ( gang_fullf, fullf );
-  gang_accum ( gang_fullRf, fullRf );
-  gang_accum ( gang_fullerr, fullerr );
-  gang_accum ( gang_fullRtruth, fullRtruth );
 
   // subtract sky if needed
 
-  matrix_dist fullRfsky ( psf_nbins_solve, 1, grid );
-  dist_matrix_zero ( fullRfsky );
 
-  matrix_dist fullerrsky ( psf_nbins_solve, 1, grid );
-  dist_matrix_zero ( fullerrsky );
-
-  if ( doskysub ) {
-    sky_subtract ( psf_nspec_obj, fullRf, fullerr, fullRfsky, fullerrsky );
-  }
 
   // Total timings
 
-  if ( ( myp == 0 ) && ( ! quiet ) ) {
+  if ( ! quiet ) {
     cout << prefix << "Aggregate Timings:" << endl;
-    cout << prefix << "  Build design matrix = " << tot_design << " seconds" << endl;
-    cout << prefix << "  Build inverse covariance = " << tot_inverse << " seconds" << endl;
-    cout << prefix << "  Eigendecompose inverse = " << tot_eigen << " seconds" << endl;
-    cout << prefix << "  Compute column norm = " << tot_norm << " seconds" << endl;
-    cout << prefix << "  Compute noise weighted spec = " << tot_nsespec << " seconds" << endl;
-    cout << prefix << "  Extract spectra = " << tot_extract << " seconds" << endl;
+    cout << prefix << "  Build design matrix = " << timing["design"] << " seconds" << endl;
+    cout << prefix << "  Build inverse covariance = " << timing["inverse"] << " seconds" << endl;
+    cout << prefix << "  Eigendecompose inverse = " << timing["eigen"] << " seconds" << endl;
+    cout << prefix << "  Compute column norm = " << timing["norm"] << " seconds" << endl;
+    cout << prefix << "  Compute noise weighted spec = " << timing["nsespec"] << " seconds" << endl;
+    cout << prefix << "  Extract spectra = " << timing["extract"] << " seconds" << endl;
   }
 
-  // Write outputs
 
-  if ( ( myp == 0 ) && ( ! quiet ) ) {
+  // Write outputs and compute chi-square if input truth is given
+
+  if ( ! quiet ) {
     cout << prefix << "Writing solution and error..." << endl;
   }
 
-  tstart = MPI_Wtime();
+  tstart = wtime();
 
-  boost::property_tree::ptree solution_spec_props;
-  solution_spec_props.put ( "format", "specter" );
-  solution_spec_props.put ( "nspec", psf_nspec_solve );
-  solution_spec_props.put ( "nlambda", nlambda );
+  boost::property_tree::ptree solution_props;
+  solution_props.put ( "format", "specter" );
+  solution_props.put ( "nspec", psf_nspec );
+  solution_props.put ( "nlambda", psf_nlambda );
 
-  spec_p solution_spec ( spec::create ( solution_spec_props ) );
+  spec_specter outspec ( solution_props );
 
-  solution_spec->write ( "harp_spec_Rf.fits", fullRf, lambda, is_sky_solve );
-  solution_spec->write ( "harp_spec_Rf-err.fits", fullerr, lambda, is_sky_solve );
+  string outfile = outroot + "spec_Rf.fits";
+  outspec.write ( outfile, data_Rf, lambda, target_list );
 
-  if ( doskysub ) {
-    solution_spec->write ( "harp_spec_Rfsky.fits", fullRfsky, lambda, is_sky_solve );
-    solution_spec->write ( "harp_spec_Rfsky-err.fits", fullerrsky, lambda, is_sky_solve );
-  }
+  outfile = outroot + "spec_Rf-err.fits";
+  outspec.write ( outfile, data_err, lambda, target_list );
 
-  if ( debug ) {
-    elem::Write ( fullf, "spec_f", "harp_spec_f.txt" );
-    elem::Write ( fullRf, "spec_Rf", "harp_spec_Rf.txt" );
-    elem::Write ( fullerr, "spec_Rf-err", "harp_spec_Rf-err.txt" );
-    if ( doskysub ) {
-      elem::Write ( fullRfsky, "spec_Rfsky", "harp_spec_Rfsky.txt" );
-      elem::Write ( fullerrsky, "spec_Rf-errsky", "harp_spec_Rf-errsky.txt" );
+  if ( dotruth ) {
+    outfile = outroot + "spec_Rtruth.fits";
+    outspec.write ( outfile, data_Rtruth, lambda, target_list );
+
+    vector_double data_chisq ( psf_nbins );
+
+    double chisq_reduced = 0.0;
+
+    for ( size_t i = 0; i < psf_nbins; ++i ) {
+      data_chisq[i] = ( data_Rf[i] - data_Rtruth[i] ) / data_err[i];
+      data_chisq[i] *= data_chisq[i];
+      chisq_reduced += data_chisq[i];
     }
+
+    chisq_reduced /= (double)( psf_nbins );
+
+    if ( ! quiet ) {
+      cout << prefix << "  Reduced Chi square = " << chisq_reduced << endl;
+    }
+
+    outfile = outroot + "spec_chisq.fits";
+    outspec.write ( outfile, data_chisq, lambda, target_list );
+
   }
 
-  tstop = MPI_Wtime();
+  tstop = wtime();
 
-  if ( ( myp == 0 ) && ( ! quiet ) ) {
+  if ( ! quiet ) {
     cout << prefix << "  time = " << tstop-tstart << " seconds" << endl;
   }
 
-  matrix_local solution_image;
+  // this next bit of code might (if debug == dotruth == true) generate 3 new images and the full PSF for
+  // debugging purposes.  If we are tight on RAM, this could push us over the edge.  Explicitly deallocate
+  // un-needed data objects at this point.
+
+  measured.resize(0);
+  data_Rf.resize(0);
+  data_Rtruth.resize(0);
+  data_err.resize(0);
 
   if ( debug ) {
 
-    if ( ( myp == 0 ) && ( ! quiet ) ) {
-      cout << prefix << "(debug mode) Writing projected, deconvolved spectra..." << endl;
+    if ( ! quiet ) {
+      cout << prefix << "Writing projected, deconvolved spectra..." << endl;
     }
 
-    tstart = MPI_Wtime();
+    tstart = wtime();
 
-    solution_image.ResizeTo ( npix, 1 );
-    local_matrix_zero ( solution_image );
+    solution_props.clear();
+    solution_props.put ( "rows", imgrows );
+    solution_props.put ( "cols", imgcols );
 
-    matrix_sparse design ( psf_nspec * nlambda, npix, MPI_COMM_WORLD );
+    image_fits outimg ( solution_props );
 
-    epsf->projection ( 0, psf_nspec - 1, 0, nlambda - 1, design );
+    matrix_double_sparse AT;
+    design->project_transpose ( AT );
 
-    matrix_sparse design_sky ( gcomm );
+    vector_double f_projected;
+    spec_project ( AT, data_f, f_projected );
 
-    if ( skystuff ) {
-      //sky_design2 ( design, is_sky, design_sky );
-      sky_design ( design, is_sky, design_sky, dosky );
-      spec_project ( design_sky, fullf, solution_image );
-    } else {
-      spec_project ( design, fullf, solution_image );
-    }
+    data_f.resize(0);
 
-    if ( myp == 0 ) {
-      string outimg = "harp_image_f-project.fits";
-      fits::create ( fp, outimg );
-      fits::img_append ( fp, imgrows, imgcols );
-      fits::write_key ( fp, "EXTNAME", "Solution", "Projected solution" );
-      fits::img_write ( fp, solution_image );
-      fits::close ( fp );
-    }
+    outfile = outroot + "image_f-project.fits";
+    outimg.write ( outfile, f_projected, invnoise );
 
-    tstop = MPI_Wtime();
+    tstop = wtime();
 
-    if ( ( myp == 0 ) && ( ! quiet ) ) {
+    if ( ! quiet ) {
       cout << prefix << "  time = " << tstop-tstart << " seconds" << endl;
     }
 
-  }
+    if ( dotruth ) {
 
-  if ( dotruth ) {
-
-    if ( ( myp == 0 ) && ( ! quiet ) ) {
-      cout << prefix << "Writing resolution convolved truth..." << endl;
-    }
-
-    tstart = MPI_Wtime();
-
-    boost::property_tree::ptree rtruth_spec_props;
-    rtruth_spec_props.put ( "format", "specter" );
-    rtruth_spec_props.put ( "nspec", psf_nspec_solve );
-    rtruth_spec_props.put ( "nlambda", nlambda );
-
-    spec_p rtruth_spec ( spec::create ( rtruth_spec_props ) );
-
-    rtruth_spec->write ( "harp_spec_Rtruth.fits", fullRtruth, lambda, is_sky_solve );
-
-    if ( debug ) {
-      elem::Write ( fulltruth, "spec_truth", "harp_spec_truth.txt" );
-      elem::Write ( fullRtruth, "spec_Rtruth", "harp_spec_Rtruth.txt" );
-    }
-
-    tstop = MPI_Wtime();
-
-    if ( ( myp == 0 ) && ( ! quiet ) ) {
-      cout << prefix << "  time = " << tstop-tstart << " seconds" << endl;
-    }
-
-    if ( ( myp == 0 ) && ( ! quiet ) ) {
-      cout << prefix << "Computing spectral Chi-square..." << endl;
-    }
-
-    tstart = MPI_Wtime();
-
-    matrix_local loc_fullRtruth;
-    matrix_local loc_fullRf;
-    matrix_local loc_fullerr;
-    
-    elem::AxpyInterface < double > globloc;
-
-    globloc.Attach( elem::GLOBAL_TO_LOCAL, fullRtruth );
-    if ( myp == 0 ) {
-      loc_fullRtruth.ResizeTo ( fullRtruth.Height(), 1 );
-      local_matrix_zero ( loc_fullRtruth );
-      globloc.Axpy ( 1.0, loc_fullRtruth, 0, 0 );
-    }
-    globloc.Detach();
-
-    globloc.Attach( elem::GLOBAL_TO_LOCAL, fullRf );
-    if ( myp == 0 ) {
-      loc_fullRf.ResizeTo ( fullRf.Height(), 1 );
-      local_matrix_zero ( loc_fullRf );
-      globloc.Axpy ( 1.0, loc_fullRf, 0, 0 );
-    }
-    globloc.Detach();
-
-    globloc.Attach( elem::GLOBAL_TO_LOCAL, fullerr );
-    if ( myp == 0 ) {
-      loc_fullerr.ResizeTo ( fullerr.Height(), 1 );
-      local_matrix_zero ( loc_fullerr );
-      globloc.Axpy ( 1.0, loc_fullerr, 0, 0 );
-    }
-    globloc.Detach();
-
-    if ( myp == 0 ) {
-      fstream outfile ( "harp_spec_chisq.txt", ios::out );
-      outfile.precision(15);
-
-      if ( ! outfile.is_open() ) {
-        std::ostringstream o;
-        o << "cannot open output spec chisq file";
-        HARP_THROW( o.str().c_str() );
+      if ( ! quiet ) {
+        cout << prefix << "Writing projected truth spectra..." << endl;
       }
+
+      tstart = wtime();
+
+      vector_double truth_projected;
+      spec_project ( AT, data_truth, truth_projected );
+
+      // save more memory before allocating chisquare image
+
+      AT.resize ( 0, 0 );
+      data_truth.resize(0);
+
+      outfile = outroot + "image_truth-project.fits";
+      outimg.write ( outfile, truth_projected, invnoise );
+
+      // pixel space chi-square
+
+      vector_double data_chisq ( npix );
 
       double chisq_reduced = 0.0;
-      double val;
-      for ( size_t i = 0; i < loc_fullRf.Height(); ++i ) {
-        val = ( loc_fullRf.Get ( i, 0 ) - loc_fullRtruth.Get ( i, 0 ) ) / loc_fullerr.Get ( i, 0 );
-        val *= val;
-        chisq_reduced += val;
-        outfile << val << endl;
+
+      for ( size_t i = 0; i < npix; ++i ) {
+        data_chisq[i] = ( f_projected[i] - truth_projected[i] ) / invnoise[i];
+        data_chisq[i] *= data_chisq[i];
+        chisq_reduced += data_chisq[i];
       }
 
-      chisq_reduced /= (double)( loc_fullRf.Height() - 1 );
+      chisq_reduced /= (double)( npix );
 
-      cout << prefix << "  Reduced Chi square = " << chisq_reduced << endl;
-
-      outfile.close();
-    }
-
-    tstop = MPI_Wtime();
-
-    if ( ( myp == 0 ) && ( ! quiet ) ) {
-      cout << prefix << "  time = " << tstop-tstart << " seconds" << endl;
-    }
-
-    matrix_local truth_image;
-
-    if ( debug ) {
-
-      if ( ( myp == 0 ) && ( ! quiet ) ) {
-        cout << prefix << "(debug mode) Writing projected truth..." << endl;
+      if ( ! quiet ) {
+        cout << prefix << "  Pixel space reduced Chi square = " << chisq_reduced << endl;
       }
 
-      tstart = MPI_Wtime();
+      outfile = outroot + "image_chisq.fits";
+      outimg.write ( outfile, data_chisq, invnoise );
 
-      matrix_sparse design ( psf_nspec * nlambda, npix, MPI_COMM_WORLD );
+      tstop = wtime();
 
-      epsf->projection ( 0, psf_nspec - 1, 0, nlambda - 1, design );
-
-      truth_image.ResizeTo ( npix, 1 );
-      local_matrix_zero ( truth_image );
-
-      matrix_sparse design_sky ( psf_nspec_solve * nlambda, npix, MPI_COMM_WORLD );
-
-      if ( skystuff ) {
-        //sky_design2 ( design, is_sky, design_sky );
-        sky_design ( design, is_sky, design_sky, dosky );
-        spec_project ( design_sky, fulltruth, truth_image );
-      } else {
-        spec_project ( design, fulltruth, truth_image );
-      }
-
-      if ( myp == 0 ) {
-        string outimg = "harp_image_truth-project.fits";
-        fits::create ( fp, outimg );
-        fits::img_append ( fp, imgrows, imgcols );
-        fits::write_key ( fp, "EXTNAME", "Truth", "Projected truth" );
-        fits::img_write ( fp, truth_image );
-        fits::close ( fp );
-      }
-
-      tstop = MPI_Wtime();
-
-      if ( ( myp == 0 ) && ( ! quiet ) ) {
-        cout << prefix << "  time = " << tstop-tstart << " seconds" << endl;
-      }
-
-      if ( ( myp == 0 ) && ( ! quiet ) ) {
-        cout << prefix << "Computing pixel space Chi-square..." << endl;
-      }
-
-      tstart = MPI_Wtime();
-
-      if ( myp == 0 ) {
-        fstream outfile ( "harp_image_chisq.txt", ios::out );
-        outfile.precision(15);
-
-        if ( ! outfile.is_open() ) {
-          std::ostringstream o;
-          o << "cannot open output spec chisq file";
-          HARP_THROW( o.str().c_str() );
-        }
-
-        double chisq_reduced = 0.0;
-        double val;
-        for ( size_t i = 0; i < npix; ++i ) {
-          val = ( solution_image.Get ( i, 0 ) - truth_image.Get ( i, 0 ) ) * sqrt ( invnoise.Get ( i, 0 ) );
-          val *= val;
-          chisq_reduced += val;
-          outfile << val << endl;
-        }
-
-        // (same number of degrees as freedom, even though projected onto pixels)
-        chisq_reduced /= (double)( loc_fullRf.Height() - 1 );
-
-        cout << prefix << "  Reduced Chi square = " << chisq_reduced << endl;
-
-        outfile.close();
-      }
-
-      tstop = MPI_Wtime();
-
-      if ( ( myp == 0 ) && ( ! quiet ) ) {
+      if ( ! quiet ) {
         cout << prefix << "  time = " << tstop-tstart << " seconds" << endl;
       }
 
@@ -811,16 +480,13 @@ int main ( int argc, char *argv[] ) {
 
   }
 
-  
+  // final timing
 
+  double global_stop = wtime();
 
-  double global_stop = MPI_Wtime();
-
-  if ( ( myp == 0 ) && ( ! quiet ) ) {
+  if ( ! quiet ) {
     cout << prefix << "Total run time = " << global_stop-global_start << " seconds" << endl;
   }
-
-  cliq::Finalize();
 
   return 0;
 }

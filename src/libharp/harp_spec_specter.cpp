@@ -146,7 +146,7 @@ harp::spec_specter::~spec_specter ( ) {
 
 boost::property_tree::ptree harp::spec_specter::metadata ( ) const {
 
-
+  return boost::property_tree::ptree();
 }
 
 

@@ -69,6 +69,19 @@ harp::spec_slice::spec_slice ( size_t nworker, size_t nspec, size_t nlambda, siz
   chunk_nspec_ = chunk_nspec;
   chunk_nlambda_ = chunk_nlambda;
 
+  // Define a region which contains all bins
+
+  full_region_.overlap_spec = 0;
+  full_region_.overlap_lambda = 0;
+  full_region_.first_spec = 0;
+  full_region_.first_lambda = 0;
+  full_region_.first_good_spec = 0;
+  full_region_.first_good_lambda = 0;
+  full_region_.n_spec = nspec;
+  full_region_.n_lambda = nlambda;
+  full_region_.n_good_spec = nspec;
+  full_region_.n_good_lambda = nlambda;
+
   // Determine spectral chunk boundaries
 
   vector < size_t > spec_start;

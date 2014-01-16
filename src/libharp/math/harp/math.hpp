@@ -53,6 +53,9 @@ namespace harp {
 
   double wtime ( );
 
+  // 1D distribution across OpenMP thread
+
+  void omp_dist_1D ( int n, int & rank, int & nthreads, int & myn, int & offset );
 
 }
 

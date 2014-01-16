@@ -3,25 +3,26 @@
 #ifndef HARP_EXTRACTION_HPP
 #define HARP_EXTRACTION_HPP
 
+#include <ostream>
+
 
 namespace harp {
 
-  /*
-  void sub_spec ( matrix_dist const & in, size_t total_nspec, size_t first_spec, size_t nspec, size_t first_lambda, size_t nlambda, matrix_dist & out );
+  void sub_spec ( spec_slice_region const & full_region, bool use_good_full, spec_slice_region const & sub_region, bool use_good_sub, vector_double const & full_data, vector_double & sub_data );
 
-  void accum_spec ( matrix_dist & full, size_t total_nspec, size_t first_spec, size_t nspec, size_t first_lambda, size_t nlambda, matrix_dist const & chunk );
+  void accum_spec ( spec_slice_region const & sub_region, bool use_good_sub, spec_slice_region const & full_region, bool use_good_full, vector_double const & sub_data, vector_double & full_data );
 
-  void spec_project ( matrix_sparse const & m, matrix_dist const & in, matrix_local & out );
+  void spec_project ( matrix_double_sparse const & AT, vector_double const & spectra, vector_double & img );
 
-  void noise_weighted_spec ( matrix_sparse const & psf, matrix_local const & invnoise, matrix_local const & img, matrix_dist & z );
+  void noise_weighted_spec ( matrix_double_sparse const & AT, vector_double const & invnoise, vector_double const & img, vector_double & z );
 
-  void inverse_covariance ( matrix_sparse const & psf, matrix_local const & invnoise, matrix_dist & invcov );
+  void inverse_covariance ( matrix_double_sparse const & AT, vector_double const & invnoise, matrix_double & invC );
 
-  void resolution ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_dist & R );
+  void resolution ( vector_double const & D, matrix_double const & W, vector_double & S, matrix_double & R );
 
-  void extract_region ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_dist & z, matrix_dist & Rf, matrix_dist & f );
+  void extract ( vector_double const & D, matrix_double const & W, vector_double const & S, vector_double const & z, vector_double & Rf, vector_double & f );
 
-  */
+  void extract_slices ( spec_slice_p slice, psf_p design, vector_double const & img, vector_double const & img_inv_var, vector_double const & truth, vector_double & Rf, vector_double & f, vector_double & err, vector_double & Rtruth, std::map < std::string, double > & profile, bool region_threads = false, std::string const & status_prefix = "" );
 
 }
 

@@ -41,8 +41,9 @@ libharp_la_SOURCES = \
 	harp_spec.cpp \
 	harp_psf.cpp \
 	harp_fits.cpp \
-	harp_spec_slice.cpp
-# harp_extraction.cpp harp_sky.cpp
+	harp_spec_slice.cpp \
+	harp_extraction.cpp 
+#harp_sky.cpp
 
 libharp_la_LDFLAGS = -version-info @HARP_LT_VERSION@
 

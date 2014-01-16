@@ -250,7 +250,7 @@ int harp::psf_gauss::hdu_info ( fitsfile *fp, const char * psf_gauss_hdu ) {
 
 boost::property_tree::ptree harp::psf_gauss::metadata ( ) const {
 
-
+  return boost::property_tree::ptree();
 }
 
 

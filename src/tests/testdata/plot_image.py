@@ -10,7 +10,7 @@ file = sys.argv[1]
 imgdat = pyfits.getdata(file, 0)
 imgnse = pyfits.getdata(file, 1)
 
-fig = py.figure( figsize=(50, 6), dpi=600 )
+fig = py.figure( figsize=(100, 12), dpi=600 )
 
 frame1 = fig.add_subplot(211)
 py.title( "Pixel Data (PSF projected input spectra + noise)" )

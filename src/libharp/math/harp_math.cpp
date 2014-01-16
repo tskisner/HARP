@@ -24,3 +24,26 @@ double harp::wtime ( ) {
   return nowtime;
 }
 
+
+void harp::omp_dist_1D ( int n, int & rank, int & nthreads, int & myn, int & offset ) {
+#ifdef _OPENMP  
+  rank = omp_get_thread_num();
+  nthreads = omp_get_num_threads();
+#else
+  rank = 0;
+  nthreads = 1;
+#endif
+  myn = (int) ( n / nthreads );
+  
+  int leftover = n % nthreads;
+  
+  if ( rank < leftover ) {
+    ++myn;
+    offset = myn * rank;
+  } else {
+    offset = ( (myn + 1) * leftover ) + ( myn * (rank - leftover) );
+  }
+  
+  return;
+}
+

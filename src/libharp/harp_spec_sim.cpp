@@ -51,7 +51,7 @@ harp::spec_sim::~spec_sim ( ) {
 
 boost::property_tree::ptree harp::spec_sim::metadata ( ) const {
 
-
+  return boost::property_tree::ptree();
 }
 
 

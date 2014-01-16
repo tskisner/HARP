@@ -13,10 +13,13 @@ bin_SCRIPTS =
 BUILT_SOURCES =
 CLEANFILES =
 
-bin_PROGRAMS = harp_example_imgstack
+bin_PROGRAMS = harp_example_imgstack harp_extract
 
 harp_example_imgstack_SOURCES = harp_example_imgstack.cpp
 harp_example_imgstack_LDADD = $(AM_LIBS)
+
+harp_extract_SOURCES = harp_extract.cpp
+harp_extract_LDADD = $(AM_LIBS)
 
 
 if HAVE_AM_PYTHON

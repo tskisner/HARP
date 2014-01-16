@@ -71,7 +71,7 @@ harp::psf_gh::~psf_gh ( ) {
 
 boost::property_tree::ptree harp::psf_gh::metadata ( ) const {
 
-
+  return boost::property_tree::ptree();
 }
 
 

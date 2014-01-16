@@ -1,2 +1,4 @@
 
-#import nothing by default
+#import our custom pyublas
+
+import harp.pyublas

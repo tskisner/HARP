@@ -147,6 +147,26 @@ void harp::apply_inverse_norm ( vector_double const & S, matrix_double & mat ) {
 }
 
 
+void harp::apply_norm ( vector_double const & S, vector_double & vec ) {
+
+  for ( size_t i = 0; i < vec.size(); ++i ) {
+    vec[i] *= S[i];
+  }
+
+  return;
+}
+
+
+void harp::apply_inverse_norm ( vector_double const & S, vector_double & vec ) {
+
+  for ( size_t i = 0; i < vec.size(); ++i ) {
+    vec[i] /= S[i];
+  }
+
+  return;
+}
+
+
 void harp::norm ( vector_double const & D, matrix_double const & W, vector_double & S ) {
 
   matrix_double temp ( W );

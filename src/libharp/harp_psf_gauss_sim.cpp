@@ -163,7 +163,7 @@ void harp::psf_gauss_sim::spec2pix ( size_t spec, size_t specbin, double & x, do
 
 boost::property_tree::ptree harp::psf_gauss_sim::metadata ( ) const {
 
-
+  return boost::property_tree::ptree();
 }
 
 

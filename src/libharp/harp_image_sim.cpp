@@ -104,7 +104,7 @@ harp::image_sim::~image_sim ( ) {
 
 boost::property_tree::ptree harp::image_sim::metadata ( ) const {
 
-
+  return boost::property_tree::ptree();
 }
 
 

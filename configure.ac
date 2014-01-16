@@ -55,6 +55,7 @@ if test x"$harp_openmp" != xno; then
   AX_OPENMP([ax_have_openmp=yes;AC_DEFINE(HAVE_OPENMP,1,[Define if OpenMP is enabled])])
 fi
 AM_CONDITIONAL([HAVE_AM_OPENMP], [test $ax_have_openmp = yes])
+AC_SUBST([OPENMP_CXXFLAGS])
 dnl
 dnl =========================================
 dnl Do these checks with the C compiler

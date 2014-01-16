@@ -109,6 +109,8 @@ namespace harp {
       
       ~spec_slice ( ) { }
 
+      spec_slice_region const & full_region ( ) const { return full_region_; }
+
       std::vector < spec_slice_region > regions ( size_t const & worker ) const {
         if ( worker > nworker_ - 1 ) {
           HARP_THROW( "worker rank is out of range" );
@@ -127,6 +129,7 @@ namespace harp {
       size_t chunk_nspec_;
       size_t chunk_nlambda_;
       std::map < size_t, std::vector < spec_slice_region > > regions_;
+      spec_slice_region full_region_;
 
       void calc ( size_t n, size_t chunk, size_t overlap, std::vector < size_t > & start, std::vector < size_t > & stop, std::vector < size_t > & good_start, std::vector < size_t > & good_stop );
 
@@ -140,6 +143,7 @@ namespace harp {
         ar & BOOST_SERIALIZATION_NVP(chunk_nspec_);
         ar & BOOST_SERIALIZATION_NVP(chunk_nlambda_);
         ar & BOOST_SERIALIZATION_NVP(regions_);
+        ar & BOOST_SERIALIZATION_NVP(full_region_);
         return;
       }  
       

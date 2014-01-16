@@ -63,6 +63,10 @@ namespace harp {
 
   void apply_inverse_norm ( vector_double const & S, matrix_double & mat );
 
+  void apply_norm ( vector_double const & S, vector_double & vec );
+
+  void apply_inverse_norm ( vector_double const & S, vector_double & vec );
+
   void norm ( vector_double const & D, matrix_double const & W, vector_double & S );
 
 
