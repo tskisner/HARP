@@ -6,6 +6,10 @@ extern "C" {
   #include <sys/time.h>
 }
 
+#ifdef _OPENMP
+#  include <omp.h>
+#endif
+
 
 using namespace std;
 using namespace harp;

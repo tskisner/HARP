@@ -265,7 +265,7 @@ void harp::noise_weighted_spec ( matrix_double_sparse const & AT, vector_double 
 }
 
 
-void inverse_covariance ( matrix_double_sparse const & AT, vector_double const & invnoise, matrix_double & invC ) {
+void harp::inverse_covariance ( matrix_double_sparse const & AT, vector_double const & invnoise, matrix_double & invC ) {
 
   // check consistent sizes
 
