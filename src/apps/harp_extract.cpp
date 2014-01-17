@@ -27,11 +27,11 @@ int main ( int argc, char *argv[] ) {
   cout.precision ( 10 );
   cerr.precision ( 10 );
 
-  size_t lambda_width = 1;
-  size_t lambda_overlap = 1;
+  size_t lambda_width = 0;
+  size_t lambda_overlap = 0;
 
-  size_t spec_width = 1;
-  size_t spec_overlap = 1;
+  size_t spec_width = 0;
+  size_t spec_overlap = 0;
   
   string outroot = "harp_";
 
@@ -296,6 +296,15 @@ int main ( int argc, char *argv[] ) {
 
 
   // Divide spectral data into overlapping regions
+
+  if ( spec_width < 1 ) {
+    // do all spectra
+    spec_width = psf_nspec;
+  }
+
+  if ( lambda_width < 1 ) {
+    lambda_width = psf_nlambda;
+  }
 
   spec_slice_p slice ( new spec_slice ( 1, psf_nspec, psf_nlambda, spec_width, lambda_width, spec_overlap, lambda_overlap ) );
 

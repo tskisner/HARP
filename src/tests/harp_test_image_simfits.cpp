@@ -66,6 +66,16 @@ void harp::test_image_simfits ( string const & datadir ) {
 
   image_p img ( image::create ( img_props ) );
 
+  // write out a json file for testing with external tools
+
+  boost::property_tree::ptree full_props;
+  full_props.put_child ( "psf", gauss_props );
+  full_props.put_child ( "image", img_props );
+  full_props.put_child ( "truth", spec_props );
+
+  string jsonpath = datadir + "/test_sim.json.out";
+  boost::property_tree::json_parser::write_json ( jsonpath, full_props );
+
   // immediately serialize and restore, so that any issues with that process will impact the code that follows
 
   string serialpath = datadir + "/image_sim_serialize.xml.out";
