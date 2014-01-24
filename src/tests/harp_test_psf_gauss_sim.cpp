@@ -36,7 +36,7 @@ void harp::test_psf_gauss_sim ( string const & datadir ) {
   gauss_props.put ( "format", "gauss_sim" );
   gauss_props.put_child ( "lambda_spec", spec_props );
   gauss_props.put ( "bundle_size", 25 );
-  gauss_props.put ( "nbundle", 4 );
+  gauss_props.put ( "nbundle", 1 );
 
   psf_gauss_sim gauss_psf ( gauss_props );
 
@@ -72,7 +72,7 @@ void harp::test_psf_gauss_sim ( string const & datadir ) {
 
   // pixel dimensions should match the default spectral spacing in the psf class
 
-  if ( gauss_cols != 853 ) {
+  if ( gauss_cols != 214 ) {
     cerr << "FAIL:  simulated gauss psf image cols (" << gauss_cols << ") is not 853" << endl;
     exit(1);
   }

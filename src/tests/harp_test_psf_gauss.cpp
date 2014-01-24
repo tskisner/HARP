@@ -69,8 +69,8 @@ void harp::test_psf_gauss ( string const & datadir ) {
   size_t psf_nspec = gauss_psf.n_spec();
   size_t psf_nlambda = gauss_psf.n_lambda();
 
-  if ( psf_nspec != 100 ) {
-    cerr << "FAIL:  gauss psf nspec (" << psf_nspec << ") does not match input (" << 100 << ")" << endl;
+  if ( psf_nspec != 25 ) {
+    cerr << "FAIL:  gauss psf nspec (" << psf_nspec << ") does not match input (" << 25 << ")" << endl;
     exit(1);
   }
 

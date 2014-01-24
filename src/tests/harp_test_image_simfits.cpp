@@ -48,7 +48,7 @@ void harp::test_image_simfits ( string const & datadir ) {
   gauss_props.put ( "format", "gauss_sim" );
   gauss_props.put_child ( "lambda_spec", spec_props );
   gauss_props.put ( "bundle_size", 25 );
-  gauss_props.put ( "nbundle", 4 );
+  gauss_props.put ( "nbundle", 1 );
 
   psf_p gauss_psf ( psf::create ( gauss_props ) );
 

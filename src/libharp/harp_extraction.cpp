@@ -197,8 +197,8 @@ void harp::accum_spec ( spec_slice_region const & sub_region, bool use_good_sub,
   for ( size_t i = 0; i < nsub; ++i ) {
     in_spec = sub_firstspec + (size_t)( i / sub_nlambda );
     in_lambda = sub_firstlambda + ( i - out_spec * sub_nlambda );
-    out_lambda = out_lambda - full_firstlambda;
-    out_spec = out_spec - full_firstspec;
+    out_lambda = in_lambda - full_firstlambda;
+    out_spec = in_spec - full_firstspec;
     full_data [ out_spec * full_nlambda + out_lambda ] += sub_data[i];
   }
 
@@ -288,24 +288,31 @@ void harp::inverse_covariance ( matrix_double_sparse const & AT, vector_double c
   // elements to the other triangle.  This is not done in the serial code here.  One could also do thread-level
   // parallel accumulation of the output, in analogy with the MPI code.  This is not done here.
 
-  matrix_double_sparse :: const_iterator1 left_rowit = AT.begin1();
+  matrix_double_sparse :: const_iterator1 left_rowit;
   matrix_double_sparse :: const_iterator1 right_rowit;
 
   matrix_double_sparse :: const_iterator2 left_colit;
   matrix_double_sparse :: const_iterator2 right_colit;
+  matrix_double_sparse :: const_iterator2 right_col_checkit;
 
   for ( left_rowit = AT.begin1(); left_rowit != AT.end1(); ++left_rowit ) {
+
+    cerr << "DBG: building invC row " << left_rowit.index1() << endl;
 
     for ( right_rowit = AT.begin1(); right_rowit != AT.end1(); ++right_rowit ) {
 
       right_colit = right_rowit.begin();
+      right_col_checkit = right_colit;
+      // this itererator tracks one element ahead
+      ++right_col_checkit;
 
       double val = 0.0;
 
       for ( left_colit = left_rowit.begin(); left_colit != left_rowit.end(); ++left_colit ) {
 
-        while ( ( right_colit != right_rowit.end() ) && ( right_colit.index2() < left_colit.index2() ) ) {
+        while ( ( right_col_checkit != right_rowit.end() ) && ( right_colit.index2() < left_colit.index2() ) ) {
           ++right_colit;
+          ++right_col_checkit;
         }
 
         if ( right_colit.index2() == left_colit.index2() ) {
@@ -448,7 +455,21 @@ void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double cons
 
   size_t region_index = 0;
 
-  for ( vector < spec_slice_region > :: iterator regit = slice->regions(0).begin(); regit != slice->regions(0).end(); ++regit ) {
+  vector < spec_slice_region > regions = slice->regions ( 0 );
+
+  for ( vector < spec_slice_region > :: const_iterator regit = regions.begin(); regit != regions.end(); ++regit ) {
+
+    cerr << "DBG:  extract chunk " << region_index << " :" << endl;
+    cerr << "DBG:     n_spec = " << regit->n_spec << endl;
+    cerr << "DBG:     n_good_spec = " << regit->n_good_spec << endl;
+    cerr << "DBG:     first_spec = " << regit->first_spec << endl;
+    cerr << "DBG:     first_good_spec = " << regit->first_good_spec << endl;
+    cerr << "DBG:     overlap_spec = " << regit->overlap_spec << endl;
+    cerr << "DBG:     n_lambda = " << regit->n_lambda << endl;
+    cerr << "DBG:     n_good_lambda = " << regit->n_good_lambda << endl;
+    cerr << "DBG:     first_lambda = " << regit->first_lambda << endl;
+    cerr << "DBG:     first_good_lambda = " << regit->first_good_lambda << endl;
+    cerr << "DBG:     overlap_lambda = " << regit->overlap_lambda << endl;
 
     double tstart = wtime();
 
@@ -501,6 +522,14 @@ void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double cons
     tsubstop = wtime();
     double time_inverse = ( tsubstop - tsubstart );
 
+    /*
+    fitsfile * fp;
+    fits::create ( fp, "dbg_invC.fits" );
+    fits::img_append < double > ( fp, nbins, nbins );
+    fits::img_write ( fp, invC );
+    fits::close ( fp );
+    */
+
     // eigendecompose
 
     tsubstart = wtime();
@@ -509,6 +538,10 @@ void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double cons
     eig_vecs.resize ( nbins, nbins );
 
     eigen_decompose ( invC, eig_vals, eig_vecs );
+
+    for ( size_t i = 0; i < eig_vals.size(); ++i ) {
+      cerr << "EIGVAL " << i << " " << eig_vals[i] << endl;
+    }
 
     tsubstop = wtime();
     double time_eigen = ( tsubstop - tsubstart );

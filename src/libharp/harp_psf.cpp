@@ -72,7 +72,7 @@ void harp::psf::project ( std::map < size_t, std::set < size_t > > const & specl
 
   // resize output to correct dimensions
 
-  A.resize ( pixtotal, total );
+  A.resize ( pixtotal, total, false );
   A.clear();
 
   // iterate over spectral bins and populate the matrix elements
@@ -132,7 +132,7 @@ void harp::psf::project_transpose ( std::map < size_t, std::set < size_t > > con
 
   // resize output to correct dimensions
 
-  AT.resize ( total, pixtotal );
+  AT.resize ( total, pixtotal, false );
   AT.clear();
 
   // we use the estimated number of non-zeros per row times the number 

@@ -111,13 +111,7 @@ namespace harp {
 
       spec_slice_region const & full_region ( ) const { return full_region_; }
 
-      std::vector < spec_slice_region > regions ( size_t const & worker ) const {
-        if ( worker > nworker_ - 1 ) {
-          HARP_THROW( "worker rank is out of range" );
-        }
-        std::map < size_t, std::vector < spec_slice_region > > :: const_iterator rit = regions_.find ( worker );
-        return rit->second;
-      }
+      std::vector < spec_slice_region > regions ( size_t const & worker ) const;
       
     private :
 

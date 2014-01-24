@@ -19,7 +19,7 @@ void harp::test_spec_simspecter ( string const & datadir ) {
   cerr << "Testing simulated spec generation..." << endl;
 
   size_t nlambda = 50;
-  size_t nspec = 100;
+  size_t nspec = 25;
   size_t first_lambda = 8000.0;
   size_t last_lambda = 8001.1;
 

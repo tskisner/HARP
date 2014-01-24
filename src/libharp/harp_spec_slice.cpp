@@ -129,6 +129,8 @@ harp::spec_slice::spec_slice ( size_t nworker, size_t nspec, size_t nlambda, siz
 
   for ( size_t w = 0; w < nworker_; ++w ) {
 
+    cerr << "DBG:  worker " << w << " has " << worker_n[w] << " chunks" << endl;
+
     for ( size_t chunk = 0; chunk < worker_n[w]; ++chunk ) {
 
       size_t abs_chunk = worker_first[w] + chunk;
@@ -152,10 +154,38 @@ harp::spec_slice::spec_slice ( size_t nworker, size_t nspec, size_t nlambda, siz
 
       (regions_[ w ]).push_back ( reg );
 
+      cerr << "DBG:  worker " << w << " global chunk " << abs_chunk << " :" << endl;
+      cerr << "DBG:     n_spec = " << regions_[w][ regions_[w].size() - 1 ].n_spec << endl;
+      cerr << "DBG:     n_good_spec = " << regions_[w][ regions_[w].size() - 1 ].n_good_spec << endl;
+      cerr << "DBG:     first_spec = " << regions_[w][ regions_[w].size() - 1 ].first_spec << endl;
+      cerr << "DBG:     first_good_spec = " << regions_[w][ regions_[w].size() - 1 ].first_good_spec << endl;
+      cerr << "DBG:     overlap_spec = " << regions_[w][ regions_[w].size() - 1 ].overlap_spec << endl;
+      cerr << "DBG:     n_lambda = " << regions_[w][ regions_[w].size() - 1 ].n_lambda << endl;
+      cerr << "DBG:     n_good_lambda = " << regions_[w][ regions_[w].size() - 1 ].n_good_lambda << endl;
+      cerr << "DBG:     first_lambda = " << regions_[w][ regions_[w].size() - 1 ].first_lambda << endl;
+      cerr << "DBG:     first_good_lambda = " << regions_[w][ regions_[w].size() - 1 ].first_good_lambda << endl;
+      cerr << "DBG:     overlap_lambda = " << regions_[w][ regions_[w].size() - 1 ].overlap_lambda << endl;
+
     }
 
   }
 
+}
+
+
+std::vector < spec_slice_region > harp::spec_slice::regions ( size_t const & worker ) const {
+  
+  if ( worker > nworker_ - 1 ) {
+    HARP_THROW( "worker rank is out of range" );
+  }
+
+  std::map < size_t, std::vector < spec_slice_region > > :: const_iterator rit = regions_.find ( worker );
+
+  if ( rit == regions_.end() ) {
+    return std::vector < spec_slice_region > ();
+  } else {
+    return rit->second;
+  }
 }
 
 
