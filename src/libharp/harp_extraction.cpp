@@ -7,37 +7,29 @@ using namespace std;
 using namespace harp;
 
 
-void harp::sub_spec ( spec_slice_region const & full_region, bool use_good_full, spec_slice_region const & sub_region, bool use_good_sub, vector_double const & full_data, vector_double & sub_data ) {
+void harp::sub_spec ( spec_slice_region const & full_region, spec_slice_region const & sub_region, vector_double const & full_data, bool use_good_sub, vector_double & sub_data ) {
 
-  // verify that data input dimensions match the size of the full region.  Select whether we
-  // are using the full or good extent of the input and output slices.
+  // verify that data dimensions match the sizes of the regions.  Select whether we
+  // are using the full or good extent of the output. 
 
-  size_t nfull;
+  if ( (full_region.n_spec * full_region.n_lambda) != full_data.size() ) {
+    std::ostringstream o;
+    o << "input region total bins (" << (full_region.n_spec * full_region.n_lambda) << ") does not match input data size (" << full_data.size() << ")";
+    HARP_THROW( o.str().c_str() );
+  }
+
+  if ( (sub_region.n_spec * sub_region.n_lambda) != sub_data.size() ) {
+    std::ostringstream o;
+    o << "output region total bins (" << (sub_region.n_spec * sub_region.n_lambda) << ") does not match output data size (" << sub_data.size() << ")";
+    HARP_THROW( o.str().c_str() );
+  }
+
   size_t nsub;
-
-  size_t full_nlambda;
-  size_t full_nspec;
-  size_t full_firstspec;
-  size_t full_firstlambda;
 
   size_t sub_nlambda;
   size_t sub_nspec;
   size_t sub_firstspec;
   size_t sub_firstlambda;
-
-  if ( use_good_full ) {
-    nfull = full_region.n_good_spec * full_region.n_good_lambda;
-    full_nlambda = full_region.n_good_lambda;
-    full_nspec = full_region.n_good_spec;
-    full_firstspec = full_region.first_good_spec;
-    full_firstlambda = full_region.first_good_lambda;
-  } else {
-    nfull = full_region.n_spec * full_region.n_lambda;
-    full_nlambda = full_region.n_lambda;
-    full_nspec = full_region.n_spec;
-    full_firstspec = full_region.first_spec;
-    full_firstlambda = full_region.first_lambda;
-  }
 
   if ( use_good_sub ) {
     nsub = sub_region.n_good_spec * sub_region.n_good_lambda;
@@ -53,89 +45,123 @@ void harp::sub_spec ( spec_slice_region const & full_region, bool use_good_full,
     sub_firstlambda = sub_region.first_lambda;
   }
 
-  if ( nfull != full_data.size() ) {
+  if ( sub_firstspec < full_region.first_spec ) {
     std::ostringstream o;
-    o << "input region total bins (" << nfull << ") does not match input data size (" << full_data.size() << ")";
+    o << "sub region first spec (" << sub_firstspec << ") is before first spec of full region (" << full_region.first_spec << ")";
     HARP_THROW( o.str().c_str() );
   }
 
-  if ( sub_firstspec < full_firstspec ) {
+  if ( sub_firstspec + sub_nspec > full_region.first_spec + full_region.n_spec ) {
     std::ostringstream o;
-    o << "sub region first spec (" << sub_firstspec << ") is before first spec of full region (" << full_firstspec << ")";
+    o << "sub region last spec (" << (sub_firstspec + sub_nspec - 1) << ") is beyond last spec of full region (" << (full_region.first_spec + full_region.n_spec - 1) << ")";
     HARP_THROW( o.str().c_str() );
   }
 
-  if ( sub_firstspec + sub_nspec > full_firstspec + full_nspec ) {
+  if ( sub_firstlambda < full_region.first_lambda ) {
     std::ostringstream o;
-    o << "sub region last spec (" << (sub_firstspec + sub_nspec - 1) << ") is beyond last spec of full region (" << (full_firstspec + full_nspec - 1) << ")";
+    o << "sub region first lambda (" << sub_firstlambda << ") is before first lambda of full region (" << full_region.first_lambda << ")";
     HARP_THROW( o.str().c_str() );
   }
 
-  if ( sub_firstlambda < full_firstlambda ) {
+  if ( sub_firstlambda + sub_nlambda > full_region.first_lambda + full_region.n_lambda ) {
     std::ostringstream o;
-    o << "sub region first lambda (" << sub_firstlambda << ") is before first lambda of full region (" << full_firstlambda << ")";
+    o << "sub region last lambda (" << (sub_firstlambda + sub_nlambda - 1) << ") is beyond last lambda of full region (" << (full_region.first_lambda + full_region.n_lambda - 1) << ")";
     HARP_THROW( o.str().c_str() );
   }
 
-  if ( sub_firstlambda + sub_nlambda > full_firstlambda + full_nlambda ) {
-    std::ostringstream o;
-    o << "sub region last lambda (" << (sub_firstlambda + sub_nlambda - 1) << ") is beyond last lambda of full region (" << (full_firstlambda + full_nlambda - 1) << ")";
-    HARP_THROW( o.str().c_str() );
-  }
-
-  sub_data.resize ( nsub );
-  sub_data.clear();
+  /*
+  cerr << "DBG:  sub_spec" << endl;
+  cerr << "DBG:     n_spec = " << sub_region.n_spec << endl;
+  cerr << "DBG:     n_good_spec = " << sub_region.n_good_spec << endl;
+  cerr << "DBG:     first_spec = " << sub_region.first_spec << endl;
+  cerr << "DBG:     first_good_spec = " << sub_region.first_good_spec << endl;
+  cerr << "DBG:     overlap_spec = " << sub_region.overlap_spec << endl;
+  cerr << "DBG:     n_lambda = " << sub_region.n_lambda << endl;
+  cerr << "DBG:     n_good_lambda = " << sub_region.n_good_lambda << endl;
+  cerr << "DBG:     first_lambda = " << sub_region.first_lambda << endl;
+  cerr << "DBG:     first_good_lambda = " << sub_region.first_good_lambda << endl;
+  cerr << "DBG:     overlap_lambda = " << sub_region.overlap_lambda << endl;
+  cerr << "DBG:     select_nspec = " << sub_nspec << endl;
+  cerr << "DBG:     select_nlambda = " << sub_nlambda << endl;
+  cerr << "DBG:     select_firstspec = " << sub_firstspec << endl;
+  cerr << "DBG:     select_firstlambda = " << sub_firstlambda << endl;
+  */
 
   // Update output data with proper slices from the input
 
+  size_t spec_offset;
+  size_t lambda_offset;
+
+  size_t global_spec;
+  size_t global_lambda;
+
   size_t out_spec;
   size_t out_lambda;
+
   size_t in_spec;
   size_t in_lambda;
 
   for ( size_t i = 0; i < nsub; ++i ) {
-    out_spec = sub_firstspec + (size_t)( i / sub_nlambda );
-    out_lambda = sub_firstlambda + ( i - out_spec * sub_nlambda );
-    in_lambda = out_lambda - full_firstlambda;
-    in_spec = out_spec - full_firstspec;
-    sub_data[i] = full_data [ in_spec * full_nlambda + in_lambda ];
+
+    //cerr << "DBG:   sub element " << i << endl;
+
+    // compute the location in the sub region
+
+    spec_offset = (size_t)( i / sub_nlambda );
+    lambda_offset = i - ( spec_offset * sub_nlambda );
+
+    //cerr << "DBG:     spec_offset = " << spec_offset << " lambda_offset = " << lambda_offset << endl;
+
+    out_spec = (sub_firstspec - sub_region.first_spec) + spec_offset;
+    out_lambda = (sub_firstlambda - sub_region.first_lambda) + lambda_offset;
+
+    //cerr << "DBG:     out_spec = " << out_spec << " out_lambda = " << out_lambda << endl;
+
+    global_spec = sub_firstspec + spec_offset;
+    global_lambda = sub_firstlambda + lambda_offset;
+
+    //cerr << "DBG:     global_spec = " << global_spec << " global_lambda = " << global_lambda << endl;
+
+    // compute the location in the full region
+
+    in_lambda = global_lambda - full_region.first_lambda;
+    in_spec = global_spec - full_region.first_spec;
+
+    //cerr << "DBG:     in_spec = " << in_spec << " in_lambda = " << in_lambda << endl;
+
+    // copy
+
+    sub_data[ out_spec * sub_region.n_lambda + out_lambda ] = full_data [ in_spec * full_region.n_lambda + in_lambda ];
+
   }
 
   return;
 }
 
 
-void harp::accum_spec ( spec_slice_region const & sub_region, bool use_good_sub, spec_slice_region const & full_region, bool use_good_full, vector_double const & sub_data, vector_double & full_data ) {
+void harp::accum_spec ( spec_slice_region const & sub_region, spec_slice_region const & full_region, vector_double const & sub_data, bool use_good_sub, vector_double & full_data ) {
 
-  // verify that data input dimensions match the size of the sub region.  Select whether we
-  // are using the full or good extent of the input and output slices.
+  // verify that data dimensions match the sizes of the regions.  Select whether we
+  // are using the full or good extent of the input. 
 
-  size_t nfull;
+  if ( (full_region.n_spec * full_region.n_lambda) != full_data.size() ) {
+    std::ostringstream o;
+    o << "output region total bins (" << (full_region.n_spec * full_region.n_lambda) << ") does not match output data size (" << full_data.size() << ")";
+    HARP_THROW( o.str().c_str() );
+  }
+
+  if ( (sub_region.n_spec * sub_region.n_lambda) != sub_data.size() ) {
+    std::ostringstream o;
+    o << "input region total bins (" << (sub_region.n_spec * sub_region.n_lambda) << ") does not match input data size (" << sub_data.size() << ")";
+    HARP_THROW( o.str().c_str() );
+  }
+
   size_t nsub;
-
-  size_t full_nlambda;
-  size_t full_nspec;
-  size_t full_firstspec;
-  size_t full_firstlambda;
 
   size_t sub_nlambda;
   size_t sub_nspec;
   size_t sub_firstspec;
   size_t sub_firstlambda;
-
-  if ( use_good_full ) {
-    nfull = full_region.n_good_spec * full_region.n_good_lambda;
-    full_nlambda = full_region.n_good_lambda;
-    full_nspec = full_region.n_good_spec;
-    full_firstspec = full_region.first_good_spec;
-    full_firstlambda = full_region.first_good_lambda;
-  } else {
-    nfull = full_region.n_spec * full_region.n_lambda;
-    full_nlambda = full_region.n_lambda;
-    full_nspec = full_region.n_spec;
-    full_firstspec = full_region.first_spec;
-    full_firstlambda = full_region.first_lambda;
-  }
 
   if ( use_good_sub ) {
     nsub = sub_region.n_good_spec * sub_region.n_good_lambda;
@@ -151,55 +177,66 @@ void harp::accum_spec ( spec_slice_region const & sub_region, bool use_good_sub,
     sub_firstlambda = sub_region.first_lambda;
   }
 
-  if ( nsub != sub_data.size() ) {
+  if ( sub_firstspec < full_region.first_spec ) {
     std::ostringstream o;
-    o << "input region total bins (" << nsub << ") does not match input data size (" << sub_data.size() << ")";
+    o << "sub region first spec (" << sub_firstspec << ") is before first spec of full region (" << full_region.first_spec << ")";
     HARP_THROW( o.str().c_str() );
   }
 
-  if ( nfull != full_data.size() ) {
+  if ( sub_firstspec + sub_nspec > full_region.first_spec + full_region.n_spec ) {
     std::ostringstream o;
-    o << "output region total bins (" << nfull << ") does not match output data size (" << full_data.size() << ")";
+    o << "sub region last spec (" << (sub_firstspec + sub_nspec - 1) << ") is beyond last spec of full region (" << (full_region.first_spec + full_region.n_spec - 1) << ")";
     HARP_THROW( o.str().c_str() );
   }
 
-  if ( sub_firstspec < full_firstspec ) {
+  if ( sub_firstlambda < full_region.first_lambda ) {
     std::ostringstream o;
-    o << "sub region first spec (" << sub_firstspec << ") is before first spec of full region (" << full_firstspec << ")";
+    o << "sub region first lambda (" << sub_firstlambda << ") is before first lambda of full region (" << full_region.first_lambda << ")";
     HARP_THROW( o.str().c_str() );
   }
 
-  if ( sub_firstspec + sub_nspec > full_firstspec + full_nspec ) {
+  if ( sub_firstlambda + sub_nlambda > full_region.first_lambda + full_region.n_lambda ) {
     std::ostringstream o;
-    o << "sub region last spec (" << (sub_firstspec + sub_nspec - 1) << ") is beyond last spec of full region (" << (full_firstspec + full_nspec - 1) << ")";
-    HARP_THROW( o.str().c_str() );
-  }
-
-  if ( sub_firstlambda < full_firstlambda ) {
-    std::ostringstream o;
-    o << "sub region first lambda (" << sub_firstlambda << ") is before first lambda of full region (" << full_firstlambda << ")";
-    HARP_THROW( o.str().c_str() );
-  }
-
-  if ( sub_firstlambda + sub_nlambda > full_firstlambda + full_nlambda ) {
-    std::ostringstream o;
-    o << "sub region last lambda (" << (sub_firstlambda + sub_nlambda - 1) << ") is beyond last lambda of full region (" << (full_firstlambda + full_nlambda - 1) << ")";
+    o << "sub region last lambda (" << (sub_firstlambda + sub_nlambda - 1) << ") is beyond last lambda of full region (" << (full_region.first_lambda + full_region.n_lambda - 1) << ")";
     HARP_THROW( o.str().c_str() );
   }
 
   // Update output data with proper slices from the input
 
+  size_t spec_offset;
+  size_t lambda_offset;
+
+  size_t global_spec;
+  size_t global_lambda;
+
   size_t out_spec;
   size_t out_lambda;
+
   size_t in_spec;
   size_t in_lambda;
 
   for ( size_t i = 0; i < nsub; ++i ) {
-    in_spec = sub_firstspec + (size_t)( i / sub_nlambda );
-    in_lambda = sub_firstlambda + ( i - out_spec * sub_nlambda );
-    out_lambda = in_lambda - full_firstlambda;
-    out_spec = in_spec - full_firstspec;
-    full_data [ out_spec * full_nlambda + out_lambda ] += sub_data[i];
+
+    // compute the location in the sub region
+
+    spec_offset = (size_t)( i / sub_nlambda );
+    lambda_offset = i - ( spec_offset * sub_nlambda );
+
+    in_spec = (sub_firstspec - sub_region.first_spec) + spec_offset;
+    in_lambda = (sub_firstlambda - sub_region.first_lambda) + lambda_offset;
+
+    global_spec = sub_firstspec + spec_offset;
+    global_lambda = sub_firstlambda + lambda_offset;
+
+    // compute the location in the full region
+
+    out_lambda = global_lambda - full_region.first_lambda;
+    out_spec = global_spec - full_region.first_spec;
+
+    // copy
+
+    full_data [ out_spec * full_region.n_lambda + out_lambda ] += sub_data[ in_spec * sub_region.n_lambda + in_lambda ];
+
   }
 
   return;
@@ -297,7 +334,7 @@ void harp::inverse_covariance ( matrix_double_sparse const & AT, vector_double c
 
   for ( left_rowit = AT.begin1(); left_rowit != AT.end1(); ++left_rowit ) {
 
-    cerr << "DBG: building invC row " << left_rowit.index1() << endl;
+    //cerr << "DBG: building invC row " << left_rowit.index1() << endl;
 
     for ( right_rowit = AT.begin1(); right_rowit != AT.end1(); ++right_rowit ) {
 
@@ -459,6 +496,7 @@ void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double cons
 
   for ( vector < spec_slice_region > :: const_iterator regit = regions.begin(); regit != regions.end(); ++regit ) {
 
+    /*
     cerr << "DBG:  extract chunk " << region_index << " :" << endl;
     cerr << "DBG:     n_spec = " << regit->n_spec << endl;
     cerr << "DBG:     n_good_spec = " << regit->n_good_spec << endl;
@@ -470,6 +508,7 @@ void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double cons
     cerr << "DBG:     first_lambda = " << regit->first_lambda << endl;
     cerr << "DBG:     first_good_lambda = " << regit->first_good_lambda << endl;
     cerr << "DBG:     overlap_lambda = " << regit->overlap_lambda << endl;
+    */
 
     double tstart = wtime();
 
@@ -484,7 +523,7 @@ void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double cons
       slice_truth.resize ( nbins );
       slice_Rtruth.resize ( nbins );
 
-      sub_spec ( full_region, false, (*regit), false, truth, slice_truth );
+      sub_spec ( full_region, (*regit), truth, false, slice_truth );
     }
     slice_Rf.resize ( nbins );
     slice_f.resize ( nbins );
@@ -539,9 +578,11 @@ void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double cons
 
     eigen_decompose ( invC, eig_vals, eig_vecs );
 
+    /*
     for ( size_t i = 0; i < eig_vals.size(); ++i ) {
       cerr << "EIGVAL " << i << " " << eig_vals[i] << endl;
     }
+    */
 
     tsubstop = wtime();
     double time_eigen = ( tsubstop - tsubstart );
@@ -560,7 +601,7 @@ void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double cons
 
       boost::numeric::bindings::blas::gemv ( 1.0, res, slice_truth, 0.0, slice_Rtruth );
 
-      accum_spec ( (*regit), true, full_region, false, slice_Rtruth, Rtruth );
+      accum_spec ( (*regit), full_region, slice_Rtruth, true, Rtruth );
 
     } else {
 
@@ -594,9 +635,9 @@ void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double cons
 
     // accumulate results to global solution
 
-    accum_spec ( (*regit), true, full_region, false, slice_Rf, Rf );
-    accum_spec ( (*regit), true, full_region, false, slice_f, f );
-    accum_spec ( (*regit), true, full_region, false, slice_err, err );
+    accum_spec ( (*regit), full_region, slice_Rf, true, Rf );
+    accum_spec ( (*regit), full_region, slice_f, true, f );
+    accum_spec ( (*regit), full_region, slice_err, true, err );
 
     // accumulate timing for this region
 

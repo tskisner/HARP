@@ -40,7 +40,7 @@ void harp::eigen_compose ( eigen_op op, vector_double const & D, matrix_double c
 
   out.resize ( W.size1(), W.size2() );
 
-  vector_double scaled ( D.size() );
+  vector_double scaled ( D );
 
   // scale eigenvalues and apply threshold
 
@@ -96,7 +96,7 @@ void harp::eigen_compose ( eigen_op op, vector_double const & D, matrix_double c
 
   // compute out = ( W * op(D) ) * W^T
 
-  boost::numeric::bindings::blas::gemm ( 1.0, temp, boost::numeric::ublas::trans ( W ), 0.0, out );
+  boost::numeric::bindings::blas::gemm ( 1.0, temp, boost::numeric::bindings::trans ( W ), 0.0, out );
 
   return;
 }

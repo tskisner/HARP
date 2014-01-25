@@ -12,7 +12,7 @@ using namespace harp;
 
 void harp::test_specslice ( string const & datadir ) {
 
-  cerr << "Testing spec slicing..." << endl;
+  cout << "Testing spec slicing..." << endl;
 
   string specfile = datadir + "/spec_sim.fits.out";
 
@@ -56,18 +56,47 @@ void harp::test_specslice ( string const & datadir ) {
     exit(1);
   }
 
-  for ( size_t i = 0; i < nchunk; ++i ) {
-    size_t lambda_rank = (size_t)( i / nchunk_spec );
-    size_t spec_rank = i - lambda_rank * nchunk_spec;
+  matrix_float coverage ( nspec, nlambda );
+  coverage.clear();
 
+  for ( size_t p = 0; p < procs; ++p ) {
+    std::vector < spec_slice_region > procslice = slice->regions ( p );
+
+    for ( std::vector < spec_slice_region > :: const_iterator sit = procslice.begin(); sit != procslice.end(); ++sit ) {
+
+      for ( size_t i = 0; i < sit->n_good_spec; ++i ) {
+
+        for ( size_t j = 0; j < sit->n_good_lambda; ++j ) {
+
+          size_t global_spec = sit->first_good_spec + i;
+          size_t global_lambda = sit->first_good_lambda + j;
+
+          coverage ( global_spec, global_lambda ) += 1.0;
+
+        }
+
+      }
+
+    }
     
-
-
-
   }
 
+  // check that every spectral point is covered once
 
-  cerr << "  (PASSED)" << endl;
+  for ( size_t i = 0; i < nspec; ++i ) {
+    for ( size_t j = 0; j < nlambda; ++j ) {
+
+      if ( ( coverage(i,j) < 0.5 ) || ( coverage(i,j) > 1.5 ) ) {
+        ostringstream o;
+        o << "FAIL:  spectrum " << i << ", lambda " << j << " was assigned to " << coverage(i,j) << " workers";
+        cerr << o.str() << endl;
+        exit(1);
+      }
+
+    }
+  }
+
+  cout << "  (PASSED)" << endl;
      
   return;
 }

@@ -20,7 +20,7 @@ namespace harp {
 
   void test_serialize ( std::string const & datadir );
 
-  void test_lapack ( std::string const & datadir );
+  void test_linalg ( std::string const & datadir );
 
   void test_spec_simspecter ( std::string const & datadir );
 
@@ -31,6 +31,8 @@ namespace harp {
   void test_image_simfits ( std::string const & datadir );
 
   void test_specslice ( std::string const & datadir );
+
+  void test_extract ( std::string const & datadir );
 
 }
 

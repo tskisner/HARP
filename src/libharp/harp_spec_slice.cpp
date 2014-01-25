@@ -129,7 +129,7 @@ harp::spec_slice::spec_slice ( size_t nworker, size_t nspec, size_t nlambda, siz
 
   for ( size_t w = 0; w < nworker_; ++w ) {
 
-    cerr << "DBG:  worker " << w << " has " << worker_n[w] << " chunks" << endl;
+    //cerr << "DBG:  worker " << w << " has " << worker_n[w] << " chunks" << endl;
 
     for ( size_t chunk = 0; chunk < worker_n[w]; ++chunk ) {
 
@@ -154,6 +154,7 @@ harp::spec_slice::spec_slice ( size_t nworker, size_t nspec, size_t nlambda, siz
 
       (regions_[ w ]).push_back ( reg );
 
+      /*
       cerr << "DBG:  worker " << w << " global chunk " << abs_chunk << " :" << endl;
       cerr << "DBG:     n_spec = " << regions_[w][ regions_[w].size() - 1 ].n_spec << endl;
       cerr << "DBG:     n_good_spec = " << regions_[w][ regions_[w].size() - 1 ].n_good_spec << endl;
@@ -165,6 +166,7 @@ harp::spec_slice::spec_slice ( size_t nworker, size_t nspec, size_t nlambda, siz
       cerr << "DBG:     first_lambda = " << regions_[w][ regions_[w].size() - 1 ].first_lambda << endl;
       cerr << "DBG:     first_good_lambda = " << regions_[w][ regions_[w].size() - 1 ].first_good_lambda << endl;
       cerr << "DBG:     overlap_lambda = " << regions_[w][ regions_[w].size() - 1 ].overlap_lambda << endl;
+      */
 
     }
 

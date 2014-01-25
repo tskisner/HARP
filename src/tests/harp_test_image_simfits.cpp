@@ -20,7 +20,7 @@ void harp::test_image_simfits ( string const & datadir ) {
   string psfpath = datadir + "/psf_gauss_sim.fits.out";
   string imgpath = datadir + "/image_sim.fits.out";
 
-  cerr << "Testing simulated image..." << endl;
+  cout << "Testing simulated image..." << endl;
 
   // instantiate the spec
 
@@ -113,10 +113,10 @@ void harp::test_image_simfits ( string const & datadir ) {
   img->values ( img_data );
   img->inv_variance ( img_inv );
 
-  cerr << "  (PASSED)" << endl;
+  cout << "  (PASSED)" << endl;
 
 
-  cerr << "Testing FITS image..." << endl;
+  cout << "Testing FITS image..." << endl;
 
   img_props.clear();
   img_props.put ( "format", "fits" );
@@ -172,7 +172,7 @@ void harp::test_image_simfits ( string const & datadir ) {
   checkimg->values ( check_img_data );
   checkimg->inv_variance ( check_img_inv );
 
-  cerr << "  (PASSED)" << endl;
+  cout << "  (PASSED)" << endl;
 
   return;
 }

@@ -73,11 +73,6 @@ int main ( int argc, char *argv[] ) {
     cerr << desc << endl;
     return 0;
   }
-
-  if ( 2 * lambda_overlap > lambda_width ) {
-    cerr << prefix << "wavelength overlap is more than half the wavelength band!" << endl;
-    exit(1);
-  }
   
   if ( vm.count( "quiet" ) ) {
     quiet = true;
@@ -377,8 +372,12 @@ int main ( int argc, char *argv[] ) {
     double chisq_reduced = 0.0;
 
     for ( size_t i = 0; i < psf_nbins; ++i ) {
-      data_chisq[i] = ( data_Rf[i] - data_Rtruth[i] ) / data_err[i];
-      data_chisq[i] *= data_chisq[i];
+      if ( data_err[i] > std::numeric_limits < double > :: epsilon() ) {
+        data_chisq[i] = ( data_Rf[i] - data_Rtruth[i] ) / data_err[i];
+        data_chisq[i] *= data_chisq[i];
+      } else {
+        data_chisq[i] = 0.0;
+      }
       chisq_reduced += data_chisq[i];
     }
 
@@ -417,6 +416,7 @@ int main ( int argc, char *argv[] ) {
     tstart = wtime();
 
     solution_props.clear();
+    solution_props.put ( "format", "fits" );
     solution_props.put ( "rows", imgrows );
     solution_props.put ( "cols", imgcols );
 
@@ -465,8 +465,12 @@ int main ( int argc, char *argv[] ) {
       double chisq_reduced = 0.0;
 
       for ( size_t i = 0; i < npix; ++i ) {
-        data_chisq[i] = ( f_projected[i] - truth_projected[i] ) / invnoise[i];
-        data_chisq[i] *= data_chisq[i];
+        if ( invnoise[i] > std::numeric_limits < double > :: epsilon() ) {
+          data_chisq[i] = ( f_projected[i] - truth_projected[i] ) * sqrt( invnoise[i] );
+          data_chisq[i] *= data_chisq[i];
+        } else {
+          data_chisq[i] = 0.0;
+        }
         chisq_reduced += data_chisq[i];
       }
 

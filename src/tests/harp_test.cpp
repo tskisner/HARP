@@ -20,7 +20,7 @@ int main ( int argc, char *argv[] ) {
 
   test_serialize ( datadir );
 
-  test_lapack ( datadir );
+  test_linalg ( datadir );
 
   test_spec_simspecter ( datadir );
 
@@ -31,6 +31,8 @@ int main ( int argc, char *argv[] ) {
   test_image_simfits ( datadir );
 
   test_specslice ( datadir );
+
+  test_extract ( datadir );
 
   return 0;
 }

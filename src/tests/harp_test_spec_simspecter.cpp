@@ -16,12 +16,12 @@ using namespace harp;
 
 void harp::test_spec_simspecter ( string const & datadir ) {
 
-  cerr << "Testing simulated spec generation..." << endl;
+  cout << "Testing simulated spec generation..." << endl;
 
   size_t nlambda = 50;
   size_t nspec = 25;
-  size_t first_lambda = 8000.0;
-  size_t last_lambda = 8001.1;
+  double first_lambda = 8000.0;
+  double last_lambda = 8001.1;
 
   size_t nbins = nspec * nlambda;
 
@@ -85,12 +85,12 @@ void harp::test_spec_simspecter ( string const & datadir ) {
 
   outspec.write ( outfile, data, lambda, target_list );
 
-  cerr << "  (PASSED)" << endl;
+  cout << "  (PASSED)" << endl;
 
 
   // now read it back in and check values
 
-  cerr << "Testing spec_specter operations..." << endl;
+  cout << "Testing spec_specter operations..." << endl;
 
   spec_props.clear();
   spec_props.put ( "format", "specter" );
@@ -136,7 +136,7 @@ void harp::test_spec_simspecter ( string const & datadir ) {
   }
 
   for ( size_t i = 0; i < lambda.size(); ++i ) {
-    if ( fabs ( check_lambda[i] - lambda[i] ) / lambda[i] > 1.0e-5 ) {
+    if ( fabs ( ( check_lambda[i] - lambda[i] ) / lambda[i] ) > 1.0e-5 ) {
       cerr << "FAIL:  specter written lambda element " << i << " does not match original value" << endl;
       exit(1);
     }
@@ -147,14 +147,14 @@ void harp::test_spec_simspecter ( string const & datadir ) {
       double orig = data[ i * nlambda + j ];
       double check = check_data[ i * nlambda + j ];
 
-      if ( fabs ( check - orig ) / orig > 1.0e-5 ) {
+      if ( fabs ( ( check - orig ) / orig ) > 1.0e-5 ) {
         cerr << "FAIL:  specter written spec " << i << ", bin " << j << " does not match original value" << endl;
         exit(1);
       }
     }
   }
 
-  cerr << "  (PASSED)" << endl;
+  cout << "  (PASSED)" << endl;
      
   return;
 }

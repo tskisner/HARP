@@ -7,6 +7,69 @@ Installation
 HARP uses an autotools-based build system.  If you are installing from a distribution tarball, then you do not need to actually have autotools installed.  If you are installing from a git checkout, then you need to have recent versions of automake, autoconf, and libtool installed.
 
 
+The table below shows the dependencies that TOAST requires and what optional features are enabled by each.  The minimal dependencies are BOOST (full installation), LAPACK, CFITSIO, and the MOAT library.  Additional dependencies detected at configure time will enable optional features.
+
++----------------------+------------------------+------------------------+------------------------+------------------------+------------------------+------------------------+------------------------+------------------------+
+|                      | LAPACK / BOOST         | Python / Numpy         | wcslib                 | MPI / boost::mpi       | Elemental              | HEALPix                | GetData                | HDF5                   |
+|                      | MOAT / CFITSIO         |                        |                        |                        |                        |                        |                        |                        |
++======================+========================+========================+========================+========================+========================+========================+========================+========================+
+| Serial Map-making    | .. image:: yesmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: noxmark.png | 
+| Tools                |                        |                        |                        |                        |                        |                        |                        |                        |
++----------------------+------------------------+------------------------+------------------------+------------------------+------------------------+------------------------+------------------------+------------------------+
+| Python Bindings      | .. image:: yesmark.png | .. image:: yesmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: noxmark.png |
++----------------------+------------------------+------------------------+------------------------+------------------------+------------------------+------------------------+------------------------+------------------------+
+| WCS Projections      | .. image:: yesmark.png | .. image:: noxmark.png | .. image:: yesmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: noxmark.png |
++----------------------+------------------------+------------------------+------------------------+------------------------+------------------------+------------------------+------------------------+------------------------+
+| MPI Map-making       | .. image:: yesmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: yesmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: noxmark.png |
+| Tools                |                        |                        |                        |                        |                        |                        |                        |                        |
++----------------------+------------------------+------------------------+------------------------+------------------------+------------------------+------------------------+------------------------+------------------------+
+| MPI Pixel            | .. image:: yesmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: yesmark.png | .. image:: yesmark.png | .. image:: yesmark.png | .. image:: noxmark.png | .. image:: noxmark.png |
+| Noise Tools          |                        |                        |                        |                        |                        |                        |                        |                        |
++----------------------+------------------------+------------------------+------------------------+------------------------+------------------------+------------------------+------------------------+------------------------+
+| Internal Dirfile     | .. image:: yesmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: yesmark.png | .. image:: noxmark.png |
+| Formats              |                        |                        |                        |                        |                        |                        |                        |                        |
++----------------------+------------------------+------------------------+------------------------+------------------------+------------------------+------------------------+------------------------+------------------------+
+| Planck Data          | .. image:: yesmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: noxmark.png |
+| Formats              |                        |                        |                        |                        |                        |                        |                        |                        |
++----------------------+------------------------+------------------------+------------------------+------------------------+------------------------+------------------------+------------------------+------------------------+
+| PolarBear Data       | .. image:: yesmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: yesmark.png |
+| Formats              |                        |                        |                        |                        |                        |                        |                        |                        |
++----------------------+------------------------+------------------------+------------------------+------------------------+------------------------+------------------------+------------------------+------------------------+
+| Blast Data           | .. image:: yesmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: yesmark.png | .. image:: noxmark.png |
+| Formats              |                        |                        |                        |                        |                        |                        |                        |                        |
++----------------------+------------------------+------------------------+------------------------+------------------------+------------------------+------------------------+------------------------+------------------------+
+| EBEX Data            | .. image:: yesmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: noxmark.png | .. image:: yesmark.png | .. image:: noxmark.png |
+| Formats              |                        |                        |                        |                        |                        |                        |                        |                        |
++----------------------+------------------------+------------------------+------------------------+------------------------+------------------------+------------------------+------------------------+------------------------+
+
+Additionally, in order to actually select data for the various experiment data formats, usually Python is required to enable data selection classes and interfaces written in Python.  The requirements above represent the run-time dependencies to load a previously dumped run file and load it into the library.  Additionally, the Fortran 2003 language bindings for TOAST require a compatible Fortran compiler.
+
+
+.. _install_ubuntu:
+
+Installation on Ubuntu
+--------------------------
+
+
+
+
+.. _install_osx:
+
+Installation on OS X
+--------------------------
+
+Apple no longer ships a Fortran compiler, so these instructions assume you are using clang and clang++ with Fortran bindings disabled.  The easiest way to install TOAST dependencies is by using Macports ()
+
+
+
+
+
+Installation
+==================================
+
+HARP uses an autotools-based build system.  If you are installing from a distribution tarball, then you do not need to actually have autotools installed.  If you are installing from a git checkout, then you need to have recent versions of automake, autoconf, and libtool installed.
+
+
 Dependencies
 ----------------
 

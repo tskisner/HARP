@@ -8,9 +8,9 @@
 
 namespace harp {
 
-  void sub_spec ( spec_slice_region const & full_region, bool use_good_full, spec_slice_region const & sub_region, bool use_good_sub, vector_double const & full_data, vector_double & sub_data );
+  void sub_spec ( spec_slice_region const & full_region, spec_slice_region const & sub_region, vector_double const & full_data, bool use_good_sub, vector_double & sub_data );
 
-  void accum_spec ( spec_slice_region const & sub_region, bool use_good_sub, spec_slice_region const & full_region, bool use_good_full, vector_double const & sub_data, vector_double & full_data );
+  void accum_spec ( spec_slice_region const & sub_region, spec_slice_region const & full_region, vector_double const & sub_data, bool use_good_sub, vector_double & full_data );
 
   void spec_project ( matrix_double_sparse const & AT, vector_double const & spectra, vector_double & img );
 

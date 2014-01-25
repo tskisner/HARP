@@ -61,7 +61,7 @@ BOOST_CLASS_EXPORT(harp::data_one)
 
 void harp::test_serialize ( string const & datadir ) {
 
-  cerr << "Testing general serialization..." << endl;
+  cout << "Testing general serialization..." << endl;
 
   // first, test simple serialization of a class.
 
@@ -138,7 +138,7 @@ void harp::test_serialize ( string const & datadir ) {
   }
   
 
-  cerr << "  (PASSED)" << endl;
+  cout << "  (PASSED)" << endl;
 
   return;
 }

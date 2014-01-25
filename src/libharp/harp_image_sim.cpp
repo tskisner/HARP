@@ -63,16 +63,20 @@ harp::image_sim::image_sim ( boost::property_tree::ptree const & props ) : image
 
   // get design matrix from PSF and project
 
-  matrix_double A;
+  matrix_double_sparse AT;
 
-  child_psf->project ( A );
+  child_psf->project_transpose ( AT );
 
   // multiply to get signal data
 
   signal_.resize ( npix );
 
-  //boost::numeric::ublas::axpy_prod ( spec_data, A, signal_, true );
-  boost::numeric::bindings::blas::gemv ( 1.0, A, spec_data, 0.0, signal_ );
+  spec_project ( AT, spec_data, signal_ );
+
+  // free up memory
+
+  AT.clear();
+  AT.resize ( 0, 0, false );
 
   // construct noise
 

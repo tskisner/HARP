@@ -18,7 +18,7 @@ void harp::test_psf_gauss_sim ( string const & datadir ) {
   string specpath = datadir + "/spec_sim.fits.out";
   string filepath = datadir + "/psf_gauss_sim.fits.out";
 
-  cerr << "Testing simulated elliptical gaussian PSF..." << endl;
+  cout << "Testing simulated elliptical gaussian PSF..." << endl;
 
   // instantiate a spec to check the values against
 
@@ -95,7 +95,7 @@ void harp::test_psf_gauss_sim ( string const & datadir ) {
   checkspec->targets ( check_target_list );
 
   for ( size_t i = 0; i < gauss_lambda.size(); ++i ) {
-    if ( fabs ( check_lambda[i] - gauss_lambda[i] ) / check_lambda[i] > 1.0e-5 ) {
+    if ( fabs ( ( check_lambda[i] - gauss_lambda[i] ) / check_lambda[i] ) > 1.0e-5 ) {
       cerr << "FAIL:  PSF lambda element " << i << " does not match original value" << endl;
       exit(1);
     }
@@ -105,7 +105,7 @@ void harp::test_psf_gauss_sim ( string const & datadir ) {
 
   gauss_psf.write ( filepath );
 
-  cerr << "  (PASSED)" << endl;
+  cout << "  (PASSED)" << endl;
 
   return;
 }
