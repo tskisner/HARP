@@ -15,6 +15,8 @@ LIBS="@LIBS@"
 MPICXX="@MPICXX@"
 MPILIBS="@MPILIBS@"
 PYPATH="@PYPATH@"
+PLUGCOMP="@PLUGCOMP@"
+PLUGLINK="@PLUGLINK@"
 
 # Print out usage information
 
@@ -32,6 +34,8 @@ help() {
   echo "        [ --mpilibs (print MPI linking flags) ]"
   echo "        [ --mpilink (print full MPI link command) ]"
   echo "        [ --python (print python module location for PYTHONPATH) ]"
+  echo "        [ --plugflags (print external plugin compiling flags) ]"
+  echo "        [ --pluglink (print external plugin linking commands) ]"
   echo " "
   exit $1
 }
@@ -55,6 +59,8 @@ DOMPICXX=no
 DOMPILIBS=no
 DOMPILINK=no
 DOPYTHON=no
+DOPLUGCOMP=no
+DOPLUGLINK=no
 
 while [ $# -gt 0 ]; do
   case $1 in
@@ -90,6 +96,12 @@ while [ $# -gt 0 ]; do
       ;;
     --python)
       DOPYTHON=yes
+      ;;
+    --plugflags)
+      DOPLUGCOMP=yes
+      ;;
+    --pluglink)
+      DOPLUGLINK=yes
       ;;
     *) 
       help 1
@@ -130,6 +142,14 @@ fi
 
 if [ $DOCPPFLAGS = yes ]; then
   OUT="${OUT} ${CPPFLAGS}"
+fi
+
+if [ $DOPLUGCOMP = yes ]; then
+  OUT="${OUT} ${PLUGCOMP}"
+fi
+
+if [ $DOPLUGLINK = yes ]; then
+  OUT="${OUT} ${PLUGLINK}"
 fi
 
 if [ $DOLDFLAGS = yes ]; then

@@ -1,8 +1,15 @@
 CXX = @MPICXX@
 
-AM_CPPFLAGS = -I$(top_srcdir)/src/libharp/math $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS) $(OPENMP_CXXFLAGS) -I$(top_srcdir)/src/libharp-mpi/math $(ELEMENTAL_CPPFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir)/src/libharp/math $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS) -I$(top_srcdir)/src/libharp-mpi/math $(ELEMENTAL_CPPFLAGS)
 AM_LDFLAGS = 
-AM_LIBS =
+AM_LIBS = $(OPENMP_CXXFLAGS)
+
+AM_CXXFLAGS = $(OPENMP_CXXFLAGS)
+
+if ENABLE_AM_DEBUG
+else
+  AM_CXXFLAGS += -DNDEBUG
+endif
 
 EXTRA_DIST =
 

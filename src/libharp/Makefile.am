@@ -3,7 +3,14 @@ SUBDIRS = math
 
 AM_CPPFLAGS = -I$(top_srcdir)/src/libharp/math -I$(top_srcdir)/src/libharp $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS) $(OPENMP_CXXFLAGS)
 AM_LDFLAGS =
-AM_LIBS =
+AM_LIBS = $(OPENMP_CXXFLAGS)
+
+AM_CXXFLAGS = $(OPENMP_CXXFLAGS)
+
+if ENABLE_AM_DEBUG
+else
+  AM_CXXFLAGS += -DNDEBUG
+endif
 
 noinst_HEADERS = harp_internal.hpp harp_serialization.hpp
 include_HEADERS = harp.hpp
@@ -20,7 +27,9 @@ harpconfig : harpconfig.in
 	"-lharp $(LDFLAGS) $(CFITSIO) $(BOOST_SERIALIZATION_LDFLAGS) $(BOOST_PROGRAM_OPTIONS_LDFLAGS) $(BOOST_SERIALIZATION_LIBS) $(BOOST_PROGRAM_OPTIONS_LIBS) $(LAPACK_LIBS) $(BLAS_LIBS) $(FCLIBS) $(OPENMP_CXXFLAGS) $(LIBS) -lm" \
 	"$(MPICXX)" \
 	"-lharp-mpi" \
-	"$(pyexecdir)"
+	"$(pyexecdir)" \
+	"$(HARP_PLUGIN_COMPILE)" \
+	"$(HARP_PLUGIN_LINK)"
 
 lib_LTLIBRARIES = libharp.la
 

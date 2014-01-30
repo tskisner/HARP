@@ -19,6 +19,32 @@ dnl +-------------------------
 HARP_LT_VERSION="0:0:0"
 AC_SUBST(HARP_LT_VERSION)
 dnl +----------------------------------------
+dnl | Check OS.  Basically on Darwin we have to jump through hoops
+dnl | to build loadable modules...
+dnl +----------------------------------------
+AC_CANONICAL_HOST
+HARP_PLUGIN_COMPILE=""
+HARP_PLUGIN_LINK=""
+case $host_os in
+  darwin* )
+    HARP_PLUGIN_COMPILE="-bundle"
+    HARP_PLUGIN_LINK="-flat_namespace -undefined suppress"
+    ;;
+  linux*)
+    HARP_PLUGIN_COMPILE="-fPIC"
+    HARP_PLUGIN_LINK="-shared"
+    ;;
+  *BSD*)
+    HARP_PLUGIN_COMPILE="-fPIC"
+    HARP_PLUGIN_LINK="-shared"
+    ;;
+  *)
+    HARP_PLUGIN_COMPILE="-fPIC"
+    HARP_PLUGIN_LINK="-shared"
+    AC_MSG_WARN([Your platform was not detected- using Linux defaults for Plugin compilation])
+    ;;
+esac
+dnl +----------------------------------------
 dnl | Compiler features
 dnl +----------------------------------------
 dnl Set default optimization to '-O3' instead of the default '-g -O2'
@@ -28,19 +54,8 @@ fi
 AC_CANONICAL_HOST
 AC_PROG_INSTALL
 AC_PROG_LIBTOOL
-dnl +-------------------------
-dnl | Option to perform full static linking of executables, not just
-dnl | building of static libraries.
-dnl +-------------------------
-harp_static=no
-AC_ARG_ENABLE([all-static], [AC_HELP_STRING([--enable-all-static], [force static linking of executables.])])
-if test x"$enable_all_static" = x"yes"; then
-  if test x"$enable_static" != x"yes"; then
-    AC_MSG_ERROR([Cannot perform static linking of executables if static libraries are disabled!])
-  fi
-  harp_static=yes
-fi
-AM_CONDITIONAL([USE_AM_ALLSTATIC], [test "$harp_static" = "yes"])
+LT_SYS_MODULE_EXT
+LT_FUNC_DLSYM_USCORE
 AC_PROG_CXX
 AC_PROG_CC
 AC_LANG([C++])
@@ -56,6 +71,45 @@ if test x"$harp_openmp" != xno; then
 fi
 AM_CONDITIONAL([HAVE_AM_OPENMP], [test $ax_have_openmp = yes])
 AC_SUBST([OPENMP_CXXFLAGS])
+dnl +-------------------------
+dnl | Should we enable expensive debugging checks in Boost?
+dnl +-------------------------
+harp_debug=no
+AC_ARG_ENABLE([debug], [AC_HELP_STRING([--enable-debug], [Enable expensive range checking in Boost])])
+if test x"$enable_debug" = x"yes"; then
+  harp_debug=yes
+fi
+AM_CONDITIONAL([ENABLE_AM_DEBUG], [test "$harp_debug" = "yes"])
+dnl +-------------------------
+dnl | Option to perform full static linking of executables, not just
+dnl | building of static libraries.
+dnl +-------------------------
+harp_static=no
+harp_plugins=no
+AC_ARG_ENABLE([all-static], [AC_HELP_STRING([--enable-all-static], [force static linking of executables.])])
+if test x"$enable_all_static" = x"yes"; then
+  if test x"$enable_static" != x"yes"; then
+    AC_MSG_ERROR([Cannot perform static linking of executables if static libraries are disabled!])
+  fi
+  harp_static=yes
+fi
+AM_CONDITIONAL([USE_AM_ALLSTATIC], [test "$harp_static" = "yes"])
+if test x"$enable_shared" = x"yes"; then
+  if test x"$harp_static" = xno; then
+    harp_plugins=yes
+    AC_DEFINE([USE_PLUGINS], 1, [Enable support for external plugins])
+  else
+    AC_MSG_WARN([Executables are linked statically (--enable-all-static), so external Plugins are disabled])
+    HARP_PLUGIN_COMPILE=""
+    HARP_PLUGIN_LINK=""
+  fi
+else
+  AC_MSG_WARN([Shared libraries disabled (with --disable-shared), so external Plugins are disabled])
+  HARP_PLUGIN_COMPILE=""
+  HARP_PLUGIN_LINK=""
+fi
+AC_SUBST(HARP_PLUGIN_COMPILE)
+AC_SUBST(HARP_PLUGIN_LINK)
 dnl
 dnl =========================================
 dnl Do these checks with the C compiler
@@ -143,7 +197,11 @@ if test x"${have_mpi}" = xyes; then
 else
   AC_MSG_NOTICE([  MPI C++ Compiler          : Not Found])
 fi
-AC_MSG_NOTICE([  C++ Compile flags         : $CXXFLAGS])
+if test x"${harp_debug}" = xyes; then
+  AC_MSG_NOTICE([  C++ Compile flags         : $CXXFLAGS -DNDEBUG])
+else
+  AC_MSG_NOTICE([  C++ Compile flags         : $CXXFLAGS])
+fi
 if test x"${ax_have_openmp}" = xyes; then
   AC_MSG_NOTICE([  OpenMP                    : Detected ($OPENMP_CXXFLAGS)])
 else
@@ -171,5 +229,11 @@ if test x"${acx_elemental_ok}" = xyes; then
   AC_MSG_NOTICE([  Elemental Link            : $ELEMENTAL])
 else
   AC_MSG_NOTICE([  Elemental                 : Disabled])
+fi
+AC_MSG_NOTICE([                                           ])
+if test x"${harp_plugins}" = xyes; then
+  AC_MSG_NOTICE([  External Plugins          : ENABLED])
+else
+  AC_MSG_NOTICE([  External Plugins          : DISABLED])
 fi
 AC_MSG_NOTICE([                                           ])

@@ -1071,11 +1071,16 @@ cd "$START_PATH"
 initialize
 
 # Customization by T. S. Kisner.
-# Find all the instrument directories and generate files
 
-gitcommit=`git rev-parse HEAD`
-
-echo "  static const char * revision_key = \"${gitcommit}\";" > ${START_PATH}/src/libharp/git-version.cpp
+# Generate git revision file.  If we are running autogen.sh from a git
+# checkout, then use the git revision, otherwise use the full date stamp.
+ 
+gitrevision=`date +%Y%m%d_%H:%M:%S`
+gitexec=`which git 2>/dev/null`
+if [ "x${gitexec}" != "x" ]; then
+    gitrevision=`${gitexec} rev-parse HEAD`
+fi
+echo "static const char * harp_revision_key = \"${gitrevision}\";" > ${START_PATH}/src/libharp/git-version.cpp
 
 
 ############################################
