@@ -7,13 +7,13 @@ using namespace std;
 using namespace harp;
 
 
-harp::spec::spec ( std::string const & name, boost::property_tree::ptree const & props ) {
+harp::spec::spec ( std::string const & type, boost::property_tree::ptree const & props ) {
   props_ = props;
-  name_ = name;
+  type_ = type;
 }
 
 
-string harp::spec::name ( ) const {
-  return name_;
+string harp::spec::type ( ) const {
+  return type_;
 }
 

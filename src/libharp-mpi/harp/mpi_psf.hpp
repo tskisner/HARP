@@ -10,7 +10,7 @@ namespace harp {
     
     public :
 
-      mpi_psf ( boost::mpi::communicator const & comm, boost::property_tree::ptree const & props );
+      mpi_psf ( boost::mpi::communicator const & comm, std::string const & type, boost::property_tree::ptree const & props );
 
       ~mpi_psf ( ) { }
 
@@ -33,7 +33,7 @@ namespace harp {
 
       void project_transpose ( mpi_matrix_sparse & AT ) const;
       
-      std::string format ( ) const;
+      std::string type ( ) const;
       
     private :
     

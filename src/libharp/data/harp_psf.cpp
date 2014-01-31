@@ -7,14 +7,14 @@ using namespace std;
 using namespace harp;
 
 
-harp::psf::psf ( std::string const & name, boost::property_tree::ptree const & props ) {
+harp::psf::psf ( std::string const & type, boost::property_tree::ptree const & props ) {
   props_ = props;
-  name_ = name;
+  type_ = type;
 }
 
 
-string harp::psf::name ( ) const {
-  return name_;
+string harp::psf::type ( ) const {
+  return type_;
 }
 
 

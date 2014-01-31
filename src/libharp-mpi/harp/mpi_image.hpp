@@ -10,7 +10,7 @@ namespace harp {
 
     public :
 
-      mpi_image ( boost::mpi::communicator const & comm, boost::property_tree::ptree const & props );
+      mpi_image ( boost::mpi::communicator const & comm, std::string const & type, boost::property_tree::ptree const & props );
       
       ~mpi_image ( ) { }
       
@@ -28,7 +28,7 @@ namespace harp {
 
       void inv_variance ( matrix_double & invvar ) const;
 
-      std::string format ( ) const;
+      std::string type ( ) const;
       
     private :
     

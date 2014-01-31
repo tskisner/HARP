@@ -80,8 +80,6 @@ void harp::plugin_registry::register_image ( std::string const & name, image_fac
 
   image_plugins_[ name ] = create;
 
-  cerr << "DBG: registered image plugin \"" << name << "\"" << endl;
-
   return;
 }
 
@@ -95,8 +93,6 @@ void harp::plugin_registry::register_spec ( std::string const & name, spec_facto
 
   spec_plugins_[ name ] = create;
 
-  cerr << "DBG: registered spec plugin \"" << name << "\"" << endl;
-
   return;
 }
 
@@ -109,8 +105,6 @@ void harp::plugin_registry::register_psf ( std::string const & name, psf_factory
   }
 
   psf_plugins_[ name ] = create;
-
-  cerr << "DBG: registered psf plugin \"" << name << "\"" << endl;
 
   return;
 }
@@ -130,7 +124,9 @@ harp::plugin_registry::plugin_registry ( ) {
 #ifdef USE_PLUGINS
 
   char * envval = getenv ( plugin_path );
-  path_ = envval;
+  if ( envval ) {
+    path_ = envval;
+  }
 
   size_t offset = 0;
   size_t len;
@@ -138,19 +134,23 @@ harp::plugin_registry::plugin_registry ( ) {
 
   vector < string > dirs;
 
-  while ( split != string::npos ) {
+  if ( path_ != "" ) {
 
-    split = path_.find ( ':', offset );
+    while ( split != string::npos ) {
 
-    if ( split != string::npos ) {
-      len = split - offset;
-      dirs.push_back ( path_.substr ( offset, len ) );
-      offset = split + 1;
+      split = path_.find ( ':', offset );
+
+      if ( split != string::npos ) {
+        len = split - offset;
+        dirs.push_back ( path_.substr ( offset, len ) );
+        offset = split + 1;
+      }
+
     }
 
-  }
+    dirs.push_back ( path_.substr ( offset, string::npos ) );
 
-  dirs.push_back ( path_.substr ( offset, string::npos ) );
+  }
 
   for ( vector < string > :: iterator it = dirs.begin(); it != dirs.end(); ++it ) {
 

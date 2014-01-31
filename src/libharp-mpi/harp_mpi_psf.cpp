@@ -7,15 +7,18 @@ using namespace std;
 using namespace harp;
 
 
-harp::mpi_psf::mpi_psf ( boost::mpi::communicator const & comm, boost::property_tree::ptree const & props ) {
+harp::mpi_psf::mpi_psf ( boost::mpi::communicator const & comm, std::string const & type, boost::property_tree::ptree const & props ) {
 
   comm_ = comm;
 
   int rank = comm.rank();
 
   if ( rank == 0 ) {
+    // ONLY rank zero should use the plugin registry!
+    plugin_registry & reg = plugin_registry::get();
+
     // instantiate
-    local_.reset ( psf::create ( props ) );
+    local_.reset ( reg.create_psf ( type, props ) );
   }
     
   // broadcast to all processes
@@ -170,8 +173,8 @@ void harp::mpi_psf::project_transpose ( mpi_matrix_sparse & AT ) const {
 }
 
 
-std::string harp::mpi_psf::format ( ) const {
-  return local_->format();
+std::string harp::mpi_psf::type ( ) const {
+  return local_->type();
 }
 
 

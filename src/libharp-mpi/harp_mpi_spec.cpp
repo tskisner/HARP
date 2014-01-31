@@ -7,15 +7,18 @@ using namespace std;
 using namespace harp;
 
 
-harp::mpi_spec::mpi_spec ( boost::mpi::communicator const & comm, boost::property_tree::ptree const & props ) {
+harp::mpi_spec::mpi_spec ( boost::mpi::communicator const & comm, std::string const & type, boost::property_tree::ptree const & props ) {
 
   comm_ = comm;
 
   int rank = comm.rank();
 
   if ( rank == 0 ) {
+    // ONLY rank zero should use the plugin registry!
+    plugin_registry & reg = plugin_registry::get();
+
     // instantiate
-    local_.reset ( spec::create ( props ) );
+    local_.reset ( reg.create_spec ( type, props ) );
   }
     
   // broadcast to all processes
@@ -53,8 +56,8 @@ void harp::mpi_spec::targets ( std::vector < target > & target_list ) const {
 }
 
 
-std::string harp::mpi_spec::format ( ) const {
-  return local_->format();
+std::string harp::mpi_spec::type ( ) const {
+  return local_->type();
 }
 
 

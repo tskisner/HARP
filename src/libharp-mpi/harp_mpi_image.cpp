@@ -7,15 +7,18 @@ using namespace std;
 using namespace harp;
 
 
-harp::mpi_image::mpi_image ( boost::mpi::communicator const & comm, boost::property_tree::ptree const & props ) {
+harp::mpi_image::mpi_image ( boost::mpi::communicator const & comm, std::string const & type, boost::property_tree::ptree const & props ) {
 
   comm_ = comm;
 
   int rank = comm.rank();
 
   if ( rank == 0 ) {
+    // ONLY rank zero should use the plugin registry!
+    plugin_registry & reg = plugin_registry::get();
+
     // instantiate
-    local_.reset ( image::create ( props ) );
+    local_.reset ( reg.create_image ( type, props ) );
   }
     
   // broadcast to all processes
@@ -64,8 +67,8 @@ void harp::mpi_image::inv_variance ( matrix_double & invvar ) const {
 }
 
 
-std::string harp::mpi_image::format ( ) const {
-  return local_->format();
+std::string harp::mpi_image::type ( ) const {
+  return local_->type();
 }
 
 

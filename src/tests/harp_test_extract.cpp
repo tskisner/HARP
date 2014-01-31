@@ -137,6 +137,7 @@ void harp::test_extract ( string const & datadir ) {
   // instantiate the PSF
 
   boost::property_tree::ptree gauss_props;
+  gauss_props.put ( "lambda_spec_type", "sim" );
   gauss_props.put_child ( "lambda_spec", spec_props );
   gauss_props.put ( "bundle_size", nspec );
   gauss_props.put ( "nbundle", 1 );
@@ -146,7 +147,9 @@ void harp::test_extract ( string const & datadir ) {
   // instantiate image and read
 
   boost::property_tree::ptree img_props;
+  img_props.put ( "spec_type", "sim" );
   img_props.put_child ( "spec", spec_props );
+  img_props.put ( "psf_type", "gauss_sim" );
   img_props.put_child ( "psf", gauss_props );
 
   image_p img ( reg.create_image ( "sim", img_props ) );

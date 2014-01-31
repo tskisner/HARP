@@ -10,7 +10,7 @@ namespace harp {
     
     public :
 
-      mpi_spec ( boost::mpi::communicator const & comm, boost::property_tree::ptree const & props );
+      mpi_spec ( boost::mpi::communicator const & comm, std::string const & type, boost::property_tree::ptree const & props );
       
       ~mpi_spec ( ) { }
 
@@ -24,7 +24,7 @@ namespace harp {
 
       void targets ( std::vector < target > & target_list ) const;
 
-      std::string format ( ) const;
+      std::string type ( ) const;
       
     private :
 
