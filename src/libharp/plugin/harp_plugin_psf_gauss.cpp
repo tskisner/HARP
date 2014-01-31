@@ -6,6 +6,11 @@
 
 #include <cmath>
 
+#include <harp/plugin.hpp>
+#ifdef HAVE_BOOST_MPI_HPP
+#include <harp/plugin_mpi.hpp>
+#endif
+
 using namespace std;
 using namespace harp;
 
@@ -370,6 +375,8 @@ void harp::psf_gauss::write ( std::string const & path ) {
 }
 
 
+BOOST_CLASS_EXPORT(harp::psf_gauss_resp)
+BOOST_CLASS_EXPORT(harp::psf_gauss)
 
 
 

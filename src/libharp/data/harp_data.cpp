@@ -2,10 +2,20 @@
 
 #include <harp_data_internal.hpp>
 
+#include <harp/plugin.hpp>
+#ifdef HAVE_BOOST_MPI_HPP
+#include <harp/plugin_mpi.hpp>
+#endif
 
 using namespace std;
 using namespace harp;
 
+
+// instantiate serialization implementations for base classes
+
+BOOST_CLASS_EXPORT(harp::image)
+BOOST_CLASS_EXPORT(harp::spec)
+BOOST_CLASS_EXPORT(harp::psf)
 
 // utilities
 

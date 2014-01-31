@@ -1088,11 +1088,8 @@ plugindir="${START_PATH}/src/libharp/plugin"
 pluginmake="${plugindir}/plugin.am"
 pluginreg="${plugindir}/plugin_register.cpp"
 
-pluginhead="${plugindir}/harp/plugin.hpp"
-pluginheadstub="${plugindir}/harp/plugin.hpp.in"
-
-serialhead="${START_PATH}/src/libharp/harp_serialization.hpp"
-serialheadstub="${START_PATH}/src/libharp/harp_serialization.hpp.in"
+pluginhead="${plugindir}/harp/static_plugins.hpp"
+pluginheadstub="${plugindir}/harp/static_plugins.hpp.in"
 
 pluginfiles=`ls ${plugindir}/harp_plugin_*.cpp`
 pluginh=`ls ${plugindir}/*.h*`
@@ -1112,18 +1109,11 @@ echo "  " >> ${pluginhead}
 echo "#endif" >> ${pluginhead}
 echo "  " >> ${pluginhead}
 
-cp ${serialheadstub} ${serialhead}
-
 for pfile in ${pluginfiles}; do
     pluginname=`echo ${pfile} | sed -e "s#.*\/harp_plugin_\(.*\)\.cpp#\1#"`
     echo "libharpplugin_la_SOURCES += ${pfile}" >> ${pluginmake}
     echo "// register ${pluginname} ..." >> ${pluginreg}
-    echo "BOOST_CLASS_EXPORT(harp::${pluginname})" >> ${serialhead}
 done
-
-echo "  " >> ${serialhead}
-echo "#endif" >> ${serialhead}
-echo "  " >> ${serialhead}
 
 echo "  " >> ${pluginmake}
 echo "  " >> ${pluginreg}

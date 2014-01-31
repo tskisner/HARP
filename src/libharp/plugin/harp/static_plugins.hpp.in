@@ -1,7 +1,7 @@
 // @COPYRIGHT@
 
-#ifndef HARP_PLUGIN_HPP
-#define HARP_PLUGIN_HPP
+#ifndef HARP_STATIC_PLUGINS_HPP
+#define HARP_STATIC_PLUGINS_HPP
 
 
 /*

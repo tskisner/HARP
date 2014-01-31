@@ -2,6 +2,11 @@
 
 #include <harp_internal.hpp>
 
+#include <harp/plugin.hpp>
+#ifdef HAVE_BOOST_MPI_HPP
+#include <harp/plugin_mpi.hpp>
+#endif
+
 
 using namespace std;
 using namespace harp;
@@ -154,4 +159,9 @@ void harp::image_fits::write ( std::string const & path, matrix_double & data, m
 
   return;
 }
+
+
+BOOST_CLASS_EXPORT(harp::image_fits)
+
+
 

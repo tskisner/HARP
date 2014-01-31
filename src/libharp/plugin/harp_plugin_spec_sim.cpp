@@ -2,6 +2,11 @@
 
 #include <harp_internal.hpp>
 
+#include <harp/plugin.hpp>
+#ifdef HAVE_BOOST_MPI_HPP
+#include <harp/plugin_mpi.hpp>
+#endif
+
 using namespace std;
 using namespace harp;
 
@@ -197,4 +202,5 @@ void harp::spec_sim::sky_truth ( vector_double & data ) const {
 }
 
 
+BOOST_CLASS_EXPORT(harp::spec_sim)
 

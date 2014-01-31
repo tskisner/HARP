@@ -6,10 +6,13 @@
 
 #include <cmath>
 
+#include <harp/plugin.hpp>
+#ifdef HAVE_BOOST_MPI_HPP
+#include <harp/plugin_mpi.hpp>
+#endif
+
 using namespace std;
 using namespace harp;
-
-
 
 
 // parameters
@@ -112,6 +115,6 @@ void harp::psf_gh::write ( std::string const & path ) {
 }
 
 
-
+BOOST_CLASS_EXPORT(harp::psf_gh)
 
 

@@ -13,7 +13,7 @@ else
 endif
 
 noinst_HEADERS = harp_internal.hpp
-include_HEADERS = harp.hpp harp_serialization.hpp
+include_HEADERS = harp.hpp
 
 noinst_SCRIPTS = gen_harpconfig.sh
 bin_SCRIPTS = harpconfig
@@ -54,7 +54,7 @@ libharp_la_LIBADD = \
 
 CLEANFILES = harpconfig
 
-EXTRA_DIST = harpconfig.in gen_harpconfig.sh harp_serialization.hpp.in
+EXTRA_DIST = harpconfig.in gen_harpconfig.sh
 
-MAINTAINERCLEANFILES = harp_serialization.hpp
+MAINTAINERCLEANFILES = 
 

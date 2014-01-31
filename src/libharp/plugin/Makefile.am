@@ -17,13 +17,13 @@ noinst_HEADERS =
 noinst_LTLIBRARIES = libharpplugin.la
 
 libharpplugin_la_includedir = $(includedir)/harp
-libharpplugin_la_include_HEADERS = harp/plugin.hpp
+libharpplugin_la_include_HEADERS = harp/static_plugins.hpp
 libharpplugin_la_SOURCES = 
 libharpplugin_la_LIBADD = 
 
-EXTRA_DIST = harp/plugin.hpp.in plugin.am
+EXTRA_DIST = harp/static_plugins.hpp.in plugin.am
 
-MAINTAINERCLEANFILES = harp/plugin.hpp plugin.am
+MAINTAINERCLEANFILES = harp/static_plugins.hpp plugin.am
 
 include plugin.am
 

@@ -4,6 +4,11 @@
 
 #include <boost/random.hpp>
 
+#include <harp/plugin.hpp>
+#ifdef HAVE_BOOST_MPI_HPP
+#include <harp/plugin_mpi.hpp>
+#endif
+
 
 using namespace std;
 using namespace harp;
@@ -128,4 +133,5 @@ void harp::image_sim::inv_variance ( vector_double & invvar ) const {
 }
 
 
+BOOST_CLASS_EXPORT(harp::image_sim)
 
