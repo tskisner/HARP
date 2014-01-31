@@ -1080,7 +1080,7 @@ gitexec=`which git 2>/dev/null`
 if [ "x${gitexec}" != "x" ]; then
     gitrevision=`${gitexec} rev-parse HEAD`
 fi
-echo "static const char * harp_revision_key = \"${gitrevision}\";" > ${START_PATH}/src/libharp/git-version.cpp
+echo "static const char * harp_revision_key = \"${gitrevision}\";" > ${START_PATH}/src/libharp/data/git-version.cpp
 
 
 ############################################

@@ -19,7 +19,7 @@ noinst_LTLIBRARIES = libharpmath.la
 libharpmath_la_includedir = $(includedir)/harp
 libharpmath_la_include_HEADERS = harp/math.hpp harp/linalg.hpp
 libharpmath_la_SOURCES = harp_linalg.cpp harp_math.cpp
-libharpmath_la_LIBADD = $(AM_LIBS)
+libharpmath_la_LIBADD = 
 
 install-data-local:
 	@$(mkinstalldirs) $(DESTDIR)$(includedir)/boost; \

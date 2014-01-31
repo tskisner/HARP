@@ -51,3 +51,20 @@ void harp::omp_dist_1D ( int n, int & rank, int & nthreads, int & myn, int & off
   return;
 }
 
+
+harp::exception::exception ( char const * msg, char const * file, int line ) {
+  int ret;
+  ret = snprintf ( msg_, BIGSTRLEN, "Exception at line %d of file %s:  %s", line, file, msg );
+}
+
+
+harp::exception::~exception ( ) throw() { }
+
+
+const char* harp::exception::what() const throw() { 
+  return msg_;
+}
+
+
+
+

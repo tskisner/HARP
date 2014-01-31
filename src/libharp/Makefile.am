@@ -1,7 +1,7 @@
 
-SUBDIRS = math
+SUBDIRS = math data plugin
 
-AM_CPPFLAGS = -I$(top_srcdir)/src/libharp/math -I$(top_srcdir)/src/libharp $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS) $(OPENMP_CXXFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir)/src/libharp/math -I$(top_srcdir)/src/libharp/data -I$(top_srcdir)/src/libharp/plugin -I$(top_srcdir)/src/libharp $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS) $(OPENMP_CXXFLAGS)
 AM_LDFLAGS =
 AM_LIBS = $(OPENMP_CXXFLAGS)
 
@@ -56,7 +56,10 @@ libharp_la_SOURCES = \
 
 libharp_la_LDFLAGS = -version-info @HARP_LT_VERSION@
 
-libharp_la_LIBADD = $(top_builddir)/src/libharp/math/libharpmath.la
+libharp_la_LIBADD = \
+	$(top_builddir)/src/libharp/plugin/libharpplugin.la \
+	$(top_builddir)/src/libharp/data/libharpdata.la \
+	$(top_builddir)/src/libharp/math/libharpmath.la
 
 # Add new formats here
 
@@ -78,5 +81,5 @@ CLEANFILES = harpconfig
 
 EXTRA_DIST = harpconfig.in gen_harpconfig.sh
 
-MAINTAINERCLEANFILES = git-version.cpp
+MAINTAINERCLEANFILES = 
 
