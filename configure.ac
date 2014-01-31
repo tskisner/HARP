@@ -173,6 +173,8 @@ dnl +------------------------------------------------
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([src/Makefile])
 AC_CONFIG_FILES([src/libharp/math/Makefile])
+AC_CONFIG_FILES([src/libharp/data/Makefile])
+AC_CONFIG_FILES([src/libharp/plugin/Makefile])
 AC_CONFIG_FILES([src/libharp/Makefile])
 AC_CONFIG_FILES([src/tests/Makefile])
 AC_CONFIG_FILES([src/apps/Makefile])

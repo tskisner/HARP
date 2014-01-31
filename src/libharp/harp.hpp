@@ -29,7 +29,7 @@
 
 #include <harp/math.hpp>
 #include <harp/data.hpp>
-#include <harp_plugins.hpp>
+#include <harp/plugins.hpp>
 
 
 namespace harp {

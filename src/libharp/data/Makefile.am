@@ -1,5 +1,5 @@
 
-SUBDIRS = math
+SUBDIRS = 
 
 AM_CPPFLAGS = -I$(top_srcdir)/src/libharp/math -I$(top_srcdir)/src/libharp/data $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS) $(OPENMP_CXXFLAGS)
 AM_LDFLAGS =
@@ -34,7 +34,7 @@ libharpdata_la_SOURCES = \
 	harp_plugin_registry.cpp \
 	harp_data.cpp
 
-libharp_la_LIBADD = $(top_builddir)/src/libharp/math/libharpmath.la
+libharpdata_la_LIBADD = 
 
 MAINTAINERCLEANFILES = git-version.cpp
 
