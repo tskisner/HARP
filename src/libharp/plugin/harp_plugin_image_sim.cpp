@@ -1,34 +1,42 @@
 // @COPYRIGHT@
 
-#include <harp_internal.hpp>
+#include <harp_data_internal.hpp>
 
 #include <boost/random.hpp>
 
 #include <harp/plugin.hpp>
-#ifdef HAVE_BOOST_MPI_HPP
-#include <harp/plugin_mpi.hpp>
-#endif
+//#ifdef HAVE_BOOST_MPI_HPP
+//#include <harp/plugin_mpi.hpp>
+//#endif
 
+#include <harp/static_plugins.hpp>
 
 using namespace std;
 using namespace harp;
 
 
+static const char * image_sim_key_psf_type = "psf_type";
+static const char * image_sim_key_spec_type = "spec_type";
 static const char * image_sim_key_psf = "psf";
 static const char * image_sim_key_spec = "spec";
 
 
-harp::image_sim::image_sim ( boost::property_tree::ptree const & props ) : image ( props ) {
+harp::image_sim::image_sim ( boost::property_tree::ptree const & props ) : image ( "sim", props ) {
+
+  psf_type_ = props.get < string > ( image_sim_key_psf_type );
+  spec_type_ = props.get < string > ( image_sim_key_spec_type );
 
   psf_props_ = props.get_child ( image_sim_key_psf );
   spec_props_ = props.get_child ( image_sim_key_spec );
 
-  spec_p child_spec ( spec::create ( spec_props_ ) );
+  plugin_registry & reg = plugin_registry::get();
+
+  spec_p child_spec ( reg.create_spec ( spec_type_, spec_props_ ) );
 
   size_t spec_nspec = child_spec->n_spec();
   size_t spec_nlambda = child_spec->n_lambda();
 
-  psf_p child_psf ( psf::create ( psf_props_ ) );
+  psf_p child_psf ( reg.create_psf ( psf_type_, psf_props_ ) );
 
   size_t psf_nspec = child_psf->n_spec();
   size_t psf_nlambda = child_psf->n_lambda();
@@ -76,7 +84,7 @@ harp::image_sim::image_sim ( boost::property_tree::ptree const & props ) : image
 
   signal_.resize ( npix );
 
-  spec_project ( AT, spec_data, signal_ );
+  sparse_mv_trans ( AT, spec_data, signal_ );
 
   // free up memory
 
@@ -134,4 +142,10 @@ void harp::image_sim::inv_variance ( vector_double & invvar ) const {
 
 
 BOOST_CLASS_EXPORT(harp::image_sim)
+
+
+image * harp::image_sim_create ( boost::property_tree::ptree const & props ) {
+  return new image_sim ( props );
+}
+
 

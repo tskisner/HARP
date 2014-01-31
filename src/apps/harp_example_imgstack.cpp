@@ -86,7 +86,8 @@ int main ( int argc, char *argv[] ) {
       // so we use the factory method to instantiate the image from parameters specified
       // in the JSON.
 
-      image_p img ( image::create ( v->second ) );
+      plugin_registry & reg = plugin_registry::get();
+      image_p img ( reg.create_image ( v->second.get < string > ( "type" ), v->second ) );
 
       if ( checkrows == 0 ) {
         // this is the first image
@@ -142,7 +143,6 @@ int main ( int argc, char *argv[] ) {
   // writing and do not use the factory technique- we just instantiate the class directly.
 
   boost::property_tree::ptree img_props;
-  img_props.put ( "format", "fits" );
   img_props.put < size_t > ( "rows", checkrows );
   img_props.put < size_t > ( "cols", checkcols );
 

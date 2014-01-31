@@ -1,12 +1,13 @@
 // @COPYRIGHT@
 
-#include <harp_internal.hpp>
+#include <harp_data_internal.hpp>
 
 #include <harp/plugin.hpp>
-#ifdef HAVE_BOOST_MPI_HPP
-#include <harp/plugin_mpi.hpp>
-#endif
+//#ifdef HAVE_BOOST_MPI_HPP
+//#include <harp/plugin_mpi.hpp>
+//#endif
 
+#include <harp/static_plugins.hpp>
 
 using namespace std;
 using namespace harp;
@@ -18,7 +19,7 @@ static const char * image_fits_key_rows = "rows";
 static const char * image_fits_key_cols = "cols";
 
 
-harp::image_fits::image_fits ( boost::property_tree::ptree const & props ) : image ( props ) {
+harp::image_fits::image_fits ( boost::property_tree::ptree const & props ) : image ( "fits", props ) {
 
   sighdu_ = props.get ( image_fits_key_signal, 1 );
 
@@ -162,6 +163,11 @@ void harp::image_fits::write ( std::string const & path, matrix_double & data, m
 
 
 BOOST_CLASS_EXPORT(harp::image_fits)
+
+
+image * harp::image_fits_create ( boost::property_tree::ptree const & props ) {
+  return new image_fits ( props );
+}
 
 
 

@@ -12,6 +12,8 @@ using namespace harp;
 
 void harp::test_extract ( string const & datadir ) {
 
+  plugin_registry & reg = plugin_registry::get();
+
   cout << "Testing extraction spectral sub/accum functions..." << endl;
 
   size_t nspec = 20;
@@ -114,7 +116,6 @@ void harp::test_extract ( string const & datadir ) {
 
   boost::property_tree::ptree spec_props;
   spec_props.clear();
-  spec_props.put ( "format", "sim" );
   spec_props.put ( "nspec", nspec );
   spec_props.put ( "lambda_n", nlambda );
   spec_props.put ( "lambda_start", first_lambda );
@@ -124,7 +125,7 @@ void harp::test_extract ( string const & datadir ) {
   spec_props.put ( "obj", 80.0 );
   spec_props.put ( "atmspace", 12 );
   spec_props.put ( "skymod", nspec );
-  spec_p testspec ( spec::create ( spec_props ) );
+  spec_p testspec ( reg.create_spec ( "sim", spec_props ) );
 
   vector_double lambda;
   vector < target > target_list;
@@ -136,21 +137,19 @@ void harp::test_extract ( string const & datadir ) {
   // instantiate the PSF
 
   boost::property_tree::ptree gauss_props;
-  gauss_props.put ( "format", "gauss_sim" );
   gauss_props.put_child ( "lambda_spec", spec_props );
   gauss_props.put ( "bundle_size", nspec );
   gauss_props.put ( "nbundle", 1 );
 
-  psf_p gauss_psf ( psf::create ( gauss_props ) );
+  psf_p gauss_psf ( reg.create_psf ( "gauss_sim", gauss_props ) );
 
   // instantiate image and read
 
   boost::property_tree::ptree img_props;
-  img_props.put ( "format", "sim" );
   img_props.put_child ( "spec", spec_props );
   img_props.put_child ( "psf", gauss_props );
 
-  image_p img ( image::create ( img_props ) );
+  image_p img ( reg.create_image ( "sim", img_props ) );
 
   vector_double img_data;
   vector_double img_inv;

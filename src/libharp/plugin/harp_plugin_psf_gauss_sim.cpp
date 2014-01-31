@@ -1,15 +1,17 @@
 // @COPYRIGHT@
 
-#include <harp_internal.hpp>
+#include <harp_data_internal.hpp>
 
 #include <boost/optional.hpp>
 
 #include <cmath>
 
 #include <harp/plugin.hpp>
-#ifdef HAVE_BOOST_MPI_HPP
-#include <harp/plugin_mpi.hpp>
-#endif
+//#ifdef HAVE_BOOST_MPI_HPP
+//#include <harp/plugin_mpi.hpp>
+//#endif
+
+#include <harp/static_plugins.hpp>
 
 
 using namespace std;
@@ -23,6 +25,7 @@ static const char * psf_gauss_sim_key_rows = "imgrows";
 static const char * psf_gauss_sim_key_cols = "imgcols";
 
 static const char * psf_gauss_sim_key_lambda_spec = "lambda_spec";
+static const char * psf_gauss_sim_key_lambda_spec_type = "lambda_spec_type";
 static const char * psf_gauss_sim_key_lambda_n = "lambda_n";
 static const char * psf_gauss_sim_key_lambda_start = "lambda_start";
 static const char * psf_gauss_sim_key_lambda_stop = "lambda_stop";
@@ -44,7 +47,7 @@ static const char * psf_gauss_sim_hdu_min = "MinorAxis";
 static const char * psf_gauss_sim_hdu_ang = "Angle";
 
 
-harp::psf_gauss_sim::psf_gauss_sim ( boost::property_tree::ptree const & props ) : psf ( props ) {
+harp::psf_gauss_sim::psf_gauss_sim ( boost::property_tree::ptree const & props ) : psf ( "gauss_sim", props ) {
 
   // check to see if we are getting the wavelength solution from a spec
 
@@ -52,7 +55,11 @@ harp::psf_gauss_sim::psf_gauss_sim ( boost::property_tree::ptree const & props )
 
     lambda_spec_props_ = props.get_child ( psf_gauss_sim_key_lambda_spec );
 
-    spec_p child_spec ( spec::create ( lambda_spec_props_ ) );
+    lambda_spec_type_ = props.get < string > ( psf_gauss_sim_key_lambda_spec_type );
+
+    plugin_registry & reg = plugin_registry::get();
+
+    spec_p child_spec ( reg.create_spec ( lambda_spec_type_, lambda_spec_props_ ) );
 
     nlambda_ = child_spec->n_lambda();
 
@@ -290,4 +297,9 @@ void harp::psf_gauss_sim::write ( std::string const & path ) {
 
 
 BOOST_CLASS_EXPORT(harp::psf_gauss_sim)
+
+
+psf * harp::psf_gauss_sim_create ( boost::property_tree::ptree const & props ) {
+  return new psf_gauss_sim ( props );
+}
 

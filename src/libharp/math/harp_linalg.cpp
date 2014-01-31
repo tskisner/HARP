@@ -181,5 +181,25 @@ void harp::norm ( vector_double const & D, matrix_double const & W, vector_doubl
 
 
 
+void harp::sparse_mv_trans ( matrix_double_sparse const & AT, vector_double const & in, vector_double & out ) {
+
+  // FIXME:  for now, we just use the (unthreaded) boost sparse matrix-vector product.  If this
+  // operation dominates the cost in any way, we can add a threaded implementation here.
+
+  size_t nrows = AT.size1();
+  size_t ncols = AT.size2();
+
+  if ( in.size() != nrows ) {
+    std::ostringstream o;
+    o << "length of input vector (" << in.size() << ") does not match number of rows in transposed matrix (" << nrows << ")";
+    HARP_THROW( o.str().c_str() );
+  }
+
+  out.resize ( ncols );
+
+  boost::numeric::ublas::axpy_prod ( in, AT, out, true );
+
+  return;
+}
 
 

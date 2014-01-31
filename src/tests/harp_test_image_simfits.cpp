@@ -16,6 +16,8 @@ using namespace harp;
 
 void harp::test_image_simfits ( string const & datadir ) {
 
+  plugin_registry & reg = plugin_registry::get();
+
   string specpath = datadir + "/spec_sim.fits.out";
   string psfpath = datadir + "/psf_gauss_sim.fits.out";
   string imgpath = datadir + "/image_sim.fits.out";
@@ -26,10 +28,9 @@ void harp::test_image_simfits ( string const & datadir ) {
 
   boost::property_tree::ptree spec_props;
   spec_props.clear();
-  spec_props.put ( "format", "specter" );
   spec_props.put ( "path", specpath );
 
-  spec_p checkspec ( spec::create ( spec_props ) );
+  spec_p checkspec ( reg.create_spec ( "specter", spec_props ) );
 
   size_t spec_nspec = checkspec->n_spec();
   size_t spec_nlambda = checkspec->n_lambda();
@@ -45,12 +46,12 @@ void harp::test_image_simfits ( string const & datadir ) {
   // instantiate the PSF
 
   boost::property_tree::ptree gauss_props;
-  gauss_props.put ( "format", "gauss_sim" );
+  gauss_props.put ( "lambda_spec_type", "specter" );
   gauss_props.put_child ( "lambda_spec", spec_props );
   gauss_props.put ( "bundle_size", 25 );
   gauss_props.put ( "nbundle", 1 );
 
-  psf_p gauss_psf ( psf::create ( gauss_props ) );
+  psf_p gauss_psf ( reg.create_psf ( "gauss_sim", gauss_props ) );
 
   size_t psf_nspec = gauss_psf->n_spec();
   size_t psf_nlambda = gauss_psf->n_lambda();
@@ -60,11 +61,12 @@ void harp::test_image_simfits ( string const & datadir ) {
   // instantiate image
 
   boost::property_tree::ptree img_props;
-  img_props.put ( "format", "sim" );
+  img_props.put ( "spec_type", "specter" );
+  img_props.put ( "psf_type", "gauss_sim" );
   img_props.put_child ( "spec", spec_props );
   img_props.put_child ( "psf", gauss_props );
 
-  image_p img ( image::create ( img_props ) );
+  image_p img ( reg.create_image ( "sim", img_props ) );
 
   // write out a json file for testing with external tools
 
@@ -119,7 +121,6 @@ void harp::test_image_simfits ( string const & datadir ) {
   cout << "Testing FITS image..." << endl;
 
   img_props.clear();
-  img_props.put ( "format", "fits" );
   img_props.put ( "rows", psf_imgrows );
   img_props.put ( "cols", psf_imgcols );
 
@@ -161,10 +162,9 @@ void harp::test_image_simfits ( string const & datadir ) {
   // read test
 
   img_props.clear();
-  img_props.put ( "format", "fits" );
   img_props.put ( "path", imgpath );
 
-  image_p checkimg ( image::create ( img_props ) );
+  image_p checkimg ( reg.create_image ( "fits", img_props ) );
 
   vector_double check_img_data;
   vector_double check_img_inv;

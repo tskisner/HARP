@@ -1,15 +1,18 @@
 // @COPYRIGHT@
 
-#include <harp_internal.hpp>
+#include <harp_data_internal.hpp>
 
 #include <boost/optional.hpp>
 
 #include <cmath>
 
 #include <harp/plugin.hpp>
-#ifdef HAVE_BOOST_MPI_HPP
-#include <harp/plugin_mpi.hpp>
-#endif
+//#ifdef HAVE_BOOST_MPI_HPP
+//#include <harp/plugin_mpi.hpp>
+//#endif
+
+#include <harp/static_plugins.hpp>
+
 
 using namespace std;
 using namespace harp;
@@ -91,7 +94,7 @@ static const char * psf_gauss_hdu_min = "MinorAxis";
 static const char * psf_gauss_hdu_ang = "Angle";
 
 
-harp::psf_gauss::psf_gauss ( boost::property_tree::ptree const & props ) : psf ( props ) {
+harp::psf_gauss::psf_gauss ( boost::property_tree::ptree const & props ) : psf ( "gauss", props ) {
 
   path_ = props.get < string > ( psf_gauss_key_path, "" );
 
@@ -378,5 +381,9 @@ void harp::psf_gauss::write ( std::string const & path ) {
 BOOST_CLASS_EXPORT(harp::psf_gauss_resp)
 BOOST_CLASS_EXPORT(harp::psf_gauss)
 
+
+psf * harp::psf_gauss_create ( boost::property_tree::ptree const & props ) {
+  return new psf_gauss ( props );
+}
 
 

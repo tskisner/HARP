@@ -243,28 +243,6 @@ void harp::accum_spec ( spec_slice_region const & sub_region, spec_slice_region 
 }
 
 
-void harp::spec_project ( matrix_double_sparse const & AT, vector_double const & spectra, vector_double & img ) {
-
-  // FIXME:  for now, we just use the (unthreaded) boost sparse matrix-vector product.  If this
-  // operation dominates the cost in any way, we can add a threaded implementation here.
-
-  size_t nbins = AT.size1();
-  size_t npix = AT.size2();
-
-  if ( spectra.size() != nbins ) {
-    std::ostringstream o;
-    o << "number of spectral input bins (" << spectra.size() << ") does not match number of bins in PSF (" << nbins << ")";
-    HARP_THROW( o.str().c_str() );
-  }
-
-  img.resize ( npix );
-
-  boost::numeric::ublas::axpy_prod ( spectra, AT, img, true );
-
-  return;
-}
-
-
 void harp::noise_weighted_spec ( matrix_double_sparse const & AT, vector_double const & invnoise, vector_double const & img, vector_double & z ) {
 
   size_t nbins = AT.size1();

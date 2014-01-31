@@ -69,6 +69,8 @@ namespace harp {
 
   void norm ( vector_double const & D, matrix_double const & W, vector_double & S );
 
+  void sparse_mv_trans ( matrix_double_sparse const & AT, vector_double const & in, vector_double & out );
+
 
 }
 

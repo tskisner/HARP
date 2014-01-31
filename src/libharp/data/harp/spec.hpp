@@ -13,10 +13,10 @@ namespace harp {
     public :
 
       spec ( ) {
-        format_ = "";
+        name_ = "";
       }
 
-      spec ( boost::property_tree::ptree const & props );
+      spec ( std::string const & name, boost::property_tree::ptree const & props );
       
       virtual ~spec ( ) { }
 
@@ -67,11 +67,7 @@ namespace harp {
         return;
       }
 
-      std::string format ( ) const;
-      
-      static spec * create ( boost::property_tree::ptree const & props );
-      
-      spec * clone ( );
+      std::string name ( ) const;
       
       template < class T >
       boost::shared_ptr < T > shared_ref ( ) {
@@ -88,12 +84,12 @@ namespace harp {
 
       template < class Archive >
       void serialize ( Archive & ar, const unsigned int version ) {
-        ar & BOOST_SERIALIZATION_NVP(format_);
+        ar & BOOST_SERIALIZATION_NVP(name_);
         ar & BOOST_SERIALIZATION_NVP(props_);
         return;
       }
     
-      std::string format_;
+      std::string name_;
       boost::property_tree::ptree props_;
       
       

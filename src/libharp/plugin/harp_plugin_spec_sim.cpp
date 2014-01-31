@@ -1,11 +1,13 @@
 // @COPYRIGHT@
 
-#include <harp_internal.hpp>
+#include <harp_data_internal.hpp>
 
 #include <harp/plugin.hpp>
-#ifdef HAVE_BOOST_MPI_HPP
-#include <harp/plugin_mpi.hpp>
-#endif
+//#ifdef HAVE_BOOST_MPI_HPP
+//#include <harp/plugin_mpi.hpp>
+//#endif
+
+#include <harp/static_plugins.hpp>
 
 using namespace std;
 using namespace harp;
@@ -22,7 +24,7 @@ static const char * spec_sim_key_atmspace = "atmspace";
 static const char * spec_sim_key_skymod = "skymod";
 
 
-harp::spec_sim::spec_sim ( boost::property_tree::ptree const & props ) : spec ( props ) {
+harp::spec_sim::spec_sim ( boost::property_tree::ptree const & props ) : spec ( "sim", props ) {
   
   nspec_ = props.get < size_t > ( spec_sim_key_nspec );
 
@@ -203,4 +205,9 @@ void harp::spec_sim::sky_truth ( vector_double & data ) const {
 
 
 BOOST_CLASS_EXPORT(harp::spec_sim)
+
+
+spec * harp::spec_sim_create ( boost::property_tree::ptree const & props ) {
+  return new spec_sim ( props );
+}
 

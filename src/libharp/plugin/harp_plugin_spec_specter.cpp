@@ -1,12 +1,13 @@
 // @COPYRIGHT@
 
-#include <harp_internal.hpp>
+#include <harp_data_internal.hpp>
 
 #include <harp/plugin.hpp>
-#ifdef HAVE_BOOST_MPI_HPP
-#include <harp/plugin_mpi.hpp>
-#endif
+//#ifdef HAVE_BOOST_MPI_HPP
+//#include <harp/plugin_mpi.hpp>
+//#endif
 
+#include <harp/static_plugins.hpp>
 
 using namespace std;
 using namespace harp;
@@ -98,7 +99,7 @@ static const char * spec_specter_key_nspec = "nspec";
 static const char * spec_specter_key_nlambda = "nlambda";
 
 
-harp::spec_specter::spec_specter ( boost::property_tree::ptree const & props ) : spec ( props ) {
+harp::spec_specter::spec_specter ( boost::property_tree::ptree const & props ) : spec ( "specter", props ) {
 
   path_ = props.get < string > ( spec_specter_key_path, "" );
 
@@ -256,4 +257,9 @@ void harp::spec_specter::write ( std::string const & path, matrix_double & data,
 
 
 BOOST_CLASS_EXPORT(harp::spec_specter)
+
+
+spec * harp::spec_specter_create ( boost::property_tree::ptree const & props ) {
+  return new spec_specter ( props );
+}
 

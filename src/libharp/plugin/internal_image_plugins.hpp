@@ -64,6 +64,8 @@ namespace harp {
 
   BOOST_SERIALIZATION_SHARED_PTR(image_fits)
 
+  image * image_fits_create ( boost::property_tree::ptree const & props );
+
 
   class image_sim : public image {
 
@@ -97,7 +99,9 @@ namespace harp {
       template < class Archive >
       void serialize ( Archive & ar, const unsigned int version ) {
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(image);
+        ar & BOOST_SERIALIZATION_NVP(spec_type_);
         ar & BOOST_SERIALIZATION_NVP(spec_props_);
+        ar & BOOST_SERIALIZATION_NVP(psf_type_);
         ar & BOOST_SERIALIZATION_NVP(psf_props_);
         ar & BOOST_SERIALIZATION_NVP(rows_);
         ar & BOOST_SERIALIZATION_NVP(cols_);
@@ -108,6 +112,8 @@ namespace harp {
         return;
       }
     
+      std::string spec_type_;
+      std::string psf_type_;
       boost::property_tree::ptree spec_props_;
       boost::property_tree::ptree psf_props_;
       size_t rows_;
@@ -120,6 +126,8 @@ namespace harp {
   };
 
   BOOST_SERIALIZATION_SHARED_PTR(image_sim)
+
+  image * image_sim_create ( boost::property_tree::ptree const & props );
   
   
 }

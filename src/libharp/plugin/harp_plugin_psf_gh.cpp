@@ -1,15 +1,17 @@
 // @COPYRIGHT@
 
-#include <harp_internal.hpp>
+#include <harp_data_internal.hpp>
 
 #include <boost/optional.hpp>
 
 #include <cmath>
 
 #include <harp/plugin.hpp>
-#ifdef HAVE_BOOST_MPI_HPP
-#include <harp/plugin_mpi.hpp>
-#endif
+//#ifdef HAVE_BOOST_MPI_HPP
+//#include <harp/plugin_mpi.hpp>
+//#endif
+
+#include <harp/static_plugins.hpp>
 
 using namespace std;
 using namespace harp;
@@ -21,7 +23,7 @@ static const char * psf_gh_key_corr = "corr";
 static const char * psf_gh_key_path = "path";
 
 
-harp::psf_gh::psf_gh ( boost::property_tree::ptree const & props ) : psf ( props ) {
+harp::psf_gh::psf_gh ( boost::property_tree::ptree const & props ) : psf ( "gh", props ) {
 
   pixcorr_ = props.get < int > ( psf_gh_key_corr );
 
@@ -116,5 +118,10 @@ void harp::psf_gh::write ( std::string const & path ) {
 
 
 BOOST_CLASS_EXPORT(harp::psf_gh)
+
+
+psf * harp::psf_gh_create ( boost::property_tree::ptree const & props ) {
+  return new psf_gh ( props );
+}
 
 

@@ -13,10 +13,10 @@ namespace harp {
     public :
 
       psf ( ) {
-        format_ = "";
+        name_ = "";
       }
 
-      psf ( boost::property_tree::ptree const & props );
+      psf ( std::string const & name, boost::property_tree::ptree const & props );
 
       virtual ~psf ( ) { }
 
@@ -70,11 +70,7 @@ namespace harp {
 
       void project_transpose ( matrix_double_sparse & AT ) const;
       
-      std::string format ( ) const;
-      
-      static psf * create ( boost::property_tree::ptree const & props );
-      
-      psf * clone ( );
+      std::string name ( ) const;
       
       template < class T >
       boost::shared_ptr < T > shared_ref ( ) {
@@ -91,12 +87,12 @@ namespace harp {
 
       template < class Archive >
       void serialize ( Archive & ar, const unsigned int version ) {
-        ar & BOOST_SERIALIZATION_NVP(format_);
+        ar & BOOST_SERIALIZATION_NVP(name_);
         ar & BOOST_SERIALIZATION_NVP(props_);
         return;
       }
     
-      std::string format_;
+      std::string name_;
       boost::property_tree::ptree props_;
       
       

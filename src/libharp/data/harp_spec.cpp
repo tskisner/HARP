@@ -1,45 +1,19 @@
 // @COPYRIGHT@
 
-#include <harp_internal.hpp>
+#include <harp_data_internal.hpp>
 
 
 using namespace std;
 using namespace harp;
 
 
-harp::spec::spec ( boost::property_tree::ptree const & props ) {
+harp::spec::spec ( std::string const & name, boost::property_tree::ptree const & props ) {
   props_ = props;
-  format_ = props.get < string > ( "format" );
+  name_ = name;
 }
 
 
-string harp::spec::format ( ) const {
-  return format_;
-}
-
-
-spec * harp::spec::clone ( ) {
-  return create ( props_ );
-}
-
-
-spec * harp::spec::create ( boost::property_tree::ptree const & props ) {
-
-  string format = props.get < string > ( "format" );
-
-  if ( format == "specter" ) {
-    return static_cast < spec * > ( new spec_specter ( props ) );
-  }
-
-  if ( format == "sim" ) {
-    return static_cast < spec * > ( new spec_sim ( props ) );
-  }
-  
-  std::ostringstream o;
-  o << "Cannot create spec of unknown format (" << format << ")";
-  HARP_THROW( o.str().c_str() );
-
-  return NULL;
-  
+string harp::spec::name ( ) const {
+  return name_;
 }
 

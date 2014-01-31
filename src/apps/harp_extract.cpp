@@ -82,6 +82,9 @@ int main ( int argc, char *argv[] ) {
     debug = true;
   }
 
+  // Get plugin registry
+
+  plugin_registry & reg = plugin_registry::get();
 
   // Read metadata
   
@@ -103,9 +106,10 @@ int main ( int argc, char *argv[] ) {
   tstart = wtime();
 
   boost::property_tree::ptree psf_props;
+  string psf_type = par.get < string > ( "psf_type" );
   psf_props = par.get_child ( "psf" );
 
-  psf_p design ( psf::create ( psf_props ) );
+  psf_p design ( reg.create_psf ( psf_type, psf_props ) );
 
   size_t psf_imgrows = design->img_rows();
   size_t psf_imgcols = design->img_cols();
@@ -135,9 +139,10 @@ int main ( int argc, char *argv[] ) {
   tstart = wtime();
 
   boost::property_tree::ptree img_props;
+  string img_type = par.get < string > ( "image_type" );
   img_props = par.get_child ( "image" );
 
-  image_p img ( image::create ( img_props ) );
+  image_p img ( reg.create_image ( img_type, img_props ) );
 
   size_t imgrows = img->n_rows();
   size_t imgcols = img->n_cols();
@@ -248,9 +253,10 @@ int main ( int argc, char *argv[] ) {
 
     tstart = wtime();
 
+    string truth_type = par.get < string > ( "truth_type" );
     boost::property_tree::ptree truth_props = par.get_child ( "truth" );
 
-    spec_p truth_spec ( spec::create ( truth_props ) );
+    spec_p truth_spec ( reg.create_spec ( truth_type, truth_props ) );
     size_t truth_nspec = truth_spec->n_spec();
     size_t truth_nlambda = truth_spec->n_lambda();
     size_t truth_nbins = truth_nspec * truth_nlambda;
@@ -351,7 +357,6 @@ int main ( int argc, char *argv[] ) {
   tstart = wtime();
 
   boost::property_tree::ptree solution_props;
-  solution_props.put ( "format", "specter" );
   solution_props.put ( "nspec", psf_nspec );
   solution_props.put ( "nlambda", psf_nlambda );
 
@@ -416,7 +421,6 @@ int main ( int argc, char *argv[] ) {
     tstart = wtime();
 
     solution_props.clear();
-    solution_props.put ( "format", "fits" );
     solution_props.put ( "rows", imgrows );
     solution_props.put ( "cols", imgcols );
 
@@ -426,7 +430,7 @@ int main ( int argc, char *argv[] ) {
     design->project_transpose ( AT );
 
     vector_double f_projected;
-    spec_project ( AT, data_f, f_projected );
+    sparse_mv_trans ( AT, data_f, f_projected );
 
     data_f.resize(0);
 
@@ -448,7 +452,7 @@ int main ( int argc, char *argv[] ) {
       tstart = wtime();
 
       vector_double truth_projected;
-      spec_project ( AT, data_truth, truth_projected );
+      sparse_mv_trans ( AT, data_truth, truth_projected );
 
       // save more memory before allocating chisquare image
 

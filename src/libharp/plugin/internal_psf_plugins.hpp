@@ -153,6 +153,8 @@ namespace harp {
 
   BOOST_SERIALIZATION_SHARED_PTR(psf_gauss)
 
+  psf * psf_gauss_create ( boost::property_tree::ptree const & props );
+
 
   // simulated elliptical gaussian PSF
 
@@ -229,6 +231,7 @@ namespace harp {
         ar & BOOST_SERIALIZATION_NVP(psf_fwhm_);
         ar & BOOST_SERIALIZATION_NVP(first_lambda_);
         ar & BOOST_SERIALIZATION_NVP(last_lambda_);
+        ar & BOOST_SERIALIZATION_NVP(lambda_spec_type_);
         ar & BOOST_SERIALIZATION_NVP(lambda_spec_props_);
         return;
       }
@@ -245,6 +248,7 @@ namespace harp {
       double first_lambda_;
       double last_lambda_;
       boost::property_tree::ptree lambda_spec_props_;
+      std::string lambda_spec_type_;
 
       size_t nspec_;
       size_t nlambda_;
@@ -260,6 +264,8 @@ namespace harp {
   };
 
   BOOST_SERIALIZATION_SHARED_PTR(psf_gauss_sim)
+
+  psf * psf_gauss_sim_create ( boost::property_tree::ptree const & props );
 
 
   // Gauss-Hermite PSF
@@ -338,6 +344,8 @@ namespace harp {
   };
 
   BOOST_SERIALIZATION_SHARED_PTR(psf_gh)
+
+  psf * psf_gh_create ( boost::property_tree::ptree const & props );
 
 
 }

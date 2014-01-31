@@ -1,6 +1,6 @@
 // @COPYRIGHT@
 
-#include <harp_internal.hpp>
+#include <harp_data_internal.hpp>
 
 #include <cstdio>
 #include <cctype>

@@ -77,6 +77,8 @@ namespace harp {
 
   BOOST_SERIALIZATION_SHARED_PTR(spec_sim)
 
+  spec * spec_sim_create ( boost::property_tree::ptree const & props );
+
 
 
   void specter_read_targets ( fitsfile * fp, std::vector < target > & target_list );
@@ -152,6 +154,8 @@ namespace harp {
   };
 
   BOOST_SERIALIZATION_SHARED_PTR(spec_specter)
+
+  spec * spec_specter_create ( boost::property_tree::ptree const & props );
 
   
 }

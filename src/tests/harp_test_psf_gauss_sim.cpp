@@ -15,6 +15,8 @@ using namespace harp;
 
 void harp::test_psf_gauss_sim ( string const & datadir ) {
 
+  plugin_registry & reg = plugin_registry::get();
+
   string specpath = datadir + "/spec_sim.fits.out";
   string filepath = datadir + "/psf_gauss_sim.fits.out";
 
@@ -24,16 +26,15 @@ void harp::test_psf_gauss_sim ( string const & datadir ) {
 
   boost::property_tree::ptree spec_props;
   spec_props.clear();
-  spec_props.put ( "format", "specter" );
   spec_props.put ( "path", specpath );
 
-  spec_p checkspec ( spec::create ( spec_props ) );
+  spec_p checkspec ( reg.create_spec ( "specter", spec_props ) );
 
   size_t spec_nspec = checkspec->n_spec();
   size_t spec_nlambda = checkspec->n_lambda();
 
   boost::property_tree::ptree gauss_props;
-  gauss_props.put ( "format", "gauss_sim" );
+  gauss_props.put ( "lambda_spec_type", "specter" );
   gauss_props.put_child ( "lambda_spec", spec_props );
   gauss_props.put ( "bundle_size", 25 );
   gauss_props.put ( "nbundle", 1 );

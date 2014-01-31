@@ -16,6 +16,8 @@ using namespace harp;
 
 void harp::test_spec_simspecter ( string const & datadir ) {
 
+  plugin_registry & reg = plugin_registry::get();
+
   cout << "Testing simulated spec generation..." << endl;
 
   size_t nlambda = 50;
@@ -27,7 +29,6 @@ void harp::test_spec_simspecter ( string const & datadir ) {
 
   boost::property_tree::ptree spec_props;
   spec_props.clear();
-  spec_props.put ( "format", "sim" );
   spec_props.put ( "nspec", nspec );
   spec_props.put ( "lambda_n", nlambda );
   spec_props.put ( "lambda_start", first_lambda );
@@ -37,7 +38,7 @@ void harp::test_spec_simspecter ( string const & datadir ) {
   spec_props.put ( "obj", 80.0 );
   spec_props.put ( "atmspace", 12 );
   spec_props.put ( "skymod", 25 );
-  spec_p testspec ( spec::create ( spec_props ) );
+  spec_p testspec ( reg.create_spec ( "sim", spec_props ) );
 
   // immediately serialize and restore, so that any issues with that process will impact the code that follows
 
@@ -77,7 +78,6 @@ void harp::test_spec_simspecter ( string const & datadir ) {
   string outfile = datadir + "/spec_sim.fits.out";
 
   boost::property_tree::ptree props;
-  props.put ( "format", "specter" );
   props.put ( "nspec", nspec );
   props.put ( "nlambda", nlambda );
 
@@ -93,10 +93,9 @@ void harp::test_spec_simspecter ( string const & datadir ) {
   cout << "Testing spec_specter operations..." << endl;
 
   spec_props.clear();
-  spec_props.put ( "format", "specter" );
   spec_props.put ( "path", outfile );
 
-  spec_p checkspec ( spec::create ( spec_props ) );
+  spec_p checkspec ( reg.create_spec ( "specter", spec_props ) );
 
   serialpath = datadir + "/spec_specter_serialize.xml.out";
   {

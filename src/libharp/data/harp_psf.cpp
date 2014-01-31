@@ -1,50 +1,20 @@
 // @COPYRIGHT@
 
-#include <harp_internal.hpp>
+#include <harp_data_internal.hpp>
 
 
 using namespace std;
 using namespace harp;
 
 
-harp::psf::psf ( boost::property_tree::ptree const & props ) {
+harp::psf::psf ( std::string const & name, boost::property_tree::ptree const & props ) {
   props_ = props;
-  format_ = props.get < string > ( "format" );
+  name_ = name;
 }
 
 
-string harp::psf::format ( ) const {
-  return format_;
-}
-
-
-psf * harp::psf::clone ( ) {
-  return create ( props_ );
-}
-
-
-psf * harp::psf::create ( boost::property_tree::ptree const & props ) {
-  
-  string format = props.get < string > ( "format" );
-
-  if ( format == "gauss_sim" ) {
-    return static_cast < psf * > ( new psf_gauss_sim ( props ) );
-  }
-
-  if ( format == "gauss" ) {
-    return static_cast < psf * > ( new psf_gauss ( props ) );
-  }
-
-  if ( format == "gh" ) {
-    return static_cast < psf * > ( new psf_gh ( props ) );
-  }
-  
-  std::ostringstream o;
-  o << "Cannot create psf of unknown format (" << format << ")";
-  HARP_THROW( o.str().c_str() );
-
-  return NULL;
-  
+string harp::psf::name ( ) const {
+  return name_;
 }
 
 
