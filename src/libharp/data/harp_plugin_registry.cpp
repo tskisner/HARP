@@ -46,12 +46,11 @@ void harp::plugin_registry::find_dlls ( string const & dirpath, vector < string 
 
   string shared_ext = ".so";
 #ifdef LT_MODULE_EXT
-  cerr << "DBG: using module extension " << LT_MODULE_EXT << endl;
   shared_ext = LT_MODULE_EXT;
 #endif
 
   boost::cmatch what;
-  boost::regex expr ( "harp_plugin_*.so" );
+  boost::regex expr ( "harp_plugin_.*.so" );
 
   while ( ( dit = readdir ( dip ) ) != NULL ) {
     // if this entry is a file with the right name convention, add to list
@@ -71,46 +70,48 @@ void harp::plugin_registry::find_dlls ( string const & dirpath, vector < string 
 }
 
 
-void harp::plugin_registry::register_image ( std::string const & name, image_factory create ) {
-  if ( image_plugins_.count ( name ) > 0 ) {
+void harp::plugin_registry::register_image ( std::string const & type, image_factory create ) {
+  if ( image_plugins_.count ( type ) > 0 ) {
     ostringstream o;
-    o << "image plugin \"" << name << "\" is already registered";
+    o << "image plugin \"" << type << "\" is already registered";
     HARP_THROW( o.str().c_str() );
   }
 
-  image_plugins_[ name ] = create;
+  image_plugins_[ type ] = create;
 
   return;
 }
 
 
-void harp::plugin_registry::register_spec ( std::string const & name, spec_factory create ) {
-  if ( spec_plugins_.count ( name ) > 0 ) {
+void harp::plugin_registry::register_spec ( std::string const & type, spec_factory create ) {
+  if ( spec_plugins_.count ( type ) > 0 ) {
     ostringstream o;
-    o << "spec plugin \"" << name << "\" is already registered";
+    o << "spec plugin \"" << type << "\" is already registered";
     HARP_THROW( o.str().c_str() );
   }
 
-  spec_plugins_[ name ] = create;
+  spec_plugins_[ type ] = create;
 
   return;
 }
 
 
-void harp::plugin_registry::register_psf ( std::string const & name, psf_factory create ) {
-  if ( psf_plugins_.count ( name ) > 0 ) {
+void harp::plugin_registry::register_psf ( std::string const & type, psf_factory create ) {
+  if ( psf_plugins_.count ( type ) > 0 ) {
     ostringstream o;
-    o << "psf plugin \"" << name << "\" is already registered";
+    o << "psf plugin \"" << type << "\" is already registered";
     HARP_THROW( o.str().c_str() );
   }
 
-  psf_plugins_[ name ] = create;
+  psf_plugins_[ type ] = create;
 
   return;
 }
 
 
-harp::plugin_registry::plugin_registry ( ) {
+harp::plugin_registry::plugin_registry ( bool debug ) {
+
+  string prefix = "  harp plugin_registry:  ";
 
   // register internal, static plugins
 
@@ -126,6 +127,10 @@ harp::plugin_registry::plugin_registry ( ) {
   char * envval = getenv ( plugin_path );
   if ( envval ) {
     path_ = envval;
+  }
+
+  if ( debug ) {
+    cerr << prefix << "using " << plugin_path << " = " << path_ << endl;
   }
 
   size_t offset = 0;
@@ -159,28 +164,43 @@ harp::plugin_registry::plugin_registry ( ) {
       dirpath.erase ( dirpath.size() - 1, 1 );
     }
 
+    if ( debug ) {
+      cerr << prefix << "searching " << dirpath << " for plugins" << endl;
+    }
+
     find_dlls ( dirpath, files_ );
     
   }
 
   // go through every plugin file and call the init() method
 
+  // flush error buffer
+  char * err = dlerror();
+
   for ( vector < string > :: iterator it = files_.begin(); it != files_.end(); ++it ) {
     handles_[ (*it) ] = dlopen ( it->c_str(), 0 );
 
-    char * err = dlerror();
+    if ( debug ) {
+      cerr << prefix << "loading DLL " << (*it) << endl;
+    }
+
+    err = dlerror();
     if ( err != NULL ) {
       ostringstream o;
       o << "error opening plugin \"" << (*it) << "\": " << err;
       HARP_THROW( o.str().c_str() );
     }
 
+    // do global library symbols have an underscore prefix?
     string initname = "initialize";
     #ifdef NEED_USCORE
     initname = "_initialize";
     #endif
 
-    void (*init)();
+    // function pointer to the initialize function in the DLL
+    void (*init)( void * );
+
+    // this casting technique is recommended from the dlsym manpage...
     *(void **) (&init) = dlsym ( handles_[ (*it) ], initname.c_str() );
 
     err = dlerror();
@@ -190,7 +210,9 @@ harp::plugin_registry::plugin_registry ( ) {
       HARP_THROW( o.str().c_str() );
     }
 
-    (*init)();
+    void * thisvoid = static_cast < void * > (this);
+
+    (*init)( thisvoid );
 
   }
 
@@ -228,33 +250,36 @@ harp::plugin_registry::~plugin_registry ( ) {
 }
 
 
-image * harp::plugin_registry::create_image ( std::string const & name, boost::property_tree::ptree const & props ) {
-  if ( image_plugins_.count ( name ) == 0 ) {
+image * harp::plugin_registry::create_image ( std::string const & type, boost::property_tree::ptree const & props ) {
+  if ( image_plugins_.count ( type ) == 0 ) {
+    cerr << "harp:  image plugin \"" << type << "\" is not registered- did you forget to set HARP_PLUGIN_PATH?" << endl;
     ostringstream o;
-    o << "image plugin \"" << name << "\" is not registered";
+    o << "image plugin \"" << type << "\" is not registered";
     HARP_THROW( o.str().c_str() );
   }
-  return (*image_plugins_[name])( props );
+  return (*image_plugins_[type])( props );
 }
 
 
-psf * harp::plugin_registry::create_psf ( std::string const & name, boost::property_tree::ptree const & props ) {
-  if ( psf_plugins_.count ( name ) == 0 ) {
+psf * harp::plugin_registry::create_psf ( std::string const & type, boost::property_tree::ptree const & props ) {
+  if ( psf_plugins_.count ( type ) == 0 ) {
+    cerr << "harp:  psf plugin \"" << type << "\" is not registered- did you forget to set HARP_PLUGIN_PATH?" << endl;
     ostringstream o;
-    o << "psf plugin \"" << name << "\" is not registered";
+    o << "psf plugin \"" << type << "\" is not registered";
     HARP_THROW( o.str().c_str() );
   }
-  return (*psf_plugins_[name])( props );
+  return (*psf_plugins_[type])( props );
 }
 
 
-spec * harp::plugin_registry::create_spec ( std::string const & name, boost::property_tree::ptree const & props ) {
-  if ( spec_plugins_.count ( name ) == 0 ) {
+spec * harp::plugin_registry::create_spec ( std::string const & type, boost::property_tree::ptree const & props ) {
+  if ( spec_plugins_.count ( type ) == 0 ) {
+    cerr << "harp:  spec plugin \"" << type << "\" is not registered- did you forget to set HARP_PLUGIN_PATH?" << endl;
     ostringstream o;
-    o << "spec plugin \"" << name << "\" is not registered";
+    o << "spec plugin \"" << type << "\" is not registered";
     HARP_THROW( o.str().c_str() );
   }
-  return (*spec_plugins_[name])( props );
+  return (*spec_plugins_[type])( props );
 }
 
 

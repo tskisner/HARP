@@ -62,22 +62,22 @@ namespace harp {
 
       ~plugin_registry ( );
 
-      static plugin_registry & get ( ) {
-        static plugin_registry instance;
+      static plugin_registry & get ( bool debug = false ) {
+        static plugin_registry instance ( debug );
         return instance;
       }
 
-      void register_image ( std::string const & name, image_factory create );
-      void register_spec ( std::string const & name, spec_factory create );
-      void register_psf ( std::string const & name, psf_factory create );
+      void register_image ( std::string const & type, image_factory create );
+      void register_spec ( std::string const & type, spec_factory create );
+      void register_psf ( std::string const & type, psf_factory create );
 
-      image * create_image ( std::string const & name, boost::property_tree::ptree const & props );
-      psf * create_psf ( std::string const & name, boost::property_tree::ptree const & props );
-      spec * create_spec ( std::string const & name, boost::property_tree::ptree const & props );
+      image * create_image ( std::string const & type, boost::property_tree::ptree const & props );
+      psf * create_psf ( std::string const & type, boost::property_tree::ptree const & props );
+      spec * create_spec ( std::string const & type, boost::property_tree::ptree const & props );
       
     private :
 
-      plugin_registry ( );
+      plugin_registry ( bool debug );
       
       // do not implement these two, to prevent copying
       plugin_registry ( plugin_registry const & orig );

@@ -1,0 +1,25 @@
+This directory demonstrates compilation of external HARP plugins.
+
+First, install HARP and ensure that the "harpconfig" script is in your
+default PATH (type "which harpconfig" to verify).  Now you should be able
+to type "make" in this directory and it will compile a single *.so file
+(which is the plugin) and the executable "harp_example", which simply
+tests the instantiation of the fake example plugins.
+
+To test that the example plugins are loaded, export the directory containing
+the *.so file to HARP_PLUGIN_PATH.  If you are in this directory currently
+you can do:
+
+$>  export HARP_PLUGIN_PATH=`pwd`
+
+and then run the test executable:
+
+$>  ./harp_example
+
+This enables extra debugging information in the registry in order to show
+what DLLs are being loaded.
+
+To actually use your own plugins with tools like harp_extract, ensure that
+the JSON parameter file that is passed to that tool contains the name of
+your plugin type and any parameters it needs.
+

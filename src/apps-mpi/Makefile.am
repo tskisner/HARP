@@ -2,7 +2,7 @@ CXX = @MPICXX@
 
 AM_CPPFLAGS = -I$(top_srcdir)/src/libharp-mpi -I$(top_srcdir)/src/libharp/math -I$(top_srcdir)/src/libharp/data -I$(top_srcdir)/src/libharp/plugin -I$(top_srcdir)/src/libharp -I$(top_srcdir)/src/apps-mpi $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS) $(ELEMENTAL_CPPFLAGS) $(CLIQUE_CPPFLAGS)
 AM_LDFLAGS =
-AM_LIBS = $(top_builddir)/src/libharp-mpi/libharp-mpi.la $(top_builddir)/src/libharp/libharp.la $(CFITSIO) $(BOOST_SERIALIZATION_LDFLAGS) $(BOOST_PROGRAM_OPTIONS_LDFLAGS) $(BOOST_SERIALIZATION_LIBS) $(BOOST_PROGRAM_OPTIONS_LIB) $(CLIQUE) $(ELEMENTAL) $(LAPACK_LIBS) $(BLAS_LIBS) $(FCLIBS) $(OPENMP_CXXFLAGS) -lm
+AM_LIBS = $(top_builddir)/src/libharp-mpi/libharp-mpi.la $(top_builddir)/src/libharp/libharp.la $(CFITSIO) $(BOOST_SERIALIZATION_LDFLAGS) $(BOOST_PROGRAM_OPTIONS_LDFLAGS) $(BOOST_REGEX_LDFLAGS) $(BOOST_REGEX_LIBS) $(BOOST_SERIALIZATION_LIBS) $(BOOST_PROGRAM_OPTIONS_LIB) $(CLIQUE) $(ELEMENTAL) $(LAPACK_LIBS) $(BLAS_LIBS) $(FCLIBS) $(OPENMP_CXXFLAGS) -lm
 AM_CXXFLAGS = $(OPENMP_CXXFLAGS)
 
 if ENABLE_AM_DEBUG

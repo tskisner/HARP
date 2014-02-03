@@ -149,6 +149,7 @@ dnl +------------------------------------------------
 dnl | Check for BOOST
 dnl +------------------------------------------------
 BOOST_REQUIRE([1.53], [AC_MSG_ERROR([Could not find BOOST library >= 1.53!])])
+BOOST_REGEX([], [AC_MSG_ERROR([Could not find BOOST regex library])])
 BOOST_SERIALIZATION([], [AC_MSG_ERROR([Could not find BOOST serialization library])])
 BOOST_PROGRAM_OPTIONS([], [AC_MSG_ERROR([Could not find BOOST program options library])])
 if test x"$harp_python" != xno; then
