@@ -1080,7 +1080,7 @@ gitexec=`which git 2>/dev/null`
 if [ "x${gitexec}" != "x" ]; then
     gitrevision=`${gitexec} rev-parse HEAD`
 fi
-echo "static const char * harp_revision_key = \"${gitrevision}\";" > ${START_PATH}/src/libharp/data/git-version.cpp
+echo "  static string harp_revision_key = \"${gitrevision}\";" > ${START_PATH}/src/libharp/data/git-version.cpp
 
 # Generate files needed for static plugins
 
@@ -1114,7 +1114,7 @@ for typ in spec psf image; do
     for pfile in ${pluginfiles}; do
         pluginname=`echo ${pfile} | sed -e "s#.*\/harp_plugin_${typ}_\(.*\)\.cpp#\1#"`
         echo "libharpplugin_la_SOURCES += ${pfile}" >> ${pluginmake}
-        echo "register_${typ} ( \"${pluginname}\", ${typ}_${pluginname}_create );" >> ${pluginreg}
+        echo "register_${typ} ( \"${pluginname}\", ${typ}_${pluginname}_create, \"${gitrevision}\" );" >> ${pluginreg}
     done
 done
 

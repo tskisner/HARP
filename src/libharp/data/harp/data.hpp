@@ -37,6 +37,8 @@ namespace harp {
   void ptree_print ( const boost::property_tree::ptree & pt, int level );
   void ptree_print ( const boost::property_tree::ptree & pt );
 
+  std::string const & source_version ( );
+
 }
 
 #include <harp/fits.hpp>
@@ -67,9 +69,9 @@ namespace harp {
         return instance;
       }
 
-      void register_image ( std::string const & type, image_factory create );
-      void register_spec ( std::string const & type, spec_factory create );
-      void register_psf ( std::string const & type, psf_factory create );
+      void register_image ( std::string const & type, image_factory create, std::string const & version );
+      void register_spec ( std::string const & type, spec_factory create, std::string const & version );
+      void register_psf ( std::string const & type, psf_factory create, std::string const & version );
 
       image * create_image ( std::string const & type, boost::property_tree::ptree const & props );
       psf * create_psf ( std::string const & type, boost::property_tree::ptree const & props );

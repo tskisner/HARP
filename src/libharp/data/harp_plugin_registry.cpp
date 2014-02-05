@@ -22,9 +22,6 @@ using namespace std;
 using namespace harp;
 
 
-// Include the generated file that contains the git revision
-#include "git-version.cpp"
-
 // List of directories to search for plugins.  This should be colon-separated, like
 // the standard PATH variable.  In each directory, we will look for files with
 // names like "harp_plugin_*.so".
@@ -70,10 +67,17 @@ void harp::plugin_registry::find_dlls ( string const & dirpath, vector < string 
 }
 
 
-void harp::plugin_registry::register_image ( std::string const & type, image_factory create ) {
+void harp::plugin_registry::register_image ( std::string const & type, image_factory create, std::string const & version ) {
   if ( image_plugins_.count ( type ) > 0 ) {
     ostringstream o;
     o << "image plugin \"" << type << "\" is already registered";
+    HARP_THROW( o.str().c_str() );
+  }
+
+  string const & internal = source_version();
+  if ( version != internal ) {
+    ostringstream o;
+    o << "image plugin \"" << type << "\" was compiled with a different version HARP, refusing to load";
     HARP_THROW( o.str().c_str() );
   }
 
@@ -83,10 +87,17 @@ void harp::plugin_registry::register_image ( std::string const & type, image_fac
 }
 
 
-void harp::plugin_registry::register_spec ( std::string const & type, spec_factory create ) {
+void harp::plugin_registry::register_spec ( std::string const & type, spec_factory create, std::string const & version ) {
   if ( spec_plugins_.count ( type ) > 0 ) {
     ostringstream o;
     o << "spec plugin \"" << type << "\" is already registered";
+    HARP_THROW( o.str().c_str() );
+  }
+
+  string const & internal = source_version();
+  if ( version != internal ) {
+    ostringstream o;
+    o << "image plugin \"" << type << "\" was compiled with a different version HARP, refusing to load";
     HARP_THROW( o.str().c_str() );
   }
 
@@ -96,10 +107,17 @@ void harp::plugin_registry::register_spec ( std::string const & type, spec_facto
 }
 
 
-void harp::plugin_registry::register_psf ( std::string const & type, psf_factory create ) {
+void harp::plugin_registry::register_psf ( std::string const & type, psf_factory create, std::string const & version ) {
   if ( psf_plugins_.count ( type ) > 0 ) {
     ostringstream o;
     o << "psf plugin \"" << type << "\" is already registered";
+    HARP_THROW( o.str().c_str() );
+  }
+
+  string const & internal = source_version();
+  if ( version != internal ) {
+    ostringstream o;
+    o << "image plugin \"" << type << "\" was compiled with a different version HARP, refusing to load";
     HARP_THROW( o.str().c_str() );
   }
 

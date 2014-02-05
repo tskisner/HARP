@@ -38,5 +38,12 @@ void harp::ptree_print ( const boost::property_tree::ptree & pt ) {
 }
 
 
+string const & harp::source_version ( ) {
+  // Include the generated file that contains the git revision
+  #include "git-version.cpp"
+  return harp_revision_key;
+}
+
+
 
 

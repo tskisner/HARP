@@ -73,14 +73,16 @@ void initialize ( void * registry ) {
 
   plugin_registry * reg = static_cast < plugin_registry * > ( registry );
 
+  string const & version = harp::source_version();
+
   // register spec plugin
-  reg->register_spec ( "example", spec_example_create );
+  reg->register_spec ( "example", spec_example_create, version );
 
   // register psf plugin
-  reg->register_psf ( "example", psf_example_create );
+  reg->register_psf ( "example", psf_example_create, version );
 
   // register image plugin
-  reg->register_image ( "example", image_example_create );
+  reg->register_image ( "example", image_example_create, version );
 
   return;
 }
