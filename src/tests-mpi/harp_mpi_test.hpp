@@ -12,6 +12,8 @@ namespace harp {
 
   void mpi_test_specslice ( std::string const & datadir );
 
+  void mpi_test_spec ( std::string const & datadir );
+
   
 }
 

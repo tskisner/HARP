@@ -28,6 +28,8 @@ int main ( int argc, char *argv[] ) {
 
   mpi_test_specslice ( datadir );
 
+  mpi_test_spec ( datadir );
+
   
   if ( myp == 0 ) {
     cout << endl;

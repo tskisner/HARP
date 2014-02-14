@@ -24,7 +24,8 @@ TESTS = harp_mpi_test
 harp_mpi_test_SOURCES = \
 	harp_mpi_test.cpp \
 	harp_mpi_test_linalg.cpp \
-	harp_mpi_test_specslice.cpp
+	harp_mpi_test_specslice.cpp \
+	harp_mpi_test_spec.cpp
 
 harp_mpi_test_LDADD = $(AM_LIBS)
 
