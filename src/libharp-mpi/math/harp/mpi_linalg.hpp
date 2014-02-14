@@ -67,7 +67,7 @@ namespace harp {
     out().resize ( in.Height() );
 
     for ( size_t i = 0; i < in.Height(); ++i ) {
-      out[i] = in.Get ( i, 0 );
+      out()[i] = in.Get ( i, 0 );
     }
 
     return;
@@ -92,7 +92,7 @@ namespace harp {
 
     // copy to output
 
-    elem_to_ublas ( local, out );
+    elem_to_ublas ( local, out() );
 
     return;
   }

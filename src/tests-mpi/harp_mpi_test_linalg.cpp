@@ -8,11 +8,10 @@
 using namespace std;
 using namespace harp;
 
-#define SIZE 15
+#define SIZE 50
 #define SPECSIZE 100
 #define NSPEC 10
 #define MAX 1000.0
-#define TOL 1.0e-6
 
 
 void harp::mpi_test_linalg ( string const & datadir ) {
@@ -22,6 +21,56 @@ void harp::mpi_test_linalg ( string const & datadir ) {
   int np = comm.size();
   int myp = comm.rank();
 
+  elem::Grid grid ( comm );
+
+  typedef boost::ecuyer1988 base_generator_type;
+  typedef boost::uniform_01<> distribution_type;
+  typedef boost::variate_generator < base_generator_type&, distribution_type > gen_type;
+
+  base_generator_type generator(42u);
+  gen_type gen ( generator, distribution_type() );
+
+  if ( myp == 0 ) {
+    cout << "Testing elemental / ublas conversions..." << endl;
+  }
+
+  vector_double intest ( SIZE );
+  vector_double outtest ( SIZE );
+  
+  for ( size_t i = 0; i < SIZE; ++i ) {
+    intest[i] = gen();
+  }
+
+  elem_matrix_local outtest_local ( SIZE, 1 );
+  
+  ublas_to_elem ( intest, outtest_local );
+
+  elem_to_ublas ( outtest_local, outtest );
+
+  for ( size_t i = 0; i < SIZE; ++i ) {
+    if ( fabs ( (outtest[i] - intest[i]) / intest[i] ) > std::numeric_limits < float > :: epsilon() ) {
+      cerr << "FAIL on proc " << myp << ", local vector element " << i << ", " << outtest[i] << " != " << intest[i] << endl;
+      exit(1);
+    }
+  }
+
+  mpi_matrix outtest_mpi ( SIZE, 1, grid );
+
+  ublas_to_elem ( intest, outtest_mpi );
+
+  elem_to_ublas ( outtest_mpi, outtest );
+
+  for ( size_t i = 0; i < SIZE; ++i ) {
+    if ( fabs ( (outtest[i] - intest[i]) / intest[i] ) > std::numeric_limits < float > :: epsilon() ) {
+      cerr << "FAIL on proc " << myp << ", mpi vector element " << i << ", " << outtest[i] << " != " << intest[i] << endl;
+      exit(1);
+    }
+  }
+
+  if ( myp == 0 ) {
+    cout << "  (PASSED)" << endl;
+  }
+
   if ( myp == 0 ) {
     cout << "Testing elemental eigendecomposition..." << endl;
   }
@@ -30,17 +79,8 @@ void harp::mpi_test_linalg ( string const & datadir ) {
   
   // construct random matrices
 
-  elem::Grid grid ( comm );
-
   mpi_matrix a1 ( SIZE, SIZE, grid );
   mpi_matrix a2 ( SIZE, SIZE, grid );
-
-  typedef boost::ecuyer1988 base_generator_type;
-  typedef boost::uniform_01<> distribution_type;
-  typedef boost::variate_generator < base_generator_type&, distribution_type > gen_type;
-
-  base_generator_type generator(42u);
-  gen_type gen ( generator, distribution_type() );
 
   for ( size_t i = 0; i < SIZE; ++i ) {
     for ( size_t j = 0; j < SIZE; ++j ) {
@@ -83,8 +123,8 @@ void harp::mpi_test_linalg ( string const & datadir ) {
     for ( size_t j = 0; j < SIZE; ++j ) {
       eval = eprod.Get ( j, i );
       sval = symprod.Get ( j, i );
-      relerr = fabs ( eval - sval ) / sval;
-      if ( relerr > TOL ) {
+      relerr = fabs ( ( eval - sval ) / sval );
+      if ( relerr > std::numeric_limits < float > :: epsilon() ) {
         cerr << "FAIL on matrix element (" << j << ", " << i << ") Av = " << sval << ", ev = " << eval << " rel err = " << relerr << endl;
         exit(1);
       }
@@ -110,8 +150,8 @@ void harp::mpi_test_linalg ( string const & datadir ) {
     for ( size_t j = 0; j < SIZE; ++j ) {
       inval = sym.Get ( j, i );
       outval = outcomp.Get ( j, i );
-      relerr = fabs ( outval - inval ) / inval;
-      if ( relerr > TOL ) {
+      relerr = fabs ( ( outval - inval ) / inval );
+      if ( relerr > std::numeric_limits < float > :: epsilon() ) {
         cerr << "FAIL on matrix element (" << j << ", " << i << ") input = " << inval << ", output = " << outval << " rel err = " << relerr << endl;
         exit(1);
       }
@@ -144,7 +184,7 @@ void harp::mpi_test_linalg ( string const & datadir ) {
       inval = mat_rt.Get ( j, i );
       outval = comp_rt.Get ( j, i );
       relerr = fabs ( outval - inval ) / inval;
-      if ( relerr > TOL ) {
+      if ( relerr > std::numeric_limits < float > :: epsilon() ) {
         cerr << "FAIL on doubly inverted sqrt matrix element (" << j << ", " << i << ") original = " << inval << ", output = " << outval << " rel err = " << relerr << endl;
         exit(1);
       }
@@ -199,7 +239,7 @@ void harp::mpi_test_linalg ( string const & datadir ) {
       inval = (double)ngang * outcomp.Get ( j, i );
       outval = redist_comp.Get ( j, i );
       relerr = fabs ( outval - inval ) / inval;
-      if ( relerr > TOL ) {
+      if ( relerr > std::numeric_limits < float > :: epsilon() ) {
         cerr << "FAIL on matrix element (" << j << ", " << i << ") input = " << inval << ", output = " << outval << " rel err = " << relerr << endl;
         exit(1);
       }
