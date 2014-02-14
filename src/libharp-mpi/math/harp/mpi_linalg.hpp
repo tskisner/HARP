@@ -17,6 +17,87 @@ namespace harp {
   typedef elem_matrix mpi_matrix;
 
 
+  // conversion routines between ublas and elemental column vectors
+
+  template < class V >
+  void ublas_to_elem ( boost::numeric::ublas::vector_expression < V > const & in, elem_matrix_local & out ) {
+    typedef V vector_type;
+
+    out.ResizeTo ( in().size(), 1 );
+    for ( size_t i = 0; i < in().size(); ++i ) {
+      out.Set ( i, 0, in()[i] );
+    }
+
+    return;
+  }
+
+  template < class V >
+  void ublas_to_elem ( boost::numeric::ublas::vector_expression < V > const & in, elem_matrix & out ) {
+    typedef V vector_type;
+
+    out.ResizeTo ( in().size(), 1 );
+
+    // populate local elements
+
+    size_t hlocal = out.LocalHeight();
+    size_t wlocal = out.LocalWidth();
+
+    size_t rowoff = out.ColShift();
+    size_t rowstride = out.ColStride();
+    size_t row;
+
+    for ( size_t i = 0; i < wlocal; ++i ) {
+      for ( size_t j = 0; j < hlocal; ++j ) {
+        row = rowoff + j * rowstride;
+        out.SetLocal ( j, i, in()[ row ] );
+      }
+    }
+
+    return;
+  }
+
+  template < class V >
+  void elem_to_ublas ( elem_matrix_local const & in, boost::numeric::ublas::vector_expression < V > & out ) {
+    typedef V vector_type;
+
+    if ( in.Width() != 1 ) {
+      HARP_MPI_ABORT( 0, "elem_to_ublas only works with single-column matrices" );
+    }
+
+    out().resize ( in.Height() );
+
+    for ( size_t i = 0; i < in.Height(); ++i ) {
+      out[i] = in.Get ( i, 0 );
+    }
+
+    return;
+  }
+
+  template < class V >
+  void elem_to_ublas ( elem_matrix const & in, boost::numeric::ublas::vector_expression < V > & out ) {
+    typedef V vector_type;
+
+    if ( in.Width() != 1 ) {
+      HARP_MPI_ABORT( 0, "elem_to_ublas only works with single-column matrices" );
+    }
+
+    // get a local copy
+
+    elem_matrix_local local ( in.Height(), 1 );
+
+    elem::AxpyInterface < double > globloc;
+    globloc.Attach( elem::GLOBAL_TO_LOCAL, in );
+    globloc.Axpy ( 1.0, local, 0, 0 );
+    globloc.Detach();
+
+    // copy to output
+
+    elem_to_ublas ( local, out );
+
+    return;
+  }
+
+
   // distributed sparse matrix
 
   class mpi_matrix_sparse_block {
@@ -25,9 +106,9 @@ namespace harp {
 
     public :
 
-      mpi_matrix_sparse_block ( );
+      mpi_matrix_sparse_block ( ) { }
 
-      ~mpi_matrix_sparse_block () { }
+      ~mpi_matrix_sparse_block ( ) { }
 
       size_t firstrow;
       size_t rows;
@@ -64,12 +145,14 @@ namespace harp {
 
       ~mpi_matrix_sparse () { }
 
-      boost::mpi::communicator const & comm ( ) { return comm_; }
+      boost::mpi::communicator const & comm ( ) const { return comm_; }
 
       mpi_matrix_sparse_block & block ( ) { return block_; }
 
-      size_t rows () { return rows_; }
-      size_t cols () { return cols_; }
+      mpi_matrix_sparse_block const & block ( ) const { return block_; }
+
+      size_t rows () const { return rows_; }
+      size_t cols () const { return cols_; }
 
     private :
 
@@ -96,6 +179,8 @@ namespace harp {
   void mpi_apply_inverse_norm ( mpi_matrix const & S, mpi_matrix & mat );
 
   void mpi_norm ( mpi_matrix const & D, mpi_matrix const & W, mpi_matrix & S );
+
+  void mpi_sparse_mv_trans ( mpi_matrix_sparse const & AT, mpi_matrix const & in, elem_matrix_local & out );
 
   void mpi_gang_distribute ( mpi_matrix const & mat, mpi_matrix & gmat );
 

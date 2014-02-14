@@ -21,6 +21,8 @@ namespace harp {
 #include <harp/mpi_spec.hpp>
 #include <harp/mpi_psf.hpp>
 
+#include <harp/mpi_spec_slice.hpp>
+
 #include <harp/mpi_extraction.hpp>
 
 

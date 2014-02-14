@@ -1,0 +1,31 @@
+#!/bin/sh
+
+# you should call this script with extra options.  At the
+# very least, you should specify the install prefix.
+# For example:
+#
+# $> ./platforms/hpcports --prefix=/my/install/dir
+
+OPTS=$@
+
+# Link to packages from HPCPorts
+
+sharedopt="--enable-shared --enable-python"
+if [ "x${HPCP_DYNAMIC}" = "xFALSE" ]; then
+    sharedopt="--disable-shared --disable-python --enable-all-static"
+fi
+
+CC="${HPCP_CC}" \
+CXX="${HPCP_CXX}" \
+MPICXX="${HPCP_MPICXX}" \
+CXXFLAGS="-O0 -g -std=c++11 -stdlib=libc++" \
+OPENMP_CXXFLAGS="${HPCP_OMPFLAGS}" \
+LDFLAGS="${HPCP_LDFLAGS}" \
+LIBS="${HPCP_LIBS}" \
+./configure ${sharedopt} ${OPTS} \
+--with-blas="${blas_LIBS_CXX}" \
+--with-lapack="${lapack_LIBS_CXX}" \
+--with-cfitsio="${cfitsio_PREFIX}" \
+--with-boost="${boost_PREFIX}" \
+--with-elemental="${elemental_PREFIX}"
+

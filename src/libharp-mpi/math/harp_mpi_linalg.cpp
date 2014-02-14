@@ -295,6 +295,89 @@ void harp::mpi_norm ( mpi_matrix const & D, mpi_matrix const & W, mpi_matrix & S
 }
 
 
+void mpi_sparse_mv_trans ( mpi_matrix_sparse const & AT, mpi_matrix const & in, elem_matrix_local & out ) {
+
+  int np;
+  int myp;
+
+  MPI_Comm_size ( AT.comm(), &np );
+  MPI_Comm_rank ( AT.comm(), &myp );
+
+  // check consistent sizes
+
+  size_t nrows = AT.rows();
+  size_t ncols = AT.cols();
+
+  if ( in.Height() != nrows ) {
+    std::ostringstream o;
+    o << "number of rows in input vector (" << in.Height() << ") does not match number of rows in transposed matrix (" << nrows << ")";
+    HARP_MPI_ABORT( myp, o.str().c_str() );
+  }
+
+  out.ResizeTo ( ncols, 1 );
+
+  // get local chunk of input vector which goes with our range of sparse matrix rows
+
+  size_t local_firstrow = AT.block().firstrow;
+  size_t local_nrows = AT.block().rows;
+  size_t local_nvals = AT.block().vals;
+
+  elem_matrix_local local_in ( local_nrows, 1 );
+  local_matrix_zero ( local_in );
+
+  elem::AxpyInterface < double > globloc;
+  globloc.Attach( elem::GLOBAL_TO_LOCAL, in );
+  globloc.Axpy ( 1.0, local_in, local_firstrow, 0 );
+  globloc.Detach();
+
+  // resize output to zero, to save mem temporarily
+
+  out.ResizeTo ( 0, 0 );
+
+  // compute local output contribution
+
+  elem_matrix_local local_out ( ncols, 1 );
+  local_matrix_zero ( local_out );
+
+  double val;
+  double inval;
+  double outval;
+  size_t row;
+  size_t col;
+
+  for ( size_t loc = 0; loc < local_nvals; ++loc ) {
+    row = AT.block().row[ loc ];
+    col = AT.block().col[ loc ];
+    val = AT.block().data[ loc ];
+    inval = local_in.Get ( row - local_firstrow, 0 );
+    outval = local_out.Get ( col, 0 );
+    local_out.Set ( col, 0, outval + inval * val );
+  }
+
+  mpi_matrix globout ( ncols, 1, in.Grid() );
+  mpi_matrix_zero ( globout );
+
+  elem::AxpyInterface < double > locglob;
+  locglob.Attach( elem::LOCAL_TO_GLOBAL, globout );
+  locglob.Axpy ( 1.0, local_out, 0, 0 );
+  locglob.Detach();
+
+  // clear local buffer and resize output
+
+  local_out.ResizeTo ( 0, 0 );
+  out.ResizeTo ( ncols, 1 );
+  local_matrix_zero ( out );
+
+  // get local copy for output
+  
+  globloc.Attach( elem::GLOBAL_TO_LOCAL, globout );
+  globloc.Axpy ( 1.0, out, 0, 0 );
+  globloc.Detach();
+
+  return;
+}
+
+
 void harp::mpi_gang_distribute ( mpi_matrix const & mat, mpi_matrix & gmat ) {
 
   if ( ( mat.Height() != gmat.Height() ) || ( mat.Width() != gmat.Width() ) ) {

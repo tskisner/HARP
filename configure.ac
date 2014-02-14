@@ -183,6 +183,7 @@ dnl AC_CONFIG_FILES([src/python/Makefile])
 dnl AC_CONFIG_FILES([src/tests-python/Makefile])
 AC_CONFIG_FILES([src/libharp-mpi/math/Makefile])
 AC_CONFIG_FILES([src/libharp-mpi/Makefile])
+AC_CONFIG_FILES([src/tests-mpi/Makefile])
 AC_CONFIG_FILES([docs/Makefile])
 dnl +------------------------------------------------
 dnl | Generate Makefiles

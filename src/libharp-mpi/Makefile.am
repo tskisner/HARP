@@ -32,11 +32,8 @@ libharp_mpi_la_SOURCES = \
 	harp_mpi.cpp \
 	harp_mpi_image.cpp \
 	harp_mpi_spec.cpp \
-	harp_mpi_psf.cpp
-#
-#	harp_mpi_fits.cpp \
-#	harp_mpi_spec_slice.cpp
-# harp_extraction.cpp harp_sky.cpp
+	harp_mpi_psf.cpp \
+	harp_mpi_spec_slice.cpp
 
 libharp_mpi_la_LDFLAGS = -version-info @HARP_LT_VERSION@
 

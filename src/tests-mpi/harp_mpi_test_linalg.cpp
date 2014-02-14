@@ -1,7 +1,7 @@
 
 #include <iostream>
 
-#include <harp_test.hpp>
+#include <harp_mpi_test.hpp>
 
 #include <boost/random.hpp>
 
@@ -14,26 +14,26 @@ using namespace harp;
 #define MAX 1000.0
 #define TOL 1.0e-6
 
-void harp::test_elemental ( string const & datadir ) {
 
-  int np;
-  int myp;
+void harp::mpi_test_linalg ( string const & datadir ) {
 
-  MPI_Comm_size ( MPI_COMM_WORLD, &np );
-  MPI_Comm_rank ( MPI_COMM_WORLD, &myp );
+  boost::mpi::communicator comm;
+
+  int np = comm.size();
+  int myp = comm.rank();
 
   if ( myp == 0 ) {
-    cerr << "Testing elemental eigendecomposition..." << endl;
+    cout << "Testing elemental eigendecomposition..." << endl;
   }
 
   cerr.precision(16);
   
   // construct random matrices
 
-  elem::Grid grid ( MPI_COMM_WORLD );
+  elem::Grid grid ( comm );
 
-  matrix_dist a1 ( SIZE, SIZE, grid );
-  matrix_dist a2 ( SIZE, SIZE, grid );
+  mpi_matrix a1 ( SIZE, SIZE, grid );
+  mpi_matrix a2 ( SIZE, SIZE, grid );
 
   typedef boost::ecuyer1988 base_generator_type;
   typedef boost::uniform_01<> distribution_type;
@@ -51,23 +51,23 @@ void harp::test_elemental ( string const & datadir ) {
 
   // construct symmetric test matrix
 
-  matrix_dist sym ( SIZE, SIZE, grid );
+  mpi_matrix sym ( SIZE, SIZE, grid );
 
   elem::Gemm ( elem::TRANSPOSE, elem::NORMAL, 1.0, a1, a1, 0.0, sym );
   elem::Gemm ( elem::TRANSPOSE, elem::NORMAL, 1.0, a2, a2, 1.0, sym );
 
   // get eigenvectors and eigenvalues
 
-  matrix_dist w;
-  matrix_dist Z;
+  mpi_matrix w;
+  mpi_matrix Z;
 
-  eigen_decompose ( sym, w, Z );
+  mpi_eigen_decompose ( sym, w, Z );
 
-  matrix_dist symprod ( SIZE, SIZE, grid );
-  matrix_dist eprod ( SIZE, SIZE, grid );
-  matrix_dist wdiag ( SIZE, SIZE, grid );
+  mpi_matrix symprod ( SIZE, SIZE, grid );
+  mpi_matrix eprod ( SIZE, SIZE, grid );
+  mpi_matrix wdiag ( SIZE, SIZE, grid );
 
-  dist_matrix_zero ( wdiag );
+  mpi_matrix_zero ( wdiag );
   for ( size_t i = 0; i < SIZE; ++i ) {
     double wval = w.Get(i,0);
     wdiag.Set ( i, i, wval );
@@ -92,12 +92,16 @@ void harp::test_elemental ( string const & datadir ) {
   }
 
   if ( myp == 0 ) {
-    cerr << "Testing re-composition..." << endl;
+    cout << "  (PASSED)" << endl;
   }
 
-  matrix_dist outcomp;
+  if ( myp == 0 ) {
+    cout << "Testing re-composition..." << endl;
+  }
 
-  eigen_compose ( EIG_NONE, w, Z, outcomp );
+  mpi_matrix outcomp;
+
+  mpi_eigen_compose ( EIG_NONE, w, Z, outcomp );
 
   double inval;
   double outval;
@@ -114,16 +118,16 @@ void harp::test_elemental ( string const & datadir ) {
     }
   }
 
-  matrix_dist mat_rt;
-  eigen_compose ( EIG_SQRT, w, Z, mat_rt );
+  mpi_matrix mat_rt;
+  mpi_eigen_compose ( EIG_SQRT, w, Z, mat_rt );
 
-  matrix_dist mat_invrt;
-  eigen_compose ( EIG_INVSQRT, w, Z, mat_invrt );
+  mpi_matrix mat_invrt;
+  mpi_eigen_compose ( EIG_INVSQRT, w, Z, mat_invrt );
   
-  matrix_dist w_inv;
-  matrix_dist Z_inv;
+  mpi_matrix w_inv;
+  mpi_matrix Z_inv;
 
-  eigen_decompose ( mat_invrt, w_inv, Z_inv );
+  mpi_eigen_decompose ( mat_invrt, w_inv, Z_inv );
 
   for ( size_t i = 0; i < SIZE; ++i ) {
     double val = w_inv.Get(i,0);
@@ -131,9 +135,9 @@ void harp::test_elemental ( string const & datadir ) {
     w_inv.Set ( i, 0, val );
   }
 
-  matrix_dist comp_rt;
+  mpi_matrix comp_rt;
 
-  eigen_compose ( EIG_INVSQRT, w_inv, Z_inv, comp_rt );
+  mpi_eigen_compose ( EIG_INVSQRT, w_inv, Z_inv, comp_rt );
 
   for ( size_t i = 0; i < SIZE; ++i ) {
     for ( size_t j = 0; j < SIZE; ++j ) {
@@ -148,11 +152,11 @@ void harp::test_elemental ( string const & datadir ) {
   }
 
   if ( myp == 0 ) {
-    cerr << "  (PASSED)" << endl;
+    cout << "  (PASSED)" << endl;
   }
 
   if ( myp == 0 ) {
-    cerr << "Testing gang-parallel (re)distribution..." << endl;
+    cout << "Testing gang-parallel (re)distribution..." << endl;
   }
 
   int gangsize = (int)( np / 2 );
@@ -177,20 +181,18 @@ void harp::test_elemental ( string const & datadir ) {
     grank = MPI_UNDEFINED;
   }
 
-  MPI_Comm gcomm;
-  int ret = MPI_Comm_split ( MPI_COMM_WORLD, gang, grank, &gcomm );
-  mpi_check ( MPI_COMM_WORLD, ret );
+  boost::mpi::communicator gcomm = comm.split ( gang, grank );
 
   // create gang process grids
 
   elem::Grid gang_grid ( gcomm );
 
-  matrix_dist redist_comp ( outcomp );
-  matrix_dist gout_comp ( SIZE, SIZE, gang_grid );
+  mpi_matrix redist_comp ( outcomp );
+  mpi_matrix gout_comp ( SIZE, SIZE, gang_grid );
 
-  gang_distribute ( outcomp, gout_comp );
+  mpi_gang_distribute ( outcomp, gout_comp );
 
-  gang_accum ( gout_comp, redist_comp );
+  mpi_gang_accum ( gout_comp, redist_comp );
 
   for ( size_t i = 0; i < SIZE; ++i ) {
     for ( size_t j = 0; j < SIZE; ++j ) {
@@ -205,68 +207,9 @@ void harp::test_elemental ( string const & datadir ) {
   }
 
   if ( myp == 0 ) {
-    cerr << "  (PASSED)" << endl;
+    cout << "  (PASSED)" << endl;
   }
 
-  if ( myp == 0 ) {
-    cerr << "Testing gang-parallel slice and accum..." << endl;
-  }
-
-  matrix_dist fullspec ( NSPEC * SPECSIZE, 1, grid );
-  matrix_dist comp_fullspec ( NSPEC * SPECSIZE, 1, grid );
-
-  for ( size_t i = 0; i < NSPEC; ++i ) {
-    for ( size_t j = 0; j < SPECSIZE; ++j ) {
-      fullspec.Set ( i * SPECSIZE + j, 0, 100.0 + (double)j );
-    }
-  }
-
-  matrix_dist gang_fullspec ( NSPEC * SPECSIZE, 1, gang_grid );
-
-  gang_distribute ( fullspec, gang_fullspec );
-
-  size_t nspec_chunk = (size_t)( NSPEC / 2 );
-  size_t first_spec = (size_t)( NSPEC / 4 );
-  size_t nlambda_chunk = (size_t)( SPECSIZE / 4 );
-  size_t first_lambda = (size_t)( SPECSIZE / 8 );
-
-  if ( myp == 0 ) {
-    cout << "spec range = " << first_spec << " - " << (first_spec + nspec_chunk - 1) << endl;
-    cout << "lambda range = " << first_lambda << " - " << (first_lambda + nlambda_chunk - 1) << endl;
-  }
-
-  matrix_dist gang_subspec ( nspec_chunk * nlambda_chunk, 1, gang_grid );
-
-  sub_spec ( gang_fullspec, NSPEC, first_spec, nspec_chunk, first_lambda, nlambda_chunk, gang_subspec );
-
-  MPI_Barrier ( MPI_COMM_WORLD );
-
-  accum_spec ( gang_fullspec, NSPEC, first_spec, nspec_chunk, first_lambda, nlambda_chunk, gang_subspec );
-
-  gang_accum ( gang_fullspec, comp_fullspec );
-
-  MPI_Barrier ( MPI_COMM_WORLD );
-
-  for ( size_t i = 0; i < NSPEC; ++i ) {
-    for ( size_t j = 0; j < SPECSIZE; ++j ) {
-      inval = fullspec.Get ( i * SPECSIZE + j, 0 ) * (double)ngang;
-      if ( ( ( i >= first_spec ) && ( i < first_spec + nspec_chunk ) ) && ( ( j >= first_lambda ) && ( j < first_lambda + nlambda_chunk ) ) ) {
-        inval *= 2.0;
-      }
-      outval = comp_fullspec.Get ( i * SPECSIZE + j, 0 );
-      relerr = fabs ( outval - inval ) / inval;
-      if ( relerr > TOL ) {
-        cerr << "FAIL on spectrum " << i << ", wavelength " << j << ": " << outval << " != " << inval << endl;
-        exit(1);
-      }
-
-    }
-  }
-
-
-  if ( myp == 0 ) {
-    cerr << "  (PASSED)" << endl;
-  }
 
   return;
 }
