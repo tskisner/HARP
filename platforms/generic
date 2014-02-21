@@ -1,0 +1,23 @@
+#!/bin/sh
+
+# This works on latest Ubuntu after doing:
+#
+# $>  apt-get install libopenblas-dev liblapack-dev libboost-all-dev cfitsio-dev
+#
+# you should call this script with extra options.  At the
+# very least, you should specify the install prefix.
+# For example:
+#
+# $> ./platforms/generic --prefix=/my/install/dir
+
+OPTS=$@
+
+# Assume all dependencies are in the default search paths
+
+CC=gcc \
+CXX=g++ \
+MPICXX=mpic++ \
+CXXFLAGS="-O3" \
+OPENMP_CXXFLAGS="-fopenmp" \
+./configure ${OPTS}
+
