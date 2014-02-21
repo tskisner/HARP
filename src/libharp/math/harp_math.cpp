@@ -12,6 +12,8 @@ extern "C" {
 #  include <omp.h>
 #endif
 
+#include <cstdio>
+
 
 using namespace std;
 using namespace harp;

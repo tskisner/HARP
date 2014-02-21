@@ -1102,7 +1102,8 @@ echo "  " >> ${pluginreg}
 cp ${pluginheadstub} ${pluginhead}
 for pfile in ${pluginh}; do
     cat ${pfile} >> ${pluginhead}
-    echo "noinst_HEADERS += ${pfile}" >> ${pluginmake}
+    plugsource=`echo ${pfile} | sed -e "s#${plugindir}\/\(.*\.h.*\)#\1#"`
+    echo "EXTRA_DIST += ${plugsource}" >> ${pluginmake}
 done
 echo "  " >> ${pluginhead}
 echo "#endif" >> ${pluginhead}
@@ -1112,8 +1113,9 @@ for typ in spec psf image; do
     pluginfiles=`ls ${plugindir}/harp_plugin_${typ}_*.cpp`
 
     for pfile in ${pluginfiles}; do
+        plugsource=`echo ${pfile} | sed -e "s#.*\/\(harp_plugin_${typ}_.*\.cpp\)#\1#"`
         pluginname=`echo ${pfile} | sed -e "s#.*\/harp_plugin_${typ}_\(.*\)\.cpp#\1#"`
-        echo "libharpplugin_la_SOURCES += ${pfile}" >> ${pluginmake}
+        echo "libharpplugin_la_SOURCES += ${plugsource}" >> ${pluginmake}
         echo "register_${typ} ( \"${pluginname}\", ${typ}_${pluginname}_create, \"${gitrevision}\" );" >> ${pluginreg}
     done
 done
