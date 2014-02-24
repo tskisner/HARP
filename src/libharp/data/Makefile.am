@@ -25,7 +25,6 @@ libharpdata_la_include_HEADERS = \
 	harp/spec.hpp \
 	harp/psf.hpp \
 	harp/plugin.hpp \
-	harp/plugin_mpi.hpp \
 	harp/data.hpp
 
 libharpdata_la_SOURCES = \

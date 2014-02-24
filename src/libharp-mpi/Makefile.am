@@ -1,6 +1,6 @@
 CXX = @MPICXX@
 
-SUBDIRS = math
+SUBDIRS = math plugin
 
 AM_CPPFLAGS = -I$(top_srcdir)/src/libharp/math -I$(top_srcdir)/src/libharp/data -I$(top_srcdir)/src/libharp/plugin -I$(top_srcdir)/src/libharp $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS) -I$(top_srcdir)/src/libharp-mpi/math -I$(top_srcdir)/src/libharp-mpi $(ELEMENTAL_CPPFLAGS)
 AM_LDFLAGS =

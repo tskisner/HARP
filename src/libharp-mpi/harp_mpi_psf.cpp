@@ -13,10 +13,10 @@ harp::mpi_psf::mpi_psf ( boost::mpi::communicator const & comm, std::string cons
 
   int rank = comm.rank();
 
-  if ( rank == 0 ) {
-    // ONLY rank zero should use the plugin registry!
-    plugin_registry & reg = plugin_registry::get();
+  bool reg_mpi = true;
+  plugin_registry & reg = plugin_registry::get( reg_mpi );
 
+  if ( rank == 0 ) {
     // instantiate
     local_.reset ( reg.create_psf ( type, props ) );
   }

@@ -64,8 +64,8 @@ namespace harp {
 
       ~plugin_registry ( );
 
-      static plugin_registry & get ( bool debug = false ) {
-        static plugin_registry instance ( debug );
+      static plugin_registry & get ( bool mpi = false, bool debug = false ) {
+        static plugin_registry instance ( mpi, debug );
         return instance;
       }
 
@@ -79,7 +79,7 @@ namespace harp {
       
     private :
 
-      plugin_registry ( bool debug );
+      plugin_registry ( bool mpi, bool debug );
       
       // do not implement these two, to prevent copying
       plugin_registry ( plugin_registry const & orig );
@@ -93,6 +93,7 @@ namespace harp {
       std::map < std::string, spec_factory > spec_plugins_;
       std::map < std::string, psf_factory > psf_plugins_;
       std::map < std::string, void * > handles_;
+      bool mpi_;
       
   };
 

@@ -12,7 +12,8 @@ using namespace harp;
 
 void harp::mpi_test_extract ( string const & datadir ) {
 
-  plugin_registry & reg = plugin_registry::get();
+  bool reg_mpi = true;
+  plugin_registry & reg = plugin_registry::get( reg_mpi );
 
   cout << "Testing extraction spectral sub/accum functions..." << endl;
 

@@ -5,9 +5,6 @@
 #include <boost/random.hpp>
 
 #include <harp/plugin.hpp>
-//#ifdef HAVE_BOOST_MPI_HPP
-//#include <harp/plugin_mpi.hpp>
-//#endif
 
 #include <harp/static_plugins.hpp>
 

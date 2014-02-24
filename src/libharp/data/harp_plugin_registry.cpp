@@ -47,7 +47,12 @@ void harp::plugin_registry::find_dlls ( string const & dirpath, vector < string 
 #endif
 
   boost::cmatch what;
-  boost::regex expr ( "harp_plugin_.*.so" );
+  boost::regex expr;
+  if ( mpi_ ) {
+    expr = "harp_mpi_plugin_.*.so";
+  } else {
+    expr = "harp_plugin_.*.so";
+  }
 
   while ( ( dit = readdir ( dip ) ) != NULL ) {
     // if this entry is a file with the right name convention, add to list
@@ -127,7 +132,9 @@ void harp::plugin_registry::register_psf ( std::string const & type, psf_factory
 }
 
 
-harp::plugin_registry::plugin_registry ( bool debug ) {
+harp::plugin_registry::plugin_registry ( bool mpi, bool debug ) {
+
+  mpi_ = mpi;
 
   string prefix = "  harp plugin_registry:  ";
 
