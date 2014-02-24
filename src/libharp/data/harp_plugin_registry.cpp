@@ -15,7 +15,7 @@ extern "C" {
 }
 #endif
 
-#include "../plugin/harp/static_plugins.hpp"
+#include <harp/static_plugins.hpp>
 
 
 using namespace std;
@@ -140,7 +140,7 @@ harp::plugin_registry::plugin_registry ( bool mpi, bool debug ) {
 
   // register internal, static plugins
 
-  #include "../plugin/plugin_register.cpp"
+  #include "../../plugins/plugin_register.cpp"
 
   // parse the plugin path and get the list of files to use
 

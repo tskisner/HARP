@@ -1,4 +1,7 @@
+// @COPYRIGHT@
 
+#ifndef HARP_INTERNAL_IMAGE_PLUGINS_HPP
+#define HARP_INTERNAL_IMAGE_PLUGINS_HPP
 
 namespace harp {
   
@@ -132,3 +135,4 @@ namespace harp {
   
 }
 
+#endif
