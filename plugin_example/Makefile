@@ -18,7 +18,7 @@ harp_plugin_example.so : harp_plugin_example.o
 	$(CXX) $(PLUG_FLAGS) -o $@ $< $(PLUG_LINK) $(LINK)
 
 harp_plugin_example.o : harp_plugin_example.cpp harp_example.hpp
-	$(CXX) $(CXXFLAGS) -o $@ -c $<
+	$(CXX) $(CXXFLAGS) $(PLUG_FLAGS) -o $@ -c $<
 
 harp_example : harp_example.o
 	$(CXX) $(CXXFLAGS) -o $@ $< $(LINK)
