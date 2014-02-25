@@ -196,7 +196,7 @@ harp::plugin_registry::plugin_registry ( bool debug ) {
   char * err = dlerror();
 
   for ( vector < string > :: iterator it = files_.begin(); it != files_.end(); ++it ) {
-    handles_[ (*it) ] = dlopen ( it->c_str(), 0 );
+    handles_[ (*it) ] = dlopen ( it->c_str(), RTLD_NOW | RTLD_LOCAL );
 
     if ( debug ) {
       cerr << prefix << "loading DLL " << (*it) << endl;
