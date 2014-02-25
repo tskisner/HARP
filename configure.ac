@@ -143,8 +143,11 @@ dnl
 dnl +------------------------------------------------
 dnl | Check for MPI
 dnl +------------------------------------------------
-have_mpi=no
-ACX_MPI([have_mpi=yes], [AC_MSG_WARN([Could not find the MPI C++ compiler, MPI tools will not be built])])
+harp_mpi=yes
+AC_ARG_ENABLE([mpi], [AC_HELP_STRING([--disable-mpi], [Disable all checks for MPI])], [harp_mpi=$enable_mpi])
+if test x"$harp_mpi" != xno; then
+  ACX_MPI([harp_mpi=yes], [harp_mpi=no;AC_MSG_WARN([Could not find the MPI C++ compiler, MPI tools will not be built])])
+fi
 dnl +------------------------------------------------
 dnl | Check for BOOST
 dnl +------------------------------------------------
@@ -155,19 +158,20 @@ BOOST_PROGRAM_OPTIONS([], [AC_MSG_ERROR([Could not find BOOST program options li
 if test x"$harp_python" != xno; then
   BOOST_PYTHON([], [AC_MSG_WARN([Could not find boost::python, bindings will not be built])])
 fi
-if test x"${MPICXX}" != x; then
-  BOOST_MPI([], [AC_MSG_WARN([Could not find boost::mpi, MPI tools will not be built])])
+if test x"$harp_mpi" != xno; then
+  BOOST_MPI([harp_mpi=yes], [harp_mpi=no;AC_MSG_WARN([Could not find boost::mpi, MPI tools will not be built])])
 fi
 dnl +------------------------------------------------
 dnl | Check for Elemental and any dependencies
 dnl +------------------------------------------------
-harp_elemental=no
-ACX_ELEMENTAL([harp_elemental=yes], [AC_MSG_WARN([Could not find Elemental library, MPI tools will not be built])])
+if test x"$harp_mpi" != xno; then
+  ACX_ELEMENTAL([harp_mpi=yes], [harp_mpi=no;AC_MSG_WARN([Could not find Elemental library, MPI tools will not be built])])
+fi
 dnl +------------------------------------------------------------------------
 dnl | Set automake variables which control building of python and MPI tools
 dnl +------------------------------------------------------------------------
 AM_CONDITIONAL([HAVE_AM_PYTHON], [test "x$PYTHON_VERSION" != x && test "x$BOOST_PYTHON_LIBS" != x])
-AM_CONDITIONAL([HAVE_AM_MPI], [test "x$MPICXX" != x && test "x$BOOST_MPI_LIBS" != x && test "x$ELEMENTAL" != x])
+AM_CONDITIONAL([HAVE_AM_MPI], [test "x$harp_mpi" = xyes])
 dnl +------------------------------------------------
 dnl | Set outputs
 dnl +------------------------------------------------
