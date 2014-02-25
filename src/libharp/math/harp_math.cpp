@@ -2,6 +2,8 @@
 
 #include <harp_math_internal.hpp>
 
+#include <cstdio>
+
 extern "C" {
   #include <sys/time.h>
 }
