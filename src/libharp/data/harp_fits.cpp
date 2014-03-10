@@ -516,13 +516,6 @@ int harp::fits::seek ( fitsfile * fp, string const & extname ) {
 }
 
 
-bool harp::fits::img_colmajor ( fitsfile * fp ) {
-  bool val;
-  fits::key_read ( fp, string("HRPCOLMJ"), val );
-  return val;
-}
-
-
 int harp::fits::img_seek ( fitsfile * fp, std::string const & keyname, std::string const & keyval ) {
   int hdu;
   
@@ -659,8 +652,6 @@ void harp::fits::img_dims ( fitsfile * fp, size_t & rows, size_t & cols ) {
   int ret;
   int status = 0;
   int naxis;
-
-  bool colmajor = img_colmajor ( fp );
   
   ret = fits_get_img_dim ( fp, &naxis, &status );
   fits::check ( status );
@@ -676,24 +667,11 @@ void harp::fits::img_dims ( fitsfile * fp, size_t & rows, size_t & cols ) {
   ret = fits_get_img_size ( fp, naxis, naxes, &status );
   fits::check ( status );
 
-  if ( colmajor ) {
-
-    rows = naxes[0];
-    if ( naxis == 1 ) {
-      cols = 1;
-    } else {
-      cols = naxes[1];
-    }
-
+  rows = naxes[0];
+  if ( naxis == 1 ) {
+    cols = 1;
   } else {
-
-    cols = naxes[0];
-    if ( naxis == 1 ) {
-      rows = 1;
-    } else {
-      rows = naxes[1];
-    }
-
+    cols = naxes[1];
   }
   
   return;

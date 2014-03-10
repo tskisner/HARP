@@ -135,33 +135,45 @@ namespace harp { namespace fits {
 
   // image operations
 
-  bool img_colmajor ( fitsfile * fp );
-
-
   void img_dims ( fitsfile * fp, size_t & rows, size_t & cols );
 
 
+  template < class V >
+  void img_transpose ( size_t rows, size_t cols, boost::numeric::ublas::vector_expression < V > const & in, boost::numeric::ublas::vector_expression < V > & out ) {
+
+    typedef V vector_type;
+    typedef typename vector_type::value_type value_type;
+
+    if ( in().size() != out().size() ) {
+      HARP_THROW( "input and output must be same length" );
+    }
+
+    if ( cols * rows != in().size() ) {
+      HARP_THROW( "invalid number of rows and cols for vector length" );
+    }
+
+    for ( size_t i = 0; i < rows; ++i ) {
+      for ( size_t j = 0; j < cols; ++j ) {
+        out()[ i * cols + j ] = in()[ j * rows + i ];
+      }
+    }
+
+    return;
+  }
+
+
   template < typename T >
-  void img_append ( fitsfile * fp, size_t rows, size_t cols, bool col_major = false ) {
+  void img_append ( fitsfile * fp, size_t rows, size_t cols ) {
 
     int ret;
     int status = 0;
     
     long naxes[2];
-    if ( col_major ) {
-      naxes[0] = rows;
-      naxes[1] = cols;
-    } else {
-      naxes[0] = cols;
-      naxes[1] = rows;
-    }
+    naxes[0] = rows;
+    naxes[1] = cols;
     
     ret = fits_create_img ( fp, ftype< T >::bitpix(), 2, naxes, &status );
     fits::check ( status );
-
-    if ( col_major ) {
-      key_write ( fp, "HRPCOLMJ", true, "Whether the data is column-major" );
-    }
 
     return;
   }
@@ -193,8 +205,6 @@ namespace harp { namespace fits {
 
     int fitstype = ftype < value_type > :: datatype();
 
-    bool colmajor = img_colmajor ( fp );
-
     // copy data to a buffer to work around stupid CFITSIO non-const API
 
     value_type * buffer = (value_type*) malloc ( npix * sizeof( value_type ) );
@@ -203,20 +213,8 @@ namespace harp { namespace fits {
       HARP_THROW( "cannot allocate img buffer" );
     }
 
-    if ( colmajor ) {
-      // we can just copy
-      for ( long i = 0; i < npix; ++i ) {
-        buffer[i] = data()[i];
-      }
-    } else {
-      // we need to remap the memory
-
-      for ( size_t i = 0; i < rows; ++i ) {
-        for ( size_t j = 0; j < cols; ++j ) {
-          buffer[ i * cols + j ] = data()[ j * rows + i ];
-        }
-      }
-
+    for ( long i = 0; i < npix; ++i ) {
+      buffer[i] = data()[i];
     }
 
     ret = fits_write_pix ( fp, fitstype, fpixel, npix, buffer, &status );
@@ -278,35 +276,8 @@ namespace harp { namespace fits {
 
     int fitstype = ftype < value_type > :: datatype();
 
-    bool colmajor = img_colmajor ( fp );
-
-    if ( colmajor ) {
-      // we can just read it directly
-
-      ret = fits_read_pix ( fp, fitstype, fpixel, nelem, NULL, &( data()[0] ), &anynul, &status );
-      fits::check ( status );
-
-    } else {
-      // we need to remap the memory
-
-      value_type * buffer = (value_type*) malloc ( nelem * sizeof( value_type ) );
-
-      if ( ! buffer ) {
-        HARP_THROW( "cannot allocate img buffer" );
-      }
-
-      ret = fits_read_pix ( fp, fitstype, fpixel, nelem, NULL, buffer, &anynul, &status );
-      fits::check ( status );
-
-      for ( size_t i = 0; i < rows; ++i ) {
-        for ( size_t j = 0; j < cols; ++j ) {
-          data()[ j * rows + i ] = buffer[ i * cols + j ];
-        }
-      }
-
-      free ( buffer );
-
-    }
+    ret = fits_read_pix ( fp, fitstype, fpixel, nelem, NULL, &( data()[0] ), &anynul, &status );
+    fits::check ( status );
 
     return;
   }

@@ -131,7 +131,7 @@ harp::spec_specter::spec_specter ( boost::property_tree::ptree const & props ) :
       spechdu_ = fits::img_seek ( fp, "EXTNAME", "FLUX" );
     }
 
-    fits::img_dims ( fp, nspec_, nlambda_ );
+    fits::img_dims ( fp, nlambda_, nspec_ );
 
     lambdahdu_ = fits::img_seek ( fp, "EXTNAME", "WAVELENGTH" );
     targethdu_ = fits::bin_seek ( fp, "EXTNAME", "TARGETINFO" );
@@ -167,7 +167,8 @@ void harp::spec_specter::values ( vector_double & data ) const {
 
   // read the spectral data
 
-  fits::img_seek ( fp, spechdu_ );   
+  fits::img_seek ( fp, spechdu_ );
+
   fits::img_read ( fp, data );
 
   fits::close ( fp );
@@ -218,11 +219,11 @@ void harp::spec_specter::write ( std::string const & path, vector_double & data,
     
   fits::create ( fp, path );
 
-  fits::img_append < double > ( fp, nspec_, nlambda_ );
+  fits::img_append < double > ( fp, nlambda_, nspec_ );
   fits::key_write ( fp, "EXTNAME", string("FLUX"), "" );
   fits::img_write ( fp, data );
 
-  fits::img_append < double > ( fp, 1, nlambda_ );
+  fits::img_append < double > ( fp, nlambda_, 1 );
   fits::key_write ( fp, "EXTNAME", string("WAVELENGTH"), "" );
   fits::img_write ( fp, lambda );
 
