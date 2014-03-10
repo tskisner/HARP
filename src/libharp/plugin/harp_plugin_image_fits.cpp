@@ -87,7 +87,7 @@ void harp::image_fits::values ( vector_double & data ) const {
   fits::img_read ( fp, buffer );
 
   data.resize ( buffer.size() );
-  fits::img_transpose ( rows_, cols_, buffer, data );
+  fits::img_transpose ( cols_, rows_, buffer, data );
 
   fits::close ( fp );
 
@@ -108,7 +108,7 @@ void harp::image_fits::inv_variance ( vector_double & invvar ) const {
   fits::img_read ( fp, buffer );
 
   invvar.resize ( buffer.size() );
-  fits::img_transpose ( rows_, cols_, buffer, invvar );
+  fits::img_transpose ( cols_, rows_, buffer, invvar );
 
   fits::close ( fp );
 
