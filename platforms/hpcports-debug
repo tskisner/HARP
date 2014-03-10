@@ -23,6 +23,7 @@ OPENMP_CXXFLAGS="${HPCP_OMPFLAGS}" \
 LDFLAGS="${HPCP_LDFLAGS}" \
 LIBS="${HPCP_LIBS}" \
 ./configure ${sharedopt} ${OPTS} \
+--enable-debug \
 --with-blas="${blas_LIBS_CXX}" \
 --with-lapack="${lapack_LIBS_CXX}" \
 --with-cfitsio="${cfitsio_PREFIX}" \
