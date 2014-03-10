@@ -27,9 +27,10 @@ install-data-local:
 	chmod -R a=rX,u+w $(DESTDIR)$(includedir)/boost
 
 uninstall-local:
-	@rm -rf $(DESTDIR)$(includedir)/boost; \
+	@rm -rf $(DESTDIR)$(includedir)/boost/numeric/bindings; \
+	contents=`ls -A $(DESTDIR)$(includedir)/boost/numeric`; \
+	if [ x"$$contents" = "x" ]; then \
+		rm -rf $(DESTDIR)$(includedir)/boost; \
+	fi; \
 	rm -rf $(DESTDIR)$(includedir)/harp
 
-
-
-    
