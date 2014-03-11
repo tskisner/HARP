@@ -170,7 +170,7 @@ harp::psf_gauss::psf_gauss ( boost::property_tree::ptree const & props ) : psf (
     vector_double buffer;
 
     fits::img_seek ( fp, hdus_[ psf_gauss_hdu_lambda ] );      
-    fits::img_read ( fp, buffer );
+    fits::img_read ( fp, buffer, false );
 
     for ( size_t j = 0; j < nlambda_; ++j ) {
       lambda_[j] = buffer[j];
@@ -187,42 +187,42 @@ harp::psf_gauss::psf_gauss ( boost::property_tree::ptree const & props ) : psf (
     }
 
     fits::img_seek ( fp, hdus_[ psf_gauss_hdu_x ] );      
-    fits::img_read ( fp, buffer );
+    fits::img_read ( fp, buffer, false );
 
     for ( size_t i = 0; i < nglobal_; ++i ) {
       resp_[i].x = buffer[i];
     }
 
     fits::img_seek ( fp, hdus_[ psf_gauss_hdu_y ] );      
-    fits::img_read ( fp, buffer );
+    fits::img_read ( fp, buffer, false );
 
     for ( size_t i = 0; i < nglobal_; ++i ) {
       resp_[i].y = buffer[i];
     }
 
     fits::img_seek ( fp, hdus_[ psf_gauss_hdu_amp ] );
-    fits::img_read ( fp, buffer );
+    fits::img_read ( fp, buffer, false );
 
     for ( size_t i = 0; i < nglobal_; ++i ) {
       resp_[i].amp = buffer[i];
     }
 
     fits::img_seek ( fp, hdus_[ psf_gauss_hdu_maj ] );      
-    fits::img_read ( fp, buffer );
+    fits::img_read ( fp, buffer, false );
 
     for ( size_t i = 0; i < nglobal_; ++i ) {
       resp_[i].maj = buffer[i];
     }
 
     fits::img_seek ( fp, hdus_[ psf_gauss_hdu_min ] );      
-    fits::img_read ( fp, buffer );
+    fits::img_read ( fp, buffer, false );
 
     for ( size_t i = 0; i < nglobal_; ++i ) {
       resp_[i].min = buffer[i];
     }
 
     fits::img_seek ( fp, hdus_[ psf_gauss_hdu_ang ] );      
-    fits::img_read ( fp, buffer );
+    fits::img_read ( fp, buffer, false );
 
     for ( size_t i = 0; i < nglobal_; ++i ) {
       resp_[i].ang = buffer[i];
@@ -249,7 +249,7 @@ int harp::psf_gauss::hdu_info ( fitsfile *fp, const char * psf_gauss_hdu ) {
   }
   size_t rows, cols;
   fits::img_dims ( fp, rows, cols );
-  if ( ( rows != nspec_ ) || ( cols != nlambda_ ) ) {
+  if ( ( cols != nlambda_ ) || ( rows != nspec_ ) ) {
     HARP_THROW( "psf_gauss: PSF file must have identical dimensions for all HDUs" );
   }
   return hdu;
@@ -328,49 +328,49 @@ void harp::psf_gauss::write ( std::string const & path ) {
   }
   fits::img_append < double > ( fp, nspec_, nlambda_ );
   fits::key_write ( fp, psf_gauss_key_name, psf_gauss_hdu_x, "" );
-  fits::img_write ( fp, buffer );
+  fits::img_write ( fp, buffer, false );
 
   for ( size_t i = 0; i < nglobal_; ++i ) {
     buffer[i] = resp_[i].y;
   }
   fits::img_append < double > ( fp, nspec_, nlambda_ );
   fits::key_write ( fp, psf_gauss_key_name, psf_gauss_hdu_y, "" );
-  fits::img_write ( fp, buffer );
+  fits::img_write ( fp, buffer, false );
 
   for ( size_t i = 0; i < nglobal_; ++i ) {
     buffer[i] = resp_[i].lambda;
   }
   fits::img_append < double > ( fp, nspec_, nlambda_ );
   fits::key_write ( fp, psf_gauss_key_name, psf_gauss_hdu_lambda, "" );
-  fits::img_write ( fp, buffer );
+  fits::img_write ( fp, buffer, false );
 
   for ( size_t i = 0; i < nglobal_; ++i ) {
     buffer[i] = resp_[i].amp;
   }
   fits::img_append < double > ( fp, nspec_, nlambda_ );
   fits::key_write ( fp, psf_gauss_key_name, psf_gauss_hdu_amp, "" );
-  fits::img_write ( fp, buffer );
+  fits::img_write ( fp, buffer, false );
 
   for ( size_t i = 0; i < nglobal_; ++i ) {
     buffer[i] = resp_[i].maj;
   }
   fits::img_append < double > ( fp, nspec_, nlambda_ );
   fits::key_write ( fp, psf_gauss_key_name, psf_gauss_hdu_maj, "" );
-  fits::img_write ( fp, buffer );
+  fits::img_write ( fp, buffer, false );
 
   for ( size_t i = 0; i < nglobal_; ++i ) {
     buffer[i] = resp_[i].min;
   }
   fits::img_append < double > ( fp, nspec_, nlambda_ );
   fits::key_write ( fp, psf_gauss_key_name, psf_gauss_hdu_min, "" );
-  fits::img_write ( fp, buffer );
+  fits::img_write ( fp, buffer, false );
 
   for ( size_t i = 0; i < nglobal_; ++i ) {
     buffer[i] = resp_[i].ang;
   }
   fits::img_append < double > ( fp, nspec_, nlambda_ );
   fits::key_write ( fp, psf_gauss_key_name, psf_gauss_hdu_ang, "" );
-  fits::img_write ( fp, buffer );
+  fits::img_write ( fp, buffer, false );
 
   fits::close ( fp );
 

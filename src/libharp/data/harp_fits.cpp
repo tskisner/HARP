@@ -667,11 +667,11 @@ void harp::fits::img_dims ( fitsfile * fp, size_t & rows, size_t & cols ) {
   ret = fits_get_img_size ( fp, naxis, naxes, &status );
   fits::check ( status );
 
-  rows = naxes[0];
+  cols = naxes[0];
   if ( naxis == 1 ) {
-    cols = 1;
+    rows = 1;
   } else {
-    cols = naxes[1];
+    rows = naxes[1];
   }
   
   return;
@@ -968,7 +968,7 @@ void harp::fits::test ( string const & datadir ) {
   fits::key_write ( fp, "key3", keytest_log, "logical key test" );
   fits::key_write ( fp, "key4", keytest_d, "double key test" );
   
-  fits::img_write ( fp, data );
+  fits::img_write ( fp, data, true );
 
   header = fits::key_read_all ( fp );
 
@@ -1074,7 +1074,7 @@ void harp::fits::test ( string const & datadir ) {
 
   matrix_double checkdata ( cols, rows );
 
-  fits::img_read ( fp, checkdata );
+  fits::img_read ( fp, checkdata, true );
   
   for ( size_t i = 0; i < cols; ++i ) {
     for ( size_t j = 0; j < rows; ++j ) {

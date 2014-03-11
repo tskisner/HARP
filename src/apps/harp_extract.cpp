@@ -365,6 +365,9 @@ int main ( int argc, char *argv[] ) {
   string outfile = outroot + "spec_Rf.fits";
   outspec.write ( outfile, data_Rf, lambda, target_list );
 
+  outfile = outroot + "spec_f.fits";
+  outspec.write ( outfile, data_f, lambda, target_list );
+
   outfile = outroot + "spec_Rf-err.fits";
   outspec.write ( outfile, data_err, lambda, target_list );
 

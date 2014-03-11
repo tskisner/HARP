@@ -169,8 +169,8 @@ namespace harp { namespace fits {
     int status = 0;
     
     long naxes[2];
-    naxes[0] = rows;
-    naxes[1] = cols;
+    naxes[0] = cols;
+    naxes[1] = rows;
     
     ret = fits_create_img ( fp, ftype< T >::bitpix(), 2, naxes, &status );
     fits::check ( status );
@@ -180,7 +180,7 @@ namespace harp { namespace fits {
 
 
   template < class V >
-  void img_write ( fitsfile * fp, boost::numeric::ublas::vector_expression < V > const & data ) {
+  void img_write ( fitsfile * fp, boost::numeric::ublas::vector_expression < V > const & data, bool swap ) {
 
     typedef V vector_type;
     typedef typename vector_type::value_type value_type;
@@ -213,8 +213,16 @@ namespace harp { namespace fits {
       HARP_THROW( "cannot allocate img buffer" );
     }
 
-    for ( long i = 0; i < npix; ++i ) {
-      buffer[i] = data()[i];
+    if ( swap ) {
+      for ( size_t i = 0; i < rows; ++i ) {
+        for ( size_t j = 0; j < cols; ++j ) {
+          buffer[ i * cols + j ] = data()[ j * rows + i ];
+        }
+      }
+    } else {
+      for ( long i = 0; i < npix; ++i ) {
+        buffer[i] = data()[i];
+      }
     }
 
     ret = fits_write_pix ( fp, fitstype, fpixel, npix, buffer, &status );
@@ -227,7 +235,7 @@ namespace harp { namespace fits {
 
 
   template < class M >
-  void img_write ( fitsfile * fp, boost::numeric::ublas::matrix_expression < M > const & data ) {
+  void img_write ( fitsfile * fp, boost::numeric::ublas::matrix_expression < M > const & data, bool swap ) {
 
     typedef M matrix_type;
     typedef typename matrix_type::value_type value_type;
@@ -245,14 +253,14 @@ namespace harp { namespace fits {
       }
     }
 
-    img_write ( fp, buffer );
+    img_write ( fp, buffer, swap );
 
     return;
   }
   
 
   template < class V >
-  void img_read ( fitsfile * fp, boost::numeric::ublas::vector_expression < V > & data ) {
+  void img_read ( fitsfile * fp, boost::numeric::ublas::vector_expression < V > & data, bool swap ) {
 
     typedef V vector_type;
     typedef typename vector_type::value_type value_type;
@@ -279,12 +287,22 @@ namespace harp { namespace fits {
     ret = fits_read_pix ( fp, fitstype, fpixel, nelem, NULL, &( data()[0] ), &anynul, &status );
     fits::check ( status );
 
+    if ( swap ) {
+      vector_type buffer ( nelem );
+      for ( size_t i = 0; i < cols; ++i ) {
+        for ( size_t j = 0; j < rows; ++j ) {
+          buffer[ i * rows + j ] = data()[ j * cols + i ];
+        }
+      }
+      data() = buffer;
+    }
+
     return;
   }
 
 
   template < class M >
-  void img_read ( fitsfile * fp, boost::numeric::ublas::matrix_expression < M > & data ) {
+  void img_read ( fitsfile * fp, boost::numeric::ublas::matrix_expression < M > & data, bool swap ) {
 
     typedef M matrix_type;
     typedef typename matrix_type::value_type value_type;
@@ -297,7 +315,7 @@ namespace harp { namespace fits {
 
     boost::numeric::ublas::vector < value_type > buffer ( cols * rows );
 
-    img_read ( fp, buffer );
+    img_read ( fp, buffer, swap );
 
     // copy data
 

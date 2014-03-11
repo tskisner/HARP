@@ -45,14 +45,14 @@ harp::image_fits::image_fits ( boost::property_tree::ptree const & props ) : ima
 
     fits::img_seek ( fp, sighdu_ );
     
-    fits::img_dims ( fp, cols_, rows_ );
+    fits::img_dims ( fp, rows_, cols_ );
 
     size_t rowcheck;
     size_t colcheck;
 
     fits::img_seek ( fp, nsehdu_ );
     
-    fits::img_dims ( fp, colcheck, rowcheck );
+    fits::img_dims ( fp, rowcheck, colcheck );
 
     if ( ( rowcheck != rows_ ) || ( colcheck != cols_ ) ) {
       HARP_THROW( "noise variance dimensions do not match data dimensions" );
@@ -82,12 +82,7 @@ void harp::image_fits::values ( vector_double & data ) const {
 
   fits::img_seek ( fp, sighdu_ );
 
-  vector_double buffer;
-
-  fits::img_read ( fp, buffer );
-
-  data.resize ( buffer.size() );
-  fits::img_transpose ( cols_, rows_, buffer, data );
+  fits::img_read ( fp, data, true );
 
   fits::close ( fp );
 
@@ -103,12 +98,7 @@ void harp::image_fits::inv_variance ( vector_double & invvar ) const {
 
   fits::img_seek ( fp, nsehdu_ );
 
-  vector_double buffer;
-    
-  fits::img_read ( fp, buffer );
-
-  invvar.resize ( buffer.size() );
-  fits::img_transpose ( cols_, rows_, buffer, invvar );
+  fits::img_read ( fp, invvar, true );
 
   fits::close ( fp );
 
@@ -130,19 +120,13 @@ void harp::image_fits::write ( std::string const & path, vector_double & data, v
     
   fits::create ( fp, path );
   
-  fits::img_append < double > ( fp, cols_, rows_ );
+  fits::img_append < double > ( fp, rows_, cols_ );
   
-  vector_double buffer ( data.size() );
+  fits::img_write ( fp, data, true );
 
-  fits::img_transpose ( rows_, cols_, data, buffer );
-
-  fits::img_write ( fp, buffer );
-
-  fits::img_append < double > ( fp, cols_, rows_ );
+  fits::img_append < double > ( fp, rows_, cols_ );
   
-  fits::img_transpose ( rows_, cols_, invvar, buffer );
-
-  fits::img_write ( fp, buffer );
+  fits::img_write ( fp, invvar, true );
 
   fits::close ( fp );
 
