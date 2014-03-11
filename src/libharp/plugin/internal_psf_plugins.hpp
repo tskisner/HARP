@@ -112,6 +112,8 @@ namespace harp {
       
       vector_double lambda ( ) const { return lambda_; }
 
+      void extent ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, size_t & n_x, size_t & n_y ) const { return; }
+
       void response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch ) const;
 
       size_t response_nnz_estimate ( ) const;
@@ -202,6 +204,8 @@ namespace harp {
       size_t img_cols ( ) const { return cols_; }
       
       vector_double lambda ( ) const { return lambda_; }
+
+      void extent ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, size_t & n_x, size_t & n_y ) const { return; }
 
       void response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch ) const;
 
@@ -309,6 +313,8 @@ namespace harp {
       size_t img_cols ( ) const { return cols_; }
       
       vector_double lambda ( ) const { return lambda_; }
+
+      void extent ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, size_t & n_x, size_t & n_y ) const { return; }
 
       void response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch ) const;
 
