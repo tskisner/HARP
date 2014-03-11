@@ -39,5 +39,7 @@ EXTRA_DIST = harp/static_plugins.hpp.in plugin.am
 
 MAINTAINERCLEANFILES = harp/static_plugins.hpp plugin.am
 
+CLEANFILES =
+
 include plugin.am
 

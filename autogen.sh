@@ -1117,9 +1117,18 @@ for typ in spec psf image; do
         plugsource=`echo ${pfile} | sed -e "s#.*\/\(harp_plugin_${typ}_.*\.cpp\)#\1#"`
         pluginname=`echo ${pfile} | sed -e "s#.*\/harp_plugin_${typ}_\(.*\)\.cpp#\1#"`
         mpiplugsource=`echo ${plugsource} | sed -e "s#harp_plugin_\(.*\)#harp_mpi_plugin_\1#"`
+        echo "" >> ${pluginmake}
+        echo "# ${pluginname}" >> ${pluginmake}
+        echo "" >> ${pluginmake}
+        echo "${mpiplugsource} : ${plugsource}" >> ${pluginmake}
+        echo "\t@cp ${plugsource} ${mpiplugsource}" >> ${pluginmake}
+        echo "" >> ${pluginmake}
+        echo "CLEANFILES += ${mpiplugsource}" >> ${pluginmake}
+        echo "" >> ${pluginmake}
         echo "libharp_plugins_la_SOURCES += ${plugsource}" >> ${pluginmake}
+        echo "" >> ${pluginmake}
         echo "if HAVE_AM_MPI" >> ${pluginmake}
-        echo "  libharp_mpi_plugins_la_SOURCES += ${plugsource}" >> ${pluginmake}
+        echo "  libharp_mpi_plugins_la_SOURCES += ${mpiplugsource}" >> ${pluginmake}
         echo "endif" >> ${pluginmake}
         echo "register_${typ} ( \"${pluginname}\", ${typ}_${pluginname}_create, \"${gitrevision}\" );" >> ${pluginreg}
     done
