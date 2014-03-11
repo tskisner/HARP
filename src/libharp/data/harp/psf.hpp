@@ -45,6 +45,11 @@ namespace harp {
         return vector_double();
       }
 
+      virtual void extent ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, size_t & n_x, size_t & n_y ) const {
+        HARP_THROW( "fell through to virtual method" );
+        return;
+      }
+
       virtual void response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch ) const {
         HARP_THROW( "fell through to virtual method" );
         return;
