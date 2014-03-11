@@ -310,11 +310,11 @@ void harp::inverse_covariance ( matrix_double_sparse const & AT, vector_double c
   matrix_double_sparse :: const_iterator2 right_colit;
   matrix_double_sparse :: const_iterator2 right_col_checkit;
 
-  for ( left_rowit = AT.begin1(); left_rowit != AT.end1(); ++left_rowit ) {
+  for ( right_rowit = AT.begin1(); right_rowit != AT.end1(); ++right_rowit ) {
 
     //cerr << "DBG: building invC row " << left_rowit.index1() << endl;
 
-    for ( right_rowit = AT.begin1(); right_rowit != AT.end1(); ++right_rowit ) {
+    for ( left_rowit = AT.begin1(); left_rowit != AT.end1(); ++left_rowit ) {
 
       right_colit = right_rowit.begin();
       right_col_checkit = right_colit;
