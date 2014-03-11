@@ -17,7 +17,7 @@ OPTS=$@
 CC=gcc \
 CXX=g++ \
 MPICXX=mpic++ \
-CXXFLAGS="-O3" \
+CXXFLAGS="-O3 -std=c++11" \
 OPENMP_CXXFLAGS="-fopenmp" \
 ./configure ${OPTS}
 
