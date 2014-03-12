@@ -11,6 +11,6 @@ SUBDIRS += plugins tests apps
 #endif
 
 if HAVE_AM_MPI
-  SUBDIRS += tests-mpi #apps-mpi
+  SUBDIRS += plugins-mpi tests-mpi #apps-mpi
 endif
 
