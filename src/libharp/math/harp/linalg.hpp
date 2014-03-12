@@ -32,6 +32,8 @@ namespace harp {
 
   typedef boost::numeric::ublas::vector < double > vector_double;
 
+  typedef boost::numeric::ublas::vector < uint8_t > vector_mask;
+
   typedef boost::numeric::ublas::matrix < float, boost::numeric::ublas::column_major > matrix_float;
 
   typedef boost::numeric::ublas::compressed_matrix < float, boost::numeric::ublas::row_major > matrix_float_sparse;

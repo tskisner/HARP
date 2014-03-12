@@ -280,7 +280,7 @@ void harp::noise_weighted_spec ( matrix_double_sparse const & AT, vector_double 
 }
 
 
-void harp::inverse_covariance ( matrix_double_sparse const & AT, vector_double const & invnoise, matrix_double & invC ) {
+void harp::inverse_covariance ( matrix_double_sparse const & AT, vector_double const & invnoise, vector_mask const & mask, matrix_double & invC ) {
 
   // check consistent sizes
 
@@ -331,7 +331,7 @@ void harp::inverse_covariance ( matrix_double_sparse const & AT, vector_double c
         }
 
         if ( right_colit.index2() == left_colit.index2() ) {
-          val += invnoise[ left_colit.index2() ] * (*right_colit) * (*left_colit);
+          val += invnoise[ left_colit.index2() ] * (double)mask[ left_colit.index2() ] * (*right_colit) * (*left_colit);
         }
 
       }
@@ -409,7 +409,10 @@ void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double cons
     HARP_THROW( "image and inverse pixel variance must have the same size" );
   }
 
-  size_t psf_imgsize = design->img_rows() * design->img_cols();
+  size_t img_rows = design->img_rows();
+  size_t img_cols = design->img_cols();
+
+  size_t psf_imgsize = img_rows * img_cols;
 
   if ( img.size() != psf_imgsize ) {
     HARP_THROW( "image size must match PSF image dimensions" );
@@ -507,15 +510,139 @@ void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double cons
     slice_f.resize ( nbins );
     slice_err.resize ( nbins );
 
-    // build the list of spectral points we want for the projection
+    // build the list of spectral points we want for the projection.  also
+    // build the pixel mask.
 
     double tsubstart = wtime();
+
+    vector_mask mask ( img_inv_var.size() );
+    mask.clear();
+    size_t xoff;
+    size_t yoff;
+    size_t nx;
+    size_t ny;
 
     map < size_t, set < size_t > > speclambda;
 
     for ( size_t s = 0; s < regit->n_spec; ++s ) {
       for ( size_t l = 0; l < regit->n_lambda; ++l ) {
         speclambda[ s + regit->first_spec ].insert ( l + regit->first_lambda );
+        
+        design->extent ( s + regit->first_spec, l + regit->first_lambda, xoff, yoff, nx, ny );
+
+        for ( size_t i = 0; i < ny; ++i ) {
+          for ( size_t j = 0; j < nx; ++j ) {
+            mask[ ( xoff + j ) * img_rows + yoff + i ] = 1;
+          }
+        }
+      }
+    }
+
+    size_t first_spec_mask = 0;
+    if ( regit->first_spec > regit->overlap_spec ) {
+      first_spec_mask = regit->first_spec - regit->overlap_spec;
+    }
+
+    size_t first_lambda_mask = 0;
+    if ( regit->first_lambda > regit->overlap_lambda ) {
+      first_lambda_mask = regit->first_lambda - regit->overlap_lambda;
+    }
+
+    size_t last_spec_mask = regit->first_spec + regit->n_spec + regit->overlap_spec;
+    if ( last_spec_mask > design->n_spec() ) {
+      last_spec_mask = design->n_spec();
+    }
+
+    size_t last_lambda_mask = regit->first_lambda + regit->n_lambda + regit->overlap_lambda;
+    if ( last_lambda_mask > design->n_lambda() ) {
+      last_lambda_mask = design->n_lambda();
+    }
+
+    //  O|OOO|O
+    //  -+---+-
+    //  X|OOO|O
+    //  X|OOO|O
+    //  X|OOO|O
+    //  -+---+-
+    //  O|OOO|O
+
+    for ( size_t s = first_spec_mask; s < regit->first_spec; ++s ) {
+      for ( size_t l = regit->first_lambda; l < regit->first_lambda + regit->n_lambda; ++l ) {
+
+        design->extent ( s, l, xoff, yoff, nx, ny );
+
+        for ( size_t i = 0; i < ny; ++i ) {
+          for ( size_t j = 0; j < nx; ++j ) {
+            mask[ ( xoff + j ) * img_rows + yoff + i ] = 0;
+          }
+        }
+
+      }
+    }
+
+    //  O|OOO|O
+    //  -+---+-
+    //  O|OOO|X
+    //  O|OOO|X
+    //  O|OOO|X
+    //  -+---+-
+    //  O|OOO|O
+
+    for ( size_t s = regit->first_spec + regit->n_spec; s < last_spec_mask; ++s ) {
+      for ( size_t l = regit->first_lambda; l < regit->first_lambda + regit->n_lambda; ++l ) {
+
+        design->extent ( s, l, xoff, yoff, nx, ny );
+
+        for ( size_t i = 0; i < ny; ++i ) {
+          for ( size_t j = 0; j < nx; ++j ) {
+            mask[ ( xoff + j ) * img_rows + yoff + i ] = 0;
+          }
+        }
+
+      }
+    }
+
+    //  X|XXX|X
+    //  -+---+-
+    //  O|OOO|O
+    //  O|OOO|O
+    //  O|OOO|O
+    //  -+---+-
+    //  O|OOO|O
+
+    for ( size_t s = first_spec_mask; s < last_spec_mask; ++s ) {
+      for ( size_t l = first_lambda_mask; l < regit->first_lambda; ++l ) {
+
+        design->extent ( s, l, xoff, yoff, nx, ny );
+
+        for ( size_t i = 0; i < ny; ++i ) {
+          for ( size_t j = 0; j < nx; ++j ) {
+            mask[ ( xoff + j ) * img_rows + yoff + i ] = 0;
+          }
+        }
+
+      }
+    }
+
+    //  O|OOO|O
+    //  -+---+-
+    //  O|OOO|O
+    //  O|OOO|O
+    //  O|OOO|O
+    //  -+---+-
+    //  X|XXX|X
+
+    for ( size_t s = first_spec_mask; s < last_spec_mask; ++s ) {
+      for ( size_t l = regit->first_lambda + regit->n_lambda; l < last_lambda_mask; ++l ) {
+
+        design->extent ( s, l, xoff, yoff, nx, ny );
+
+        for ( size_t i = 0; i < ny; ++i ) {
+          for ( size_t j = 0; j < nx; ++j ) {
+            mask[ ( xoff + j ) * img_rows + yoff + i ] = 0;
+          }
+        }
+
       }
     }
 
@@ -534,7 +661,7 @@ void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double cons
 
     invC.resize ( nbins, nbins );
 
-    inverse_covariance ( AT, img_inv_var, invC );
+    inverse_covariance ( AT, img_inv_var, mask, invC );
 
     tsubstop = wtime();
     double time_inverse = ( tsubstop - tsubstart );
