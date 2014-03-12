@@ -203,8 +203,6 @@ void harp::spec_sim::sky_truth ( vector_double & data ) const {
 
 BOOST_CLASS_EXPORT(harp::spec_sim)
 
-
 spec * harp::spec_sim_create ( boost::property_tree::ptree const & props ) {
   return new spec_sim ( props );
 }
-

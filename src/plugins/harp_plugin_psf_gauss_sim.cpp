@@ -306,7 +306,6 @@ void harp::psf_gauss_sim::write ( std::string const & path ) {
 
 BOOST_CLASS_EXPORT(harp::psf_gauss_sim)
 
-
 psf * harp::psf_gauss_sim_create ( boost::property_tree::ptree const & props ) {
   return new psf_gauss_sim ( props );
 }

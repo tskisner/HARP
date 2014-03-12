@@ -1139,6 +1139,7 @@ for typ in spec psf image; do
         echo "" >> ${mpipluginmake}
         
         echo "register_${typ} ( \"${pluginname}\", ${typ}_${pluginname}_create, \"${gitrevision}\" );" >> ${pluginreg}
+        echo "" >> ${pluginreg}
     done
 done
 

@@ -169,10 +169,7 @@ void harp::image_fits::write ( std::string const & path, matrix_double & data, m
 
 BOOST_CLASS_EXPORT(harp::image_fits)
 
-
 image * harp::image_fits_create ( boost::property_tree::ptree const & props ) {
   return new image_fits ( props );
 }
-
-
 

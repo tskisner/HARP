@@ -23,7 +23,7 @@ libharp_plugins_la_LIBADD =
 
 EXTRA_DIST = harp/static_plugins.hpp.in plugin.am
 
-MAINTAINERCLEANFILES = harp/static_plugins.hpp plugin.am
+MAINTAINERCLEANFILES = harp/static_plugins.hpp plugin.am plugin_register.cpp
 
 CLEANFILES =
 

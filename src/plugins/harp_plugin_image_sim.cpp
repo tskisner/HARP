@@ -140,9 +140,7 @@ void harp::image_sim::inv_variance ( vector_double & invvar ) const {
 
 BOOST_CLASS_EXPORT(harp::image_sim)
 
-
 image * harp::image_sim_create ( boost::property_tree::ptree const & props ) {
   return new image_sim ( props );
 }
-
 

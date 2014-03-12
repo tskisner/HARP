@@ -256,8 +256,6 @@ void harp::spec_specter::write ( std::string const & path, matrix_double & data,
 
 BOOST_CLASS_EXPORT(harp::spec_specter)
 
-
 spec * harp::spec_specter_create ( boost::property_tree::ptree const & props ) {
   return new spec_specter ( props );
 }
-

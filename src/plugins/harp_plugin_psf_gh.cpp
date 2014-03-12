@@ -116,9 +116,6 @@ void harp::psf_gh::write ( std::string const & path ) {
 
 BOOST_CLASS_EXPORT(harp::psf_gh)
 
-
 psf * harp::psf_gh_create ( boost::property_tree::ptree const & props ) {
   return new psf_gh ( props );
 }
-
-

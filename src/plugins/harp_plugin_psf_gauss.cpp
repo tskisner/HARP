@@ -388,9 +388,6 @@ void harp::psf_gauss::write ( std::string const & path ) {
 BOOST_CLASS_EXPORT(harp::psf_gauss_resp)
 BOOST_CLASS_EXPORT(harp::psf_gauss)
 
-
 psf * harp::psf_gauss_create ( boost::property_tree::ptree const & props ) {
   return new psf_gauss ( props );
 }
-
-
