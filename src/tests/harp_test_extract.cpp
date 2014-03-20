@@ -170,7 +170,7 @@ void harp::test_extract ( string const & datadir ) {
 
   map < string, double > timing;
 
-  extract_slices ( slice, gauss_psf, img_data, img_inv, truth, Rf, f, err, Rtruth, timing, false, prefix );
+  extract_slices ( slice, gauss_psf, img_data, img_inv, truth, Rf, f, err, Rtruth, timing, false, true, prefix );
      
   cout << prefix << "Aggregate Timings:" << endl;
   cout << prefix << "  Build design matrix = " << timing["design"] << " seconds" << endl;

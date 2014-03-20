@@ -32,6 +32,8 @@ int main ( int argc, char *argv[] ) {
 
   size_t spec_width = 0;
   size_t spec_overlap = 0;
+
+  bool lambda_mask = true;
   
   string outroot = "harp_";
 
@@ -59,6 +61,7 @@ int main ( int argc, char *argv[] ) {
   ( "spec_overlap", popts::value < size_t > ( &spec_overlap ), "minimum spectra to overlap" )
   ( "lambda_width", popts::value < size_t > ( &lambda_width ), "number of wavelength points to solve at once" )
   ( "lambda_overlap", popts::value < size_t > ( &lambda_overlap ), "minimum wavelength points to overlap" )
+  ( "no_mask", "disable pixel masking in lambda overlap region" )
   ( "par", popts::value < string > ( &jsonpar ), "JSON parameter file" )
   ;
 
@@ -80,6 +83,10 @@ int main ( int argc, char *argv[] ) {
 
   if ( vm.count( "debug" ) ) {
     debug = true;
+  }
+
+  if ( vm.count( "no_mask" ) ) {
+    lambda_mask = false;
   }
 
   // Get plugin registry
@@ -328,7 +335,7 @@ int main ( int argc, char *argv[] ) {
     extract_prefix = prefix;
   }
 
-  extract_slices ( slice, design, measured, invnoise, data_truth, data_Rf, data_f, data_err, data_Rtruth, timing, false, prefix );
+  extract_slices ( slice, design, measured, invnoise, data_truth, data_Rf, data_f, data_err, data_Rtruth, timing, false, lambda_mask, prefix );
 
 
   // subtract sky if needed

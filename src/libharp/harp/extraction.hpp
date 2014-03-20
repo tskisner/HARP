@@ -20,7 +20,7 @@ namespace harp {
 
   void extract ( vector_double const & D, matrix_double const & W, vector_double const & S, vector_double const & z, vector_double & Rf, vector_double & f );
 
-  void extract_slices ( spec_slice_p slice, psf_p design, vector_double const & img, vector_double const & img_inv_var, vector_double const & truth, vector_double & Rf, vector_double & f, vector_double & err, vector_double & Rtruth, std::map < std::string, double > & profile, bool region_threads = false, std::string const & status_prefix = "" );
+  void extract_slices ( spec_slice_p slice, psf_p design, vector_double const & img, vector_double const & img_inv_var, vector_double const & truth, vector_double & Rf, vector_double & f, vector_double & err, vector_double & Rtruth, std::map < std::string, double > & profile, bool region_threads, bool lambda_mask, std::string const & status_prefix = "" );
 
 }
 

@@ -352,10 +352,6 @@ void harp::resolution ( vector_double const & D, matrix_double const & W, vector
   R.resize ( W.size1(), W.size2() );
   R.clear();
 
-  for ( size_t i = 0; i < D.size(); ++i ) {
-    cerr << "D[" << i << "] = " << D[i] << endl;
-  }
-
   eigen_compose ( EIG_SQRT, D, W, R );
 
   column_norm ( R, S );
@@ -406,7 +402,7 @@ void harp::extract ( vector_double const & D, matrix_double const & W, vector_do
 }
 
 
-void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double const & img, vector_double const & img_inv_var, vector_double const & truth, vector_double & Rf, vector_double & f, vector_double & err, vector_double & Rtruth, map < string, double > & profile, bool region_threads, string const & status_prefix ) {
+void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double const & img, vector_double const & img_inv_var, vector_double const & truth, vector_double & Rf, vector_double & f, vector_double & err, vector_double & Rtruth, map < string, double > & profile, bool region_threads, bool lambda_mask, string const & status_prefix ) {
 
   // check dimensions and clear output
 
@@ -516,7 +512,10 @@ void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double cons
     slice_err.resize ( nbins );
 
     // build the list of spectral points we want for the projection.  also
-    // build the pixel mask.
+    // build the pixel mask.  We are going to mask all pixels in the wavelength
+    // direction which extend beyond the bin centers of the extreme bins.  In the
+    // spec direction, we assume that there are either bundle gaps or that the 
+    // extraction is being done across all spectra.
 
     double tsubstart = wtime();
 
@@ -531,6 +530,7 @@ void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double cons
 
     for ( size_t s = 0; s < regit->n_spec; ++s ) {
       for ( size_t l = 0; l < regit->n_lambda; ++l ) {
+
         speclambda[ s + regit->first_spec ].insert ( l + regit->first_lambda );
         
         design->extent ( s + regit->first_spec, l + regit->first_lambda, xoff, yoff, nx, ny );
@@ -540,149 +540,39 @@ void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double cons
             mask[ ( xoff + j ) * img_rows + yoff + i ] = 1;
           }
         }
+
       }
     }
 
-    size_t first_spec_mask = 0;
-    if ( regit->first_spec > 1 ) {
-      first_spec_mask = regit->first_spec - 1;
-    }
+    if ( lambda_mask ) {
+      // mask all pixels in wavelength direction beyond the bin centers of the outermost
+      // bins
 
-    size_t first_lambda_mask = 0;
-    if ( regit->first_lambda > 1 ) {
-      first_lambda_mask = regit->first_lambda - 1;
-    }
+      for ( size_t s = 0; s < regit->n_spec; ++s ) {
 
-    size_t last_spec_mask = regit->first_spec + regit->n_spec + 1;
-    if ( last_spec_mask > design->n_spec() ) {
-      last_spec_mask = design->n_spec();
-    }
+        design->extent ( s + regit->first_spec, regit->first_lambda, xoff, yoff, nx, ny );
 
-    size_t last_lambda_mask = regit->first_lambda + regit->n_lambda + 1;
-    if ( last_lambda_mask > design->n_lambda() ) {
-      last_lambda_mask = design->n_lambda();
-    }
+        size_t half = (size_t)( ny / 2 );
 
-    //  O|OOO|O
-    //  -+---+-
-    //  X|OOO|O
-    //  X|OOO|O
-    //  X|OOO|O
-    //  -+---+-
-    //  O|OOO|O
+        for ( size_t i = 0; i < half; ++i ) {
+          for ( size_t j = 0; j < nx; ++j ) {
+            mask[ ( xoff + j ) * img_rows + yoff + i ] = 0;
+          }
+        }
 
-    //cerr << "masking " << first_spec_mask << " < " << regit->first_spec << ", " << regit->first_lambda << " < " << regit->first_lambda + regit->n_lambda << endl;
+        design->extent ( s + regit->first_spec, regit->first_lambda + regit->n_lambda - 1, xoff, yoff, nx, ny );
 
-    for ( size_t s = first_spec_mask; s < regit->first_spec; ++s ) {
-      for ( size_t l = regit->first_lambda; l < regit->first_lambda + regit->n_lambda; ++l ) {
+        half = (size_t)( ny / 2 );
 
-        design->extent ( s, l, xoff, yoff, nx, ny );
-
-        cerr << "masking (" << s << "," << l << ") = [" << xoff << "-" << (xoff+nx-1) << "] [" << yoff << "-" << (yoff+ny-1) << "]" << endl;
-
-        for ( size_t i = 0; i < ny; ++i ) {
+        for ( size_t i = half+1; i < ny; ++i ) {
           for ( size_t j = 0; j < nx; ++j ) {
             mask[ ( xoff + j ) * img_rows + yoff + i ] = 0;
           }
         }
 
       }
+
     }
-
-    //  O|OOO|O
-    //  -+---+-
-    //  O|OOO|X
-    //  O|OOO|X
-    //  O|OOO|X
-    //  -+---+-
-    //  O|OOO|O
-
-    //cerr << "masking " << regit->first_spec + regit->n_spec << " < " << last_spec_mask << ", " << regit->first_lambda << " < " << regit->first_lambda + regit->n_lambda << endl;
-
-    for ( size_t s = regit->first_spec + regit->n_spec; s < last_spec_mask; ++s ) {
-      for ( size_t l = regit->first_lambda; l < regit->first_lambda + regit->n_lambda; ++l ) {
-
-        design->extent ( s, l, xoff, yoff, nx, ny );
-
-        cerr << "masking (" << s << "," << l << ") = [" << xoff << "-" << (xoff+nx-1) << "] [" << yoff << "-" << (yoff+ny-1) << "]" << endl;
-
-        for ( size_t i = 0; i < ny; ++i ) {
-          for ( size_t j = 0; j < nx; ++j ) {
-            mask[ ( xoff + j ) * img_rows + yoff + i ] = 0;
-          }
-        }
-
-      }
-    }
-
-    //  X|XXX|X
-    //  -+---+-
-    //  O|OOO|O
-    //  O|OOO|O
-    //  O|OOO|O
-    //  -+---+-
-    //  O|OOO|O
-
-    //cerr << "masking " << first_spec_mask << " < " << last_spec_mask << ", " << first_lambda_mask << " < " << regit->first_lambda << endl;
-
-    for ( size_t s = first_spec_mask; s < last_spec_mask; ++s ) {
-      for ( size_t l = first_lambda_mask; l < regit->first_lambda; ++l ) {
-
-        design->extent ( s, l, xoff, yoff, nx, ny );
-
-        cerr << "masking (" << s << "," << l << ") = [" << xoff << "-" << (xoff+nx-1) << "] [" << yoff << "-" << (yoff+ny-1) << "]" << endl;
-
-        for ( size_t i = 0; i < ny; ++i ) {
-          for ( size_t j = 0; j < nx; ++j ) {
-            mask[ ( xoff + j ) * img_rows + yoff + i ] = 0;
-          }
-        }
-
-      }
-    }
-
-    //  O|OOO|O
-    //  -+---+-
-    //  O|OOO|O
-    //  O|OOO|O
-    //  O|OOO|O
-    //  -+---+-
-    //  X|XXX|X
-
-    //cerr << "masking " << first_spec_mask << " < " << last_spec_mask << ", " << regit->first_lambda + regit->n_lambda << " < " << last_lambda_mask << endl;
-
-    for ( size_t s = first_spec_mask; s < last_spec_mask; ++s ) {
-      for ( size_t l = regit->first_lambda + regit->n_lambda; l < last_lambda_mask; ++l ) {
-
-        design->extent ( s, l, xoff, yoff, nx, ny );
-
-        cerr << "masking (" << s << "," << l << ") = [" << xoff << "-" << (xoff+nx-1) << "] [" << yoff << "-" << (yoff+ny-1) << "]" << endl;
-
-        for ( size_t i = 0; i < ny; ++i ) {
-          for ( size_t j = 0; j < nx; ++j ) {
-            mask[ ( xoff + j ) * img_rows + yoff + i ] = 0;
-          }
-        }
-
-      }
-    }
-
-  
-    ostringstream dbgfile;
-    dbgfile << "mask_" << region_index << ".fits";
-
-    boost::property_tree::ptree mask_props;
-    mask_props.put ( "rows", img_rows );
-    mask_props.put ( "cols", img_cols );
-    image_fits maskimg ( mask_props );
-
-    vector_double dmask ( mask.size() );
-    for ( size_t i = 0; i < mask.size(); ++i ) {
-      dmask[i] = (double)mask[i];
-    }
-
-    maskimg.write ( dbgfile.str(), dmask, dmask );
-  
 
     // get the projection matrix for this slice
 
