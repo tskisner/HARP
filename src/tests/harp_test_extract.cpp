@@ -16,12 +16,12 @@ void harp::test_extract ( string const & datadir ) {
 
   cout << "Testing extraction spectral sub/accum functions..." << endl;
 
-  size_t nspec = 20;
-  size_t nlambda = 50;
-  size_t chunk_spec = 4;
-  size_t overlap_spec = 1;
+  size_t nspec = 5;
+  size_t nlambda = 200;
+  size_t chunk_spec = 5;
+  size_t overlap_spec = 0;
   size_t chunk_lambda = 10;
-  size_t overlap_lambda = 10;
+  size_t overlap_lambda = 30;
 
   size_t nbin = nspec * nlambda;
 
@@ -192,6 +192,39 @@ void harp::test_extract ( string const & datadir ) {
   chisq_reduced /= (double)( nbin );
 
   cout << prefix << "Reduced Chi square = " << chisq_reduced << endl;
+
+  boost::property_tree::ptree solution_props;
+  solution_props.put ( "nspec", nspec );
+  solution_props.put ( "nlambda", nlambda );
+
+  spec_specter outspec ( solution_props );
+
+  string outfile = datadir + "/extract_spec_Rf.fits.out";
+  outspec.write ( outfile, Rf, lambda, target_list );
+
+  outfile = datadir + "/extract_spec_Rtruth.fits.out";
+  outspec.write ( outfile, Rtruth, lambda, target_list );
+
+  outfile = datadir + "/extract_spec_f.fits.out";
+  outspec.write ( outfile, f, lambda, target_list );
+
+  outfile = datadir + "/extract_spec_Rf-err.fits.out";
+  outspec.write ( outfile, err, lambda, target_list );
+
+  solution_props.clear();
+  solution_props.put ( "rows", img->n_rows() );
+  solution_props.put ( "cols", img->n_cols() );
+
+  image_fits outimg ( solution_props );
+
+  matrix_double_sparse AT;
+  gauss_psf->project_transpose ( AT );
+
+  vector_double f_projected;
+  sparse_mv_trans ( AT, f, f_projected );
+
+  outfile = datadir + "/extract_image_f-project.fits.out";
+  outimg.write ( outfile, f_projected, img_inv );
 
   cout << "  (PASSED)" << endl;
 

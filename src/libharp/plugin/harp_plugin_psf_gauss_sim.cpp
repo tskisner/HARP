@@ -187,7 +187,8 @@ size_t harp::psf_gauss_sim::response_nnz_estimate ( ) const {
 }
 
 
-void harp::psf_gauss_sim::response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch ) const {
+
+void harp::psf_gauss_sim::extent ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, size_t & n_x, size_t & n_y ) const {
 
   size_t bin = spec * nlambda_ + lambda;
 
@@ -209,20 +210,30 @@ void harp::psf_gauss_sim::response ( size_t spec, size_t lambda, size_t & x_offs
     y_offset = (size_t)ymin;
   }
 
-  size_t x_size;
-  size_t y_size;
-
   if ( xmax > (double)(cols_ - 1) ) {
-    x_size = ( cols_ - 1 ) - x_offset;
+    n_x = ( cols_ - 1 ) - x_offset;
   } else {
-    x_size = (size_t)xmax - x_offset;
+    n_x = (size_t)xmax - x_offset;
   }
 
   if ( ymax > (double)(rows_ - 1) ) {
-    y_size = ( rows_ - 1 ) - y_offset;
+    n_y = ( rows_ - 1 ) - y_offset;
   } else {
-    y_size = (size_t)ymax - y_offset;
+    n_y = (size_t)ymax - y_offset;
   }
+
+  return;
+}
+
+
+void harp::psf_gauss_sim::response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch ) const {
+
+  size_t x_size;
+  size_t y_size;
+
+  extent ( spec, lambda, x_offset, y_offset, x_size, y_size );
+
+  size_t bin = spec * nlambda_ + lambda;
 
   patch.resize ( y_size, x_size );
   patch.clear();

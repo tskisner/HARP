@@ -71,8 +71,11 @@ void harp::test_image_simfits ( string const & datadir ) {
   // write out a json file for testing with external tools
 
   boost::property_tree::ptree full_props;
+  full_props.put ( "psf_type", "gauss_sim" );
   full_props.put_child ( "psf", gauss_props );
+  full_props.put ( "image_type", "sim" );
   full_props.put_child ( "image", img_props );
+  full_props.put ( "truth_type", "specter" );
   full_props.put_child ( "truth", spec_props );
 
   string jsonpath = datadir + "/test_sim.json.out";

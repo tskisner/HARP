@@ -243,7 +243,7 @@ void harp::accum_spec ( spec_slice_region const & sub_region, spec_slice_region 
 }
 
 
-void harp::noise_weighted_spec ( matrix_double_sparse const & AT, vector_double const & invnoise, vector_double const & img, vector_double & z ) {
+void harp::noise_weighted_spec ( matrix_double_sparse const & AT, vector_double const & invnoise, vector_mask const & mask, vector_double const & img, vector_double & z ) {
 
   size_t nbins = AT.size1();
   size_t npix = AT.size2();
@@ -266,7 +266,7 @@ void harp::noise_weighted_spec ( matrix_double_sparse const & AT, vector_double 
 
   vector_double imgnse ( npix );
   for ( size_t i = 0; i < npix; ++i ) {
-    imgnse[i] = invnoise[i] * img[i];
+    imgnse[i] = invnoise[i] * img[i] * (double)mask[i];
   }
 
   // accumulate z
@@ -337,6 +337,7 @@ void harp::inverse_covariance ( matrix_double_sparse const & AT, vector_double c
       }
 
       invC ( left_rowit.index1(), right_rowit.index1() ) = val;
+      //cerr << "INVC (" << left_rowit.index1() << "," << right_rowit.index1() << ") = " << val << endl;
 
     }
 
@@ -350,6 +351,10 @@ void harp::resolution ( vector_double const & D, matrix_double const & W, vector
 
   R.resize ( W.size1(), W.size2() );
   R.clear();
+
+  for ( size_t i = 0; i < D.size(); ++i ) {
+    cerr << "D[" << i << "] = " << D[i] << endl;
+  }
 
   eigen_compose ( EIG_SQRT, D, W, R );
 
@@ -539,21 +544,21 @@ void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double cons
     }
 
     size_t first_spec_mask = 0;
-    if ( regit->first_spec > regit->overlap_spec ) {
-      first_spec_mask = regit->first_spec - regit->overlap_spec;
+    if ( regit->first_spec > 1 ) {
+      first_spec_mask = regit->first_spec - 1;
     }
 
     size_t first_lambda_mask = 0;
-    if ( regit->first_lambda > regit->overlap_lambda ) {
-      first_lambda_mask = regit->first_lambda - regit->overlap_lambda;
+    if ( regit->first_lambda > 1 ) {
+      first_lambda_mask = regit->first_lambda - 1;
     }
 
-    size_t last_spec_mask = regit->first_spec + regit->n_spec + regit->overlap_spec;
+    size_t last_spec_mask = regit->first_spec + regit->n_spec + 1;
     if ( last_spec_mask > design->n_spec() ) {
       last_spec_mask = design->n_spec();
     }
 
-    size_t last_lambda_mask = regit->first_lambda + regit->n_lambda + regit->overlap_lambda;
+    size_t last_lambda_mask = regit->first_lambda + regit->n_lambda + 1;
     if ( last_lambda_mask > design->n_lambda() ) {
       last_lambda_mask = design->n_lambda();
     }
@@ -566,10 +571,14 @@ void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double cons
     //  -+---+-
     //  O|OOO|O
 
+    //cerr << "masking " << first_spec_mask << " < " << regit->first_spec << ", " << regit->first_lambda << " < " << regit->first_lambda + regit->n_lambda << endl;
+
     for ( size_t s = first_spec_mask; s < regit->first_spec; ++s ) {
       for ( size_t l = regit->first_lambda; l < regit->first_lambda + regit->n_lambda; ++l ) {
 
         design->extent ( s, l, xoff, yoff, nx, ny );
+
+        cerr << "masking (" << s << "," << l << ") = [" << xoff << "-" << (xoff+nx-1) << "] [" << yoff << "-" << (yoff+ny-1) << "]" << endl;
 
         for ( size_t i = 0; i < ny; ++i ) {
           for ( size_t j = 0; j < nx; ++j ) {
@@ -587,12 +596,16 @@ void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double cons
     //  O|OOO|X
     //  -+---+-
     //  O|OOO|O
+
+    //cerr << "masking " << regit->first_spec + regit->n_spec << " < " << last_spec_mask << ", " << regit->first_lambda << " < " << regit->first_lambda + regit->n_lambda << endl;
 
     for ( size_t s = regit->first_spec + regit->n_spec; s < last_spec_mask; ++s ) {
       for ( size_t l = regit->first_lambda; l < regit->first_lambda + regit->n_lambda; ++l ) {
 
         design->extent ( s, l, xoff, yoff, nx, ny );
 
+        cerr << "masking (" << s << "," << l << ") = [" << xoff << "-" << (xoff+nx-1) << "] [" << yoff << "-" << (yoff+ny-1) << "]" << endl;
+
         for ( size_t i = 0; i < ny; ++i ) {
           for ( size_t j = 0; j < nx; ++j ) {
             mask[ ( xoff + j ) * img_rows + yoff + i ] = 0;
@@ -609,12 +622,16 @@ void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double cons
     //  O|OOO|O
     //  -+---+-
     //  O|OOO|O
+
+    //cerr << "masking " << first_spec_mask << " < " << last_spec_mask << ", " << first_lambda_mask << " < " << regit->first_lambda << endl;
 
     for ( size_t s = first_spec_mask; s < last_spec_mask; ++s ) {
       for ( size_t l = first_lambda_mask; l < regit->first_lambda; ++l ) {
 
         design->extent ( s, l, xoff, yoff, nx, ny );
 
+        cerr << "masking (" << s << "," << l << ") = [" << xoff << "-" << (xoff+nx-1) << "] [" << yoff << "-" << (yoff+ny-1) << "]" << endl;
+
         for ( size_t i = 0; i < ny; ++i ) {
           for ( size_t j = 0; j < nx; ++j ) {
             mask[ ( xoff + j ) * img_rows + yoff + i ] = 0;
@@ -632,10 +649,14 @@ void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double cons
     //  -+---+-
     //  X|XXX|X
 
+    //cerr << "masking " << first_spec_mask << " < " << last_spec_mask << ", " << regit->first_lambda + regit->n_lambda << " < " << last_lambda_mask << endl;
+
     for ( size_t s = first_spec_mask; s < last_spec_mask; ++s ) {
       for ( size_t l = regit->first_lambda + regit->n_lambda; l < last_lambda_mask; ++l ) {
 
         design->extent ( s, l, xoff, yoff, nx, ny );
+
+        cerr << "masking (" << s << "," << l << ") = [" << xoff << "-" << (xoff+nx-1) << "] [" << yoff << "-" << (yoff+ny-1) << "]" << endl;
 
         for ( size_t i = 0; i < ny; ++i ) {
           for ( size_t j = 0; j < nx; ++j ) {
@@ -645,6 +666,23 @@ void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double cons
 
       }
     }
+
+  
+    ostringstream dbgfile;
+    dbgfile << "mask_" << region_index << ".fits";
+
+    boost::property_tree::ptree mask_props;
+    mask_props.put ( "rows", img_rows );
+    mask_props.put ( "cols", img_cols );
+    image_fits maskimg ( mask_props );
+
+    vector_double dmask ( mask.size() );
+    for ( size_t i = 0; i < mask.size(); ++i ) {
+      dmask[i] = (double)mask[i];
+    }
+
+    maskimg.write ( dbgfile.str(), dmask, dmask );
+  
 
     // get the projection matrix for this slice
 
@@ -682,7 +720,6 @@ void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double cons
     eig_vecs.resize ( nbins, nbins );
 
     eigen_decompose ( invC, eig_vals, eig_vecs );
-
     /*
     for ( size_t i = 0; i < eig_vals.size(); ++i ) {
       cerr << "EIGVAL " << i << " " << eig_vals[i] << endl;
@@ -724,7 +761,7 @@ void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double cons
 
     z_spec.resize ( nbins );
 
-    noise_weighted_spec ( AT, img_inv_var, img, z_spec );
+    noise_weighted_spec ( AT, img_inv_var, mask, img, z_spec );
 
     tsubstop = wtime();
     double time_nsespec = ( tsubstop - tsubstart );
