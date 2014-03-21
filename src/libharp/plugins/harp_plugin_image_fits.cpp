@@ -1,18 +1,7 @@
 // @COPYRIGHT@
 
-#ifdef USE_MPI
-#  include <harp_mpi.hpp>
-#else
-#  include <harp.hpp>
-#endif
 
-#include <harp/plugin.hpp>
-#ifdef USE_MPI
-#  include <harp/mpi_plugin.hpp>
-#endif
-
-
-#include <internal_image_plugins.hpp>
+#include <harp/static_plugins.hpp>
 
 using namespace std;
 using namespace harp;

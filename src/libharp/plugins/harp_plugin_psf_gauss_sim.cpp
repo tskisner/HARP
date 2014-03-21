@@ -1,12 +1,5 @@
 // @COPYRIGHT@
 
-#include <harp_data_internal.hpp>
-
-#include <boost/optional.hpp>
-
-#include <cmath>
-
-#include <harp/plugin.hpp>
 
 #include <harp/static_plugins.hpp>
 

@@ -1,12 +1,9 @@
 // @COPYRIGHT@
 
-#include <harp_data_internal.hpp>
-
-#include <boost/random.hpp>
-
-#include <harp/plugin.hpp>
 
 #include <harp/static_plugins.hpp>
+
+#include <boost/random.hpp>
 
 using namespace std;
 using namespace harp;

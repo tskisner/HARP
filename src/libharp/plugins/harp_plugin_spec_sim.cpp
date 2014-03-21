@@ -1,8 +1,5 @@
 // @COPYRIGHT@
 
-#include <harp_data_internal.hpp>
-
-#include <harp/plugin.hpp>
 
 #include <harp/static_plugins.hpp>
 
