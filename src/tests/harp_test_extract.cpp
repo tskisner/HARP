@@ -20,8 +20,8 @@ void harp::test_extract ( string const & datadir ) {
   size_t nlambda = 200;
   size_t chunk_spec = 5;
   size_t overlap_spec = 0;
-  size_t chunk_lambda = 10;
-  size_t overlap_lambda = 30;
+  size_t chunk_lambda = 20;
+  size_t overlap_lambda = 10;
 
   size_t nbin = nspec * nlambda;
 

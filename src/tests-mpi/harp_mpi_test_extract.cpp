@@ -17,11 +17,11 @@ void harp::mpi_test_extract ( string const & datadir ) {
 
   cout << "Testing extraction spectral sub/accum functions..." << endl;
 
-  size_t nspec = 20;
-  size_t nlambda = 50;
-  size_t chunk_spec = 4;
-  size_t overlap_spec = 1;
-  size_t chunk_lambda = 10;
+  size_t nspec = 5;
+  size_t nlambda = 200;
+  size_t chunk_spec = 5;
+  size_t overlap_spec = 0;
+  size_t chunk_lambda = 20;
   size_t overlap_lambda = 10;
 
   size_t nbin = nspec * nlambda;
@@ -99,6 +99,11 @@ void harp::mpi_test_extract ( string const & datadir ) {
   check_data.resize(0);
 
   cout << "  (PASSED)" << endl;
+
+
+
+
+  
 
 
   
