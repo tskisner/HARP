@@ -1,7 +1,7 @@
 
-SUBDIRS = math data
+SUBDIRS = math data extract plugins
 
-AM_CPPFLAGS = -I$(top_srcdir)/src/libharp/math -I$(top_srcdir)/src/libharp/data -I$(top_srcdir)/src/libharp -I$(top_srcdir)/src/plugins $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS) $(OPENMP_CXXFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir)/src/libharp/math -I$(top_srcdir)/src/libharp/data -I$(top_srcdir)/src/libharp/extract -I$(top_srcdir)/src/libharp/plugins -I$(top_srcdir)/src/libharp $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS) $(OPENMP_CXXFLAGS)
 AM_LDFLAGS =
 AM_LIBS = $(OPENMP_CXXFLAGS)
 
@@ -24,9 +24,9 @@ harpconfig : harpconfig.in
 	"$(CXXFLAGS)" \
 	"-I$(DESTDIR)$(includedir) $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS) $(ELEMENTAL_CPPFLAGS)" \
 	"-L$(DESTDIR)$(libdir)" \
-	"-lharp-plugins -lharp $(LDFLAGS) $(CFITSIO) $(BOOST_SERIALIZATION_LDFLAGS) $(BOOST_PROGRAM_OPTIONS_LDFLAGS) $(BOOST_REGEX_LDFLAGS) $(BOOST_REGEX_LIBS) $(BOOST_SERIALIZATION_LIBS) $(BOOST_PROGRAM_OPTIONS_LIBS) $(LAPACK_LIBS) $(BLAS_LIBS) $(FCLIBS) $(OPENMP_CXXFLAGS) $(LIBS) -lm" \
+	"-lharp $(LDFLAGS) $(CFITSIO) $(BOOST_SERIALIZATION_LDFLAGS) $(BOOST_PROGRAM_OPTIONS_LDFLAGS) $(BOOST_REGEX_LDFLAGS) $(BOOST_REGEX_LIBS) $(BOOST_SERIALIZATION_LIBS) $(BOOST_PROGRAM_OPTIONS_LIBS) $(LAPACK_LIBS) $(BLAS_LIBS) $(FCLIBS) $(OPENMP_CXXFLAGS) $(LIBS) -lm" \
 	"$(MPICXX)" \
-	"-lharp-mpi-plugins -lharp-mpi $(ELEMENTAL) $(BOOST_MPI_LDFLAGS) $(BOOST_MPI_LIBS)" \
+	"-lharp-mpi $(ELEMENTAL) $(BOOST_MPI_LDFLAGS) $(BOOST_MPI_LIBS)" \
 	"$(pyexecdir)" \
 	"$(HARP_PLUGIN_COMPILE)" \
 	"$(HARP_PLUGIN_LINK)"
@@ -48,7 +48,9 @@ libharp_la_LDFLAGS = -version-info @HARP_LT_VERSION@
 
 libharp_la_LIBADD = \
 	$(top_builddir)/src/libharp/data/libharpdata.la \
-	$(top_builddir)/src/libharp/math/libharpmath.la
+	$(top_builddir)/src/libharp/math/libharpmath.la \
+	$(top_builddir)/src/libharp/plugins/libharpplugins.la \
+	$(top_builddir)/src/libharp/extract/libharpextract.la
 
 
 CLEANFILES = harpconfig

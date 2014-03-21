@@ -1084,8 +1084,8 @@ echo "  static string harp_revision_key = \"${gitrevision}\";" > ${START_PATH}/s
 
 # Generate files needed for static plugins
 
-plugindir="${START_PATH}/src/plugins"
-mpiplugindir="${START_PATH}/src/plugins-mpi"
+plugindir="${START_PATH}/src/libharp/plugins"
+mpiplugindir="${START_PATH}/src/libharp-mpi/plugins"
 
 pluginmake="${plugindir}/plugin.am"
 mpipluginmake="${mpiplugindir}/plugin.am"
@@ -1126,7 +1126,7 @@ for typ in spec psf image; do
         mpiplugsource=`echo ${plugsource} | sed -e "s#harp_plugin_\(.*\)#harp_mpi_plugin_\1#"`
 
         echo "# ${pluginname}" >> ${pluginmake}
-        echo "libharp_plugins_la_SOURCES += ${plugsource}" >> ${pluginmake}
+        echo "libharpplugins_la_SOURCES += ${plugsource}" >> ${pluginmake}
         echo "" >> ${pluginmake}
 
         echo "# ${pluginname}" >> ${mpipluginmake}
@@ -1135,7 +1135,7 @@ for typ in spec psf image; do
         echo "" >> ${mpipluginmake}
         echo "CLEANFILES += ${mpiplugsource}" >> ${mpipluginmake}
         echo "" >> ${mpipluginmake}
-        echo "libharp_mpi_plugins_la_SOURCES += ${mpiplugsource}" >> ${mpipluginmake}
+        echo "libharpplugins_mpi_la_SOURCES += ${mpiplugsource}" >> ${mpipluginmake}
         echo "" >> ${mpipluginmake}
         
         echo "register_${typ} ( \"${pluginname}\", ${typ}_${pluginname}_create, \"${gitrevision}\" );" >> ${pluginreg}

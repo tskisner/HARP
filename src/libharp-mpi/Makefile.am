@@ -1,8 +1,8 @@
 CXX = @MPICXX@
 
-SUBDIRS = math
+SUBDIRS = math plugins
 
-AM_CPPFLAGS = -I$(top_srcdir)/src/libharp/math -I$(top_srcdir)/src/libharp/data -I$(top_srcdir)/src/libharp -I$(top_srcdir)/src/plugins $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS) -I$(top_srcdir)/src/libharp-mpi/math -I$(top_srcdir)/src/libharp-mpi $(ELEMENTAL_CPPFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir)/src/libharp/math -I$(top_srcdir)/src/libharp/data -I$(top_srcdir)/src/libharp -I$(top_srcdir)/src/libharp/plugins -I$(top_srcdir)/src/libharp/extract $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS) -I$(top_srcdir)/src/libharp-mpi/math -I$(top_srcdir)/src/libharp-mpi $(ELEMENTAL_CPPFLAGS)
 AM_LDFLAGS =
 AM_LIBS = $(OPENMP_CXXFLAGS)
 
@@ -37,6 +37,10 @@ libharp_mpi_la_SOURCES = \
 
 libharp_mpi_la_LDFLAGS = -version-info @HARP_LT_VERSION@
 
-libharp_mpi_la_LIBADD = $(top_builddir)/src/libharp-mpi/math/libharpmath-mpi.la
-
+libharp_mpi_la_LIBADD = \
+	$(top_builddir)/src/libharp/data/libharpdata.la \
+	$(top_builddir)/src/libharp/math/libharpmath.la \
+	$(top_builddir)/src/libharp/extract/libharpextract.la \
+	$(top_builddir)/src/libharp-mpi/math/libharpmath-mpi.la \
+	$(top_builddir)/src/libharp-mpi/plugins/libharpplugins-mpi.la
 

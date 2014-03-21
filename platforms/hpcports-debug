@@ -26,7 +26,3 @@ LIBS="${HPCP_LIBS}" \
 --enable-debug \
 --with-blas="${blas_LIBS_CXX}" \
 --with-lapack="${lapack_LIBS_CXX}" \
---with-cfitsio="${cfitsio_PREFIX}" \
---with-boost="${boost_PREFIX}" \
---with-elemental="${elemental_PREFIX}"
-
