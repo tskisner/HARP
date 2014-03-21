@@ -132,9 +132,6 @@ void harp::plugin_registry::register_psf ( std::string const & type, psf_factory
 }
 
 
-#include "../../plugins/plugin_create.cpp"
-
-
 harp::plugin_registry::plugin_registry ( bool mpi, bool debug ) {
 
   mpi_ = mpi;
@@ -143,7 +140,7 @@ harp::plugin_registry::plugin_registry ( bool mpi, bool debug ) {
 
   // register internal, static plugins
 
-  #include "../../plugins/plugin_register.cpp"
+  #include "../plugins/plugin_register.cpp"
 
   // parse the plugin path and get the list of files to use
 

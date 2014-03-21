@@ -7,7 +7,6 @@
 #include <harp/data.hpp>
 #include <harp_math_internal.hpp>
 
-#include "../../plugins/plugin_create.hpp"
 
 namespace harp {
   

@@ -2,7 +2,7 @@ CXX = @MPICXX@
 
 SUBDIRS = 
 
-AM_CPPFLAGS = -I$(top_srcdir)/src/libharp/plugins -I$(top_srcdir)/src/libharp/math -I$(top_srcdir)/src/libharp/data -I$(top_srcdir)/src/libharp -I$(top_srcdir)/src/libharp-mpi -I$(top_srcdir)/src/libharp-mpi/math $(ELEMENTAL_CPPFLAGS) $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS) $(OPENMP_CXXFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir)/src/libharp/plugins -I$(top_srcdir)/src/libharp/math -I$(top_srcdir)/src/libharp/data -I$(top_srcdir)/src/libharp -I$(top_srcdir)/src/libharp/extract -I$(top_srcdir)/src/libharp-mpi -I$(top_srcdir)/src/libharp-mpi/math $(ELEMENTAL_CPPFLAGS) $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS) $(OPENMP_CXXFLAGS)
 AM_LDFLAGS =
 AM_LIBS = $(OPENMP_CXXFLAGS)
 
@@ -13,7 +13,7 @@ else
   AM_CXXFLAGS += -DNDEBUG
 endif
   
-lib_LTLIBRARIES = libharpplugins-mpi.la
+noinst_LTLIBRARIES = libharpplugins-mpi.la
 
 libharpplugins_mpi_la_SOURCES = 
 libharpplugins_mpi_la_LIBADD = 

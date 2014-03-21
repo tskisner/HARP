@@ -1130,8 +1130,8 @@ for typ in spec psf image; do
         echo "" >> ${pluginmake}
 
         echo "# ${pluginname}" >> ${mpipluginmake}
-        echo "${mpiplugsource} : ../plugins/${plugsource}" >> ${mpipluginmake}
-        echo "\t@cp ../plugins/${plugsource} ${mpiplugsource}" >> ${mpipluginmake}
+        echo "${mpiplugsource} : \$(top_srcdir)/src/libharp/plugins/${plugsource}" >> ${mpipluginmake}
+        echo "\t@cp \$(top_srcdir)/src/libharp/plugins/${plugsource} ${mpiplugsource}" >> ${mpipluginmake}
         echo "" >> ${mpipluginmake}
         echo "CLEANFILES += ${mpiplugsource}" >> ${mpipluginmake}
         echo "" >> ${mpipluginmake}

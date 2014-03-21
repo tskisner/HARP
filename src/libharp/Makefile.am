@@ -35,14 +35,9 @@ lib_LTLIBRARIES = libharp.la
 
 libharp_la_includedir = $(includedir)/harp
 
-libharp_la_include_HEADERS = \
-	harp/spec_slice.hpp \
-	harp/extraction.hpp
+libharp_la_include_HEADERS =
 
-libharp_la_SOURCES = \
-	harp.cpp \
-	harp_spec_slice.cpp \
-	harp_extraction.cpp 
+libharp_la_SOURCES = harp.cpp
 
 libharp_la_LDFLAGS = -version-info @HARP_LT_VERSION@
 
