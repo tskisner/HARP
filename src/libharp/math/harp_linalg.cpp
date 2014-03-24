@@ -2,6 +2,8 @@
 
 #include <harp_math_internal.hpp>
 
+#include <limits>
+
 
 using namespace std;
 using namespace harp;
@@ -18,7 +20,7 @@ void harp::check_column_major ( boost::numeric::ublas::row_major_tag ) {
 }
 
 
-void harp::eigen_decompose ( matrix_double const & invcov, vector_double & D, matrix_double & W ) {
+void harp::eigen_decompose ( matrix_double const & invcov, vector_double & D, matrix_double & W, bool regularize ) {
 
   D.resize ( invcov.size1() );
   W.resize ( invcov.size1(), invcov.size2() );
@@ -29,6 +31,38 @@ void harp::eigen_decompose ( matrix_double const & invcov, vector_double & D, ma
   boost::numeric::ublas::vector < int > support ( 2 * invcov.size1() );
 
   boost::numeric::bindings::lapack::syevr ( 'V', 'A', boost::numeric::bindings::lower ( temp ), 0.0, 0.0, 0, 0, 0.0, nfound, D, W, support );
+
+  if ( regularize ) {
+    
+    double min = 1.0e100;
+    double max = -1.0e100;
+
+    for ( size_t i = 0; i < D.size(); ++i ) {
+      if ( D[i] < min ) {
+        min = D[i];
+      }
+      if ( D[i] > max ) {
+        max = D[i];
+      }
+    }
+
+    double rcond = min / max;
+
+    // pick some delta that is bigger than machine precision, but still tiny
+    double epsilon = 10.0 * std::numeric_limits < double > :: epsilon();
+
+    if ( rcond < epsilon ) {
+
+      double reg = max * epsilon - min;
+      //cerr << "REG offset = " << reg << " for min / max = " << min << " / " << max << endl;
+
+      for ( size_t i = 0; i < D.size(); ++i ) {
+        D[i] += reg;
+      }
+
+    }
+
+  }
 
   return;
 }
@@ -70,6 +104,15 @@ void harp::eigen_compose ( eigen_op op, vector_double const & D, matrix_double c
       invmin = 1.0 / min;
       for ( size_t i = 0; i < scaled.size(); ++i ) {
         val = sqrt ( scaled[i] );
+        val = ( val < min ) ? invmin : ( 1.0 / val );
+        scaled[i] = val;
+      }
+      break;
+    case EIG_INV:
+      min = max * threshold;
+      invmin = 1.0 / min;
+      for ( size_t i = 0; i < scaled.size(); ++i ) {
+        val = scaled[i];
         val = ( val < min ) ? invmin : ( 1.0 / val );
         scaled[i] = val;
       }

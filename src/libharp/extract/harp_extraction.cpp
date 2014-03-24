@@ -372,31 +372,24 @@ void harp::extract ( vector_double const & D, matrix_double const & W, vector_do
 
   // compose ( W^T D^{-1/2} W )
 
-  matrix_double invrtC ( W.size1(), W.size2() );
-  invrtC.clear();
+  matrix_double composed ( W.size1(), W.size2() );
+  composed.clear();
 
-  eigen_compose ( EIG_INVSQRT, D, W, invrtC );
+  eigen_compose ( EIG_INVSQRT, D, W, composed );
 
   // Compute R * C
 
-  matrix_double RC ( invrtC );
-
-  apply_norm ( S, RC );
+  apply_norm ( S, composed );
 
   // Compute R * f.
 
-  boost::numeric::bindings::blas::gemv ( 1.0, RC, z, 0.0, Rf );
+  boost::numeric::bindings::blas::gemv ( 1.0, composed, z, 0.0, Rf );
 
   // compute deconvolved spectra (numerically unstable, but useful for visualization).
-  // R^-1 == ( W^T D^{-1/2} W ) S
 
-  vector_double temp ( Rf );
+  eigen_compose ( EIG_INV, D, W, composed );
 
-  apply_inverse_norm ( S, temp );
-
-  // now apply invrtC.  This destroys upper triangle of invrtC!
-
-  boost::numeric::bindings::blas::symv ( 1.0, boost::numeric::bindings::lower( invrtC ), temp, 0.0, f );
+  boost::numeric::bindings::blas::gemv ( 1.0, composed, z, 0.0, f );
 
   return;
 }
@@ -545,29 +538,33 @@ void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double cons
     }
 
     if ( lambda_mask ) {
-      // mask all pixels in wavelength direction beyond the bin centers of the outermost
-      // bins
+      // mask all pixels in wavelength direction touched by the outermost bins
+      // DO NOT mask the final chunks in wavelength direction
 
       for ( size_t s = 0; s < regit->n_spec; ++s ) {
 
-        design->extent ( s + regit->first_spec, regit->first_lambda, xoff, yoff, nx, ny );
+        if ( regit->first_lambda > 0 ) {
 
-        size_t half = (size_t)( ny / 2 );
+          design->extent ( s + regit->first_spec, regit->first_lambda, xoff, yoff, nx, ny );
 
-        for ( size_t i = 0; i < half; ++i ) {
-          for ( size_t j = 0; j < nx; ++j ) {
-            mask[ ( xoff + j ) * img_rows + yoff + i ] = 0;
+          for ( size_t i = 0; i < ny; ++i ) {
+            for ( size_t j = 0; j < nx; ++j ) {
+              mask[ ( xoff + j ) * img_rows + yoff + i ] = 0;
+            }
           }
+
         }
 
-        design->extent ( s + regit->first_spec, regit->first_lambda + regit->n_lambda - 1, xoff, yoff, nx, ny );
+        if ( ( regit->first_lambda + regit->n_lambda - 1 ) < ( design->n_lambda() - 1 ) ) {
 
-        half = (size_t)( ny / 2 );
+          design->extent ( s + regit->first_spec, regit->first_lambda + regit->n_lambda - 1, xoff, yoff, nx, ny );
 
-        for ( size_t i = half+1; i < ny; ++i ) {
-          for ( size_t j = 0; j < nx; ++j ) {
-            mask[ ( xoff + j ) * img_rows + yoff + i ] = 0;
+          for ( size_t i = 0; i < ny; ++i ) {
+            for ( size_t j = 0; j < nx; ++j ) {
+              mask[ ( xoff + j ) * img_rows + yoff + i ] = 0;
+            }
           }
+
         }
 
       }
@@ -609,7 +606,8 @@ void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double cons
     eig_vals.resize ( nbins );
     eig_vecs.resize ( nbins, nbins );
 
-    eigen_decompose ( invC, eig_vals, eig_vecs );
+    bool regularize = lambda_mask;
+    eigen_decompose ( invC, eig_vals, eig_vecs, regularize );
     /*
     for ( size_t i = 0; i < eig_vals.size(); ++i ) {
       cerr << "EIGVAL " << i << " " << eig_vals[i] << endl;

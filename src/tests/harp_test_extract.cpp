@@ -21,7 +21,7 @@ void harp::test_extract ( string const & datadir ) {
   size_t chunk_spec = 5;
   size_t overlap_spec = 0;
   size_t chunk_lambda = 20;
-  size_t overlap_lambda = 10;
+  size_t overlap_lambda = 15;
 
   size_t nbin = nspec * nlambda;
 
@@ -160,6 +160,24 @@ void harp::test_extract ( string const & datadir ) {
   img->values ( img_data );
   img->inv_variance ( img_inv );
 
+  boost::property_tree::ptree solution_props;
+  solution_props.clear();
+  solution_props.put ( "rows", img->n_rows() );
+  solution_props.put ( "cols", img->n_cols() );
+
+  image_fits outimg ( solution_props );
+
+  string outfile = datadir + "/extract_image_input.fits.out";
+  outimg.write ( outfile, img_data, img_inv );
+
+  solution_props.clear();
+  solution_props.put ( "nspec", nspec );
+  solution_props.put ( "nlambda", nlambda );
+  spec_specter outspec ( solution_props );
+
+  outfile = datadir + "/extract_spec_truth.fits.out";
+  outspec.write ( outfile, truth, lambda, target_list );
+
   // do extraction
 
   vector < spec_slice_region > regions = slice->regions ( 0 );
@@ -170,7 +188,8 @@ void harp::test_extract ( string const & datadir ) {
 
   map < string, double > timing;
 
-  extract_slices ( slice, gauss_psf, img_data, img_inv, truth, Rf, f, err, Rtruth, timing, false, true, prefix );
+  extract_slices ( slice, gauss_psf, img_data, img_inv, truth, Rf, f, err, Rtruth, timing, false, false, prefix );
+  //extract_slices ( slice, gauss_psf, img_data, img_inv, truth, Rf, f, err, Rtruth, timing, false, true, prefix );
      
   cout << prefix << "Aggregate Timings:" << endl;
   cout << prefix << "  Build design matrix = " << timing["design"] << " seconds" << endl;
@@ -193,13 +212,7 @@ void harp::test_extract ( string const & datadir ) {
 
   cout << prefix << "Reduced Chi square = " << chisq_reduced << endl;
 
-  boost::property_tree::ptree solution_props;
-  solution_props.put ( "nspec", nspec );
-  solution_props.put ( "nlambda", nlambda );
-
-  spec_specter outspec ( solution_props );
-
-  string outfile = datadir + "/extract_spec_Rf.fits.out";
+  outfile = datadir + "/extract_spec_Rf.fits.out";
   outspec.write ( outfile, Rf, lambda, target_list );
 
   outfile = datadir + "/extract_spec_Rtruth.fits.out";
@@ -210,12 +223,6 @@ void harp::test_extract ( string const & datadir ) {
 
   outfile = datadir + "/extract_spec_Rf-err.fits.out";
   outspec.write ( outfile, err, lambda, target_list );
-
-  solution_props.clear();
-  solution_props.put ( "rows", img->n_rows() );
-  solution_props.put ( "cols", img->n_cols() );
-
-  image_fits outimg ( solution_props );
 
   matrix_double_sparse AT;
   gauss_psf->project_transpose ( AT );

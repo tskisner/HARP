@@ -12,10 +12,17 @@ using namespace harp;
 
 void harp::mpi_test_extract ( string const & datadir ) {
 
+  boost::mpi::communicator comm;
+
+  int np = comm.size();
+  int myp = comm.rank();
+
   bool reg_mpi = true;
   plugin_registry & reg = plugin_registry::get( reg_mpi );
 
-  cout << "Testing extraction spectral sub/accum functions..." << endl;
+  if ( myp == 0 ) {
+    cout << "Testing extraction spectral sub/accum functions..." << endl;
+  }
 
   size_t nspec = 5;
   size_t nlambda = 200;
@@ -36,11 +43,14 @@ void harp::mpi_test_extract ( string const & datadir ) {
     full_data[i] = (double)i;
   }
   
-  size_t procs = 10;
+  
+  mpi_spec_slice_p slice ( new mpi_spec_slice ( comm, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
 
-  spec_slice_p slice ( new spec_slice ( procs, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
+  std::vector < spec_slice_region > myslice = slice->regions();
 
-  spec_slice_region full_region = slice->full_region();
+  for ( std::vector < spec_slice_region > :: const_iterator sit = myslice.begin(); sit != myslice.end(); ++sit ) {
+
+
 
   for ( size_t p = 0; p < procs; ++p ) {
     std::vector < spec_slice_region > procslice = slice->regions ( p );
@@ -56,6 +66,10 @@ void harp::mpi_test_extract ( string const & datadir ) {
 
       sub_spec ( full_region, (*sit), full_data, false, sub_data );
 
+      harp::sub_spec ( matrix_dist const & in, size_t total_nspec, size_t first_spec, size_t nspec, size_t first_lambda, size_t nlambda, matrix_dist & out )
+
+
+
       for ( size_t i = 0; i < sub_nbin; ++i ) {
         size_t spec_offset = (size_t)( i / sit->n_lambda );
         size_t cur_spec = sit->first_spec + spec_offset;
@@ -68,6 +82,10 @@ void harp::mpi_test_extract ( string const & datadir ) {
       }
 
       accum_spec ( (*sit), full_region, sub_data, true, check_data );
+
+
+       harp::accum_spec ( matrix_dist & full, size_t total_nspec, size_t first_spec, size_t nspec, size_t first_lambda, size_t nlambda, matrix_dist const & chunk )
+
 
       for ( size_t i = 0; i < sub_nbin; ++i ) {
         size_t spec_offset = (size_t)( i / sit->n_lambda );

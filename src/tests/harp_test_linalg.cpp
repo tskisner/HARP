@@ -92,7 +92,7 @@ void harp::test_linalg ( string const & datadir ) {
   vector_double w;
   matrix_double Z;
 
-  eigen_decompose ( sym, w, Z );
+  eigen_decompose ( sym, w, Z, false );
 
   matrix_double symprod ( dim, dim );
   matrix_double eprod ( dim, dim );
@@ -154,7 +154,7 @@ void harp::test_linalg ( string const & datadir ) {
   vector_double w_inv;
   matrix_double Z_inv;
 
-  eigen_decompose ( mat_invrt, w_inv, Z_inv );
+  eigen_decompose ( mat_invrt, w_inv, Z_inv, false );
 
   for ( size_t i = 0; i < dim; ++i ) {
     w_inv[i] *= w_inv[i];

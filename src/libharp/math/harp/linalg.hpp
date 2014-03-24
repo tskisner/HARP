@@ -23,7 +23,8 @@ namespace harp {
   typedef enum {
     EIG_NONE,
     EIG_SQRT,
-    EIG_INVSQRT
+    EIG_INVSQRT,
+    EIG_INV
   } eigen_op;
 
   typedef boost::numeric::ublas::matrix < double, boost::numeric::ublas::column_major > matrix_double;
@@ -55,7 +56,7 @@ namespace harp {
   }
 
 
-  void eigen_decompose ( matrix_double const & invcov, vector_double & D, matrix_double & W );
+  void eigen_decompose ( matrix_double const & invcov, vector_double & D, matrix_double & W, bool regularize );
 
   void eigen_compose ( eigen_op op, vector_double const & D, matrix_double const & W, matrix_double & out );
 
