@@ -20,7 +20,7 @@ CXX="${HPCP_CXX}" \
 MPICXX="${HPCP_MPICXX}" \
 CXXFLAGS="${HPCP_CXXFLAGS}" \
 OPENMP_CXXFLAGS="${HPCP_OMPFLAGS}" \
-LDFLAGS="${HPCP_LDFLAGS}" \
+LDFLAGS="${HPCP_LDFLAGS} ${HPCP_OMPFLAGS}" \
 LIBS="${HPCP_LIBS}" \
 ./configure ${sharedopt} ${OPTS} \
 --with-blas="${blas_LIBS_CXX}" \
