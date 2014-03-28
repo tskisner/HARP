@@ -202,7 +202,7 @@ AC_MSG_NOTICE([                                           ])
 AC_MSG_NOTICE([=========== Build Configuration ===========])
 AC_MSG_NOTICE([                                           ])
 AC_MSG_NOTICE([  C++ Compiler              : $CXX])
-if test x"${have_mpi}" = xyes; then
+if test x"${harp_mpi}" = xyes; then
   AC_MSG_NOTICE([  MPI C++ Compiler          : $MPICXX])
 else
   AC_MSG_NOTICE([  MPI C++ Compiler          : Not Found])

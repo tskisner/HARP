@@ -52,8 +52,8 @@ void harp::local_matrix_zero ( elem_matrix_local & mat ) {
 
 void harp::mpi_eigen_decompose ( mpi_matrix const & invcov, mpi_matrix & D, mpi_matrix & W ) {
 
-  D.ResizeTo ( invcov.Height(), 1 );
-  W.ResizeTo ( invcov.Height(), invcov.Height() );
+  D.Resize ( invcov.Height(), 1 );
+  W.Resize ( invcov.Height(), invcov.Height() );
 
   mpi_matrix temp ( invcov );
 
@@ -75,7 +75,7 @@ void harp::mpi_eigen_compose ( eigen_op op, mpi_matrix const & D, mpi_matrix con
 
   double threshold = 1.0e-12;
 
-  out.ResizeTo ( W.Height(), W.Height() );
+  out.Resize ( W.Height(), W.Height() );
 
   // Get full local copy of eigenvalues
 
@@ -161,7 +161,7 @@ void harp::mpi_eigen_compose ( eigen_op op, mpi_matrix const & D, mpi_matrix con
 
 void harp::mpi_column_norm ( mpi_matrix const & mat, mpi_matrix & S ) {
 
-  S.ResizeTo ( mat.Height(), 1 );
+  S.Resize ( mat.Height(), 1 );
   mpi_matrix_zero ( S );
 
   // Sum local columns
@@ -314,7 +314,7 @@ void mpi_sparse_mv_trans ( mpi_matrix_sparse const & AT, mpi_matrix const & in, 
     HARP_MPI_ABORT( myp, o.str().c_str() );
   }
 
-  out.ResizeTo ( ncols, 1 );
+  out.Resize ( ncols, 1 );
 
   // get local chunk of input vector which goes with our range of sparse matrix rows
 
@@ -332,7 +332,7 @@ void mpi_sparse_mv_trans ( mpi_matrix_sparse const & AT, mpi_matrix const & in, 
 
   // resize output to zero, to save mem temporarily
 
-  out.ResizeTo ( 0, 0 );
+  out.Resize ( 0, 0 );
 
   // compute local output contribution
 
@@ -364,8 +364,8 @@ void mpi_sparse_mv_trans ( mpi_matrix_sparse const & AT, mpi_matrix const & in, 
 
   // clear local buffer and resize output
 
-  local_out.ResizeTo ( 0, 0 );
-  out.ResizeTo ( ncols, 1 );
+  local_out.Resize ( 0, 0 );
+  out.Resize ( ncols, 1 );
   local_matrix_zero ( out );
 
   // get local copy for output

@@ -538,16 +538,21 @@ void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double cons
     }
 
     if ( lambda_mask ) {
-      // mask all pixels in wavelength direction touched by the outermost bins
-      // DO NOT mask the final chunks in wavelength direction
+
+      // if we have at least one bin of overlap region, and the overlap extent does not reach
+      // the edge of the frame, then mask the outer half of the extent of the outermost bin.
+
+      size_t half;
 
       for ( size_t s = 0; s < regit->n_spec; ++s ) {
 
-        if ( regit->first_lambda > 0 ) {
+        if ( ( regit->first_good_lambda > regit->first_lambda ) && ( regit->first_lambda > 0 ) ) {
 
           design->extent ( s + regit->first_spec, regit->first_lambda, xoff, yoff, nx, ny );
 
-          for ( size_t i = 0; i < ny; ++i ) {
+          half = (size_t)( ny / 2 );
+
+          for ( size_t i = 0; i < half; ++i ) {
             for ( size_t j = 0; j < nx; ++j ) {
               mask[ ( xoff + j ) * img_rows + yoff + i ] = 0;
             }
@@ -555,11 +560,16 @@ void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double cons
 
         }
 
-        if ( ( regit->first_lambda + regit->n_lambda - 1 ) < ( design->n_lambda() - 1 ) ) {
+        size_t maxgood = regit->first_good_lambda + regit->n_good_lambda;
+        size_t max = regit->first_lambda + regit->n_lambda;
+
+        if ( ( max > maxgood ) && ( max < design->n_lambda() ) ) {
 
           design->extent ( s + regit->first_spec, regit->first_lambda + regit->n_lambda - 1, xoff, yoff, nx, ny );
 
-          for ( size_t i = 0; i < ny; ++i ) {
+          half = (size_t)( ny / 2 );
+
+          for ( size_t i = half+1; i < ny; ++i ) {
             for ( size_t j = 0; j < nx; ++j ) {
               mask[ ( xoff + j ) * img_rows + yoff + i ] = 0;
             }

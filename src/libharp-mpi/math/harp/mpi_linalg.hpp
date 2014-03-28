@@ -23,7 +23,7 @@ namespace harp {
   void ublas_to_elem ( boost::numeric::ublas::vector_expression < V > const & in, elem_matrix_local & out ) {
     typedef V vector_type;
 
-    out.ResizeTo ( in().size(), 1 );
+    out.Resize ( in().size(), 1 );
     for ( size_t i = 0; i < in().size(); ++i ) {
       out.Set ( i, 0, in()[i] );
     }
@@ -35,7 +35,7 @@ namespace harp {
   void ublas_to_elem ( boost::numeric::ublas::vector_expression < V > const & in, elem_matrix & out ) {
     typedef V vector_type;
 
-    out.ResizeTo ( in().size(), 1 );
+    out.Resize ( in().size(), 1 );
 
     // populate local elements
 

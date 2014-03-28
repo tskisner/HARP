@@ -1131,7 +1131,7 @@ for typ in spec psf image; do
 
         echo "# ${pluginname}" >> ${mpipluginmake}
         echo "${mpiplugsource} : \$(top_srcdir)/src/libharp/plugins/${plugsource}" >> ${mpipluginmake}
-        echo "\t@cp \$(top_srcdir)/src/libharp/plugins/${plugsource} ${mpiplugsource}" >> ${mpipluginmake}
+        printf "\t@cp \$(top_srcdir)/src/libharp/plugins/%s %s\n" "${plugsource}" "${mpiplugsource}" >> ${mpipluginmake}
         echo "" >> ${mpipluginmake}
         echo "CLEANFILES += ${mpiplugsource}" >> ${mpipluginmake}
         echo "" >> ${mpipluginmake}

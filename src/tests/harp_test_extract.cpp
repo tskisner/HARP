@@ -188,8 +188,9 @@ void harp::test_extract ( string const & datadir ) {
 
   map < string, double > timing;
 
-  extract_slices ( slice, gauss_psf, img_data, img_inv, truth, Rf, f, err, Rtruth, timing, false, false, prefix );
-  //extract_slices ( slice, gauss_psf, img_data, img_inv, truth, Rf, f, err, Rtruth, timing, false, true, prefix );
+  bool lambda_mask = true;
+
+  extract_slices ( slice, gauss_psf, img_data, img_inv, truth, Rf, f, err, Rtruth, timing, false, lambda_mask, prefix );
      
   cout << prefix << "Aggregate Timings:" << endl;
   cout << prefix << "  Build design matrix = " << timing["design"] << " seconds" << endl;
@@ -232,6 +233,98 @@ void harp::test_extract ( string const & datadir ) {
 
   outfile = datadir + "/extract_image_f-project.fits.out";
   outimg.write ( outfile, f_projected, img_inv );
+
+
+
+  // now do this for a fake flat
+
+  spec_props.clear();
+  spec_props.put ( "nspec", nspec );
+  spec_props.put ( "lambda_n", nlambda );
+  spec_props.put ( "lambda_start", first_lambda );
+  spec_props.put ( "lambda_stop", last_lambda );
+  spec_props.put ( "back", 500.0 );
+  spec_props.put ( "atm", 0.0 );
+  spec_props.put ( "obj", 0.0 );
+  spec_props.put ( "atmspace", 12 );
+  spec_props.put ( "skymod", nspec );
+  testspec.reset ( reg.create_spec ( "sim", spec_props ) );
+
+  testspec->values ( truth );
+  testspec->lambda ( lambda );
+  testspec->targets ( target_list );
+
+  // instantiate image and read
+
+  img_props.clear();
+  img_props.put ( "spec_type", "sim" );
+  img_props.put_child ( "spec", spec_props );
+  img_props.put ( "psf_type", "gauss_sim" );
+  img_props.put_child ( "psf", gauss_props );
+
+  img.reset ( reg.create_image ( "sim", img_props ) );
+
+  img->values ( img_data );
+  img->inv_variance ( img_inv );
+
+  outfile = datadir + "/flat_image_input.fits.out";
+  outimg.write ( outfile, img_data, img_inv );
+
+  outfile = datadir + "/flat_spec_truth.fits.out";
+  outspec.write ( outfile, truth, lambda, target_list );
+
+  // do extraction
+
+  regions = slice->regions ( 0 );
+
+  prefix = "  flat:  ";
+
+  cout << prefix << "Extracting " << regions.size() << " spectral chunks, each with " << chunk_spec << " spectra (overlap = " << overlap_spec << ") and " << chunk_lambda << " lambda points (overlap = " << overlap_lambda << ")" << endl;
+
+  timing.clear();
+
+  extract_slices ( slice, gauss_psf, img_data, img_inv, truth, Rf, f, err, Rtruth, timing, false, lambda_mask, prefix );
+     
+  cout << prefix << "Aggregate Timings:" << endl;
+  cout << prefix << "  Build design matrix = " << timing["design"] << " seconds" << endl;
+  cout << prefix << "  Build inverse covariance = " << timing["inverse"] << " seconds" << endl;
+  cout << prefix << "  Eigendecompose inverse = " << timing["eigen"] << " seconds" << endl;
+  cout << prefix << "  Compute column norm = " << timing["norm"] << " seconds" << endl;
+  cout << prefix << "  Compute noise weighted spec = " << timing["nsespec"] << " seconds" << endl;
+  cout << prefix << "  Extract spectra = " << timing["extract"] << " seconds" << endl;
+
+  chisq_reduced = 0.0;
+
+  for ( size_t i = 0; i < nbin; ++i ) {
+    if ( err[i] > std::numeric_limits < double > :: epsilon() ) {
+      double val = ( Rf[i] - Rtruth[i] ) / err[i];
+      chisq_reduced += val * val;
+    }
+  }
+
+  chisq_reduced /= (double)( nbin );
+
+  cout << prefix << "Reduced Chi square = " << chisq_reduced << endl;
+
+  outfile = datadir + "/flat_spec_Rf.fits.out";
+  outspec.write ( outfile, Rf, lambda, target_list );
+
+  outfile = datadir + "/flat_spec_Rtruth.fits.out";
+  outspec.write ( outfile, Rtruth, lambda, target_list );
+
+  outfile = datadir + "/flat_spec_f.fits.out";
+  outspec.write ( outfile, f, lambda, target_list );
+
+  outfile = datadir + "/flat_spec_Rf-err.fits.out";
+  outspec.write ( outfile, err, lambda, target_list );
+
+  gauss_psf->project_transpose ( AT );
+
+  sparse_mv_trans ( AT, f, f_projected );
+
+  outfile = datadir + "/flat_image_f-project.fits.out";
+  outimg.write ( outfile, f_projected, img_inv );
+
 
   cout << "  (PASSED)" << endl;
 
