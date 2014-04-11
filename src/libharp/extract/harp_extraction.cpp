@@ -539,8 +539,8 @@ void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double cons
 
     if ( lambda_mask ) {
 
-      // if we have at least one bin of overlap region, and the overlap extent does not reach
-      // the edge of the frame, then mask the outer half of the extent of the outermost bin.
+      // mask all pixels in wavelength direction that are beyond the extent of the outermost
+      // good bins.
 
       size_t half;
 
