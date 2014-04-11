@@ -513,70 +513,59 @@ void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double cons
     double tsubstart = wtime();
 
     vector_mask mask ( img_inv_var.size() );
+
+    // start by masking all pixels...
     mask.clear();
+
     size_t xoff;
     size_t yoff;
     size_t nx;
     size_t ny;
 
+    // select our spectral bins
+
     map < size_t, set < size_t > > speclambda;
 
     for ( size_t s = 0; s < regit->n_spec; ++s ) {
       for ( size_t l = 0; l < regit->n_lambda; ++l ) {
-
         speclambda[ s + regit->first_spec ].insert ( l + regit->first_lambda );
-        
-        design->extent ( s + regit->first_spec, l + regit->first_lambda, xoff, yoff, nx, ny );
-
-        for ( size_t i = 0; i < ny; ++i ) {
-          for ( size_t j = 0; j < nx; ++j ) {
-            mask[ ( xoff + j ) * img_rows + yoff + i ] = 1;
-          }
-        }
-
       }
     }
 
     if ( lambda_mask ) {
 
-      // mask all pixels in wavelength direction that are beyond the extent of the outermost
-      // good bins.
+      // we un-mask all pixels that touch only the good bins we are solving for
 
-      size_t half;
+      for ( size_t s = 0; s < regit->n_good_spec; ++s ) {
+        for ( size_t l = 0; l < regit->n_good_lambda; ++l ) {
+
+          design->extent ( s + regit->first_good_spec, l + regit->first_good_lambda, xoff, yoff, nx, ny );
+
+          for ( size_t j = 0; j < nx; ++j ) {
+            for ( size_t i = 0; i < ny; ++i ) {
+              mask[ ( xoff + j ) * img_rows + yoff + i ] = 1;
+            }
+          }
+
+        }
+      }
+
+    } else {
+
+      // we un-mask all pixels that touch any of the bins we are solving for
 
       for ( size_t s = 0; s < regit->n_spec; ++s ) {
+        for ( size_t l = 0; l < regit->n_lambda; ++l ) {
 
-        if ( ( regit->first_good_lambda > regit->first_lambda ) && ( regit->first_lambda > 0 ) ) {
+          design->extent ( s + regit->first_spec, l + regit->first_lambda, xoff, yoff, nx, ny );
 
-          design->extent ( s + regit->first_spec, regit->first_lambda, xoff, yoff, nx, ny );
-
-          half = (size_t)( ny / 2 );
-
-          for ( size_t i = 0; i < half; ++i ) {
-            for ( size_t j = 0; j < nx; ++j ) {
-              mask[ ( xoff + j ) * img_rows + yoff + i ] = 0;
+          for ( size_t j = 0; j < nx; ++j ) {
+            for ( size_t i = 0; i < ny; ++i ) {
+              mask[ ( xoff + j ) * img_rows + yoff + i ] = 1;
             }
           }
 
         }
-
-        size_t maxgood = regit->first_good_lambda + regit->n_good_lambda;
-        size_t max = regit->first_lambda + regit->n_lambda;
-
-        if ( ( max > maxgood ) && ( max < design->n_lambda() ) ) {
-
-          design->extent ( s + regit->first_spec, regit->first_lambda + regit->n_lambda - 1, xoff, yoff, nx, ny );
-
-          half = (size_t)( ny / 2 );
-
-          for ( size_t i = half+1; i < ny; ++i ) {
-            for ( size_t j = 0; j < nx; ++j ) {
-              mask[ ( xoff + j ) * img_rows + yoff + i ] = 0;
-            }
-          }
-
-        }
-
       }
 
     }
