@@ -10,6 +10,76 @@ using namespace std;
 using namespace harp;
 
 
+
+void mpi_test_extract_subaccum ( mpi_spec_slice_p slice, mpi_matrix & full_data, mpi_matrix & check_data ) {
+
+  boost::mpi::communicator comm = slice->comm();
+
+  int np = comm.size();
+  int myp = comm.rank();
+
+  spec_slice_region full_region = slice->full_region();
+
+  std::vector < spec_slice_region > myslice = slice->regions();
+
+  size_t indx = 0;
+
+  mpi_matrix_zero ( check_data );
+
+  for ( std::vector < spec_slice_region > :: const_iterator sit = myslice.begin(); sit != myslice.end(); ++sit ) {
+
+    size_t sub_nbin = sit->n_spec * sit->n_lambda;
+
+    mpi_matrix sub_data ( sub_nbin, 1 );
+    mpi_matrix_zero ( sub_data );
+
+    mpi_sub_spec ( full_region, (*sit), full_data, false, sub_data );
+
+    for ( size_t i = 0; i < sub_nbin; ++i ) {
+      size_t spec_offset = (size_t)( i / sit->n_lambda );
+      size_t cur_spec = sit->first_spec + spec_offset;
+      size_t cur_lambda = sit->first_lambda + i - ( spec_offset * sit->n_lambda );
+      size_t cur_bin = cur_spec * full_region.n_lambda + cur_lambda;
+      if ( (size_t)sub_data.Get(i,0) != cur_bin ) {
+        cerr << "FAIL on sub_spec proc " << myp << ", region " << indx << ", bin " << i << ", " << (size_t)sub_data.Get(i,0) << " != " << cur_bin << endl;
+        //exit(1);
+      }
+    }
+
+    mpi_accum_spec ( (*sit), full_region, sub_data, true, check_data );
+
+    for ( size_t i = 0; i < sub_nbin; ++i ) {
+      size_t spec_offset = (size_t)( i / sit->n_lambda );
+      size_t cur_spec = sit->first_spec + spec_offset;
+      size_t cur_lambda = sit->first_lambda + i - ( spec_offset * sit->n_lambda );
+      size_t cur_bin = cur_spec * full_region.n_lambda + cur_lambda;
+      if ( ( cur_spec >= sit->first_good_spec ) && ( cur_spec < sit->first_good_spec + sit->n_good_spec ) && ( cur_lambda >= sit->first_good_lambda ) && ( cur_lambda < sit->first_good_lambda + sit->n_good_lambda ) ) {
+        if ( (size_t)check_data.Get( cur_bin, 0 ) != cur_bin ) {
+          cerr << "FAIL on accum_spec proc " << myp << ", region " << indx << ", bin " << i << ", " << (size_t)check_data.Get( cur_bin, 0 ) << " != " << cur_bin << endl;
+          exit(1);
+        }
+      }
+    }
+
+    ++indx;
+
+  }
+
+  for ( size_t i = 0; i < full_data.Height(); ++i ) {
+    if ( fabs ( full_data.Get(i, 0) > std::numeric_limits < double > :: epsilon() ) ) {
+      if ( ( fabs ( ( check_data.Get(i, 0) - full_data.Get(i, 0) ) / full_data.Get(i, 0) ) ) > std::numeric_limits < double > :: epsilon() ) {
+        cerr << "FAIL on spectral bin " << i << ", " << check_data.Get(i,0) << " != " << full_data.Get(i,0) << endl;
+        exit(1);
+      }
+    }
+  }
+
+  return;
+}
+
+
+
+
 void harp::mpi_test_extract ( string const & datadir ) {
 
   boost::mpi::communicator comm;
@@ -33,152 +103,88 @@ void harp::mpi_test_extract ( string const & datadir ) {
 
   size_t nbin = nspec * nlambda;
 
-  vector_double full_data ( nbin );
-  full_data.clear();
+  mpi_matrix full_data ( nbin, 1 );
+  mpi_matrix_zero ( full_data );
 
-  vector_double check_data ( nbin );
-  check_data.clear();
+  mpi_matrix check_data ( nbin, 1 );
 
   for ( size_t i = 0; i < nbin; ++i ) {
-    full_data[i] = (double)i;
+    full_data.Set ( i, 0, (double)i );
   }
-  
   
   mpi_spec_slice_p slice ( new mpi_spec_slice ( comm, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
 
-  std::vector < spec_slice_region > myslice = slice->regions();
-
-  for ( std::vector < spec_slice_region > :: const_iterator sit = myslice.begin(); sit != myslice.end(); ++sit ) {
-
-
-
-  for ( size_t p = 0; p < procs; ++p ) {
-    std::vector < spec_slice_region > procslice = slice->regions ( p );
-
-    size_t indx = 0;
-
-    for ( std::vector < spec_slice_region > :: const_iterator sit = procslice.begin(); sit != procslice.end(); ++sit ) {
-
-      size_t sub_nbin = sit->n_spec * sit->n_lambda;
-
-      vector_double sub_data ( sub_nbin );
-      sub_data.clear();
-
-      sub_spec ( full_region, (*sit), full_data, false, sub_data );
-
-      harp::sub_spec ( matrix_dist const & in, size_t total_nspec, size_t first_spec, size_t nspec, size_t first_lambda, size_t nlambda, matrix_dist & out )
-
-
-
-      for ( size_t i = 0; i < sub_nbin; ++i ) {
-        size_t spec_offset = (size_t)( i / sit->n_lambda );
-        size_t cur_spec = sit->first_spec + spec_offset;
-        size_t cur_lambda = sit->first_lambda + i - ( spec_offset * sit->n_lambda );
-        size_t cur_bin = cur_spec * nlambda + cur_lambda;
-        if ( (size_t)sub_data[i] != cur_bin ) {
-          cerr << "FAIL on sub_spec proc " << p << ", region " << indx << ", bin " << i << ", " << (size_t)sub_data[i] << " != " << cur_bin << endl;
-          exit(1);
-        }
-      }
-
-      accum_spec ( (*sit), full_region, sub_data, true, check_data );
-
-
-       harp::accum_spec ( matrix_dist & full, size_t total_nspec, size_t first_spec, size_t nspec, size_t first_lambda, size_t nlambda, matrix_dist const & chunk )
-
-
-      for ( size_t i = 0; i < sub_nbin; ++i ) {
-        size_t spec_offset = (size_t)( i / sit->n_lambda );
-        size_t cur_spec = sit->first_spec + spec_offset;
-        size_t cur_lambda = sit->first_lambda + i - ( spec_offset * sit->n_lambda );
-        size_t cur_bin = cur_spec * nlambda + cur_lambda;
-        if ( ( cur_spec >= sit->first_good_spec ) && ( cur_spec < sit->first_good_spec + sit->n_good_spec ) && ( cur_lambda >= sit->first_good_lambda ) && ( cur_lambda < sit->first_good_lambda + sit->n_good_lambda ) ) {
-          if ( (size_t)check_data[ cur_bin ] != cur_bin ) {
-            cerr << "FAIL on accum_spec proc " << p << ", region " << indx << ", bin " << i << ", " << (size_t)check_data[ cur_bin ] << " != " << cur_bin << endl;
-            exit(1);
-          }
-        }
-      }
-
-      ++indx;
-
-    }
-    
-  }
-
-  for ( size_t i = 0; i < nbin; ++i ) {
-    if ( ( fabs ( ( check_data[i] - full_data[i] ) / full_data[i] ) ) > std::numeric_limits < double > :: epsilon() ) {
-      cerr << "FAIL on spectral bin " << i << ", " << check_data[i] << " != " << full_data[i] << endl;
-      exit(1);
-    }
-  }
-
-  full_data.resize(0);
-  check_data.resize(0);
+  mpi_test_extract_subaccum ( slice, full_data, check_data );
 
   cout << "  (PASSED)" << endl;
 
-
-
-
-  
-
+  return;
 
   
   if ( myp == 0 ) {
     cout << "Testing gang-parallel slice and accum..." << endl;
   }
 
-  mpi_matrix fullspec ( NSPEC * SPECSIZE, 1, grid );
-  mpi_matrix comp_fullspec ( NSPEC * SPECSIZE, 1, grid );
+  // split communicator
 
-  for ( size_t i = 0; i < NSPEC; ++i ) {
-    for ( size_t j = 0; j < SPECSIZE; ++j ) {
-      fullspec.Set ( i * SPECSIZE + j, 0, 100.0 + (double)j );
-    }
+  elem::Grid grid ( elem::mpi::COMM_WORLD );
+
+  int gangsize = (int)( np / 2 );
+  if ( gangsize < 1 ) {
+    gangsize = 1;
   }
 
-  mpi_matrix gang_fullspec ( NSPEC * SPECSIZE, 1, gang_grid );
-
-  mpi_gang_distribute ( fullspec, gang_fullspec );
-
-  size_t nspec_chunk = (size_t)( NSPEC / 2 );
-  size_t first_spec = (size_t)( NSPEC / 4 );
-  size_t nlambda_chunk = (size_t)( SPECSIZE / 4 );
-  size_t first_lambda = (size_t)( SPECSIZE / 8 );
-
+  int ngang = (int)( np / gangsize );
+  int gangtot = ngang * gangsize;
   if ( myp == 0 ) {
-    cout << "spec range = " << first_spec << " - " << (first_spec + nspec_chunk - 1) << endl;
-    cout << "lambda range = " << first_lambda << " - " << (first_lambda + nlambda_chunk - 1) << endl;
+    cout << "  Using " << ngang << " gangs of " << gangsize << " processes each" << endl;
   }
-
-  mpi_matrix gang_subspec ( nspec_chunk * nlambda_chunk, 1, gang_grid );
-
-  mpi_sub_spec ( gang_fullspec, NSPEC, first_spec, nspec_chunk, first_lambda, nlambda_chunk, gang_subspec );
-
-  MPI_Barrier ( MPI_COMM_WORLD );
-
-  mpi_accum_spec ( gang_fullspec, NSPEC, first_spec, nspec_chunk, first_lambda, nlambda_chunk, gang_subspec );
-
-  mpi_gang_accum ( gang_fullspec, comp_fullspec );
-
-  MPI_Barrier ( MPI_COMM_WORLD );
-
-  for ( size_t i = 0; i < NSPEC; ++i ) {
-    for ( size_t j = 0; j < SPECSIZE; ++j ) {
-      inval = fullspec.Get ( i * SPECSIZE + j, 0 ) * (double)ngang;
-      if ( ( ( i >= first_spec ) && ( i < first_spec + nspec_chunk ) ) && ( ( j >= first_lambda ) && ( j < first_lambda + nlambda_chunk ) ) ) {
-        inval *= 2.0;
-      }
-      outval = comp_fullspec.Get ( i * SPECSIZE + j, 0 );
-      relerr = fabs ( outval - inval ) / inval;
-      if ( relerr > TOL ) {
-        cerr << "FAIL on spectrum " << i << ", wavelength " << j << ": " << outval << " != " << inval << endl;
-        exit(1);
-      }
-
+  if ( gangtot < np ) {
+    if ( myp == 0 ) {
+      cout << "  WARNING: " << (np-gangtot) << " processes are idle" << endl;
     }
   }
+  int gang = (int)( myp / gangsize );
+  int grank = myp % gangsize;
+  if ( gang >= ngang ) {
+    gang = MPI_UNDEFINED;
+    grank = MPI_UNDEFINED;
+  }
+
+  boost::mpi::communicator gcomm = comm.split ( gang, grank );
+
+  elem::Grid gang_grid ( gcomm );
+
+  // setup data
+
+  mpi_matrix_zero ( check_data );
+
+  mpi_matrix gang_full_data ( nbin, 1, gang_grid );
+  mpi_matrix gang_check_data ( nbin, 1, gang_grid );
+
+  // world --> gang
+
+  mpi_gang_distribute ( full_data, gang_full_data );
+
+  // define slices
+
+  mpi_spec_slice_p gang_slice ( new mpi_spec_slice ( gcomm, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
+
+  // do sub / accum within each gang
+
+  mpi_test_extract_subaccum ( gang_slice, gang_full_data, gang_check_data );
+
+  // accum from all gangs
+
+  mpi_gang_accum ( gang_check_data, check_data );
+
+  for ( size_t i = 0; i < nbin; ++i ) {
+    if ( ( fabs ( ( check_data.Get(i,0) - (double)ngang * full_data.Get(i,0) ) / (double)ngang * full_data.Get(i,0) ) ) > std::numeric_limits < double > :: epsilon() ) {
+      cerr << "FAIL on spectral bin " << i << ", " << check_data.Get(i,0) << " != " << full_data.Get(i,0) << endl;
+      exit(1);
+    }
+  }
+
 
 
   if ( myp == 0 ) {
@@ -186,7 +192,7 @@ void harp::mpi_test_extract ( string const & datadir ) {
   }
 
 
-  
+  /*
 
   cout << "Testing high-level, chunked extraction..." << endl;
 
@@ -283,6 +289,8 @@ void harp::mpi_test_extract ( string const & datadir ) {
   cout << prefix << "Reduced Chi square = " << chisq_reduced << endl;
 
   cout << "  (PASSED)" << endl;
+
+  */
 
   return;
 }

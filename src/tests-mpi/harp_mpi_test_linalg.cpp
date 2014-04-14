@@ -23,6 +23,7 @@ void harp::mpi_test_linalg ( string const & datadir ) {
 
   elem::Grid grid ( comm );
 
+
   typedef boost::ecuyer1988 base_generator_type;
   typedef boost::uniform_01<> distribution_type;
   typedef boost::variate_generator < base_generator_type&, distribution_type > gen_type;
@@ -70,6 +71,52 @@ void harp::mpi_test_linalg ( string const & datadir ) {
   if ( myp == 0 ) {
     cout << "  (PASSED)" << endl;
   }
+
+
+  if ( myp == 0 ) {
+    cout << "Testing elemental collective Get()..." << endl;
+  }
+
+  mpi_matrix gettest ( SIZE, 1 );
+
+  size_t hlocal = gettest.LocalHeight();
+  size_t wlocal = gettest.LocalWidth();
+
+  size_t rowoff = gettest.ColShift();
+  size_t rowstride = gettest.ColStride();
+  size_t row;
+
+  //cerr << "   proc " << gettest.Grid().Rank() << " has local storage " << hlocal << " x " << wlocal << endl;
+
+  if ( myp == 0 ) {
+    if ( wlocal > 0 ) {
+      for ( size_t j = 0; j < hlocal; ++j ) {
+        // the global element of sub_data
+        row = rowoff + j * rowstride;
+        gettest.SetLocal ( j, 0, (double)row );
+      }
+    }
+  }
+
+  vector_double gettest_local ( SIZE );
+  elem_to_ublas ( gettest, gettest_local );
+
+  for ( size_t i = 0; i < SIZE; ++i ) {
+    double myval = gettest.Get ( i, 0 );
+    //cerr << "p(" << myp << ")[" << i << "] = " << myval << endl;
+    if ( fabs ( gettest_local[i] ) > std::numeric_limits < double > :: epsilon() ) {
+      if ( fabs ( (myval - gettest_local[i]) / gettest_local[i] ) > std::numeric_limits < float > :: epsilon() ) {
+        cerr << "FAIL on proc " << myp << ", local vector element " << i << ", " << myval << " != " << gettest_local[i] << endl;
+        exit(1);
+      }
+    }
+  }
+
+
+  if ( myp == 0 ) {
+    cout << "  (PASSED)" << endl;
+  }
+
 
   if ( myp == 0 ) {
     cout << "Testing elemental eigendecomposition..." << endl;

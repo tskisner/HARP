@@ -17,14 +17,20 @@ void harp::test_specslice ( string const & datadir ) {
   string specfile = datadir + "/spec_sim.fits.out";
 
   size_t nspec = 20;
-  size_t nlambda = 100;
+  size_t nlambda = 101;
   size_t overlap_spec = 1;
   size_t overlap_lambda = 10;
-  size_t chunk_spec = 2;
-  size_t chunk_lambda = 10;
+  size_t chunk_spec = 3;
+  size_t chunk_lambda = 13;
 
   size_t nchunk_spec = (size_t)( nspec / chunk_spec );
+  if ( ! ( nspec % chunk_spec == 0 ) ) {
+    ++nchunk_spec;
+  }
   size_t nchunk_lambda = (size_t)( nlambda / chunk_lambda );
+  if ( ! ( nlambda % chunk_lambda == 0 ) ) {
+    ++nchunk_lambda;
+  }
   size_t nchunk = nchunk_spec * nchunk_lambda;
 
   size_t procs = 100;

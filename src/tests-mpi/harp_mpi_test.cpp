@@ -30,6 +30,8 @@ int main ( int argc, char *argv[] ) {
 
   mpi_test_spec ( datadir );
 
+  mpi_test_extract ( datadir );
+
   
   if ( myp == 0 ) {
     cout << endl;

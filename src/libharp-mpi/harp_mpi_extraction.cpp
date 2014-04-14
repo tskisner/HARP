@@ -8,66 +8,154 @@ using namespace harp;
 
 
 
-void harp::sub_spec ( matrix_dist const & in, size_t total_nspec, size_t first_spec, size_t nspec, size_t first_lambda, size_t nlambda, matrix_dist & out ) {
+void harp::mpi_sub_spec ( spec_slice_region const & full_region, spec_slice_region const & sub_region, mpi_matrix const & full_data, bool use_good_sub, mpi_matrix & sub_data ) {
 
-  if ( in.Grid() != out.Grid() ) {
-    HARP_THROW( "sub_spec extraction only works within a process grid" );
-  }
+  // verify that data dimensions match the sizes of the regions.  Select whether we
+  // are using the full or good extent of the output. 
 
-  size_t in_nlambda = (size_t) ( in.Height() / total_nspec );
-
-  if ( first_spec + nspec > total_nspec ) {
+  if ( (full_region.n_spec * full_region.n_lambda) != full_data.Height() ) {
     std::ostringstream o;
-    o << "input spec range (" << first_spec << " - " << first_spec + nspec - 1 << ") exceeds the number of input spectra (" << total_nspec << ")";
+    o << "input region total bins (" << (full_region.n_spec * full_region.n_lambda) << ") does not match input data size (" << full_data.Height() << ")";
     HARP_THROW( o.str().c_str() );
   }
 
-  if ( first_lambda + nlambda > in_nlambda ) {
+  if ( (sub_region.n_spec * sub_region.n_lambda) != sub_data.Height() ) {
     std::ostringstream o;
-    o << "input lambda range (" << first_lambda << " - " << first_lambda + nlambda - 1 << ") exceeds the number of input points (" << in_nlambda << ")";
+    o << "output region total bins (" << (sub_region.n_spec * sub_region.n_lambda) << ") does not match output data size (" << sub_data.Height() << ")";
     HARP_THROW( o.str().c_str() );
   }
 
-  if ( (size_t)out.Height() != nspec * nlambda ) {
+  size_t nsub;
+
+  size_t sub_nlambda;
+  size_t sub_nspec;
+  size_t sub_firstspec;
+  size_t sub_firstlambda;
+
+  if ( use_good_sub ) {
+    nsub = sub_region.n_good_spec * sub_region.n_good_lambda;
+    sub_nlambda = sub_region.n_good_lambda;
+    sub_nspec = sub_region.n_good_spec;
+    sub_firstspec = sub_region.first_good_spec;
+    sub_firstlambda = sub_region.first_good_lambda;
+  } else {
+    nsub = sub_region.n_spec * sub_region.n_lambda;
+    sub_nlambda = sub_region.n_lambda;
+    sub_nspec = sub_region.n_spec;
+    sub_firstspec = sub_region.first_spec;
+    sub_firstlambda = sub_region.first_lambda;
+  }
+
+  if ( sub_firstspec < full_region.first_spec ) {
     std::ostringstream o;
-    o << "output matrix height (" << out.Height() << ") does not match parameters (" << nspec * nlambda << ")";
+    o << "sub region first spec (" << sub_firstspec << ") is before first spec of full region (" << full_region.first_spec << ")";
     HARP_THROW( o.str().c_str() );
   }
 
-  dist_matrix_zero ( out );
+  if ( sub_firstspec + sub_nspec > full_region.first_spec + full_region.n_spec ) {
+    std::ostringstream o;
+    o << "sub region last spec (" << (sub_firstspec + sub_nspec - 1) << ") is beyond last spec of full region (" << (full_region.first_spec + full_region.n_spec - 1) << ")";
+    HARP_THROW( o.str().c_str() );
+  }
 
-  // FIXME: this should be changed to not store a full local copy of the input!
+  if ( sub_firstlambda < full_region.first_lambda ) {
+    std::ostringstream o;
+    o << "sub region first lambda (" << sub_firstlambda << ") is before first lambda of full region (" << full_region.first_lambda << ")";
+    HARP_THROW( o.str().c_str() );
+  }
 
-  matrix_local in_loc ( in.Height(), 1 );
-  local_matrix_zero ( in_loc );
+  if ( sub_firstlambda + sub_nlambda > full_region.first_lambda + full_region.n_lambda ) {
+    std::ostringstream o;
+    o << "sub region last lambda (" << (sub_firstlambda + sub_nlambda - 1) << ") is beyond last lambda of full region (" << (full_region.first_lambda + full_region.n_lambda - 1) << ")";
+    HARP_THROW( o.str().c_str() );
+  }
+
+  /*
+  cerr << "DBG:  sub_spec" << endl;
+  cerr << "DBG:     n_spec = " << sub_region.n_spec << endl;
+  cerr << "DBG:     n_good_spec = " << sub_region.n_good_spec << endl;
+  cerr << "DBG:     first_spec = " << sub_region.first_spec << endl;
+  cerr << "DBG:     first_good_spec = " << sub_region.first_good_spec << endl;
+  cerr << "DBG:     overlap_spec = " << sub_region.overlap_spec << endl;
+  cerr << "DBG:     n_lambda = " << sub_region.n_lambda << endl;
+  cerr << "DBG:     n_good_lambda = " << sub_region.n_good_lambda << endl;
+  cerr << "DBG:     first_lambda = " << sub_region.first_lambda << endl;
+  cerr << "DBG:     first_good_lambda = " << sub_region.first_good_lambda << endl;
+  cerr << "DBG:     overlap_lambda = " << sub_region.overlap_lambda << endl;
+  cerr << "DBG:     select_nspec = " << sub_nspec << endl;
+  cerr << "DBG:     select_nlambda = " << sub_nlambda << endl;
+  cerr << "DBG:     select_firstspec = " << sub_firstspec << endl;
+  cerr << "DBG:     select_firstlambda = " << sub_firstlambda << endl;
+  */
+
+  // clear output
+
+  mpi_matrix_zero ( sub_data );
+
+  // FIXME: can this be changed to not store a full local copy of the input?
+
+  elem_matrix_local full_loc ( full_data.Height(), 1 );
+  local_matrix_zero ( full_loc );
 
   elem::AxpyInterface < double > globloc;
-  globloc.Attach( elem::GLOBAL_TO_LOCAL, in );
-  globloc.Axpy ( 1.0, in_loc, 0, 0 );
+  globloc.Attach( elem::GLOBAL_TO_LOCAL, full_data );
+  globloc.Axpy ( 1.0, full_loc, 0, 0 );
   globloc.Detach();
 
   // Update local output matrix with proper slices from the input
 
-  size_t hlocal = out.LocalHeight();
-  size_t wlocal = out.LocalWidth();
+  size_t hlocal = sub_data.LocalHeight();
+  size_t wlocal = sub_data.LocalWidth();
 
-  size_t rowoff = out.ColShift();
-  size_t rowstride = out.ColStride();
+  size_t rowoff = sub_data.ColShift();
+  size_t rowstride = sub_data.ColStride();
   size_t row;
 
-  double val;
+  size_t global_spec;
+  size_t global_lambda;
+
   size_t out_spec;
   size_t out_lambda;
 
+  size_t in_spec;
+  size_t in_lambda;
+
+  double val;
+
+  cerr << "mpi_sub proc " << sub_data.Grid().Rank() << " has local storage " << hlocal << " x " << wlocal << endl;
+
   if ( wlocal > 0 ) {
     for ( size_t j = 0; j < hlocal; ++j ) {
+      // the global element of sub_data
       row = rowoff + j * rowstride;
-      out_spec = (size_t)( row / nlambda );
-      out_lambda = row - out_spec * nlambda;
-      out_spec += first_spec;
-      out_lambda += first_lambda;
-      val = in_loc.Get ( out_spec * in_nlambda + out_lambda, 0 );
-      out.SetLocal ( j, 0, val );
+
+      // compute the location in the full sub region
+
+      out_spec = (size_t)( row / sub_region.n_lambda );
+      out_lambda = row - ( out_spec * sub_region.n_lambda );
+
+      global_spec = sub_region.first_spec + out_spec;
+      global_lambda = sub_region.first_lambda + out_lambda;
+
+      // are we within the selected region?
+
+      if ( ( ( global_spec >= sub_firstspec ) && ( global_spec < sub_firstspec + sub_nspec ) ) && ( ( global_lambda >= sub_firstlambda ) && ( global_lambda < sub_firstlambda + sub_nlambda ) ) ) {
+
+        // compute the location in the full region
+
+        in_lambda = global_lambda - full_region.first_lambda;
+        in_spec = global_spec - full_region.first_spec;
+
+        // copy
+
+        val = full_loc.Get ( in_spec * full_region.n_lambda + in_lambda, 0 );
+
+        cerr << "proc " << sub_data.Grid().Rank() << " setting sub element " << row << endl;
+
+        sub_data.SetLocal ( j, 0, val );
+
+      }
+
     }
   }
 
@@ -75,74 +163,140 @@ void harp::sub_spec ( matrix_dist const & in, size_t total_nspec, size_t first_s
 }
 
 
-void harp::accum_spec ( matrix_dist & full, size_t total_nspec, size_t first_spec, size_t nspec, size_t first_lambda, size_t nlambda, matrix_dist const & chunk ) {
+void harp::mpi_accum_spec ( spec_slice_region const & sub_region, spec_slice_region const & full_region, mpi_matrix const & sub_data, bool use_good_sub, mpi_matrix & full_data ) {
 
-  if ( full.Grid() != chunk.Grid() ) {
-    HARP_THROW( "sub_spec extraction only works within a process grid" );
-  }
+  // verify that data dimensions match the sizes of the regions.  Select whether we
+  // are using the full or good extent of the input. 
 
-  size_t full_nlambda = (size_t) ( full.Height() / total_nspec );
-
-  if ( first_spec + nspec > total_nspec ) {
+  if ( (full_region.n_spec * full_region.n_lambda) != full_data.Height() ) {
     std::ostringstream o;
-    o << "chunk spec range (" << first_spec << " - " << first_spec + nspec - 1 << ") exceeds the number of full spectra (" << total_nspec << ")";
+    o << "output region total bins (" << (full_region.n_spec * full_region.n_lambda) << ") does not match output data size (" << full_data.Height() << ")";
     HARP_THROW( o.str().c_str() );
   }
 
-  if ( first_lambda + nlambda > full_nlambda ) {
+  if ( (sub_region.n_spec * sub_region.n_lambda) != sub_data.Height() ) {
     std::ostringstream o;
-    o << "chunk lambda range (" << first_lambda << " - " << first_lambda + nlambda - 1 << ") exceeds the number of full points (" << full_nlambda << ")";
+    o << "input region total bins (" << (sub_region.n_spec * sub_region.n_lambda) << ") does not match input data size (" << sub_data.Height() << ")";
     HARP_THROW( o.str().c_str() );
   }
 
-  if ( (size_t)chunk.Height() != nspec * nlambda ) {
+  size_t nsub;
+
+  size_t sub_nlambda;
+  size_t sub_nspec;
+  size_t sub_firstspec;
+  size_t sub_firstlambda;
+
+  if ( use_good_sub ) {
+    nsub = sub_region.n_good_spec * sub_region.n_good_lambda;
+    sub_nlambda = sub_region.n_good_lambda;
+    sub_nspec = sub_region.n_good_spec;
+    sub_firstspec = sub_region.first_good_spec;
+    sub_firstlambda = sub_region.first_good_lambda;
+  } else {
+    nsub = sub_region.n_spec * sub_region.n_lambda;
+    sub_nlambda = sub_region.n_lambda;
+    sub_nspec = sub_region.n_spec;
+    sub_firstspec = sub_region.first_spec;
+    sub_firstlambda = sub_region.first_lambda;
+  }
+
+  if ( sub_firstspec < full_region.first_spec ) {
     std::ostringstream o;
-    o << "chunk matrix height (" << chunk.Height() << ") does not match parameters (" << nspec * nlambda << ")";
+    o << "sub region first spec (" << sub_firstspec << ") is before first spec of full region (" << full_region.first_spec << ")";
     HARP_THROW( o.str().c_str() );
   }
 
-  // FIXME: this should be changed to not store a full local copy of the matrix!
+  if ( sub_firstspec + sub_nspec > full_region.first_spec + full_region.n_spec ) {
+    std::ostringstream o;
+    o << "sub region last spec (" << (sub_firstspec + sub_nspec - 1) << ") is beyond last spec of full region (" << (full_region.first_spec + full_region.n_spec - 1) << ")";
+    HARP_THROW( o.str().c_str() );
+  }
 
-  matrix_local full_loc ( full.Height(), 1 );
+  if ( sub_firstlambda < full_region.first_lambda ) {
+    std::ostringstream o;
+    o << "sub region first lambda (" << sub_firstlambda << ") is before first lambda of full region (" << full_region.first_lambda << ")";
+    HARP_THROW( o.str().c_str() );
+  }
+
+  if ( sub_firstlambda + sub_nlambda > full_region.first_lambda + full_region.n_lambda ) {
+    std::ostringstream o;
+    o << "sub region last lambda (" << (sub_firstlambda + sub_nlambda - 1) << ") is beyond last lambda of full region (" << (full_region.first_lambda + full_region.n_lambda - 1) << ")";
+    HARP_THROW( o.str().c_str() );
+  }
+
+  // FIXME: can this be changed to not store a full local copy of the input?
+
+  elem_matrix_local full_loc ( full_data.Height(), 1 );
   local_matrix_zero ( full_loc );
 
-  // Copy our data into full local contribution
+  // Update output data with proper slices from the input
 
-  size_t hlocal = chunk.LocalHeight();
-  size_t wlocal = chunk.LocalWidth();
+  size_t global_spec;
+  size_t global_lambda;
 
-  size_t rowoff = chunk.ColShift();
-  size_t rowstride = chunk.ColStride();
+  size_t out_spec;
+  size_t out_lambda;
+
+  size_t in_spec;
+  size_t in_lambda;
+
+  size_t hlocal = sub_data.LocalHeight();
+  size_t wlocal = sub_data.LocalWidth();
+
+  size_t rowoff = sub_data.ColShift();
+  size_t rowstride = sub_data.ColStride();
   size_t row;
 
   double val;
-  size_t chunk_spec;
-  size_t chunk_lambda;
-  size_t spec;
-  size_t lambda;
 
   if ( wlocal > 0 ) {
     for ( size_t j = 0; j < hlocal; ++j ) {
+      // the global element of sub_data
       row = rowoff + j * rowstride;
-      chunk_spec = (size_t)( row / nlambda );
-      chunk_lambda = row - chunk_spec * nlambda;
-      spec = chunk_spec + first_spec;
-      lambda = chunk_lambda + first_lambda;
-      val = chunk.GetLocal ( j, 0 );
-      full_loc.Set ( spec * full_nlambda + lambda, 0, val );
+
+      // compute the location in the full sub region
+
+      in_spec = (size_t)( row / sub_region.n_lambda );
+      in_lambda = row - ( in_spec * sub_region.n_lambda );
+
+      global_spec = sub_region.first_spec + in_spec;
+      global_lambda = sub_region.first_lambda + in_lambda;
+
+      // are we within the selected region?
+
+      if ( ( ( global_spec >= sub_firstspec ) && ( global_spec < sub_firstspec + sub_nspec ) ) && ( ( global_lambda >= sub_firstlambda ) && ( global_lambda < sub_firstlambda + sub_nlambda ) ) ) {
+
+        // compute the location in the full region
+
+        out_lambda = global_lambda - full_region.first_lambda;
+        out_spec = global_spec - full_region.first_spec;
+
+        // copy
+
+        val = sub_data.GetLocal ( j, 0 );
+
+        full_loc.Set ( out_spec * full_region.n_lambda + out_lambda, 0, val );
+
+      }
+
     }
   }
 
   // accumulate
 
   elem::AxpyInterface < double > locglob;
-  locglob.Attach( elem::LOCAL_TO_GLOBAL, full );
+  locglob.Attach( elem::LOCAL_TO_GLOBAL, full_data );
   locglob.Axpy ( 1.0, full_loc, 0, 0 );
   locglob.Detach();
 
   return;
 }
 
+
+
+
+/*
 
 void harp::noise_weighted_spec ( matrix_sparse const & psf, matrix_local const & invnoise, matrix_local const & img, matrix_dist & z ) {
 
@@ -556,4 +710,5 @@ void harp::extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_d
   return;
 }
 
+*/
 

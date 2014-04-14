@@ -14,6 +14,8 @@ namespace harp {
 
   void mpi_test_spec ( std::string const & datadir );
 
+  void mpi_test_extract ( std::string const & datadir );
+
   
 }
 

@@ -17,6 +17,8 @@ namespace harp {
       spec_slice_region const & full_region ( ) const { return local_->full_region(); }
 
       std::vector < spec_slice_region > regions ( ) const;
+
+      boost::mpi::communicator comm ( ) { return comm_; }
       
     private :
 

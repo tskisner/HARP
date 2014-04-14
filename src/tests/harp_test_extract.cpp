@@ -21,7 +21,7 @@ void harp::test_extract ( string const & datadir ) {
   size_t chunk_spec = 5;
   size_t overlap_spec = 0;
   size_t chunk_lambda = 20;
-  size_t overlap_lambda = 15;
+  size_t overlap_lambda = 10;
 
   size_t nbin = nspec * nlambda;
 
@@ -189,6 +189,7 @@ void harp::test_extract ( string const & datadir ) {
   map < string, double > timing;
 
   bool lambda_mask = true;
+  //bool lambda_mask = false;
 
   extract_slices ( slice, gauss_psf, img_data, img_inv, truth, Rf, f, err, Rtruth, timing, false, lambda_mask, prefix );
      

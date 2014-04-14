@@ -7,9 +7,9 @@
 namespace harp {
 
 
-  void mpi_sub_spec ( spec_slice_region const & full_region, spec_slice_region const & sub_region, vector_double const & full_data, bool use_good_sub, vector_double & sub_data );
+  void mpi_sub_spec ( spec_slice_region const & full_region, spec_slice_region const & sub_region, mpi_matrix const & full_data, bool use_good_sub, mpi_matrix & sub_data );
 
-  void mpi_accum_spec ( spec_slice_region const & sub_region, spec_slice_region const & full_region, vector_double const & sub_data, bool use_good_sub, vector_double & full_data );
+  void mpi_accum_spec ( spec_slice_region const & sub_region, spec_slice_region const & full_region, mpi_matrix const & sub_data, bool use_good_sub, mpi_matrix & full_data );
 
 
   /*

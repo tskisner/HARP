@@ -201,15 +201,15 @@ void harp::psf_gauss_sim::extent ( size_t spec, size_t lambda, size_t & x_offset
   }
 
   if ( xmax > (double)(cols_ - 1) ) {
-    n_x = ( cols_ - 1 ) - x_offset;
+    n_x = ( cols_ - 1 ) - x_offset + 1;
   } else {
-    n_x = (size_t)xmax - x_offset;
+    n_x = (size_t)xmax - x_offset + 1;
   }
 
   if ( ymax > (double)(rows_ - 1) ) {
-    n_y = ( rows_ - 1 ) - y_offset;
+    n_y = ( rows_ - 1 ) - y_offset + 1;
   } else {
-    n_y = (size_t)ymax - y_offset;
+    n_y = (size_t)ymax - y_offset + 1;
   }
 
   return;
