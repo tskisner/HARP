@@ -74,27 +74,60 @@ void harp::mpi_test_linalg ( string const & datadir ) {
 
 
   if ( myp == 0 ) {
+    cout << "Testing elemental collective Set()..." << endl;
+  }
+
+  mpi_matrix settest ( SIZE, 1 );
+
+  for ( size_t i = 0; i < SIZE; ++i ) {
+    settest.Set ( i, 0, (double)i );
+  }
+
+  size_t hlocal = settest.LocalHeight();
+  size_t wlocal = settest.LocalWidth();
+
+  size_t rowoff = settest.ColShift();
+  size_t rowstride = settest.ColStride();
+  size_t row;
+
+  if ( wlocal > 0 ) {
+    for ( size_t j = 0; j < hlocal; ++j ) {
+      // the global element of sub_data
+      row = rowoff + j * rowstride;
+      double myval = settest.GetLocal ( j, 0 );
+      if ( fabs ( myval ) > std::numeric_limits < double > :: epsilon() ) {
+        if ( fabs ( (myval - (double)row) / (double)row ) > std::numeric_limits < float > :: epsilon() ) {
+          cerr << "FAIL on proc " << myp << ", global vector element " << row << ", " << myval << " != " << (double)row << endl;
+          exit(1);
+        }
+      }
+    }
+  }
+
+  if ( myp == 0 ) {
+    cout << "  (PASSED)" << endl;
+  }
+
+
+  if ( myp == 0 ) {
     cout << "Testing elemental collective Get()..." << endl;
   }
 
   mpi_matrix gettest ( SIZE, 1 );
 
-  size_t hlocal = gettest.LocalHeight();
-  size_t wlocal = gettest.LocalWidth();
+  hlocal = gettest.LocalHeight();
+  wlocal = gettest.LocalWidth();
 
-  size_t rowoff = gettest.ColShift();
-  size_t rowstride = gettest.ColStride();
-  size_t row;
+  rowoff = gettest.ColShift();
+  rowstride = gettest.ColStride();
 
   //cerr << "   proc " << gettest.Grid().Rank() << " has local storage " << hlocal << " x " << wlocal << endl;
 
-  if ( myp == 0 ) {
-    if ( wlocal > 0 ) {
-      for ( size_t j = 0; j < hlocal; ++j ) {
-        // the global element of sub_data
-        row = rowoff + j * rowstride;
-        gettest.SetLocal ( j, 0, (double)row );
-      }
+  if ( wlocal > 0 ) {
+    for ( size_t j = 0; j < hlocal; ++j ) {
+      // the global element of sub_data
+      row = rowoff + j * rowstride;
+      gettest.SetLocal ( j, 0, (double)row );
     }
   }
 

@@ -122,7 +122,7 @@ void harp::mpi_sub_spec ( spec_slice_region const & full_region, spec_slice_regi
 
   double val;
 
-  cerr << "mpi_sub proc " << sub_data.Grid().Rank() << " has local storage " << hlocal << " x " << wlocal << endl;
+  //cerr << "mpi_sub proc " << sub_data.Grid().Rank() << " has local storage " << hlocal << " x " << wlocal << endl;
 
   if ( wlocal > 0 ) {
     for ( size_t j = 0; j < hlocal; ++j ) {
@@ -150,7 +150,7 @@ void harp::mpi_sub_spec ( spec_slice_region const & full_region, spec_slice_regi
 
         val = full_loc.Get ( in_spec * full_region.n_lambda + in_lambda, 0 );
 
-        cerr << "proc " << sub_data.Grid().Rank() << " setting sub element " << row << endl;
+        //cerr << "proc " << sub_data.Grid().Rank() << " setting sub element " << row << endl;
 
         sub_data.SetLocal ( j, 0, val );
 

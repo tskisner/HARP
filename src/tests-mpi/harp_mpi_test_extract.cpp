@@ -30,48 +30,74 @@ void mpi_test_extract_subaccum ( mpi_spec_slice_p slice, mpi_matrix & full_data,
 
     size_t sub_nbin = sit->n_spec * sit->n_lambda;
 
-    mpi_matrix sub_data ( sub_nbin, 1 );
+    mpi_matrix sub_data ( sub_nbin, 1, full_data.Grid() );
     mpi_matrix_zero ( sub_data );
 
     mpi_sub_spec ( full_region, (*sit), full_data, false, sub_data );
 
-    for ( size_t i = 0; i < sub_nbin; ++i ) {
-      size_t spec_offset = (size_t)( i / sit->n_lambda );
-      size_t cur_spec = sit->first_spec + spec_offset;
-      size_t cur_lambda = sit->first_lambda + i - ( spec_offset * sit->n_lambda );
-      size_t cur_bin = cur_spec * full_region.n_lambda + cur_lambda;
-      if ( (size_t)sub_data.Get(i,0) != cur_bin ) {
-        cerr << "FAIL on sub_spec proc " << myp << ", region " << indx << ", bin " << i << ", " << (size_t)sub_data.Get(i,0) << " != " << cur_bin << endl;
-        //exit(1);
+    size_t hlocal = sub_data.LocalHeight();
+    size_t wlocal = sub_data.LocalWidth();
+
+    size_t rowoff = sub_data.ColShift();
+    size_t rowstride = sub_data.ColStride();
+    size_t row;
+
+    if ( wlocal > 0 ) {
+      for ( size_t j = 0; j < hlocal; ++j ) {
+
+        row = rowoff + j * rowstride;
+        double specval = sub_data.GetLocal ( j, 0 );
+
+        size_t spec_offset = (size_t)( row / sit->n_lambda );
+        size_t cur_spec = sit->first_spec + spec_offset;
+
+        size_t lambda_offset = row - ( spec_offset * sit->n_lambda );
+        size_t cur_lambda = sit->first_lambda + lambda_offset;
+
+        size_t cur_bin = cur_spec * full_region.n_lambda + cur_lambda;
+
+        if ( (size_t)specval != cur_bin ) {
+          cerr << "FAIL on sub_spec proc " << myp << ", region " << indx << ", bin " << cur_bin << ", " << (size_t)specval << " != " << cur_bin << endl;
+          //exit(1);
+        }
+
       }
     }
 
     mpi_accum_spec ( (*sit), full_region, sub_data, true, check_data );
 
-    for ( size_t i = 0; i < sub_nbin; ++i ) {
-      size_t spec_offset = (size_t)( i / sit->n_lambda );
-      size_t cur_spec = sit->first_spec + spec_offset;
-      size_t cur_lambda = sit->first_lambda + i - ( spec_offset * sit->n_lambda );
-      size_t cur_bin = cur_spec * full_region.n_lambda + cur_lambda;
-      if ( ( cur_spec >= sit->first_good_spec ) && ( cur_spec < sit->first_good_spec + sit->n_good_spec ) && ( cur_lambda >= sit->first_good_lambda ) && ( cur_lambda < sit->first_good_lambda + sit->n_good_lambda ) ) {
-        if ( (size_t)check_data.Get( cur_bin, 0 ) != cur_bin ) {
-          cerr << "FAIL on accum_spec proc " << myp << ", region " << indx << ", bin " << i << ", " << (size_t)check_data.Get( cur_bin, 0 ) << " != " << cur_bin << endl;
-          exit(1);
+    hlocal = check_data.LocalHeight();
+    wlocal = check_data.LocalWidth();
+
+    rowoff = check_data.ColShift();
+    rowstride = check_data.ColStride();
+
+    if ( wlocal > 0 ) {
+      for ( size_t j = 0; j < hlocal; ++j ) {
+
+        row = rowoff + j * rowstride;
+        double specval = sub_data.GetLocal ( j, 0 );
+
+        size_t spec_offset = (size_t)( row / sit->n_lambda );
+        size_t cur_spec = sit->first_spec + spec_offset;
+
+        size_t lambda_offset = row - ( spec_offset * sit->n_lambda );
+        size_t cur_lambda = sit->first_lambda + lambda_offset;
+
+        size_t cur_bin = cur_spec * full_region.n_lambda + cur_lambda;
+
+        if ( ( cur_spec >= sit->first_good_spec ) && ( cur_spec < sit->first_good_spec + sit->n_good_spec ) && ( cur_lambda >= sit->first_good_lambda ) && ( cur_lambda < sit->first_good_lambda + sit->n_good_lambda ) ) {
+          if ( (size_t)specval != cur_bin ) {
+            cerr << "FAIL on accum_spec proc " << myp << ", region " << indx << ", bin " << cur_bin << ", " << (size_t)specval << " != " << cur_bin << endl;
+            exit(1);
+          }
         }
+
       }
     }
 
     ++indx;
 
-  }
-
-  for ( size_t i = 0; i < full_data.Height(); ++i ) {
-    if ( fabs ( full_data.Get(i, 0) > std::numeric_limits < double > :: epsilon() ) ) {
-      if ( ( fabs ( ( check_data.Get(i, 0) - full_data.Get(i, 0) ) / full_data.Get(i, 0) ) ) > std::numeric_limits < double > :: epsilon() ) {
-        cerr << "FAIL on spectral bin " << i << ", " << check_data.Get(i,0) << " != " << full_data.Get(i,0) << endl;
-        exit(1);
-      }
-    }
   }
 
   return;
@@ -83,6 +109,8 @@ void mpi_test_extract_subaccum ( mpi_spec_slice_p slice, mpi_matrix & full_data,
 void harp::mpi_test_extract ( string const & datadir ) {
 
   boost::mpi::communicator comm;
+
+  elem::Grid grid ( elem::mpi::COMM_WORLD );
 
   int np = comm.size();
   int myp = comm.rank();
@@ -103,10 +131,10 @@ void harp::mpi_test_extract ( string const & datadir ) {
 
   size_t nbin = nspec * nlambda;
 
-  mpi_matrix full_data ( nbin, 1 );
+  mpi_matrix full_data ( nbin, 1, grid );
   mpi_matrix_zero ( full_data );
 
-  mpi_matrix check_data ( nbin, 1 );
+  mpi_matrix check_data ( nbin, 1, grid );
 
   for ( size_t i = 0; i < nbin; ++i ) {
     full_data.Set ( i, 0, (double)i );
@@ -116,9 +144,9 @@ void harp::mpi_test_extract ( string const & datadir ) {
 
   mpi_test_extract_subaccum ( slice, full_data, check_data );
 
-  cout << "  (PASSED)" << endl;
-
-  return;
+  if ( myp == 0 ) {
+    cout << "  (PASSED)" << endl;
+  }
 
   
   if ( myp == 0 ) {
@@ -126,8 +154,6 @@ void harp::mpi_test_extract ( string const & datadir ) {
   }
 
   // split communicator
-
-  elem::Grid grid ( elem::mpi::COMM_WORLD );
 
   int gangsize = (int)( np / 2 );
   if ( gangsize < 1 ) {
@@ -184,8 +210,6 @@ void harp::mpi_test_extract ( string const & datadir ) {
       exit(1);
     }
   }
-
-
 
   if ( myp == 0 ) {
     cout << "  (PASSED)" << endl;
