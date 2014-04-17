@@ -310,34 +310,36 @@ void harp::inverse_covariance ( matrix_double_sparse const & AT, vector_double c
   matrix_double_sparse :: const_iterator2 right_colit;
   matrix_double_sparse :: const_iterator2 right_col_checkit;
 
-  for ( right_rowit = AT.begin1(); right_rowit != AT.end1(); ++right_rowit ) {
+  for ( left_rowit = AT.begin1(); left_rowit != AT.end1(); ++left_rowit ) {
 
-    //cerr << "DBG: building invC row " << left_rowit.index1() << endl;
+    for ( right_rowit = AT.begin1(); right_rowit != AT.end1(); ++right_rowit ) {
 
-    for ( left_rowit = AT.begin1(); left_rowit != AT.end1(); ++left_rowit ) {
+      if ( right_rowit.index1() <= left_rowit.index1() ) {
 
-      right_colit = right_rowit.begin();
-      right_col_checkit = right_colit;
-      // this itererator tracks one element ahead
-      ++right_col_checkit;
+        right_colit = right_rowit.begin();
+        right_col_checkit = right_colit;
+        // this itererator tracks one element ahead
+        ++right_col_checkit;
 
-      double val = 0.0;
+        double val = 0.0;
 
-      for ( left_colit = left_rowit.begin(); left_colit != left_rowit.end(); ++left_colit ) {
+        for ( left_colit = left_rowit.begin(); left_colit != left_rowit.end(); ++left_colit ) {
 
-        while ( ( right_col_checkit != right_rowit.end() ) && ( right_colit.index2() < left_colit.index2() ) ) {
-          ++right_colit;
-          ++right_col_checkit;
+          while ( ( right_col_checkit != right_rowit.end() ) && ( right_colit.index2() < left_colit.index2() ) ) {
+            ++right_colit;
+            ++right_col_checkit;
+          }
+
+          if ( right_colit.index2() == left_colit.index2() ) {
+            val += invnoise[ left_colit.index2() ] * (double)mask[ left_colit.index2() ] * (*right_colit) * (*left_colit);
+          }
+
         }
 
-        if ( right_colit.index2() == left_colit.index2() ) {
-          val += invnoise[ left_colit.index2() ] * (double)mask[ left_colit.index2() ] * (*right_colit) * (*left_colit);
-        }
+        invC ( left_rowit.index1(), right_rowit.index1() ) = val;
+        //cerr << "INVC (" << left_rowit.index1() << "," << right_rowit.index1() << ") = " << val << endl;
 
       }
-
-      invC ( left_rowit.index1(), right_rowit.index1() ) = val;
-      //cerr << "INVC (" << left_rowit.index1() << "," << right_rowit.index1() << ") = " << val << endl;
 
     }
 
