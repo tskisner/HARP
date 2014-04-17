@@ -297,11 +297,8 @@ void harp::mpi_norm ( mpi_matrix const & D, mpi_matrix const & W, mpi_matrix & S
 
 void mpi_sparse_mv_trans ( mpi_matrix_sparse const & AT, mpi_matrix const & in, elem_matrix_local & out ) {
 
-  int np;
-  int myp;
-
-  MPI_Comm_size ( AT.comm(), &np );
-  MPI_Comm_rank ( AT.comm(), &myp );
+  int myp = AT.comm().rank();
+  int np = AT.comm().size();
 
   // check consistent sizes
 
@@ -313,8 +310,6 @@ void mpi_sparse_mv_trans ( mpi_matrix_sparse const & AT, mpi_matrix const & in, 
     o << "number of rows in input vector (" << in.Height() << ") does not match number of rows in transposed matrix (" << nrows << ")";
     HARP_MPI_ABORT( myp, o.str().c_str() );
   }
-
-  out.Resize ( ncols, 1 );
 
   // get local chunk of input vector which goes with our range of sparse matrix rows
 
@@ -330,14 +325,10 @@ void mpi_sparse_mv_trans ( mpi_matrix_sparse const & AT, mpi_matrix const & in, 
   globloc.Axpy ( 1.0, local_in, local_firstrow, 0 );
   globloc.Detach();
 
-  // resize output to zero, to save mem temporarily
-
-  out.Resize ( 0, 0 );
-
   // compute local output contribution
 
-  elem_matrix_local local_out ( ncols, 1 );
-  local_matrix_zero ( local_out );
+  out.Resize ( ncols, 1 );
+  local_matrix_zero ( out );
 
   double val;
   double inval;
@@ -350,26 +341,23 @@ void mpi_sparse_mv_trans ( mpi_matrix_sparse const & AT, mpi_matrix const & in, 
     col = AT.block().col[ loc ];
     val = AT.block().data[ loc ];
     inval = local_in.Get ( row - local_firstrow, 0 );
-    outval = local_out.Get ( col, 0 );
-    local_out.Set ( col, 0, outval + inval * val );
+    outval = out.Get ( col, 0 );
+    out.Set ( col, 0, outval + inval * val );
   }
+
+  // accumulate to global solution
 
   mpi_matrix globout ( ncols, 1, in.Grid() );
   mpi_matrix_zero ( globout );
 
   elem::AxpyInterface < double > locglob;
   locglob.Attach( elem::LOCAL_TO_GLOBAL, globout );
-  locglob.Axpy ( 1.0, local_out, 0, 0 );
+  locglob.Axpy ( 1.0, out, 0, 0 );
   locglob.Detach();
-
-  // clear local buffer and resize output
-
-  local_out.Resize ( 0, 0 );
-  out.Resize ( ncols, 1 );
-  local_matrix_zero ( out );
 
   // get local copy for output
   
+  local_matrix_zero ( out );
   globloc.Attach( elem::GLOBAL_TO_LOCAL, globout );
   globloc.Axpy ( 1.0, out, 0, 0 );
   globloc.Detach();

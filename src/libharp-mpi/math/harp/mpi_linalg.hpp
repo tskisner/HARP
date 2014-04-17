@@ -110,6 +110,8 @@ namespace harp {
 
       ~mpi_matrix_sparse_block ( ) { }
 
+      // default copy and assignment operators are sufficient...
+
       size_t firstrow;
       size_t rows;
       size_t vals;
@@ -117,7 +119,7 @@ namespace harp {
       std::vector < size_t > col;
       std::vector < size_t > row_offset;
       std::vector < size_t > row_nnz;
-      std::vector < double > data;
+      vector_double data;
 
     private :
 

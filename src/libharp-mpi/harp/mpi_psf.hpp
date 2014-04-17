@@ -12,7 +12,11 @@ namespace harp {
 
       mpi_psf ( boost::mpi::communicator const & comm, std::string const & type, boost::property_tree::ptree const & props );
 
+      mpi_psf ( ) { }
+
       ~mpi_psf ( ) { }
+
+      mpi_psf * redistribute ( boost::mpi::communicator const & comm );
 
       size_t n_spec ( ) const;
       

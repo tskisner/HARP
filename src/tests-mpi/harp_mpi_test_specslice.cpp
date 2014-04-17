@@ -12,10 +12,14 @@ using namespace harp;
 
 void harp::mpi_test_specslice ( string const & datadir ) {
 
-  boost::mpi::communicator comm;
+  // for this test, we pretend that every process in the global communicator is its own "gang"
 
+  boost::mpi::communicator comm;
   int np = comm.size();
   int myp = comm.rank();
+
+  boost::mpi::communicator rcomm = comm.split ( myp, 0 );
+
 
   if ( myp == 0 ) {
     cout << "Testing spec slicing..." << endl;
@@ -34,7 +38,7 @@ void harp::mpi_test_specslice ( string const & datadir ) {
   size_t nchunk_lambda = (size_t)( nlambda / chunk_lambda );
   size_t nchunk = nchunk_spec * nchunk_lambda;
 
-  mpi_spec_slice_p slice ( new mpi_spec_slice ( comm, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
+  mpi_spec_slice_p slice ( new mpi_spec_slice ( rcomm, comm, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
 
   matrix_float coverage ( nspec, nlambda );
   coverage.clear();
@@ -60,7 +64,7 @@ void harp::mpi_test_specslice ( string const & datadir ) {
 
   matrix_float full_coverage ( nspec, nlambda );
 
-  boost::mpi::reduce ( comm, coverage, full_coverage, std::plus < matrix_float > (), 0 );
+  boost::mpi::reduce ( rcomm, coverage, full_coverage, std::plus < matrix_float > (), 0 );
 
   // check that every spectral point is covered once
 

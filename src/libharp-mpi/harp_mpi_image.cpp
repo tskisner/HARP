@@ -39,13 +39,21 @@ size_t harp::mpi_image::n_cols ( ) const {
 
 
 void harp::mpi_image::values ( vector_double & data ) const {
-  local_->values ( data );
+  int rank = comm_.rank();
+  if ( rank == 0 ) {
+    local_->values ( data );
+  }
+  boost::mpi::broadcast ( comm_, data, 0 );
   return;
 }
 
 
 void harp::mpi_image::inv_variance ( vector_double & invvar ) const {
-  local_->inv_variance ( invvar );
+  int rank = comm_.rank();
+  if ( rank == 0 ) {
+    local_->inv_variance ( invvar );
+  }
+  boost::mpi::broadcast ( comm_, invvar, 0 );
   return;
 }
 
@@ -56,13 +64,37 @@ boost::property_tree::ptree harp::mpi_image::metadata ( ) const {
 
 
 void harp::mpi_image::values ( matrix_double & data ) const {
-  local_->values ( data );
+  int rank = comm_.rank();
+  if ( rank == 0 ) {
+    local_->values ( data );
+  }
+  boost::mpi::broadcast ( comm_, data, 0 );
   return;
 }
 
 
 void harp::mpi_image::inv_variance ( matrix_double & invvar ) const {
-  local_->inv_variance ( invvar );
+  int rank = comm_.rank();
+  if ( rank == 0 ) {
+    local_->inv_variance ( invvar );
+  }
+  boost::mpi::broadcast ( comm_, invvar, 0 );
+  return;
+}
+
+
+void harp::mpi_image::values ( elem_matrix_local & data ) const {
+  vector_double temp;
+  values ( temp );
+  ublas_to_elem ( temp, data );
+  return;
+}
+
+
+void harp::mpi_image::inv_variance ( elem_matrix_local & invvar ) const {
+  vector_double temp;
+  inv_variance ( temp );
+  ublas_to_elem ( temp, invvar );
   return;
 }
 

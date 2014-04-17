@@ -13,10 +13,15 @@ using namespace harp;
 
 void mpi_test_extract_subaccum ( mpi_spec_slice_p slice, mpi_matrix & full_data, mpi_matrix & check_data ) {
 
-  boost::mpi::communicator comm = slice->comm();
+  // inter-gang communicator
+  boost::mpi::communicator rcomm = slice->rank_comm();
 
-  int np = comm.size();
-  int myp = comm.rank();
+  // intra-gang communicator
+  boost::mpi::communicator gcomm = slice->gang_comm();
+
+  // the process rank within this gang
+  int np = gcomm.size();
+  int myp = gcomm.rank();
 
   spec_slice_region full_region = slice->full_region();
 
@@ -108,52 +113,20 @@ void mpi_test_extract_subaccum ( mpi_spec_slice_p slice, mpi_matrix & full_data,
 
 void harp::mpi_test_extract ( string const & datadir ) {
 
-  boost::mpi::communicator comm;
+  // global communicator and grid
 
-  elem::Grid grid ( elem::mpi::COMM_WORLD );
+  boost::mpi::communicator comm;
 
   int np = comm.size();
   int myp = comm.rank();
 
-  bool reg_mpi = true;
-  plugin_registry & reg = plugin_registry::get( reg_mpi );
+  elem::Grid grid ( elem::mpi::COMM_WORLD );
 
-  if ( myp == 0 ) {
-    cout << "Testing extraction spectral sub/accum functions..." << endl;
-  }
+  // fake rank communicator for use with the global one
 
-  size_t nspec = 5;
-  size_t nlambda = 200;
-  size_t chunk_spec = 5;
-  size_t overlap_spec = 0;
-  size_t chunk_lambda = 20;
-  size_t overlap_lambda = 10;
+  boost::mpi::communicator selfcomm = comm.split ( myp, 0 );
 
-  size_t nbin = nspec * nlambda;
-
-  mpi_matrix full_data ( nbin, 1, grid );
-  mpi_matrix_zero ( full_data );
-
-  mpi_matrix check_data ( nbin, 1, grid );
-
-  for ( size_t i = 0; i < nbin; ++i ) {
-    full_data.Set ( i, 0, (double)i );
-  }
-  
-  mpi_spec_slice_p slice ( new mpi_spec_slice ( comm, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
-
-  mpi_test_extract_subaccum ( slice, full_data, check_data );
-
-  if ( myp == 0 ) {
-    cout << "  (PASSED)" << endl;
-  }
-
-  
-  if ( myp == 0 ) {
-    cout << "Testing gang-parallel slice and accum..." << endl;
-  }
-
-  // split communicator
+  // intra-gang communicator
 
   int gangsize = (int)( np / 2 );
   if ( gangsize < 1 ) {
@@ -181,6 +154,52 @@ void harp::mpi_test_extract ( string const & datadir ) {
 
   elem::Grid gang_grid ( gcomm );
 
+  // inter-gang communicator
+
+  boost::mpi::communicator rcomm = comm.split ( grank, gang );
+
+  // initialize plugin registry
+
+  bool reg_mpi = true;
+  plugin_registry & reg = plugin_registry::get( reg_mpi );
+
+
+
+  if ( myp == 0 ) {
+    cout << "Testing extraction spectral sub/accum functions..." << endl;
+  }
+
+  size_t nspec = 5;
+  size_t nlambda = 200;
+  size_t chunk_spec = 5;
+  size_t overlap_spec = 0;
+  size_t chunk_lambda = 20;
+  size_t overlap_lambda = 10;
+
+  size_t nbin = nspec * nlambda;
+
+  mpi_matrix full_data ( nbin, 1, grid );
+  mpi_matrix_zero ( full_data );
+
+  mpi_matrix check_data ( nbin, 1, grid );
+
+  for ( size_t i = 0; i < nbin; ++i ) {
+    full_data.Set ( i, 0, (double)i );
+  }
+  
+  mpi_spec_slice_p slice ( new mpi_spec_slice ( selfcomm, comm, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
+
+  mpi_test_extract_subaccum ( slice, full_data, check_data );
+
+  if ( myp == 0 ) {
+    cout << "  (PASSED)" << endl;
+  }
+
+  
+  if ( myp == 0 ) {
+    cout << "Testing gang-parallel slice and accum..." << endl;
+  }
+
   // setup data
 
   mpi_matrix_zero ( check_data );
@@ -194,7 +213,7 @@ void harp::mpi_test_extract ( string const & datadir ) {
 
   // define slices
 
-  mpi_spec_slice_p gang_slice ( new mpi_spec_slice ( gcomm, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
+  mpi_spec_slice_p gang_slice ( new mpi_spec_slice ( rcomm, gcomm, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
 
   // do sub / accum within each gang
 
@@ -205,7 +224,7 @@ void harp::mpi_test_extract ( string const & datadir ) {
   mpi_gang_accum ( gang_check_data, check_data );
 
   for ( size_t i = 0; i < nbin; ++i ) {
-    if ( ( fabs ( ( check_data.Get(i,0) - (double)ngang * full_data.Get(i,0) ) / (double)ngang * full_data.Get(i,0) ) ) > std::numeric_limits < double > :: epsilon() ) {
+    if ( ( fabs ( ( check_data.Get(i,0) - full_data.Get(i,0) ) / full_data.Get(i,0) ) ) > std::numeric_limits < double > :: epsilon() ) {
       cerr << "FAIL on spectral bin " << i << ", " << check_data.Get(i,0) << " != " << full_data.Get(i,0) << endl;
       exit(1);
     }
@@ -216,22 +235,14 @@ void harp::mpi_test_extract ( string const & datadir ) {
   }
 
 
-  /*
+  if ( myp == 0 ) {
+    cout << "Testing MPI inverse covariance construction..." << endl;
+  }
 
-  cout << "Testing high-level, chunked extraction..." << endl;
-
-  slice.reset ( new spec_slice ( 1, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
-
-  vector_double truth ( nbin );
-  vector_double Rtruth ( nbin );
-  vector_double f ( nbin );
-  vector_double Rf ( nbin );
-  vector_double err ( nbin );
+  // create spec and read
 
   double first_lambda = 8000.0;
   double last_lambda = 8200.0;
-
-  // create spec and read
 
   boost::property_tree::ptree spec_props;
   spec_props.clear();
@@ -244,8 +255,9 @@ void harp::mpi_test_extract ( string const & datadir ) {
   spec_props.put ( "obj", 80.0 );
   spec_props.put ( "atmspace", 12 );
   spec_props.put ( "skymod", nspec );
-  spec_p testspec ( reg.create_spec ( "sim", spec_props ) );
+  mpi_spec_p testspec ( new mpi_spec ( comm, "sim", spec_props ) );
 
+  mpi_matrix truth ( nbin, 1 );
   vector_double lambda;
   vector < target > target_list;
 
@@ -261,7 +273,9 @@ void harp::mpi_test_extract ( string const & datadir ) {
   gauss_props.put ( "bundle_size", nspec );
   gauss_props.put ( "nbundle", 1 );
 
-  psf_p gauss_psf ( reg.create_psf ( "gauss_sim", gauss_props ) );
+  mpi_psf_p gauss_psf ( new mpi_psf ( comm, "gauss_sim", gauss_props ) );
+
+  mpi_psf_p gang_gauss_psf ( gauss_psf->redistribute( gcomm ) );
 
   // instantiate image and read
 
@@ -271,13 +285,223 @@ void harp::mpi_test_extract ( string const & datadir ) {
   img_props.put ( "psf_type", "gauss_sim" );
   img_props.put_child ( "psf", gauss_props );
 
-  image_p img ( reg.create_image ( "sim", img_props ) );
+  mpi_image_p img ( new mpi_image ( comm, "sim", img_props ) );
 
-  vector_double img_data;
-  vector_double img_inv;
+  elem_matrix_local img_data;
+  elem_matrix_local img_inv;
 
   img->values ( img_data );
   img->inv_variance ( img_inv );
+
+  // For this test, each gang will use its
+  // first region from the slice.
+
+  spec_slice_region test_region = gang_slice->regions()[0];
+  size_t test_nbin = test_region.n_spec * test_region.n_lambda;
+
+  map < size_t, set < size_t > > speclambda;
+
+  for ( size_t s = 0; s < test_region.n_spec; ++s ) {
+    for ( size_t l = 0; l < test_region.n_lambda; ++l ) {
+      speclambda[ s + test_region.first_spec ].insert ( l + test_region.first_lambda );
+    }
+  }
+
+  // no masking for this test...
+
+  vector_mask mask ( img_inv.Height() );
+  for ( size_t i = 0; i < mask.size(); ++i ) {
+    mask[i] = 1;
+  }
+
+  // get the distributed AT
+
+  mpi_matrix_sparse AT ( gcomm, test_nbin, img_data.Height() );
+
+  gang_gauss_psf->project_transpose ( speclambda, AT );
+
+  // in order to check the sparse distributed matrix, we need to reduce it to the root process
+
+  matrix_double_sparse check_AT;
+  check_AT.clear();
+
+  if ( grank != 0 ) {
+    gcomm.send ( 0, grank, AT.block() );
+  } else {
+
+    check_AT.resize( AT.rows(), AT.cols(), false );
+
+    mpi_matrix_sparse_block other_block;
+
+    for ( size_t p = 0; p < gangsize; ++p ) {
+
+      if ( p != 0 ) {
+        gcomm.recv ( p, p, other_block );
+      }
+
+      mpi_matrix_sparse_block & cur = ( p == 0 ) ? AT.block() : other_block;
+
+      size_t block_firstrow = cur.firstrow;
+      size_t block_nrows = cur.rows;
+      size_t block_nvals = cur.vals;
+
+      size_t lastrow = 0;
+      size_t lastnnz = 0;
+
+      for ( size_t v = 0; v < block_nvals; ++v ) {
+        size_t brow = cur.row[ v ];
+        if ( brow != lastrow ) {
+          if ( v != 0 ) {
+            if ( cur.row_nnz[ lastrow ] != lastnnz ) {
+              cerr << "sparse matrix block for proc " << p << " has incorrect row_nnz[" << lastrow << "] != " << lastnnz << endl;
+              exit(1);
+            }
+          }
+
+          // first element of this new row, check that the row offset is set to our current element
+          if ( cur.row_offset[ brow ] != v ) {
+            cerr << "sparse matrix block for proc " << p << " has incorrect row_offset[" << brow << "] != " << v << endl;
+            exit(1);
+          }
+          lastnnz = 0;
+          lastrow = brow;
+        }
+
+        ++lastnnz;
+
+        size_t bcol = cur.col[ v ];
+        double dat = cur.data[ v ];
+
+        check_AT( brow, bcol ) = dat;
+      }
+
+    }
+
+  }
+
+  gcomm.barrier();
+
+  // rank zero in each gang loads serial version of the classes and 
+  // creates serial C^-1.  
+
+  matrix_double serial_invC;
+
+  if ( grank == 0 ) {
+
+    // instantiate the serial PSF
+
+    psf_p serial_gauss_psf ( reg.create_psf ( "gauss_sim", gauss_props ) );
+
+    // instantiate image and read
+
+    image_p serial_img ( reg.create_image ( "sim", img_props ) );
+
+    vector_double serial_img_inv;
+
+    serial_img->inv_variance ( serial_img_inv );
+
+    // get design matrix
+
+    matrix_double_sparse serial_AT ( test_nbin, serial_img_inv.size() );
+
+    serial_gauss_psf->project_transpose ( speclambda, serial_AT );
+
+    // compare to local copy of distributed AT
+
+    for ( size_t i = 0; i < serial_AT.size1(); ++i ) {
+      for ( size_t j = 0; j < serial_AT.size2(); ++j ) {
+
+        double serval = serial_AT(i,j);
+        double locval = check_AT(i,j);
+
+        if ( fabs( serval ) > std::numeric_limits < double > :: epsilon() ) {
+          //cerr << "AT (" << i << ", " << j << ") " << serval << " " << locval << endl;
+          double rel = fabs ( ( locval - serval ) / serval );
+          if ( rel > std::numeric_limits < double > :: epsilon() ) {
+            cerr << "FAIL on AT [ " << i << ", " << j << " ], " << locval << " != " << serval << endl;
+            exit(1);
+          }
+        }
+
+      }
+    }
+
+    // build matrix
+
+    serial_invC.resize ( test_nbin, test_nbin );
+
+    inverse_covariance ( serial_AT, serial_img_inv, mask, serial_invC );
+
+  }
+
+  // now each gang computes the same in parallel
+
+  mpi_matrix invC ( test_nbin, test_nbin, gang_grid );
+
+  mpi_inverse_covariance ( AT, img_inv, mask, invC );
+
+  // now we get a local copy to the root process of every gang, for comparison purposes
+
+  elem_matrix_local local_invC;
+
+  elem::AxpyInterface < double > globloc;
+  globloc.Attach( elem::GLOBAL_TO_LOCAL, invC );
+
+  if ( grank == 0 ) {
+    local_invC.Resize ( test_nbin, test_nbin );
+    local_matrix_zero ( local_invC );
+    globloc.Axpy ( 1.0, local_invC, 0, 0 );
+  }
+
+  globloc.Detach();
+
+  // compare outputs- only the lower triangle!
+
+  if ( grank == 0 ) {
+
+    for ( size_t i = 0; i < test_nbin; ++i ) {
+      for ( size_t j = 0; j <= i; ++j ) {
+
+        //cerr << "(" << i << ", " << j << ") " << serial_invC(i,j) << " " << local_invC.Get(i,j) << endl;
+
+        if ( fabs( serial_invC(i,j) ) > std::numeric_limits < double > :: epsilon() ) {
+          double rel = fabs ( ( local_invC.Get(i,j) - serial_invC(i,j) ) / serial_invC(i,j) );
+          if ( rel > std::numeric_limits < float > :: epsilon() ) {
+            cerr << "FAIL on C^-1 [ " << i << ", " << j << " ], " << local_invC.Get(i,j) << " != " << serial_invC(i,j) << endl;
+            exit(1);
+          }
+        }
+
+      }
+    }
+
+  }
+
+  if ( myp == 0 ) {
+    cout << "  (PASSED)" << endl;
+  }
+
+
+
+  /*
+
+  if ( myp == 0 ) {
+    cout << "Testing high-level, chunked extraction..." << endl;
+  }
+
+  
+
+  
+  vector_double Rtruth ( nbin );
+  vector_double f ( nbin );
+  vector_double Rf ( nbin );
+  vector_double err ( nbin );
+
+  
+
+
+
+  
 
   // do extraction
 
@@ -312,7 +536,9 @@ void harp::mpi_test_extract ( string const & datadir ) {
 
   cout << prefix << "Reduced Chi square = " << chisq_reduced << endl;
 
-  cout << "  (PASSED)" << endl;
+  if ( myp == 0 ) {
+    cout << "  (PASSED)" << endl;
+  }
 
   */
 

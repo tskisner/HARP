@@ -10,7 +10,7 @@ namespace harp {
     
     public :
 
-      mpi_spec_slice ( boost::mpi::communicator const & comm, size_t nspec, size_t nlambda, size_t chunk_nspec, size_t chunk_nlambda, size_t overlap_spec, size_t overlap_lambda );
+      mpi_spec_slice ( boost::mpi::communicator const & rcomm, boost::mpi::communicator const & gcomm, size_t nspec, size_t nlambda, size_t chunk_nspec, size_t chunk_nlambda, size_t overlap_spec, size_t overlap_lambda );
       
       ~mpi_spec_slice ( ) { }
 
@@ -18,11 +18,14 @@ namespace harp {
 
       std::vector < spec_slice_region > regions ( ) const;
 
-      boost::mpi::communicator comm ( ) { return comm_; }
+      boost::mpi::communicator gang_comm ( ) { return gcomm_; }
+
+      boost::mpi::communicator rank_comm ( ) { return rcomm_; }
       
     private :
 
-      boost::mpi::communicator comm_;
+      boost::mpi::communicator rcomm_;
+      boost::mpi::communicator gcomm_;
       spec_slice_p local_;
 
   };

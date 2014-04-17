@@ -20,6 +20,8 @@ namespace harp {
 
       void values ( vector_double & data ) const;
 
+      void values ( mpi_matrix & data ) const;
+
       void lambda ( vector_double & lambda ) const;
 
       void targets ( std::vector < target > & target_list ) const;

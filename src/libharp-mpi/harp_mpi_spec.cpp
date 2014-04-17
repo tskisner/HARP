@@ -37,19 +37,39 @@ size_t harp::mpi_spec::n_lambda ( ) const {
 
 
 void harp::mpi_spec::values ( vector_double & data ) const {
-  local_->values ( data );
+  int rank = comm_.rank();
+  if ( rank == 0 ) {
+    local_->values ( data );
+  }
+  boost::mpi::broadcast ( comm_, data, 0 );
+  return;
+}
+
+
+void harp::mpi_spec::values ( mpi_matrix & data ) const {
+  vector_double temp;
+  values ( temp );
+  ublas_to_elem ( temp, data );
   return;
 }
 
 
 void harp::mpi_spec::lambda ( vector_double & lambda_vals ) const {
-  local_->lambda ( lambda_vals );
+  int rank = comm_.rank();
+  if ( rank == 0 ) {
+    local_->lambda ( lambda_vals );
+  }
+  boost::mpi::broadcast ( comm_, lambda_vals, 0 );
   return;
 }
 
 
 void harp::mpi_spec::targets ( std::vector < target > & target_list ) const {
-  local_->targets ( target_list );
+  int rank = comm_.rank();
+  if ( rank == 0 ) {
+    local_->targets ( target_list );
+  }
+  boost::mpi::broadcast ( comm_, target_list, 0 );
   return;
 }
 

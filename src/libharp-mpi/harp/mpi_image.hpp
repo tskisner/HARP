@@ -28,6 +28,10 @@ namespace harp {
 
       void inv_variance ( matrix_double & invvar ) const;
 
+      void values ( elem_matrix_local & data ) const;
+
+      void inv_variance ( elem_matrix_local & invvar ) const;
+
       std::string type ( ) const;
       
     private :

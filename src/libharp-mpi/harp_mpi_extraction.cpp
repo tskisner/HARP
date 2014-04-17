@@ -10,19 +10,33 @@ using namespace harp;
 
 void harp::mpi_sub_spec ( spec_slice_region const & full_region, spec_slice_region const & sub_region, mpi_matrix const & full_data, bool use_good_sub, mpi_matrix & sub_data ) {
 
+  // verify that the process grid matches between input and output
+
+  int np;
+  int myp;
+
+  MPI_Comm_size ( full_data.Grid().Comm(), &np );
+  MPI_Comm_rank ( full_data.Grid().Comm(), &myp );
+
+  if ( full_data.Grid() != sub_data.Grid() ) {
+    std::ostringstream o;
+    o << "input and output matrices have different process grids!";
+    HARP_MPI_ABORT( myp, o.str().c_str() );
+  }
+
   // verify that data dimensions match the sizes of the regions.  Select whether we
   // are using the full or good extent of the output. 
 
   if ( (full_region.n_spec * full_region.n_lambda) != full_data.Height() ) {
     std::ostringstream o;
     o << "input region total bins (" << (full_region.n_spec * full_region.n_lambda) << ") does not match input data size (" << full_data.Height() << ")";
-    HARP_THROW( o.str().c_str() );
+    HARP_MPI_ABORT( myp, o.str().c_str() );
   }
 
   if ( (sub_region.n_spec * sub_region.n_lambda) != sub_data.Height() ) {
     std::ostringstream o;
     o << "output region total bins (" << (sub_region.n_spec * sub_region.n_lambda) << ") does not match output data size (" << sub_data.Height() << ")";
-    HARP_THROW( o.str().c_str() );
+    HARP_MPI_ABORT( myp, o.str().c_str() );
   }
 
   size_t nsub;
@@ -49,25 +63,25 @@ void harp::mpi_sub_spec ( spec_slice_region const & full_region, spec_slice_regi
   if ( sub_firstspec < full_region.first_spec ) {
     std::ostringstream o;
     o << "sub region first spec (" << sub_firstspec << ") is before first spec of full region (" << full_region.first_spec << ")";
-    HARP_THROW( o.str().c_str() );
+    HARP_MPI_ABORT( myp, o.str().c_str() );
   }
 
   if ( sub_firstspec + sub_nspec > full_region.first_spec + full_region.n_spec ) {
     std::ostringstream o;
     o << "sub region last spec (" << (sub_firstspec + sub_nspec - 1) << ") is beyond last spec of full region (" << (full_region.first_spec + full_region.n_spec - 1) << ")";
-    HARP_THROW( o.str().c_str() );
+    HARP_MPI_ABORT( myp, o.str().c_str() );
   }
 
   if ( sub_firstlambda < full_region.first_lambda ) {
     std::ostringstream o;
     o << "sub region first lambda (" << sub_firstlambda << ") is before first lambda of full region (" << full_region.first_lambda << ")";
-    HARP_THROW( o.str().c_str() );
+    HARP_MPI_ABORT( myp, o.str().c_str() );
   }
 
   if ( sub_firstlambda + sub_nlambda > full_region.first_lambda + full_region.n_lambda ) {
     std::ostringstream o;
     o << "sub region last lambda (" << (sub_firstlambda + sub_nlambda - 1) << ") is beyond last lambda of full region (" << (full_region.first_lambda + full_region.n_lambda - 1) << ")";
-    HARP_THROW( o.str().c_str() );
+    HARP_MPI_ABORT( myp, o.str().c_str() );
   }
 
   /*
@@ -165,19 +179,33 @@ void harp::mpi_sub_spec ( spec_slice_region const & full_region, spec_slice_regi
 
 void harp::mpi_accum_spec ( spec_slice_region const & sub_region, spec_slice_region const & full_region, mpi_matrix const & sub_data, bool use_good_sub, mpi_matrix & full_data ) {
 
+  // verify that the process grid matches between input and output
+
+  int np;
+  int myp;
+
+  MPI_Comm_size ( full_data.Grid().Comm(), &np );
+  MPI_Comm_rank ( full_data.Grid().Comm(), &myp );
+
+  if ( full_data.Grid() != sub_data.Grid() ) {
+    std::ostringstream o;
+    o << "input and output matrices have different process grids!";
+    HARP_MPI_ABORT( myp, o.str().c_str() );
+  }
+
   // verify that data dimensions match the sizes of the regions.  Select whether we
   // are using the full or good extent of the input. 
 
   if ( (full_region.n_spec * full_region.n_lambda) != full_data.Height() ) {
     std::ostringstream o;
     o << "output region total bins (" << (full_region.n_spec * full_region.n_lambda) << ") does not match output data size (" << full_data.Height() << ")";
-    HARP_THROW( o.str().c_str() );
+    HARP_MPI_ABORT( myp, o.str().c_str() );
   }
 
   if ( (sub_region.n_spec * sub_region.n_lambda) != sub_data.Height() ) {
     std::ostringstream o;
     o << "input region total bins (" << (sub_region.n_spec * sub_region.n_lambda) << ") does not match input data size (" << sub_data.Height() << ")";
-    HARP_THROW( o.str().c_str() );
+    HARP_MPI_ABORT( myp, o.str().c_str() );
   }
 
   size_t nsub;
@@ -204,25 +232,25 @@ void harp::mpi_accum_spec ( spec_slice_region const & sub_region, spec_slice_reg
   if ( sub_firstspec < full_region.first_spec ) {
     std::ostringstream o;
     o << "sub region first spec (" << sub_firstspec << ") is before first spec of full region (" << full_region.first_spec << ")";
-    HARP_THROW( o.str().c_str() );
+    HARP_MPI_ABORT( myp, o.str().c_str() );
   }
 
   if ( sub_firstspec + sub_nspec > full_region.first_spec + full_region.n_spec ) {
     std::ostringstream o;
     o << "sub region last spec (" << (sub_firstspec + sub_nspec - 1) << ") is beyond last spec of full region (" << (full_region.first_spec + full_region.n_spec - 1) << ")";
-    HARP_THROW( o.str().c_str() );
+    HARP_MPI_ABORT( myp, o.str().c_str() );
   }
 
   if ( sub_firstlambda < full_region.first_lambda ) {
     std::ostringstream o;
     o << "sub region first lambda (" << sub_firstlambda << ") is before first lambda of full region (" << full_region.first_lambda << ")";
-    HARP_THROW( o.str().c_str() );
+    HARP_MPI_ABORT( myp, o.str().c_str() );
   }
 
   if ( sub_firstlambda + sub_nlambda > full_region.first_lambda + full_region.n_lambda ) {
     std::ostringstream o;
     o << "sub region last lambda (" << (sub_firstlambda + sub_nlambda - 1) << ") is beyond last lambda of full region (" << (full_region.first_lambda + full_region.n_lambda - 1) << ")";
-    HARP_THROW( o.str().c_str() );
+    HARP_MPI_ABORT( myp, o.str().c_str() );
   }
 
   // FIXME: can this be changed to not store a full local copy of the input?
@@ -294,97 +322,103 @@ void harp::mpi_accum_spec ( spec_slice_region const & sub_region, spec_slice_reg
 }
 
 
+void harp::mpi_noise_weighted_spec ( mpi_matrix_sparse const & AT, elem_matrix_local const & invnoise, vector_mask const & mask, elem_matrix_local const & img, mpi_matrix & z ) {
 
+  int myp = AT.comm().rank();
+  int np = AT.comm().size();
 
-/*
-
-void harp::noise_weighted_spec ( matrix_sparse const & psf, matrix_local const & invnoise, matrix_local const & img, matrix_dist & z ) {
-
-  size_t nbins = psf.Height();
-  size_t npix = psf.Width();
+  size_t nbins = AT.rows();
+  size_t npix = AT.cols();
 
   if ( invnoise.Height() != npix ) {
     std::ostringstream o;
     o << "number of rows in inverse noise covariance (" << invnoise.Height() << ") does not match number of pixels in PSF (" << npix << ")";
-    HARP_THROW( o.str().c_str() );
+    HARP_MPI_ABORT( myp, o.str().c_str() );
   }
 
   if ( img.Height() != npix ) {
     std::ostringstream o;
     o << "number of elements in image vector (" << img.Height() << ") does not match number of pixels in PSF (" << npix << ")";
-    HARP_THROW( o.str().c_str() );
+    HARP_MPI_ABORT( myp, o.str().c_str() );
   }
 
-  z.ResizeTo ( nbins, 1 );
-  dist_matrix_zero ( z );
+  // check that communicators are the same
+
+  if ( (MPI_Comm)(AT.comm()) != (MPI_Comm)(z.Grid().Comm()) ) {
+    std::ostringstream o;
+    o << "design matrix and noise weighted spec have different communicators";
+    HARP_MPI_ABORT( myp, o.str().c_str() );
+  }
+
+  z.Resize ( nbins, 1 );
+  mpi_matrix_zero ( z );
 
   // apply noise covariance to image
 
-  matrix_local weight ( npix, 1 );
+  elem_matrix_local weight ( npix, 1 );
   for ( size_t i = 0; i < npix; ++i ) {
-    weight.Set ( i, 0, invnoise.Get(i,0) * img.Get(i,0) );
+    weight.Set ( i, 0, invnoise.Get(i,0) * img.Get(i,0) * (double)mask[i] );
   }
 
   // accumulate local pieces of z
 
-  size_t first_loc_row = psf.FirstLocalRow();
-  size_t loc_height = psf.LocalHeight();
-  size_t loc_entries = psf.NumLocalEntries();
+  size_t local_firstrow = AT.block().firstrow;
+  size_t local_nrows = AT.block().rows;
+  size_t local_nvals = AT.block().vals;
 
-  matrix_local local_z ( loc_height, 1 );
+  elem_matrix_local local_z ( local_nrows, 1 );
   local_matrix_zero ( local_z );
 
   double val;
   double zval;
   size_t row;
-  size_t nnz;
   size_t col;
 
-  for ( size_t loc = 0; loc < loc_entries; ++loc ) {
-    row = psf.Row ( loc );
-    col = psf.Col ( loc );
-    val = psf.Value ( loc );
-    zval = local_z.Get ( row - first_loc_row, 0 );
-    local_z.Set ( row - first_loc_row, 0, zval + val * weight.Get( col, 0 ) );
+  for ( size_t loc = 0; loc < local_nvals; ++loc ) {
+    row = AT.block().row[ loc ];
+    col = AT.block().col[ loc ];
+    val = AT.block().data[ loc ];
+    zval = local_z.Get ( row - local_firstrow, 0 );
+    local_z.Set ( row - local_firstrow, 0, zval + val * weight.Get ( col, 0 ) );
   }
+
+  // accumulate to output
 
   elem::AxpyInterface < double > locglob;
   locglob.Attach( elem::LOCAL_TO_GLOBAL, z );
-  locglob.Axpy ( 1.0, local_z, first_loc_row, 0 );
+  locglob.Axpy ( 1.0, local_z, local_firstrow, 0 );
   locglob.Detach();
 
   return;
 }
 
 
-void harp::inverse_covariance ( matrix_sparse const & psf, matrix_local const & invnoise, matrix_dist & invcov ) {
+void harp::mpi_inverse_covariance ( mpi_matrix_sparse const & AT, elem_matrix_local const & invnoise, vector_mask const & mask, mpi_matrix & invcov ) {
 
-  int np;
-  int myp;
+  int myp = AT.comm().rank();
+  int np = AT.comm().size();
 
-  MPI_Comm_size ( psf.Comm(), &np );
-  MPI_Comm_rank ( psf.Comm(), &myp );
+  size_t nbins = AT.rows();
+  size_t npix = AT.cols();
 
   // check consistent sizes
-
-  size_t nbins = psf.Height();
-  size_t npix = psf.Width();
 
   if ( invnoise.Height() != npix ) {
     std::ostringstream o;
     o << "number of rows in inverse noise covariance (" << invnoise.Height() << ") does not match number of pixels in PSF (" << npix << ")";
-    HARP_THROW( o.str().c_str() );
+    HARP_MPI_ABORT( myp, o.str().c_str() );
   }
 
-  invcov.ResizeTo ( nbins, nbins );
-  dist_matrix_zero ( invcov );
+  invcov.Resize ( nbins, nbins );
+  mpi_matrix_zero ( invcov );
 
   // First, accumulate our own diagonal subblock
 
-  size_t local_firstrow = psf.FirstLocalRow();
-  size_t local_rows = psf.LocalHeight();
+  size_t local_firstrow = AT.block().firstrow;
+  size_t local_nrows = AT.block().rows;
+  size_t local_nvals = AT.block().vals;
 
-  matrix_local local_inv ( local_rows, local_rows );
+  elem_matrix_local local_inv ( local_nrows, local_nrows );
   local_matrix_zero ( local_inv );
 
   double val;
@@ -396,35 +430,38 @@ void harp::inverse_covariance ( matrix_sparse const & psf, matrix_local const & 
   size_t rhs_col;
   size_t j, k;
 
-  for ( size_t lhs_row = 0; lhs_row < local_rows; ++lhs_row ) {
+  for ( size_t lhs_row = 0; lhs_row < local_nrows; ++lhs_row ) {
 
     for ( size_t rhs_row = 0; rhs_row <= lhs_row; ++rhs_row ) {
 
-      lhs_off = psf.LocalEntryOffset ( lhs_row );
-      rhs_off = psf.LocalEntryOffset ( rhs_row );
+      lhs_off = AT.block().row_offset[ lhs_row ];
+      rhs_off = AT.block().row_offset[ rhs_row ];
 
-      lhs_nnz = psf.NumConnections ( lhs_row );
-      rhs_nnz = psf.NumConnections ( rhs_row );
+      lhs_nnz = AT.block().row_nnz[ lhs_row ];
+      rhs_nnz = AT.block().row_nnz[ rhs_row ];
 
       val = 0.0;
 
       k = 0;
-      rhs_col = psf.Col ( rhs_off );
+
+      rhs_col = AT.block().col[ rhs_off ];
 
       for ( j = 0; j < lhs_nnz; ++j ) {
 
-        lhs_col = psf.Col ( lhs_off + j );
+        lhs_col = AT.block().col[ lhs_off + j ];
         
         while ( ( rhs_col < lhs_col ) && ( k < rhs_nnz - 1 ) ) {
           ++k;
-          rhs_col = psf.Col ( rhs_off + k );
+          rhs_col = AT.block().col[ rhs_off + k ];
         }
 
         if ( rhs_col == lhs_col ) {
-          val += invnoise.Get( lhs_col, 0 ) * psf.Value ( lhs_off + j ) * psf.Value ( rhs_off + k );
+          val += invnoise.Get( lhs_col, 0 ) * (double)mask[ lhs_col ] * AT.block().data[ lhs_off + j ] * AT.block().data[ rhs_off + k ];
         }
 
       }
+
+      //cerr << myp << " INVC (" << lhs_row << "," << rhs_row << ") = " << val << endl;
 
       local_inv.Set ( lhs_row, rhs_row, val );
 
@@ -457,72 +494,37 @@ void harp::inverse_covariance ( matrix_sparse const & psf, matrix_local const & 
     from_proc = myp + 1;
   }
 
-  char * sendbuf = NULL;
-  size_t sendbytes;
-  char * recvbuf = NULL;
-  size_t recvbytes;
-  MPI_Request send_size_request;
-  MPI_Request send_request;
-  MPI_Status status;
+  mpi_matrix_sparse_block send_block;
+  mpi_matrix_sparse_block recv_block;
 
   for ( int shift = 0; shift < nshift; ++shift ) {
+
+    int send_key = (shift * np) + myp;
+    int recv_key = (shift * np) + from_proc;
+
+    // send our data, then wait receive the next block
+
+    boost::mpi::request send_req;
 
     if ( shift == 0 ) {
       // first shift, send our own data
 
-      sparse_block * myblock = new sparse_block ( psf );
-
-      sendbuf = myblock->pack ( sendbytes );
-
-      delete ( myblock );
+      send_req = AT.comm().isend ( to_proc, send_key, AT.block() );
 
     } else {
       // pass along the buffer
 
-      sendbytes = recvbytes;
+      send_block = recv_block;
 
-      sendbuf = (char*)malloc ( sendbytes );
-      if ( ! sendbuf ) {
-        HARP_THROW( "cannot allocate send buffer" );
-      }
-
-      memcpy ( (void*)sendbuf, (void*)recvbuf, sendbytes );
-
-      free ( recvbuf );
+      send_req = AT.comm().isend ( to_proc, send_key, send_block );
       
     }
 
-    int send_size_key = (shift * 2 * np) + 2 * myp;
-    int send_data_key = (shift * 2 * np) + 2 * myp + 1;
-    int recv_size_key = (shift * 2 * np) + 2 * from_proc;
-    int recv_data_key = (shift * 2 * np) + 2 * from_proc + 1;
-
-    // send our data, then wait receive the next block
-
-    int ret = MPI_Isend ( (void*)(&sendbytes), 1, MPI_UNSIGNED_LONG, to_proc, send_size_key, psf.Comm(), &send_size_request );
-    mpi_check ( psf.Comm(), ret );
-
-    ret = MPI_Isend ( (void*)sendbuf, sendbytes, MPI_CHAR, to_proc, send_data_key, psf.Comm(), &send_request );
-    mpi_check ( psf.Comm(), ret );
-
     // receive block from sender
 
-    ret = MPI_Recv ( (void*)(&recvbytes), 1, MPI_UNSIGNED_LONG, from_proc, recv_size_key, psf.Comm(), &status );
-    mpi_check ( psf.Comm(), ret );
+    AT.comm().recv ( from_proc, recv_key, recv_block );
 
-    recvbuf = (char*)malloc ( recvbytes );
-    if ( ! recvbuf ) {
-      HARP_THROW( "cannot allocate receive buffer" );
-    }
-
-    ret = MPI_Recv ( (void*)recvbuf, recvbytes, MPI_CHAR, from_proc, recv_data_key, psf.Comm(), &status );
-    mpi_check ( psf.Comm(), ret );
-
-    // reconstruct sparse_block
-
-    sparse_block * other_block = new sparse_block ( recvbuf, recvbytes );
-
-    // compute block
+    // compute output block
 
     size_t axpy_row = 0;
     size_t axpy_col = 0;
@@ -533,38 +535,38 @@ void harp::inverse_covariance ( matrix_sparse const & psf, matrix_local const & 
 
       participate = true;
 
-      local_inv.ResizeTo ( other_block->local_rows, local_rows );
+      local_inv.Resize ( recv_block.rows, local_nrows );
       local_matrix_zero ( local_inv );
 
-      axpy_row = other_block->local_firstrow;
+      axpy_row = recv_block.firstrow;
       axpy_col = local_firstrow;
 
-      for ( size_t lhs_row = 0; lhs_row < local_rows; ++lhs_row ) {
+      for ( size_t lhs_row = 0; lhs_row < local_nrows; ++lhs_row ) {
 
-        for ( size_t rhs_row = 0; rhs_row < other_block->local_rows; ++rhs_row ) {
+        for ( size_t rhs_row = 0; rhs_row < recv_block.rows; ++rhs_row ) {
 
-          lhs_off = psf.LocalEntryOffset ( lhs_row );
-          rhs_off = other_block->local_row_offset [ rhs_row ];
+          lhs_off = AT.block().row_offset[ lhs_row ];
+          rhs_off = recv_block.row_offset[ rhs_row ];
 
-          lhs_nnz = psf.NumConnections ( lhs_row );
-          rhs_nnz = other_block->local_row_nnz [ rhs_row ];
+          lhs_nnz = AT.block().row_nnz[ lhs_row ];
+          rhs_nnz = recv_block.row_nnz[ rhs_row ];
 
           val = 0.0;
 
           k = 0;
-          rhs_col = other_block->local_col[ rhs_off ];
+          rhs_col = recv_block.col[ rhs_off ];
 
           for ( j = 0; j < lhs_nnz; ++j ) {
 
-            lhs_col = psf.Col ( lhs_off + j );
+            lhs_col = AT.block().col[ lhs_off + j ];
             
             while ( ( rhs_col < lhs_col ) && ( k < rhs_nnz - 1 ) ) {
               ++k;
-              rhs_col = other_block->local_col[ rhs_off + k ];
+              rhs_col = recv_block.col[ rhs_off + k ];
             }
 
             if ( rhs_col == lhs_col ) {
-              val += invnoise.Get( lhs_col, 0 ) * psf.Value ( lhs_off + j ) * other_block->data[ rhs_off + k ];
+              val += invnoise.Get( lhs_col, 0 ) * (double)mask[ lhs_col ] * AT.block().data[ lhs_off + j ] * recv_block.data[ rhs_off + k ];
             }
 
           }
@@ -580,38 +582,38 @@ void harp::inverse_covariance ( matrix_sparse const & psf, matrix_local const & 
 
       participate = true;
 
-      local_inv.ResizeTo ( local_rows, other_block->local_rows );
+      local_inv.Resize ( local_nrows, recv_block.rows );
       local_matrix_zero ( local_inv );
 
       axpy_row = local_firstrow;
-      axpy_col = other_block->local_firstrow;
+      axpy_col = recv_block.firstrow;
 
-      for ( size_t lhs_row = 0; lhs_row < local_rows; ++lhs_row ) {
+      for ( size_t lhs_row = 0; lhs_row < local_nrows; ++lhs_row ) {
 
-        for ( size_t rhs_row = 0; rhs_row < other_block->local_rows; ++rhs_row ) {
+        for ( size_t rhs_row = 0; rhs_row < recv_block.rows; ++rhs_row ) {
 
-          lhs_off = psf.LocalEntryOffset ( lhs_row );
-          rhs_off = other_block->local_row_offset [ rhs_row ];
+          lhs_off = AT.block().row_offset[ lhs_row ];
+          rhs_off = recv_block.row_offset[ rhs_row ];
 
-          lhs_nnz = psf.NumConnections ( lhs_row );
-          rhs_nnz = other_block->local_row_nnz [ rhs_row ];
+          lhs_nnz = AT.block().row_nnz[ lhs_row ];
+          rhs_nnz = recv_block.row_nnz[ rhs_row ];
 
           val = 0.0;
 
           k = 0;
-          rhs_col = other_block->local_col[ rhs_off ];
+          rhs_col = recv_block.col[ rhs_off ];
 
           for ( j = 0; j < lhs_nnz; ++j ) {
 
-            lhs_col = psf.Col ( lhs_off + j );
+            lhs_col = AT.block().col[ lhs_off + j ];
             
             while ( ( rhs_col < lhs_col ) && ( k < rhs_nnz - 1 ) ) {
               ++k;
-              rhs_col = other_block->local_col[ rhs_off + k ];
+              rhs_col = recv_block.col[ rhs_off + k ];
             }
 
             if ( rhs_col == lhs_col ) {
-              val += invnoise.Get( lhs_col, 0 ) * psf.Value ( lhs_off + j ) * other_block->data[ rhs_off + k ];
+              val += invnoise.Get( lhs_col, 0 ) * (double)mask[ lhs_col ] * AT.block().data[ lhs_off + j ] * recv_block.data[ rhs_off + k ];
             }
 
           }
@@ -629,20 +631,12 @@ void harp::inverse_covariance ( matrix_sparse const & psf, matrix_local const & 
 
     }
 
-    delete other_block;
-
     // Wait for everyone to finish sending and calculating their blocks before
     // entering into Axpy communication code.
 
-    ret = MPI_Wait ( &send_size_request, &status );
-    mpi_check ( psf.Comm(), ret );
+    send_req.wait();
 
-    ret = MPI_Wait ( &send_request, &status );
-    mpi_check ( psf.Comm(), ret );
-
-    free ( sendbuf );
-
-    ret = MPI_Barrier ( psf.Comm() );
+    AT.comm().barrier();
 
     // accumulate to global matrix
 
@@ -658,6 +652,7 @@ void harp::inverse_covariance ( matrix_sparse const & psf, matrix_local const & 
 }
 
 
+/*
 void harp::resolution ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_dist & R ) {
 
   R = W;

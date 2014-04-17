@@ -28,6 +28,22 @@ harp::mpi_psf::mpi_psf ( boost::mpi::communicator const & comm, std::string cons
 }
 
 
+mpi_psf * harp::mpi_psf::redistribute ( boost::mpi::communicator const & comm ) {
+
+  mpi_psf * ret = new mpi_psf();
+
+  ret->comm_ = comm;
+
+  if ( comm.rank() == 0 ) {
+    ret->local_ = local_;
+  }
+
+  boost::mpi::broadcast ( comm, ret->local_, 0 );
+
+  return ret;
+}
+
+
 size_t harp::mpi_psf::n_spec ( ) const {
   return local_->n_spec();
 }
