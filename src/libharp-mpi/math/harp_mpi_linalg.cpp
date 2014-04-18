@@ -50,7 +50,7 @@ void harp::local_matrix_zero ( elem_matrix_local & mat ) {
 }
 
 
-void harp::mpi_eigen_decompose ( mpi_matrix const & invcov, mpi_matrix & D, mpi_matrix & W ) {
+void harp::mpi_eigen_decompose ( mpi_matrix const & invcov, mpi_matrix & D, mpi_matrix & W, bool regularize ) {
 
   D.Resize ( invcov.Height(), 1 );
   W.Resize ( invcov.Height(), invcov.Height() );
@@ -66,6 +66,72 @@ void harp::mpi_eigen_decompose ( mpi_matrix const & invcov, mpi_matrix & D, mpi_
   //elem::SortEig( eigvals, W );
 
   D = eigvals;
+
+  if ( regularize ) {
+
+    // find local min / max eigenvalues
+
+    double min = 1.0e100;
+    double max = -1.0e100;
+
+    size_t hlocal = D.LocalHeight();
+    size_t wlocal = D.LocalWidth();
+
+    size_t rowoff = D.ColShift();
+    size_t rowstride = D.ColStride();
+    size_t row;
+
+    double val;
+
+    if ( wlocal > 0 ) {
+      for ( size_t j = 0; j < hlocal; ++j ) {
+        // the global element of sub_data
+        row = rowoff + j * rowstride;
+
+        val = D.GetLocal ( j, 0 );
+
+        if ( val < min ) {
+          min = val;
+        }
+        if ( val > max ) {
+          max = val;
+        }
+      }
+    }
+
+    // find global min / max
+
+    elem::mpi::AllReduce ( &min, 1, elem::mpi::MIN, D.Grid().Comm() );
+
+    elem::mpi::AllReduce ( &max, 1, elem::mpi::MAX, D.Grid().Comm() );
+
+    // compute condition number
+
+    double rcond = min / max;
+
+    // pick some delta that is bigger than machine precision, but still tiny
+    double epsilon = 10.0 * std::numeric_limits < double > :: epsilon();
+
+    // modify our local elements
+
+    if ( rcond < epsilon ) {
+
+      double reg = max * epsilon - min;
+
+      if ( wlocal > 0 ) {
+        for ( size_t j = 0; j < hlocal; ++j ) {
+          // the global element of sub_data
+          row = rowoff + j * rowstride;
+
+          val = D.GetLocal ( j, 0 );
+          val += reg;
+          D.SetLocal ( j, 0, val );
+        }
+      }
+
+    }
+
+  }
 
   return;
 }
@@ -115,6 +181,15 @@ void harp::mpi_eigen_compose ( eigen_op op, mpi_matrix const & D, mpi_matrix con
       invmin = 1.0 / min;
       for ( size_t i = 0; i < scaled.Height(); ++i ) {
         val = sqrt ( scaled.Get( i, 0 ) );
+        val = ( val < min ) ? invmin : ( 1.0 / val );
+        scaled.Set( i, 0, val );
+      }
+      break;
+    case EIG_INV:
+      min = max * threshold;
+      invmin = 1.0 / min;
+      for ( size_t i = 0; i < scaled.Height(); ++i ) {
+        val = scaled.Get( i, 0 );
         val = ( val < min ) ? invmin : ( 1.0 / val );
         scaled.Set( i, 0, val );
       }
@@ -368,15 +443,15 @@ void mpi_sparse_mv_trans ( mpi_matrix_sparse const & AT, mpi_matrix const & in, 
 
 void harp::mpi_gang_distribute ( mpi_matrix const & mat, mpi_matrix & gmat ) {
 
-  if ( ( mat.Height() != gmat.Height() ) || ( mat.Width() != gmat.Width() ) ) {
-    HARP_THROW( "matrix dimensions do not match" );
-  }
-
   int gang_np;
   int gang_myp;
 
   MPI_Comm_size ( gmat.Grid().Comm(), &gang_np );
   MPI_Comm_rank ( gmat.Grid().Comm(), &gang_myp );
+
+  if ( ( mat.Height() != gmat.Height() ) || ( mat.Width() != gmat.Width() ) ) {
+    HARP_MPI_ABORT( gang_myp, "matrix dimensions do not match" );
+  }
 
   // local column buffer
 
@@ -419,15 +494,15 @@ void harp::mpi_gang_distribute ( mpi_matrix const & mat, mpi_matrix & gmat ) {
 
 void harp::mpi_gang_accum ( mpi_matrix const & gmat, mpi_matrix & mat ) {
 
-  if ( ( mat.Height() != gmat.Height() ) || ( mat.Width() != gmat.Width() ) ) {
-    HARP_THROW( "matrix dimensions do not match" );
-  }
-
   int gang_np;
   int gang_myp;
 
   MPI_Comm_size ( gmat.Grid().Comm(), &gang_np );
   MPI_Comm_rank ( gmat.Grid().Comm(), &gang_myp );
+
+  if ( ( mat.Height() != gmat.Height() ) || ( mat.Width() != gmat.Width() ) ) {
+    HARP_MPI_ABORT( gang_myp, "matrix dimensions do not match" );
+  }
 
   // local column buffer
 

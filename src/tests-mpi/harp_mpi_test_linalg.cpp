@@ -181,7 +181,7 @@ void harp::mpi_test_linalg ( string const & datadir ) {
   mpi_matrix w;
   mpi_matrix Z;
 
-  mpi_eigen_decompose ( sym, w, Z );
+  mpi_eigen_decompose ( sym, w, Z, false );
 
   mpi_matrix symprod ( SIZE, SIZE, grid );
   mpi_matrix eprod ( SIZE, SIZE, grid );
@@ -247,7 +247,7 @@ void harp::mpi_test_linalg ( string const & datadir ) {
   mpi_matrix w_inv;
   mpi_matrix Z_inv;
 
-  mpi_eigen_decompose ( mat_invrt, w_inv, Z_inv );
+  mpi_eigen_decompose ( mat_invrt, w_inv, Z_inv, false );
 
   for ( size_t i = 0; i < SIZE; ++i ) {
     double val = w_inv.Get(i,0);

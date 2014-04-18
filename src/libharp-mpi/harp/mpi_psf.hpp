@@ -18,6 +18,8 @@ namespace harp {
 
       mpi_psf * redistribute ( boost::mpi::communicator const & comm );
 
+      boost::mpi::communicator comm ( ) { return comm_; }
+
       size_t n_spec ( ) const;
       
       size_t n_lambda ( ) const;
@@ -27,6 +29,8 @@ namespace harp {
       size_t img_cols ( ) const;
 
       vector_double lambda ( ) const;
+
+      void extent ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, size_t & n_x, size_t & n_y ) const;
 
       // The base class provides a default implementation of these 2 functions, so that derived classes
       // only need to implement the response() method.

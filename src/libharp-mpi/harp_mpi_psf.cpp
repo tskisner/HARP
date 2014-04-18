@@ -69,6 +69,12 @@ vector_double harp::mpi_psf::lambda ( ) const {
 }
 
 
+void harp::mpi_psf::extent ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, size_t & n_x, size_t & n_y ) const {
+  local_->extent ( spec, lambda, x_offset, y_offset, n_x, n_y );
+  return;
+}
+
+
 void harp::mpi_psf::project_transpose ( std::map < size_t, std::set < size_t > > const & speclambda, mpi_matrix_sparse & AT ) const {
 
   // check for consistent dimensions

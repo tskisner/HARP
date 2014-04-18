@@ -13,6 +13,8 @@ namespace harp {
       mpi_image ( boost::mpi::communicator const & comm, std::string const & type, boost::property_tree::ptree const & props );
       
       ~mpi_image ( ) { }
+
+      boost::mpi::communicator comm ( ) { return comm_; }
       
       size_t n_rows ( ) const;
       

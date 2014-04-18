@@ -14,6 +14,8 @@ namespace harp {
       
       ~mpi_spec ( ) { }
 
+      boost::mpi::communicator comm ( ) { return comm_; }
+
       size_t n_spec ( ) const;
 
       size_t n_lambda ( ) const;

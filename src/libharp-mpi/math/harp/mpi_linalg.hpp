@@ -170,7 +170,7 @@ namespace harp {
 
   void local_matrix_zero ( elem_matrix_local & mat );
 
-  void mpi_eigen_decompose ( mpi_matrix const & invcov, mpi_matrix & D, mpi_matrix & W );
+  void mpi_eigen_decompose ( mpi_matrix const & invcov, mpi_matrix & D, mpi_matrix & W, bool regularize );
 
   void mpi_eigen_compose ( eigen_op op, mpi_matrix const & D, mpi_matrix const & W, mpi_matrix & out );
 

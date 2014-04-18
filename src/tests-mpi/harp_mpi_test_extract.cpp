@@ -257,7 +257,7 @@ void harp::mpi_test_extract ( string const & datadir ) {
   spec_props.put ( "skymod", nspec );
   mpi_spec_p testspec ( new mpi_spec ( comm, "sim", spec_props ) );
 
-  mpi_matrix truth ( nbin, 1 );
+  mpi_matrix truth ( nbin, 1, grid );
   vector_double lambda;
   vector < target > target_list;
 
@@ -482,65 +482,117 @@ void harp::mpi_test_extract ( string const & datadir ) {
   }
 
 
-
-  /*
-
   if ( myp == 0 ) {
     cout << "Testing high-level, chunked extraction..." << endl;
   }
-
   
-
-  
-  vector_double Rtruth ( nbin );
-  vector_double f ( nbin );
-  vector_double Rf ( nbin );
-  vector_double err ( nbin );
-
-  
-
-
-
-  
+  mpi_matrix Rtruth ( nbin, 1, grid );
+  mpi_matrix f ( nbin, 1, grid );
+  mpi_matrix Rf ( nbin, 1, grid );
+  mpi_matrix err ( nbin, 1, grid );
 
   // do extraction
 
-  vector < spec_slice_region > regions = slice->regions ( 0 );
+  bool lambda_mask = true;
 
   string prefix = "  extract:  ";
 
-  cout << prefix << "Extracting " << regions.size() << " spectral chunks, each with " << chunk_spec << " spectra (overlap = " << overlap_spec << ") and " << chunk_lambda << " lambda points (overlap = " << overlap_lambda << ")" << endl;
-
   map < string, double > timing;
 
-  extract_slices ( slice, gauss_psf, img_data, img_inv, truth, Rf, f, err, Rtruth, timing, false, prefix );
-     
-  cout << prefix << "Aggregate Timings:" << endl;
-  cout << prefix << "  Build design matrix = " << timing["design"] << " seconds" << endl;
-  cout << prefix << "  Build inverse covariance = " << timing["inverse"] << " seconds" << endl;
-  cout << prefix << "  Eigendecompose inverse = " << timing["eigen"] << " seconds" << endl;
-  cout << prefix << "  Compute column norm = " << timing["norm"] << " seconds" << endl;
-  cout << prefix << "  Compute noise weighted spec = " << timing["nsespec"] << " seconds" << endl;
-  cout << prefix << "  Extract spectra = " << timing["extract"] << " seconds" << endl;
+  mpi_extract_slices ( gang_slice, gauss_psf, img_data, img_inv, truth, Rf, f, err, Rtruth, timing, lambda_mask, prefix );
 
-  double chisq_reduced = 0.0;
+  elem_matrix_local loc_truth;
+  elem_matrix_local loc_Rtruth;
+  elem_matrix_local loc_Rf;
+  elem_matrix_local loc_f;
+  elem_matrix_local loc_err;
 
-  for ( size_t i = 0; i < nbin; ++i ) {
-    if ( err[i] > std::numeric_limits < double > :: epsilon() ) {
-      double val = ( Rf[i] - Rtruth[i] ) / err[i];
-      chisq_reduced += val * val;
-    }
+  globloc.Attach( elem::GLOBAL_TO_LOCAL, Rtruth );
+  if ( myp == 0 ) {
+    loc_Rtruth.Resize ( Rtruth.Height(), 1 );
+    local_matrix_zero ( loc_Rtruth );
+    globloc.Axpy ( 1.0, loc_Rtruth, 0, 0 );
   }
+  globloc.Detach();
 
-  chisq_reduced /= (double)( nbin );
+  globloc.Attach( elem::GLOBAL_TO_LOCAL, truth );
+  if ( myp == 0 ) {
+    loc_truth.Resize ( truth.Height(), 1 );
+    local_matrix_zero ( loc_truth );
+    globloc.Axpy ( 1.0, loc_truth, 0, 0 );
+  }
+  globloc.Detach();
 
-  cout << prefix << "Reduced Chi square = " << chisq_reduced << endl;
+  globloc.Attach( elem::GLOBAL_TO_LOCAL, Rf );
+  if ( myp == 0 ) {
+    loc_Rf.Resize ( Rf.Height(), 1 );
+    local_matrix_zero ( loc_Rf );
+    globloc.Axpy ( 1.0, loc_Rf, 0, 0 );
+  }
+  globloc.Detach();
+
+  globloc.Attach( elem::GLOBAL_TO_LOCAL, f );
+  if ( myp == 0 ) {
+    loc_f.Resize ( f.Height(), 1 );
+    local_matrix_zero ( loc_f );
+    globloc.Axpy ( 1.0, loc_f, 0, 0 );
+  }
+  globloc.Detach();
+
+  globloc.Attach( elem::GLOBAL_TO_LOCAL, err );
+  if ( myp == 0 ) {
+    loc_err.Resize ( err.Height(), 1 );
+    local_matrix_zero ( loc_err );
+    globloc.Axpy ( 1.0, loc_err, 0, 0 );
+  }
+  globloc.Detach();
 
   if ( myp == 0 ) {
+
+    boost::property_tree::ptree solution_props;
+    solution_props.clear();
+    solution_props.put ( "nspec", nspec );
+    solution_props.put ( "nlambda", nlambda );
+    spec_specter outspec ( solution_props );
+
+    vector_double ubuf;
+
+    elem_to_ublas ( loc_truth, ubuf );
+    string outfile = datadir + "/mpi_extract_spec_truth.fits.out";
+    outspec.write ( outfile, ubuf, lambda, target_list );
+
+    elem_to_ublas ( loc_Rtruth, ubuf );
+    outfile = datadir + "/mpi_extract_spec_Rtruth.fits.out";
+    outspec.write ( outfile, ubuf, lambda, target_list );
+
+    elem_to_ublas ( loc_Rf, ubuf );
+    outfile = datadir + "/mpi_extract_spec_Rf.fits.out";
+    outspec.write ( outfile, ubuf, lambda, target_list );
+
+    elem_to_ublas ( loc_f, ubuf );
+    outfile = datadir + "/mpi_extract_spec_f.fits.out";
+    outspec.write ( outfile, ubuf, lambda, target_list );
+
+    elem_to_ublas ( loc_err, ubuf );
+    outfile = datadir + "/mpi_extract_spec_err.fits.out";
+    outspec.write ( outfile, ubuf, lambda, target_list );
+
+    double chisq_reduced = 0.0;
+    double val;
+    for ( size_t i = 0; i < loc_Rf.Height(); ++i ) {
+      if ( loc_err.Get(i,0) > std::numeric_limits < double > :: epsilon() ) {
+        val = ( loc_Rf.Get ( i, 0 ) - loc_Rtruth.Get ( i, 0 ) ) / loc_err.Get ( i, 0 );
+        val *= val;
+        chisq_reduced += val;
+      }
+    }
+
+    chisq_reduced /= (double)( loc_Rf.Height() - 1 );
+
+    cout << prefix << "Reduced Chi square = " << chisq_reduced << endl;
     cout << "  (PASSED)" << endl;
   }
 
-  */
 
   return;
 }

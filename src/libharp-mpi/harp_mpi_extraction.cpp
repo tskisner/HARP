@@ -342,14 +342,6 @@ void harp::mpi_noise_weighted_spec ( mpi_matrix_sparse const & AT, elem_matrix_l
     HARP_MPI_ABORT( myp, o.str().c_str() );
   }
 
-  // check that communicators are the same
-
-  if ( (MPI_Comm)(AT.comm()) != (MPI_Comm)(z.Grid().Comm()) ) {
-    std::ostringstream o;
-    o << "design matrix and noise weighted spec have different communicators";
-    HARP_MPI_ABORT( myp, o.str().c_str() );
-  }
-
   z.Resize ( nbins, 1 );
   mpi_matrix_zero ( z );
 
@@ -652,58 +644,406 @@ void harp::mpi_inverse_covariance ( mpi_matrix_sparse const & AT, elem_matrix_lo
 }
 
 
-/*
-void harp::resolution ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_dist & R ) {
+void harp::mpi_resolution ( mpi_matrix & D, mpi_matrix & W, mpi_matrix & S, mpi_matrix & R ) {
 
   R = W;
 
-  dist_matrix_zero ( R );
+  mpi_matrix_zero ( R );
 
-  eigen_compose ( EIG_SQRT, D, W, R );
+  mpi_eigen_compose ( EIG_SQRT, D, W, R );
 
-  column_norm ( R, S );
+  mpi_column_norm ( R, S );
 
-  apply_norm ( S, R );
+  mpi_apply_norm ( S, R );
 
   return;
 }
 
 
-void harp::extract ( matrix_dist & D, matrix_dist & W, matrix_dist & S, matrix_dist & z, matrix_dist & Rf, matrix_dist & f ) {
+void harp::mpi_extract ( mpi_matrix & D, mpi_matrix & W, mpi_matrix & S, mpi_matrix & z, mpi_matrix & Rf, mpi_matrix & f ) {
 
-  dist_matrix_zero ( f );
-  dist_matrix_zero ( Rf );
+  mpi_matrix_zero ( f );
+  mpi_matrix_zero ( Rf );
 
   // compose ( W^T D^{-1/2} W )
 
-  matrix_dist invrtC ( W );
-  dist_matrix_zero ( invrtC );
+  mpi_matrix composed ( W );
+  mpi_matrix_zero ( composed );
 
-  eigen_compose ( EIG_INVSQRT, D, W, invrtC );
+  mpi_eigen_compose ( EIG_INVSQRT, D, W, composed );
 
   // Compute R * C
 
-  matrix_dist RC ( invrtC );
-
-  apply_norm ( S, RC );
+  mpi_apply_norm ( S, composed );
 
   // Compute R * f.
 
-  elem::Gemv ( elem::NORMAL, 1.0, RC, z, 0.0, Rf );
+  elem::Gemv ( elem::NORMAL, 1.0, composed, z, 0.0, Rf );
 
   // compute deconvolved spectra (numerically unstable, but useful for visualization).
-  // R^-1 == ( W^T D^{-1/2} W ) S
 
-  matrix_dist temp ( Rf );
+  mpi_eigen_compose ( EIG_INV, D, W, composed );
 
-  apply_inverse_norm ( S, temp );
-
-  // now apply invrtC.  This destroys upper triangle of invrtC!
-
-  elem::Symv ( elem::LOWER, 1.0, invrtC, temp, 0.0, f );
+  elem::Gemv ( elem::NORMAL, 1.0, composed, z, 0.0, f );
 
   return;
 }
 
-*/
+
+void harp::mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_matrix_local const & img, elem_matrix_local const & img_inv_var, mpi_matrix const & truth, mpi_matrix & Rf, mpi_matrix & f, mpi_matrix & err, mpi_matrix & Rtruth, std::map < std::string, double > & profile, bool lambda_mask, std::string const & status_prefix ) {
+
+  // This function assumes that the slice has been distributed over the gangs, and that
+  // the design matrix and spectral domain quantities have been distributed over the
+  // global communicator (we redistribute these inside this function).
+
+  // check dimensions and clear output
+
+  if ( img.Height() != img_inv_var.Height() ) {
+    HARP_MPI_ABORT( slice->gang_comm().rank(), "image and inverse pixel variance must have the same size" );
+  }
+
+  size_t img_rows = design->img_rows();
+  size_t img_cols = design->img_cols();
+
+  size_t psf_imgsize = img_rows * img_cols;
+
+  if ( img.Height() != psf_imgsize ) {
+    HARP_MPI_ABORT( slice->gang_comm().rank(), "image size must match PSF image dimensions" );
+  }
+
+  size_t psf_specsize = design->n_spec() * design->n_lambda();
+
+  if ( ( truth.Height() > 0 ) && ( truth.Height() != psf_specsize ) ) {
+    HARP_MPI_ABORT( slice->gang_comm().rank(), "input truth size must either be zero or match PSF spectral dimensions" );
+  }
+
+  Rf.Resize ( psf_specsize, 1 );
+  mpi_matrix_zero ( Rf );
+
+  f.Resize ( psf_specsize, 1 );
+  mpi_matrix_zero ( f );
+
+  err.Resize ( psf_specsize, 1 );
+  mpi_matrix_zero ( err );
+
+  Rtruth.Resize ( truth.Height(), 1 );
+  mpi_matrix_zero ( Rtruth );
+
+  // timing variables
+
+  profile.clear();
+
+  vector < string > counters;
+  counters.push_back ( "design" );
+  counters.push_back ( "inverse" );
+  counters.push_back ( "eigen" );
+  counters.push_back ( "norm" );
+  counters.push_back ( "nsespec" );
+  counters.push_back ( "extract" );
+
+  for ( vector < string > :: const_iterator itcounter = counters.begin(); itcounter != counters.end(); ++itcounter ) {
+    profile[ (*itcounter) ] = 0.0;
+  }
+
+  // create a region description that contains all spectral bins
+
+  spec_slice_region full_region = slice->full_region();
+
+  // gang-distributed quantities and redistribution
+
+  elem::Grid gang_grid ( slice->gang_comm() );
+
+  mpi_matrix gang_truth ( truth.Height(), 1, gang_grid );
+  mpi_matrix_zero ( gang_truth );
+
+  mpi_matrix gang_Rtruth ( truth.Height(), 1, gang_grid );
+  mpi_matrix_zero ( gang_Rtruth );
+
+  mpi_matrix gang_Rf ( psf_specsize, 1, gang_grid );
+  mpi_matrix_zero ( gang_Rf );
+  
+  mpi_matrix gang_f ( psf_specsize, 1, gang_grid );
+  mpi_matrix_zero ( gang_f );
+  
+  mpi_matrix gang_err ( psf_specsize, 1, gang_grid );
+  mpi_matrix_zero ( gang_err );
+
+  mpi_gang_distribute ( truth, gang_truth );
+
+  mpi_psf_p gang_design ( design->redistribute ( slice->gang_comm() ) );
+
+  // In order to keep the printed output clean, we use one-sided MPI calls
+  // to implement a locking mechanism used by the rank zero process in all gangs.
+  // unfortunately, I don't think boost::mpi supports this, so we have to call
+  // the raw C API...
+
+  int * root_lockbuf;
+
+  MPI_Win printlock;
+
+  if ( slice->gang_comm().rank() == 0 ) {
+    int ret;
+    if ( slice->rank_comm().rank() == 0 ) {
+      ret = MPI_Alloc_mem ( sizeof(int), MPI_INFO_NULL, (void*)&root_lockbuf );
+      ret = MPI_Win_create ( (void*)(root_lockbuf), sizeof(int), sizeof(int), MPI_INFO_NULL, slice->rank_comm(), &printlock );
+    } else {
+      ret = MPI_Win_create ( NULL, 0, sizeof(int), MPI_INFO_NULL, slice->rank_comm(), &printlock );
+    }
+  }
+
+  // Process all spectral slices assigned to our gang
+
+  size_t region_index = 0;
+
+  vector < spec_slice_region > regions = slice->regions();
+
+  for ( vector < spec_slice_region > :: const_iterator regit = regions.begin(); regit != regions.end(); ++regit ) {
+
+    double tstart = MPI_Wtime();
+
+    size_t nbins = regit->n_spec * regit->n_lambda;
+
+    // slice-specific quantities distributed over the gang
+
+    mpi_matrix slice_Rf ( nbins, 1, gang_grid );
+    mpi_matrix_zero ( slice_Rf );
+
+    mpi_matrix slice_f ( nbins, 1, gang_grid );
+    mpi_matrix_zero ( slice_f );
+
+    mpi_matrix slice_err ( nbins, 1, gang_grid );
+    mpi_matrix_zero ( slice_err );
+
+    mpi_matrix slice_truth ( 1, 1, gang_grid );
+    mpi_matrix slice_Rtruth ( 1, 1, gang_grid );
+
+    // extract sub-data for this slice out of the global input and output
+    // spectral domain products.  the sub_spec command below includes the
+    // overlap for each region.  later when accumulating, we only accumulate
+    // the "good" portion of each region.
+
+    if ( truth.Height() > 0 ) {
+      slice_truth.Resize ( nbins, 1 );
+      mpi_matrix_zero ( slice_truth );
+
+      slice_Rtruth.Resize ( nbins, 1 );
+      mpi_matrix_zero ( slice_Rtruth );
+
+      mpi_sub_spec ( full_region, (*regit), gang_truth, false, slice_truth );
+    }
+
+    // build the list of spectral points we want for the projection.  also
+    // build the pixel mask.  We are going to mask all pixels in the wavelength
+    // direction which extend beyond the bin centers of the extreme bins.  In the
+    // spec direction, we assume that there are either bundle gaps or that the 
+    // extraction is being done across all spectra.
+
+    double tsubstart = MPI_Wtime();
+
+    vector_mask mask ( img_inv_var.Height() );
+
+    // start by masking all pixels...
+    mask.clear();
+
+    size_t xoff;
+    size_t yoff;
+    size_t nx;
+    size_t ny;
+
+    // select our spectral bins
+
+    map < size_t, set < size_t > > speclambda;
+
+    for ( size_t s = 0; s < regit->n_spec; ++s ) {
+      for ( size_t l = 0; l < regit->n_lambda; ++l ) {
+        speclambda[ s + regit->first_spec ].insert ( l + regit->first_lambda );
+      }
+    }
+
+    if ( lambda_mask ) {
+
+      // we un-mask all pixels that touch only the good bins we are solving for
+
+      for ( size_t s = 0; s < regit->n_good_spec; ++s ) {
+        for ( size_t l = 0; l < regit->n_good_lambda; ++l ) {
+
+          gang_design->extent ( s + regit->first_good_spec, l + regit->first_good_lambda, xoff, yoff, nx, ny );
+
+          for ( size_t j = 0; j < nx; ++j ) {
+            for ( size_t i = 0; i < ny; ++i ) {
+              mask[ ( xoff + j ) * img_rows + yoff + i ] = 1;
+            }
+          }
+
+        }
+      }
+
+    } else {
+
+      // we un-mask all pixels that touch any of the bins we are solving for
+
+      for ( size_t s = 0; s < regit->n_spec; ++s ) {
+        for ( size_t l = 0; l < regit->n_lambda; ++l ) {
+
+          gang_design->extent ( s + regit->first_spec, l + regit->first_lambda, xoff, yoff, nx, ny );
+
+          for ( size_t j = 0; j < nx; ++j ) {
+            for ( size_t i = 0; i < ny; ++i ) {
+              mask[ ( xoff + j ) * img_rows + yoff + i ] = 1;
+            }
+          }
+
+        }
+      }
+
+    }
+
+    // get the projection matrix for this slice
+
+    mpi_matrix_sparse AT ( slice->gang_comm(), nbins, img.Height() );
+
+    gang_design->project_transpose ( speclambda, AT );
+
+    double tsubstop = MPI_Wtime();
+    double time_design = ( tsubstop - tsubstart );
+
+    // build the inverse spectral covariance for this slice
+
+    tsubstart = MPI_Wtime();
+
+    mpi_matrix invC ( nbins, nbins, gang_grid );
+    mpi_matrix_zero ( invC );
+
+    mpi_inverse_covariance ( AT, img_inv_var, mask, invC );
+
+    tsubstop = MPI_Wtime();
+    double time_inverse = ( tsubstop - tsubstart );
+
+    // eigendecompose
+
+    tsubstart = MPI_Wtime();
+
+    mpi_matrix eig_vals ( nbins, 1, gang_grid );
+    mpi_matrix eig_vecs ( nbins, nbins, gang_grid );
+
+    bool regularize = lambda_mask;
+    mpi_eigen_decompose ( invC, eig_vals, eig_vecs, regularize );
+
+    tsubstop = MPI_Wtime();
+    double time_eigen = ( tsubstop - tsubstart );
+
+    // if we are convolving input truth spectra, then we need to explicitly compute the resolution
+    // matrix, and so we do that while computing the column norm that we need.  If we are not
+    // processing truth spectra, we can just compute the norm.
+
+    tsubstart = MPI_Wtime();
+
+    if ( truth.Height() > 0 ) {
+
+      mpi_matrix res ( nbins, nbins, gang_grid );
+
+      mpi_resolution ( eig_vals, eig_vecs, slice_err, res );
+
+      elem::Gemv ( elem::NORMAL, 1.0, res, slice_truth, 0.0, slice_Rtruth );
+
+      mpi_accum_spec ( (*regit), full_region, slice_Rtruth, true, gang_Rtruth );
+
+    } else {
+
+      mpi_norm ( eig_vals, eig_vecs, slice_err );
+
+    }
+
+    tsubstop = MPI_Wtime();
+    double time_norm = ( tsubstop - tsubstart );
+
+    // compute the "noise weighted spectra", which is the RHS of the extraction
+    // equation, A^T N^-1 p
+
+    tsubstart = MPI_Wtime();
+
+    mpi_matrix z_spec ( nbins, 1, gang_grid );
+
+    mpi_noise_weighted_spec ( AT, img_inv_var, mask, img, z_spec );
+
+    tsubstop = MPI_Wtime();
+    double time_nsespec = ( tsubstop - tsubstart );
+
+    // extract the spectra for this region
+
+    tsubstart = MPI_Wtime();
+
+    mpi_extract ( eig_vals, eig_vecs, slice_err, z_spec, slice_Rf, slice_f );
+
+    tsubstop = MPI_Wtime();
+    double time_extract = ( tsubstop - tsubstart );
+
+    // accumulate results to gang solution
+
+    mpi_accum_spec ( (*regit), full_region, slice_Rf, true, gang_Rf );
+    mpi_accum_spec ( (*regit), full_region, slice_f, true, gang_f );
+    mpi_accum_spec ( (*regit), full_region, slice_err, true, gang_err );
+
+    // accumulate timing for this region
+
+    double tstop = MPI_Wtime();
+    double time_chunk = tstop - tstart;
+
+    profile [ "design" ] += time_design;
+    profile [ "inverse" ] += time_inverse;
+    profile [ "eigen" ] += time_eigen;
+    profile [ "norm" ] += time_norm;
+    profile [ "nsespec" ] += time_nsespec;
+    profile [ "extract" ] += time_extract;
+
+    // optionally write progress
+
+    if ( ( slice->gang_comm().rank() == 0 ) && ( status_prefix != "" ) ) {
+
+      int ret = MPI_Win_lock ( MPI_LOCK_EXCLUSIVE, 0, 0, printlock );
+
+      cout << status_prefix << " finished chunk " << region_index << endl;
+      cout << status_prefix << "   computing A^T = " << time_design << " seconds" << endl;
+      cout << status_prefix << "   building inverse covariance = " << time_inverse << " seconds" << endl;
+      cout << status_prefix << "   eigendecompose inverse covariance = " << time_eigen << " seconds" << endl;
+      if ( truth.Height() > 0 ) {
+        cout << status_prefix << "   compute column norm and resolution convolved truth = " << time_norm << " seconds" << endl;
+      } else {
+        cout << status_prefix << "   compute column norm = " << time_norm << " seconds" << endl;
+      }
+      cout << status_prefix << "   compute noise weighted spec = " << time_nsespec << " seconds" << endl;
+      cout << status_prefix << "   extraction = " << time_extract << " seconds" << endl;
+      cout << status_prefix << "   total chunk time = " << time_chunk << " seconds" << endl;
+
+      // free the lock
+      ret = MPI_Win_unlock ( 0, printlock );
+
+    }
+
+    ++region_index;
+
+  }
+
+  // free the one-sided printer window
+
+  if ( slice->gang_comm().rank() == 0 ) {
+    int ret;
+    MPI_Win_free ( &printlock );
+    if ( slice->rank_comm().rank() == 0 ) {
+      ret = MPI_Free_mem ( (void*)root_lockbuf );
+    }
+  }
+
+  return;
+}
+
+
+
+
+
+
+
+
+
+
 
