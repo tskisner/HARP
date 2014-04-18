@@ -1034,6 +1034,13 @@ void harp::mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_m
     }
   }
 
+  // accumulate gang-local results into global output
+
+  mpi_gang_accum ( gang_Rf, Rf );
+  mpi_gang_accum ( gang_f, f );
+  mpi_gang_accum ( gang_err, err );
+  mpi_gang_accum ( gang_Rtruth, Rtruth );
+
   return;
 }
 

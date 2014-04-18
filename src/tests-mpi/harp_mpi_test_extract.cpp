@@ -386,23 +386,30 @@ void harp::mpi_test_extract ( string const & datadir ) {
 
   matrix_double serial_invC;
 
+  vector_double serial_img_inv;
+
+  vector_double serial_img_data;
+
+  matrix_double_sparse serial_AT;
+
   if ( grank == 0 ) {
 
     // instantiate the serial PSF
 
     psf_p serial_gauss_psf ( reg.create_psf ( "gauss_sim", gauss_props ) );
 
+    serial_AT.resize ( test_nbin, img_data.Height(), false );
+
     // instantiate image and read
 
     image_p serial_img ( reg.create_image ( "sim", img_props ) );
 
-    vector_double serial_img_inv;
-
     serial_img->inv_variance ( serial_img_inv );
+    serial_img->values ( serial_img_data );
 
     // get design matrix
 
-    matrix_double_sparse serial_AT ( test_nbin, serial_img_inv.size() );
+    
 
     serial_gauss_psf->project_transpose ( speclambda, serial_AT );
 
@@ -472,6 +479,48 @@ void harp::mpi_test_extract ( string const & datadir ) {
           }
         }
 
+      }
+    }
+
+  }
+
+  if ( myp == 0 ) {
+    cout << "  (PASSED)" << endl;
+  }
+
+
+  if ( myp == 0 ) {
+    cout << "Testing MPI noise weighted spec construction..." << endl;
+  }
+
+
+  mpi_matrix z_spec ( test_nbin, 1, gang_grid );
+
+  mpi_noise_weighted_spec ( AT, img_inv, mask, img_data, z_spec );
+
+  elem_matrix_local loc_z;
+
+  globloc.Attach( elem::GLOBAL_TO_LOCAL, z_spec );
+  if ( grank == 0 ) {
+    loc_z.Resize ( z_spec.Height(), 1 );
+    local_matrix_zero ( loc_z );
+    globloc.Axpy ( 1.0, loc_z, 0, 0 );
+  }
+  globloc.Detach();
+
+  if ( grank == 0 ) {
+
+    vector_double serial_z;
+
+    noise_weighted_spec ( serial_AT, serial_img_inv, mask, serial_img_data, serial_z );
+
+    for ( size_t i = 0; i < test_nbin; ++i ) {
+      if ( fabs( serial_z[i] ) > std::numeric_limits < double > :: epsilon() ) {
+        double rel = fabs ( ( loc_z.Get(i,0) - serial_z[i] ) / serial_z[i] );
+        if ( rel > std::numeric_limits < float > :: epsilon() ) {
+          cerr << "FAIL on z [ " << i << " ], " << loc_z.Get(i,0) << " != " << serial_z[i] << endl;
+          exit(1);
+        }
       }
     }
 
