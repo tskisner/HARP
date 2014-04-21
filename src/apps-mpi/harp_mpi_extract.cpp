@@ -120,7 +120,7 @@ int main ( int argc, char *argv[] ) {
   int ngang = (int)( np / gangsize );
   int gangtot = ngang * gangsize;
   if ( ( myp == 0 ) && ( ! quiet ) ) {
-    cout << prefix << "  Using " << ngang << " gangs of " << gangsize << " processes each" << endl;
+    cout << prefix << "Using " << ngang << " gangs of " << gangsize << " processes each" << endl;
   }
   if ( gangtot < np ) {
     if ( myp == 0 ) {
@@ -434,7 +434,7 @@ int main ( int argc, char *argv[] ) {
 
     boost::mpi::reduce ( comm, itcounter->second, time_min, boost::mpi::minimum < double > (), 0 );
 
-    boost::mpi::reduce ( comm, itcounter->second, time_min, boost::mpi::maximum < double > (), 0 );
+    boost::mpi::reduce ( comm, itcounter->second, time_max, boost::mpi::maximum < double > (), 0 );
 
     if ( ( myp == 0 ) && ( ! quiet ) ) {
       cout << prefix << counter_desc [ itcounter->first ] << " " << time_mean << " ( " << time_min << " low / " << time_max << " high ) seconds" << endl;
