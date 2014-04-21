@@ -7,7 +7,7 @@ using namespace std;
 using namespace harp;
 
 
-void harp::specter_read_targets ( fitsfile * fp, std::vector < target > & target_list ) {
+void harp::specter_read_targets ( fitsfile * fp, std::vector < obs_target > & target_list ) {
 
   size_t nspec;
 
@@ -40,9 +40,9 @@ void harp::specter_read_targets ( fitsfile * fp, std::vector < target > & target
 
   for ( size_t i = 0; i < nspec; ++i ) {
     if ( objnames[i] == "SKY" ) {
-      target_list.push_back ( target ( TARGET_SKY, "sky" ) );
+      target_list.push_back ( obs_target ( TARGET_SKY, "sky" ) );
     } else {
-      target_list.push_back ( target ( TARGET_UNKNOWN, objnames[i] ) );
+      target_list.push_back ( obs_target ( TARGET_UNKNOWN, objnames[i] ) );
     }
   }
 
@@ -50,7 +50,7 @@ void harp::specter_read_targets ( fitsfile * fp, std::vector < target > & target
 }
 
 
-void harp::specter_write_targets ( fitsfile * fp, std::vector < target > const & target_list ) {
+void harp::specter_write_targets ( fitsfile * fp, std::vector < obs_target > const & target_list ) {
 
   vector < string > colnames ( 3 );
   vector < string > coltypes ( 3 );
@@ -190,7 +190,7 @@ void harp::spec_specter::lambda ( vector_double & lambda_vals ) const {
 }
 
 
-void harp::spec_specter::targets ( std::vector < target > & target_list ) const {
+void harp::spec_specter::targets ( std::vector < obs_target > & target_list ) const {
 
   fitsfile * fp;
 
@@ -207,7 +207,7 @@ void harp::spec_specter::targets ( std::vector < target > & target_list ) const 
 }
 
 
-void harp::spec_specter::write ( std::string const & path, vector_double & data, vector_double const & lambda, std::vector < target > const & target_list ) {
+void harp::spec_specter::write ( std::string const & path, vector_double & data, vector_double const & lambda, std::vector < obs_target > const & target_list ) {
 
   fitsfile * fp;
     
@@ -229,7 +229,7 @@ void harp::spec_specter::write ( std::string const & path, vector_double & data,
 }
 
 
-void harp::spec_specter::write ( std::string const & path, matrix_double & data, vector_double & lambda, std::vector < target > const & target_list ) {
+void harp::spec_specter::write ( std::string const & path, matrix_double & data, vector_double & lambda, std::vector < obs_target > const & target_list ) {
 
   size_t nelem = nspec_ * nlambda_;
 

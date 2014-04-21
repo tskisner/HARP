@@ -36,7 +36,7 @@ void harp::test_psf_gauss ( string const & datadir ) {
 
   vector_double check_data;
   vector_double check_lambda;
-  vector < target > check_target_list;
+  vector < obs_target > check_target_list;
 
   checkspec->values ( check_data );
   checkspec->lambda ( check_lambda );

@@ -128,7 +128,7 @@ void harp::test_extract ( string const & datadir ) {
   spec_p testspec ( reg.create_spec ( "sim", spec_props ) );
 
   vector_double lambda;
-  vector < target > target_list;
+  vector < obs_target > target_list;
 
   testspec->values ( truth );
   testspec->lambda ( lambda );

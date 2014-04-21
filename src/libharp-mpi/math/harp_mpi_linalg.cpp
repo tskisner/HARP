@@ -20,6 +20,17 @@ harp::mpi_matrix_sparse::mpi_matrix_sparse ( boost::mpi::communicator const & co
 }
 
 
+void harp::mpi_matrix_sparse::clear ( ) {
+  block_.vals = 0;
+  block_.row.resize(0);
+  block_.col.resize(0);
+  block_.row_offset.resize(0);
+  block_.row_nnz.resize(0);
+  block_.data.resize(0);
+  return;
+}
+
+
 void harp::mpi_matrix_zero ( mpi_matrix & mat ) {
 
   size_t hlocal = mat.LocalHeight();
@@ -370,7 +381,7 @@ void harp::mpi_norm ( mpi_matrix const & D, mpi_matrix const & W, mpi_matrix & S
 }
 
 
-void mpi_sparse_mv_trans ( mpi_matrix_sparse const & AT, mpi_matrix const & in, elem_matrix_local & out ) {
+void harp::mpi_sparse_mv_trans ( mpi_matrix_sparse const & AT, mpi_matrix const & in, elem_matrix_local & out ) {
 
   int myp = AT.comm().rank();
   int np = AT.comm().size();

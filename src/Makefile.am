@@ -5,6 +5,6 @@ SUBDIRS = libharp tests apps
 #endif
 
 if HAVE_AM_MPI
-  SUBDIRS += libharp-mpi tests-mpi #apps-mpi
+  SUBDIRS += libharp-mpi tests-mpi apps-mpi
 endif
 

@@ -40,7 +40,7 @@ namespace harp {
         return;
       }
 
-      virtual void targets ( std::vector < target > & target_list ) const {
+      virtual void targets ( std::vector < obs_target > & target_list ) const {
         HARP_THROW( "fell through to virtual method" );
         return;
       }

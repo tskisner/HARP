@@ -39,7 +39,7 @@ void harp::mpi_test_spec ( string const & datadir ) {
   size_t serial_nlambda;
   vector_double serial_data;
   vector_double serial_lambda;
-  vector < target > serial_target_list;
+  vector < obs_target > serial_target_list;
 
   if ( myp == 0 ) {
 
@@ -68,7 +68,7 @@ void harp::mpi_test_spec ( string const & datadir ) {
 
   vector_double par_data;
   vector_double par_lambda;
-  vector < target > par_target_list;
+  vector < obs_target > par_target_list;
 
   par_spec->values ( par_data );
   par_spec->lambda ( par_lambda );

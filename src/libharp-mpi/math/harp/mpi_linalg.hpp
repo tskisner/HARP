@@ -147,6 +147,8 @@ namespace harp {
 
       ~mpi_matrix_sparse () { }
 
+      void clear ();
+
       boost::mpi::communicator const & comm ( ) const { return comm_; }
 
       mpi_matrix_sparse_block & block ( ) { return block_; }

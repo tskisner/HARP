@@ -66,7 +66,7 @@ void harp::test_spec_simspecter ( string const & datadir ) {
 
   vector_double data;
   vector_double lambda;
-  vector < target > target_list;
+  vector < obs_target > target_list;
 
   testspec->values ( data );
   testspec->lambda ( lambda );
@@ -121,7 +121,7 @@ void harp::test_spec_simspecter ( string const & datadir ) {
 
   vector_double check_data;
   vector_double check_lambda;
-  vector < target > check_target_list;
+  vector < obs_target > check_target_list;
 
   checkspec->values ( check_data );
   checkspec->lambda ( check_lambda );

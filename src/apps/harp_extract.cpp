@@ -223,10 +223,10 @@ int main ( int argc, char *argv[] ) {
   // eventually we will read a target list and this will be used for sky subtraction and will
   // be written to the output spectral files.  For now, we create a fake list here.
 
-  vector < target > target_list ( psf_nspec );
+  vector < obs_target > target_list ( psf_nspec );
 
   for ( size_t i = 0; i < psf_nspec; ++i ) {
-    target_list[i] = target ( TARGET_UNKNOWN, "target" );
+    target_list[i] = obs_target ( TARGET_UNKNOWN, "target" );
   }
 
 
@@ -275,7 +275,7 @@ int main ( int argc, char *argv[] ) {
     }
 
     vector_double truth_lambda;
-    vector < target > truth_target_list;
+    vector < obs_target > truth_target_list;
 
     truth_spec->values ( data_truth );
     truth_spec->lambda ( truth_lambda );
@@ -319,7 +319,7 @@ int main ( int argc, char *argv[] ) {
   vector < spec_slice_region > regions = slice->regions ( 0 );
 
   if ( ! quiet ) {
-    cout << prefix << "Extracting " << regions.size() << " spectral chunks, each with " << spec_width << " spectra and " << lambda_width << " lambda points ( overlap = " << lambda_overlap << " )" << endl;
+    cout << prefix << "Extracting " << regions.size() << " spectral chunks, each with " << spec_width << " spectra ( overlap = " << spec_overlap << " ) and " << lambda_width << " lambda points ( overlap = " << lambda_overlap << " )" << endl;
   }
 
 
@@ -466,7 +466,7 @@ int main ( int argc, char *argv[] ) {
 
       // save more memory before allocating chisquare image
 
-      AT.resize ( 0, 0 );
+      AT.resize ( 0, 0, false );
       data_truth.resize(0);
 
       outfile = outroot + "image_truth-project.fits";

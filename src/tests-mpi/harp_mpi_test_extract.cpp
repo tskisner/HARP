@@ -259,7 +259,7 @@ void harp::mpi_test_extract ( string const & datadir ) {
 
   mpi_matrix truth ( nbin, 1, grid );
   vector_double lambda;
-  vector < target > target_list;
+  vector < obs_target > target_list;
 
   testspec->values ( truth );
   testspec->lambda ( lambda );
