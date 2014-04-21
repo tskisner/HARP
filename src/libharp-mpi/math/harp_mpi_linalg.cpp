@@ -17,6 +17,7 @@ harp::mpi_matrix_sparse::mpi_matrix_sparse ( boost::mpi::communicator const & co
 
   mpi_dist_1D ( comm, rows, block_.rows, block_.firstrow );
 
+  block_.vals = 0;
 }
 
 
@@ -68,7 +69,7 @@ void harp::mpi_eigen_decompose ( mpi_matrix const & invcov, mpi_matrix & D, mpi_
 
   mpi_matrix temp ( invcov );
 
-  elem::DistMatrix < double, elem::VR, elem::STAR > eigvals ( invcov.Grid() );
+  elem::DistMatrix < double, elem::VR, elem::STAR > eigvals ( invcov.Height(), 1, invcov.Grid() );
 
   elem::HermitianEig ( elem::LOWER, temp, eigvals, W );
 
@@ -403,12 +404,17 @@ void harp::mpi_sparse_mv_trans ( mpi_matrix_sparse const & AT, mpi_matrix const 
   size_t local_nrows = AT.block().rows;
   size_t local_nvals = AT.block().vals;
 
-  elem_matrix_local local_in ( local_nrows, 1 );
+  elem_matrix_local local_in;
+  if ( local_nrows > 0 ) {
+    local_in.Resize ( local_nrows, 1 );
+  }
   local_matrix_zero ( local_in );
 
   elem::AxpyInterface < double > globloc;
   globloc.Attach( elem::GLOBAL_TO_LOCAL, in );
-  globloc.Axpy ( 1.0, local_in, local_firstrow, 0 );
+  if ( local_nrows > 0 ) {
+    globloc.Axpy ( 1.0, local_in, local_firstrow, 0 );
+  }
   globloc.Detach();
 
   // compute local output contribution
@@ -426,7 +432,7 @@ void harp::mpi_sparse_mv_trans ( mpi_matrix_sparse const & AT, mpi_matrix const 
     row = AT.block().row[ loc ];
     col = AT.block().col[ loc ];
     val = AT.block().data[ loc ];
-    inval = local_in.Get ( row - local_firstrow, 0 );
+    inval = local_in.Get ( row, 0 );
     outval = out.Get ( col, 0 );
     out.Set ( col, 0, outval + inval * val );
   }

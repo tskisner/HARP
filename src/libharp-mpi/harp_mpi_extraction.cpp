@@ -358,7 +358,11 @@ void harp::mpi_noise_weighted_spec ( mpi_matrix_sparse const & AT, elem_matrix_l
   size_t local_nrows = AT.block().rows;
   size_t local_nvals = AT.block().vals;
 
-  elem_matrix_local local_z ( local_nrows, 1 );
+  elem_matrix_local local_z;
+
+  if ( local_nrows > 0 ) {
+    local_z.Resize ( local_nrows, 1 );
+  }
   local_matrix_zero ( local_z );
 
   double val;
@@ -370,15 +374,17 @@ void harp::mpi_noise_weighted_spec ( mpi_matrix_sparse const & AT, elem_matrix_l
     row = AT.block().row[ loc ];
     col = AT.block().col[ loc ];
     val = AT.block().data[ loc ];
-    zval = local_z.Get ( row - local_firstrow, 0 );
-    local_z.Set ( row - local_firstrow, 0, zval + val * weight.Get ( col, 0 ) );
+    zval = local_z.Get ( row, 0 );
+    local_z.Set ( row, 0, zval + val * weight.Get ( col, 0 ) );
   }
 
   // accumulate to output
 
   elem::AxpyInterface < double > locglob;
   locglob.Attach( elem::LOCAL_TO_GLOBAL, z );
-  locglob.Axpy ( 1.0, local_z, local_firstrow, 0 );
+  if ( local_nrows > 0 ) {
+    locglob.Axpy ( 1.0, local_z, local_firstrow, 0 );
+  }
   locglob.Detach();
 
   return;
@@ -410,7 +416,11 @@ void harp::mpi_inverse_covariance ( mpi_matrix_sparse const & AT, elem_matrix_lo
   size_t local_nrows = AT.block().rows;
   size_t local_nvals = AT.block().vals;
 
-  elem_matrix_local local_inv ( local_nrows, local_nrows );
+  elem_matrix_local local_inv;
+
+  if ( local_nrows > 0 ) {
+    local_inv.Resize ( local_nrows, local_nrows );
+  }
   local_matrix_zero ( local_inv );
 
   double val;
@@ -462,7 +472,9 @@ void harp::mpi_inverse_covariance ( mpi_matrix_sparse const & AT, elem_matrix_lo
 
   elem::AxpyInterface < double > locglob;
   locglob.Attach( elem::LOCAL_TO_GLOBAL, invcov );
-  locglob.Axpy ( 1.0, local_inv, local_firstrow, local_firstrow );
+  if ( local_nrows > 0 ) {
+    locglob.Axpy ( 1.0, local_inv, local_firstrow, local_firstrow );
+  }
   locglob.Detach();
 
   // In order to build up the final matrix, we must do (# procs / 2) communications of 
@@ -527,7 +539,11 @@ void harp::mpi_inverse_covariance ( mpi_matrix_sparse const & AT, elem_matrix_lo
 
       participate = true;
 
-      local_inv.Resize ( recv_block.rows, local_nrows );
+      if ( ( local_nrows > 0 ) && ( recv_block.rows > 0 ) ) {
+        local_inv.Resize ( recv_block.rows, local_nrows );
+      } else {
+        participate = false;
+      }
       local_matrix_zero ( local_inv );
 
       axpy_row = recv_block.firstrow;
@@ -574,7 +590,11 @@ void harp::mpi_inverse_covariance ( mpi_matrix_sparse const & AT, elem_matrix_lo
 
       participate = true;
 
-      local_inv.Resize ( local_nrows, recv_block.rows );
+      if ( ( local_nrows > 0 ) && ( recv_block.rows > 0 ) ) {
+        local_inv.Resize ( local_nrows, recv_block.rows );
+      } else {
+        participate = false;
+      }
       local_matrix_zero ( local_inv );
 
       axpy_row = local_firstrow;
@@ -751,7 +771,7 @@ void harp::mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_m
 
   // gang-distributed quantities and redistribution
 
-  elem::Grid gang_grid ( slice->gang_comm() );
+  elem::Grid gang_grid ( (MPI_Comm)slice->gang_comm() );
 
   mpi_matrix gang_truth ( truth.Height(), 1, gang_grid );
   mpi_matrix_zero ( gang_truth );

@@ -152,7 +152,7 @@ void harp::mpi_test_extract ( string const & datadir ) {
 
   boost::mpi::communicator gcomm = comm.split ( gang, grank );
 
-  elem::Grid gang_grid ( gcomm );
+  elem::Grid gang_grid ( (MPI_Comm)gcomm );
 
   // inter-gang communicator
 
