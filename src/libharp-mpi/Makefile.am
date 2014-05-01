@@ -25,6 +25,7 @@ libharp_mpi_la_include_HEADERS = \
 	harp/mpi_image.hpp \
 	harp/mpi_spec.hpp \
 	harp/mpi_psf.hpp \
+	harp/mpi_plugin.hpp \
 	harp/mpi_spec_slice.hpp \
 	harp/mpi_extraction.hpp
 
