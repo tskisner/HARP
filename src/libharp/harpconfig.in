@@ -17,6 +17,7 @@ MPILIBS="@MPILIBS@"
 PYPATH="@PYPATH@"
 PLUGCOMP="@PLUGCOMP@"
 PLUGLINK="@PLUGLINK@"
+PLUGEXT="@PLUGEXT@"
 
 # Print out usage information
 
@@ -36,6 +37,7 @@ help() {
   echo "        [ --python (print python module location for PYTHONPATH) ]"
   echo "        [ --plugflags (print external plugin compiling flags) ]"
   echo "        [ --pluglink (print external plugin linking commands) ]"
+  echo "        [ --plugext (print external plugin file extension) ]"
   echo " "
   exit $1
 }
@@ -61,6 +63,7 @@ DOMPILINK=no
 DOPYTHON=no
 DOPLUGCOMP=no
 DOPLUGLINK=no
+DOPLUGEXT=no
 
 while [ $# -gt 0 ]; do
   case $1 in
@@ -103,6 +106,9 @@ while [ $# -gt 0 ]; do
     --pluglink)
       DOPLUGLINK=yes
       ;;
+    --plugext)
+      DOPLUGEXT=yes
+      ;;
     *) 
       help 1
       ;;
@@ -121,6 +127,11 @@ if [ $DOLINK = yes ]; then
 fi
 
 # Print out requested info
+
+if [ $DOPLUGEXT = yes ]; then
+  echo "${PLUGEXT}"
+  exit 0
+fi
 
 OUT=""
 

@@ -1,12 +1,16 @@
 # Makefile for building an example plugin
 
 MPICXX = $(shell harpconfig --mpicxx)
+
 CXX = $(shell harpconfig --cxx)
 CXXFLAGS = $(shell harpconfig --cxxflags --cppflags) -I.
-PLUG_FLAGS = $(shell harpconfig --plugflags)
-PLUG_LINK = $(shell harpconfig --pluglink)
+
 LINK = $(shell harpconfig --link)
 MPILINK = $(shell harpconfig --mpilink)
+
+PLUG_FLAGS = $(shell harpconfig --plugflags)
+PLUG_LINK = $(shell harpconfig --pluglink)
+PLUG_EXT = $(shell harpconfig --plugext)
 
 # the output plugin files *MUST* have names of the format:
 #
@@ -17,14 +21,14 @@ MPILINK = $(shell harpconfig --mpilink)
 all : harp_example harp_mpi_example
 
 
-harp_plugin_example.so : harp_plugin_example.o
+harp_plugin_example.$(PLUG_EXT) : harp_plugin_example.o
 	$(CXX) $(PLUG_FLAGS) -o $@ $< $(PLUG_LINK) $(LINK)
 
 harp_plugin_example.o : harp_plugin_example.cpp harp_example.hpp
 	$(CXX) $(CXXFLAGS) $(PLUG_FLAGS) -o $@ -c $<
 
 
-harp_mpi_plugin_example.so : harp_mpi_plugin_example.o
+harp_mpi_plugin_example.$(PLUG_EXT) : harp_mpi_plugin_example.o
 	$(MPICXX) $(PLUG_FLAGS) -o $@ $< $(PLUG_LINK) $(MPILINK)
 
 harp_mpi_plugin_example.o : harp_plugin_example.cpp harp_example.hpp

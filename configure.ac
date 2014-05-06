@@ -29,18 +29,22 @@ case $host_os in
   darwin* )
     HARP_PLUGIN_COMPILE="-bundle"
     HARP_PLUGIN_LINK="-flat_namespace -undefined suppress"
+    HARP_PLUGIN_EXT="dylib"
     ;;
   linux*)
     HARP_PLUGIN_COMPILE="-fPIC"
     HARP_PLUGIN_LINK="-shared"
+    HARP_PLUGIN_EXT="so"
     ;;
   *BSD*)
     HARP_PLUGIN_COMPILE="-fPIC"
     HARP_PLUGIN_LINK="-shared"
+    HARP_PLUGIN_EXT="so"
     ;;
   *)
     HARP_PLUGIN_COMPILE="-fPIC"
     HARP_PLUGIN_LINK="-shared"
+    HARP_PLUGIN_EXT="so"
     AC_MSG_WARN([Your platform was not detected- using Linux defaults for Plugin compilation])
     ;;
 esac
@@ -101,15 +105,18 @@ if test x"$enable_shared" = x"yes"; then
   else
     AC_MSG_WARN([Executables are linked statically (--enable-all-static), so external Plugins are disabled])
     HARP_PLUGIN_COMPILE=""
-    HARP_PLUGIN_LINK=""
+    HARP_PLUGIN_LINK="-static"
+    HARP_PLUGIN_EXT="a"
   fi
 else
   AC_MSG_WARN([Shared libraries disabled (with --disable-shared), so external Plugins are disabled])
   HARP_PLUGIN_COMPILE=""
-  HARP_PLUGIN_LINK=""
+  HARP_PLUGIN_LINK="-static"
+  HARP_PLUGIN_EXT="a"
 fi
 AC_SUBST(HARP_PLUGIN_COMPILE)
 AC_SUBST(HARP_PLUGIN_LINK)
+AC_SUBST(HARP_PLUGIN_EXT)
 dnl
 dnl =========================================
 dnl Do these checks with the C compiler

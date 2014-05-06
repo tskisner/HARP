@@ -53,7 +53,7 @@ namespace harp {
 
       void lambda ( vector_double & lambda_vals ) const { return; }
 
-      void targets ( std::vector < target > & target_list ) const { return; }
+      void targets ( std::vector < obs_target > & target_list ) const { return; }
     
     private :
 
