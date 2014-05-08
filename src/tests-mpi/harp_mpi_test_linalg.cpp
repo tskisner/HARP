@@ -178,8 +178,8 @@ void harp::mpi_test_linalg ( string const & datadir ) {
 
   // get eigenvectors and eigenvalues
 
-  mpi_matrix w;
-  mpi_matrix Z;
+  mpi_matrix w ( SIZE, 1, grid );
+  mpi_matrix Z ( SIZE, SIZE, grid );
 
   mpi_eigen_decompose ( sym, w, Z, false );
 
@@ -219,7 +219,7 @@ void harp::mpi_test_linalg ( string const & datadir ) {
     cout << "Testing re-composition..." << endl;
   }
 
-  mpi_matrix outcomp;
+  mpi_matrix outcomp ( Z );
 
   mpi_eigen_compose ( EIG_NONE, w, Z, outcomp );
 
@@ -238,14 +238,14 @@ void harp::mpi_test_linalg ( string const & datadir ) {
     }
   }
 
-  mpi_matrix mat_rt;
+  mpi_matrix mat_rt ( Z );
   mpi_eigen_compose ( EIG_SQRT, w, Z, mat_rt );
 
-  mpi_matrix mat_invrt;
+  mpi_matrix mat_invrt ( Z );
   mpi_eigen_compose ( EIG_INVSQRT, w, Z, mat_invrt );
   
-  mpi_matrix w_inv;
-  mpi_matrix Z_inv;
+  mpi_matrix w_inv ( w );
+  mpi_matrix Z_inv ( Z );
 
   mpi_eigen_decompose ( mat_invrt, w_inv, Z_inv, false );
 
@@ -255,7 +255,7 @@ void harp::mpi_test_linalg ( string const & datadir ) {
     w_inv.Set ( i, 0, val );
   }
 
-  mpi_matrix comp_rt;
+  mpi_matrix comp_rt ( mat_rt );
 
   mpi_eigen_compose ( EIG_INVSQRT, w_inv, Z_inv, comp_rt );
 

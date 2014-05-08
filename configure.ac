@@ -4,9 +4,10 @@ dnl
 dnl +------------------------
 dnl | Initialize package info
 dnl +------------------------
-AC_INIT(Makefile.am)
+AC_INIT([HARP], [1.0-beta], [work@theodorekisner.com], [harp], [https://theodorekisner.com/software/harp/])
+AC_CONFIG_SRCDIR([Makefile.am])
+AM_INIT_AUTOMAKE
 AC_CONFIG_HEADERS(config.h)
-AM_INIT_AUTOMAKE(harp, 0.0.1)
 AC_CONFIG_MACRO_DIR([m4])
 dnl +-------------------------
 dnl | If the library source code has changed at all since the last update, 
@@ -32,17 +33,17 @@ case $host_os in
     HARP_PLUGIN_EXT="dylib"
     ;;
   linux*)
-    HARP_PLUGIN_COMPILE="-fPIC"
+    HARP_PLUGIN_COMPILE=""
     HARP_PLUGIN_LINK="-shared"
     HARP_PLUGIN_EXT="so"
     ;;
   *BSD*)
-    HARP_PLUGIN_COMPILE="-fPIC"
+    HARP_PLUGIN_COMPILE=""
     HARP_PLUGIN_LINK="-shared"
     HARP_PLUGIN_EXT="so"
     ;;
   *)
-    HARP_PLUGIN_COMPILE="-fPIC"
+    HARP_PLUGIN_COMPILE=""
     HARP_PLUGIN_LINK="-shared"
     HARP_PLUGIN_EXT="so"
     AC_MSG_WARN([Your platform was not detected- using Linux defaults for Plugin compilation])
@@ -57,7 +58,7 @@ if test x"${CXXFLAGS}" = x; then
 fi
 AC_CANONICAL_HOST
 AC_PROG_INSTALL
-AC_PROG_LIBTOOL
+LT_INIT
 LT_SYS_MODULE_EXT
 LT_FUNC_DLSYM_USCORE
 AC_PROG_CXX
@@ -90,6 +91,7 @@ dnl | building of static libraries.
 dnl +-------------------------
 harp_static=no
 harp_plugins=no
+HARP_PLUGIN_SHARED="$lt_prog_compiler_pic"
 AC_ARG_ENABLE([all-static], [AC_HELP_STRING([--enable-all-static], [force static linking of executables.])])
 if test x"$enable_all_static" = x"yes"; then
   if test x"$enable_static" != x"yes"; then
@@ -105,16 +107,19 @@ if test x"$enable_shared" = x"yes"; then
   else
     AC_MSG_WARN([Executables are linked statically (--enable-all-static), so external Plugins are disabled])
     HARP_PLUGIN_COMPILE=""
+    HARP_PLUGIN_SHARED=""
     HARP_PLUGIN_LINK="-static"
     HARP_PLUGIN_EXT="a"
   fi
 else
   AC_MSG_WARN([Shared libraries disabled (with --disable-shared), so external Plugins are disabled])
   HARP_PLUGIN_COMPILE=""
+  HARP_PLUGIN_SHARED=""
   HARP_PLUGIN_LINK="-static"
   HARP_PLUGIN_EXT="a"
 fi
 AC_SUBST(HARP_PLUGIN_COMPILE)
+AC_SUBST(HARP_PLUGIN_SHARED)
 AC_SUBST(HARP_PLUGIN_LINK)
 AC_SUBST(HARP_PLUGIN_EXT)
 dnl
@@ -216,9 +221,9 @@ else
   AC_MSG_NOTICE([  MPI C++ Compiler          : Not Found])
 fi
 if test x"${harp_debug}" = xyes; then
-  AC_MSG_NOTICE([  C++ Compile flags         : $CXXFLAGS -DNDEBUG])
-else
   AC_MSG_NOTICE([  C++ Compile flags         : $CXXFLAGS])
+else
+  AC_MSG_NOTICE([  C++ Compile flags         : $CXXFLAGS -DNDEBUG])
 fi
 if test x"${ax_have_openmp}" = xyes; then
   AC_MSG_NOTICE([  OpenMP                    : Detected ($OPENMP_CXXFLAGS)])

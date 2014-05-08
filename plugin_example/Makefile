@@ -36,14 +36,14 @@ harp_mpi_plugin_example.o : harp_plugin_example.cpp harp_example.hpp
 
 
 harp_example : harp_example.o harp_plugin_example.so
-	$(CXX) $(CXXFLAGS) -o $@ $< $(LINK)
+	$(CXX) -o $@ $< $(LINK)
 
 harp_example.o : harp_example.cpp
 	$(CXX) $(CXXFLAGS) -o $@ -c $<
 
 
 harp_mpi_example : harp_mpi_example.o harp_mpi_plugin_example.so
-	$(MPICXX) $(CXXFLAGS) -o $@ $< $(MPILINK)
+	$(MPICXX) -o $@ $< $(MPILINK)
 
 harp_mpi_example.o : harp_mpi_example.cpp
 	$(MPICXX) $(CXXFLAGS) -o $@ -c $<
