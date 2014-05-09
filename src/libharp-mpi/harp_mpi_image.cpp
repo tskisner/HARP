@@ -23,7 +23,17 @@ harp::mpi_image::mpi_image ( boost::mpi::communicator const & comm, std::string 
     
   // broadcast to all processes
 
-  boost::mpi::broadcast ( comm_, local_, 0 );
+  mpi_comm_buffer_type buf;
+
+  if ( rank == 0 ) {
+    mpi_comm_pack ( local_, buf );
+  }
+
+  boost::mpi::broadcast ( comm_, buf, 0 );
+
+  if ( rank != 0 ) {
+    mpi_comm_unpack ( buf, local_ );
+  }
 
 }
 

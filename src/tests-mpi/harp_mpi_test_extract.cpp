@@ -31,7 +31,23 @@ void mpi_test_extract_subaccum ( mpi_spec_slice_p slice, mpi_matrix & full_data,
 
   mpi_matrix_zero ( check_data );
 
+  size_t hlocal;
+  size_t wlocal;
+
+  size_t rowoff;
+  size_t rowstride;
+  size_t row;
+
   for ( std::vector < spec_slice_region > :: const_iterator sit = myslice.begin(); sit != myslice.end(); ++sit ) {
+
+    if ( gcomm.rank() == 0 ) {
+      ostringstream dbg;
+      dbg.str("");
+    
+      dbg << "Gang " << rcomm.rank() << " processing " << sit->first_spec << " (" << sit->first_good_spec << ") - " << (sit->first_spec + sit->n_spec - 1) << " (" << (sit->first_good_spec + sit->n_good_spec - 1) << ") X " << sit->first_lambda << " (" << sit->first_good_lambda << ") - " << (sit->first_lambda + sit->n_lambda - 1) << " (" << (sit->first_good_lambda + sit->n_good_lambda - 1) << ")" << endl;
+      
+      cerr << dbg.str();
+    }
 
     size_t sub_nbin = sit->n_spec * sit->n_lambda;
 
@@ -40,12 +56,12 @@ void mpi_test_extract_subaccum ( mpi_spec_slice_p slice, mpi_matrix & full_data,
 
     mpi_sub_spec ( full_region, (*sit), full_data, false, sub_data );
 
-    size_t hlocal = sub_data.LocalHeight();
-    size_t wlocal = sub_data.LocalWidth();
+    hlocal = sub_data.LocalHeight();
+    wlocal = sub_data.LocalWidth();
 
-    size_t rowoff = sub_data.ColShift();
-    size_t rowstride = sub_data.ColStride();
-    size_t row;
+    rowoff = sub_data.ColShift();
+    rowstride = sub_data.ColStride();
+    row;
 
     if ( wlocal > 0 ) {
       for ( size_t j = 0; j < hlocal; ++j ) {
@@ -62,44 +78,14 @@ void mpi_test_extract_subaccum ( mpi_spec_slice_p slice, mpi_matrix & full_data,
         size_t cur_bin = cur_spec * full_region.n_lambda + cur_lambda;
 
         if ( (size_t)specval != cur_bin ) {
-          cerr << "FAIL on sub_spec proc " << myp << ", region " << indx << ", bin " << cur_bin << ", " << (size_t)specval << " != " << cur_bin << endl;
-          //exit(1);
+          cerr << "FAIL on sub_spec gang " << rcomm.rank() << ", proc " << gcomm.rank() << ", region " << indx << ", bin " << cur_bin << ", " << (size_t)specval << " != " << cur_bin << endl;
+          exit(1);
         }
 
       }
     }
 
     mpi_accum_spec ( (*sit), full_region, sub_data, true, check_data );
-
-    hlocal = check_data.LocalHeight();
-    wlocal = check_data.LocalWidth();
-
-    rowoff = check_data.ColShift();
-    rowstride = check_data.ColStride();
-
-    if ( wlocal > 0 ) {
-      for ( size_t j = 0; j < hlocal; ++j ) {
-
-        row = rowoff + j * rowstride;
-        double specval = sub_data.GetLocal ( j, 0 );
-
-        size_t spec_offset = (size_t)( row / sit->n_lambda );
-        size_t cur_spec = sit->first_spec + spec_offset;
-
-        size_t lambda_offset = row - ( spec_offset * sit->n_lambda );
-        size_t cur_lambda = sit->first_lambda + lambda_offset;
-
-        size_t cur_bin = cur_spec * full_region.n_lambda + cur_lambda;
-
-        if ( ( cur_spec >= sit->first_good_spec ) && ( cur_spec < sit->first_good_spec + sit->n_good_spec ) && ( cur_lambda >= sit->first_good_lambda ) && ( cur_lambda < sit->first_good_lambda + sit->n_good_lambda ) ) {
-          if ( (size_t)specval != cur_bin ) {
-            cerr << "FAIL on accum_spec proc " << myp << ", region " << indx << ", bin " << cur_bin << ", " << (size_t)specval << " != " << cur_bin << endl;
-            exit(1);
-          }
-        }
-
-      }
-    }
 
     ++indx;
 
@@ -189,7 +175,38 @@ void harp::mpi_test_extract ( string const & datadir ) {
   
   mpi_spec_slice_p slice ( new mpi_spec_slice ( selfcomm, comm, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
 
+  spec_slice_region full_region = slice->full_region();
+
   mpi_test_extract_subaccum ( slice, full_data, check_data );
+
+  size_t hlocal = check_data.LocalHeight();
+  size_t wlocal = check_data.LocalWidth();
+
+  size_t rowoff = check_data.ColShift();
+  size_t rowstride = check_data.ColStride();
+
+  if ( wlocal > 0 ) {
+    for ( size_t j = 0; j < hlocal; ++j ) {
+
+      size_t row = rowoff + j * rowstride;
+      double specval = check_data.GetLocal ( j, 0 );
+
+      size_t spec_offset = (size_t)( row / full_region.n_lambda );
+      size_t cur_spec = full_region.first_spec + spec_offset;
+
+      size_t lambda_offset = row - ( spec_offset * full_region.n_lambda );
+      size_t cur_lambda = full_region.first_lambda + lambda_offset;
+
+      size_t cur_bin = cur_spec * full_region.n_lambda + cur_lambda;
+
+      if ( (size_t)specval != cur_bin ) {
+        cerr << "FAIL on accum_spec gang " << selfcomm.rank() << ", proc " << comm.rank() << ", bin " << cur_bin << ", " << (size_t)specval << " != " << cur_bin << endl;
+        exit(1);
+      }
+
+    }
+
+  }
 
   if ( myp == 0 ) {
     cout << "  (PASSED)" << endl;
@@ -215,6 +232,8 @@ void harp::mpi_test_extract ( string const & datadir ) {
 
   mpi_spec_slice_p gang_slice ( new mpi_spec_slice ( rcomm, gcomm, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
 
+  full_region = slice->full_region();
+
   // do sub / accum within each gang
 
   mpi_test_extract_subaccum ( gang_slice, gang_full_data, gang_check_data );
@@ -223,11 +242,33 @@ void harp::mpi_test_extract ( string const & datadir ) {
 
   mpi_gang_accum ( gang_check_data, check_data );
 
-  for ( size_t i = 0; i < nbin; ++i ) {
-    if ( ( fabs ( ( check_data.Get(i,0) - full_data.Get(i,0) ) / full_data.Get(i,0) ) ) > std::numeric_limits < double > :: epsilon() ) {
-      cerr << "FAIL on spectral bin " << i << ", " << check_data.Get(i,0) << " != " << full_data.Get(i,0) << endl;
-      exit(1);
+  hlocal = check_data.LocalHeight();
+  wlocal = check_data.LocalWidth();
+
+  rowoff = check_data.ColShift();
+  rowstride = check_data.ColStride();
+
+  if ( wlocal > 0 ) {
+    for ( size_t j = 0; j < hlocal; ++j ) {
+
+      size_t row = rowoff + j * rowstride;
+      double specval = check_data.GetLocal ( j, 0 );
+
+      size_t spec_offset = (size_t)( row / full_region.n_lambda );
+      size_t cur_spec = full_region.first_spec + spec_offset;
+
+      size_t lambda_offset = row - ( spec_offset * full_region.n_lambda );
+      size_t cur_lambda = full_region.first_lambda + lambda_offset;
+
+      size_t cur_bin = cur_spec * full_region.n_lambda + cur_lambda;
+
+      if ( (size_t)specval != cur_bin ) {
+        cerr << "FAIL on accum_spec gang " << rcomm.rank() << ", proc " << gcomm.rank() << ", bin " << cur_bin << ", " << (size_t)specval << " != " << cur_bin << endl;
+        exit(1);
+      }
+
     }
+
   }
 
   if ( myp == 0 ) {

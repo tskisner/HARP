@@ -5,7 +5,24 @@
 
 
 namespace harp {
-  
+
+  class dwrapper {
+
+    friend class boost::serialization::access;
+
+    public :
+      double val;
+
+    private :
+
+      template < class Archive >
+      void serialize ( Archive & ar, const unsigned int version ) {
+        ar & BOOST_SERIALIZATION_NVP(val);
+        return;
+      }
+  };
+
+  BOOST_SERIALIZATION_SHARED_PTR(dwrapper)
 
 	class data_base : public boost::enable_shared_from_this < data_base > {
 
@@ -20,6 +37,8 @@ namespace harp {
 	    data_base ( boost::property_tree::ptree const & props ) {
         format_ = props.get < std::string > ( "format", "" );
         props_ = props;
+        dshr_.reset ( new dwrapper );
+        (*dshr_).val = 543.2;
       }
 	    
 	    virtual ~data_base ( ) { }
@@ -53,15 +72,17 @@ namespace harp {
 	    void serialize ( Archive & ar, const unsigned int version ) {
 	      ar & BOOST_SERIALIZATION_NVP(format_);
 	      ar & BOOST_SERIALIZATION_NVP(props_);
+        ar & BOOST_SERIALIZATION_NVP(dshr_);
 	      return;
 	    }
 	  
 	    std::string format_;
 	    boost::property_tree::ptree props_;
+	    boost::shared_ptr < dwrapper > dshr_;
 	    
 	};
 
-    BOOST_SERIALIZATION_SHARED_PTR(data_base)
+  BOOST_SERIALIZATION_SHARED_PTR(data_base)
 
 	BOOST_SERIALIZATION_ASSUME_ABSTRACT(data_base)
 
@@ -84,6 +105,8 @@ namespace harp {
 	    data_one ( boost::property_tree::ptree const & props ) : data_base ( props ) {
 	      sizet_val_ = props.get < size_t > ( "sizet", 0 );
 	      double_val_ = props.get < double > ( "double", 0.0 );
+        doneshr_.reset ( new dwrapper );
+        (*doneshr_).val = 789.0;
 	    }
 	    
 	    ~data_one ( ) { }
@@ -103,11 +126,13 @@ namespace harp {
 	      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(data_base);
 	      ar & BOOST_SERIALIZATION_NVP(sizet_val_);
 	      ar & BOOST_SERIALIZATION_NVP(double_val_);
+        ar & BOOST_SERIALIZATION_NVP(doneshr_);
 	      return;
 	    }
 	  
 	    size_t sizet_val_;
 	    double double_val_;
+	    boost::shared_ptr < dwrapper > doneshr_;
 
 	};
 

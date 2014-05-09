@@ -41,6 +41,7 @@ class fake {
   public :
     double d_blah;
     size_t s_blah;
+    boost::shared_ptr < dwrapper > dshr;
 
   private :
 
@@ -48,12 +49,13 @@ class fake {
     void serialize ( Archive & ar, const unsigned int version ) {
       ar & BOOST_SERIALIZATION_NVP(d_blah);
       ar & BOOST_SERIALIZATION_NVP(s_blah);
+      ar & BOOST_SERIALIZATION_NVP(dshr);
       return;
     }
 };
 
 
-
+BOOST_CLASS_EXPORT(dwrapper)
 BOOST_CLASS_EXPORT(fake)
 BOOST_CLASS_EXPORT(harp::data_base)
 BOOST_CLASS_EXPORT(harp::data_one)
@@ -68,8 +70,24 @@ void harp::test_serialize ( string const & datadir ) {
   fake one;
   one.d_blah = 1.0;
   one.s_blah = 1;
+  one.dshr.reset ( new dwrapper );
+  (* one.dshr).val = 123.4;
 
-  string path = datadir + "/serialize_fake.xml.out";
+  string path = datadir + "/serialize_fake.pba.out";
+
+  {
+    ofstream ofs ( path.c_str() );
+    eos::portable_oarchive oa ( ofs );
+    oa << BOOST_SERIALIZATION_NVP(one);
+  }
+
+  {
+    ifstream ifs ( path.c_str() );
+    eos::portable_iarchive ia ( ifs );
+    ia >> BOOST_SERIALIZATION_NVP(one);
+  }
+
+  path = datadir + "/serialize_fake.xml.out";
 
   {
     ofstream ofs ( path.c_str() );    
@@ -84,6 +102,20 @@ void harp::test_serialize ( string const & datadir ) {
   }
 
   data_one d_one;
+
+  path = datadir + "/serialize_data-one_empty.pba.out";
+
+  {
+    ofstream ofs ( path.c_str() );    
+    eos::portable_oarchive oa ( ofs );
+    oa << BOOST_SERIALIZATION_NVP(d_one);
+  }
+
+  {
+    ifstream ifs ( path.c_str() );
+    eos::portable_iarchive ia ( ifs );
+    ia >> BOOST_SERIALIZATION_NVP(d_one);
+  }
 
   path = datadir + "/serialize_data-one_empty.xml.out";
 
@@ -107,6 +139,20 @@ void harp::test_serialize ( string const & datadir ) {
 
   data_one d_two ( props );
 
+  path = datadir + "/serialize_data-one_props.pba.out";
+
+  {
+    ofstream ofs ( path.c_str() );    
+    eos::portable_oarchive oa ( ofs );
+    oa << BOOST_SERIALIZATION_NVP(d_two);
+  }
+
+  {
+    ifstream ifs ( path.c_str() );
+    eos::portable_iarchive ia ( ifs );
+    ia >> BOOST_SERIALIZATION_NVP(d_two);
+  }
+
   path = datadir + "/serialize_data-one_props.xml.out";
 
   {
@@ -122,6 +168,20 @@ void harp::test_serialize ( string const & datadir ) {
   }
 
   data_base_p dp ( data_base::create ( props ) );
+
+  path = datadir + "/serialize_data_shptr.pba.out";
+
+  {
+    ofstream ofs ( path.c_str() );    
+    eos::portable_oarchive oa ( ofs );
+    oa << BOOST_SERIALIZATION_NVP(dp);
+  }
+
+  {
+    ifstream ifs ( path.c_str() );
+    eos::portable_iarchive ia ( ifs );
+    ia >> BOOST_SERIALIZATION_NVP(dp);
+  }
 
   path = datadir + "/serialize_data_shptr.xml.out";
 

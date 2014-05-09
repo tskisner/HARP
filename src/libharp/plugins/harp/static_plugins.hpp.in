@@ -3,18 +3,7 @@
 #ifndef HARP_STATIC_PLUGINS_HPP
 #define HARP_STATIC_PLUGINS_HPP
 
-
-#ifdef USE_MPI
-#  include <harp_mpi.hpp>
-#else
-#  include <harp.hpp>
-#endif
-
-#ifdef USE_MPI
-#  include <harp/mpi_plugin.hpp>
-#else
-#  include <harp/plugin.hpp>
-#endif
+#include <harp.hpp>
 
 
 /*

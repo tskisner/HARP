@@ -24,6 +24,6 @@ namespace harp {
 }
 
 #include <harp/mpi_linalg.hpp>
-
+#include <harp/mpi_comm.hpp>
 
 #endif

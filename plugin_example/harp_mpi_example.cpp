@@ -28,9 +28,8 @@ int main ( int argc, char *argv[] ) {
   cout << endl;
   cout << "Testing plugin registration..." << endl;
 
-  bool reg_mpi = true;
   bool reg_debug = true;
-  plugin_registry & reg = plugin_registry::get( reg_mpi, reg_debug );
+  plugin_registry & reg = plugin_registry::get( reg_debug );
 
   cout << "Testing instantiation of example spec type" << endl;
   spec_p testspec ( reg.create_spec ( "example", params ) );

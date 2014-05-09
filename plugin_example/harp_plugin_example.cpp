@@ -1,12 +1,5 @@
 // @COPYRIGHT@
 
-// This header must be included by external plugins
-#ifdef USE_MPI
-#  include <harp/mpi_plugin.hpp>
-#else
-#  include <harp/plugin.hpp>
-#endif
-
 #include <harp_example.hpp>
 
 using namespace std;

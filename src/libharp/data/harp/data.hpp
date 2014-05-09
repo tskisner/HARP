@@ -7,24 +7,6 @@
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree_serialization.hpp>
 
-#include <boost/smart_ptr/shared_ptr.hpp>
-#include <boost/smart_ptr/weak_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-
-#include <boost/serialization/string.hpp>
-#include <boost/serialization/version.hpp>
-#include <boost/serialization/split_member.hpp>
-#include <boost/serialization/base_object.hpp>
-#include <boost/serialization/shared_ptr.hpp>
-#include <boost/serialization/nvp.hpp>
-#include <boost/serialization/utility.hpp>
-#include <boost/serialization/export.hpp>
-#include <boost/serialization/assume_abstract.hpp>
-
-#include <boost/serialization/list.hpp>
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/map.hpp>
-
 #include <boost/foreach.hpp>
 
 #include <harp/math.hpp>
@@ -64,8 +46,8 @@ namespace harp {
 
       ~plugin_registry ( );
 
-      static plugin_registry & get ( bool mpi = false, bool debug = false ) {
-        static plugin_registry instance ( mpi, debug );
+      static plugin_registry & get ( bool debug = false ) {
+        static plugin_registry instance ( debug );
         return instance;
       }
 
@@ -79,7 +61,7 @@ namespace harp {
       
     private :
 
-      plugin_registry ( bool mpi, bool debug );
+      plugin_registry ( bool debug );
       
       // do not implement these two, to prevent copying
       plugin_registry ( plugin_registry const & orig );
@@ -93,7 +75,6 @@ namespace harp {
       std::map < std::string, spec_factory > spec_plugins_;
       std::map < std::string, psf_factory > psf_plugins_;
       std::map < std::string, void * > handles_;
-      bool mpi_;
       
   };
 

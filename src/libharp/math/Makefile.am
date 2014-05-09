@@ -28,8 +28,13 @@ install-data-local:
 
 uninstall-local:
 	@rm -rf $(DESTDIR)$(includedir)/boost/numeric/bindings; \
-	contents=`ls -A $(DESTDIR)$(includedir)/boost/numeric`; \
-	if [ x"$$contents" = "x" ]; then \
+	rm -f $(DESTDIR)$(includedir)/boost/archive/polymorphic_portable_archive.hpp; \
+	rm -f $(DESTDIR)$(includedir)/boost/archive/portable_archive*; \
+	rm -f $(DESTDIR)$(includedir)/boost/archive/portable_iarchive.hpp; \
+	rm -f $(DESTDIR)$(includedir)/boost/archive/portable_oarchive.hpp; \
+	numcontents=`ls -A $(DESTDIR)$(includedir)/boost/numeric`; \
+	archcontents=`ls -A $(DESTDIR)$(includedir)/boost/archive`; \
+	if [ x"$$contents$$archcontents" = "x" ]; then \
 		rm -rf $(DESTDIR)$(includedir)/boost; \
 	fi; \
 	rm -rf $(DESTDIR)$(includedir)/harp

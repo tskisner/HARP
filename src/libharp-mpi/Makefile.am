@@ -1,6 +1,6 @@
 CXX = @MPICXX@
 
-SUBDIRS = math plugins
+SUBDIRS = math
 
 AM_CPPFLAGS = -I$(top_srcdir)/src/libharp/math -I$(top_srcdir)/src/libharp/data -I$(top_srcdir)/src/libharp -I$(top_srcdir)/src/libharp/plugins -I$(top_srcdir)/src/libharp/extract $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS) -I$(top_srcdir)/src/libharp-mpi/math -I$(top_srcdir)/src/libharp-mpi $(ELEMENTAL_CPPFLAGS)
 AM_LDFLAGS =
@@ -25,7 +25,6 @@ libharp_mpi_la_include_HEADERS = \
 	harp/mpi_image.hpp \
 	harp/mpi_spec.hpp \
 	harp/mpi_psf.hpp \
-	harp/mpi_plugin.hpp \
 	harp/mpi_spec_slice.hpp \
 	harp/mpi_extraction.hpp
 
@@ -43,6 +42,6 @@ libharp_mpi_la_LIBADD = \
 	$(top_builddir)/src/libharp/data/libharpdata.la \
 	$(top_builddir)/src/libharp/math/libharpmath.la \
 	$(top_builddir)/src/libharp/extract/libharpextract.la \
-	$(top_builddir)/src/libharp-mpi/math/libharpmath-mpi.la \
-	$(top_builddir)/src/libharp-mpi/plugins/libharpplugins-mpi.la
+	$(top_builddir)/src/libharp/plugins/libharpplugins.la \
+	$(top_builddir)/src/libharp-mpi/math/libharpmath-mpi.la
 
