@@ -14,7 +14,7 @@ PLUG_EXT = $(shell harpconfig --plugext)
 
 # the output plugin files *MUST* have names of the format:
 #
-# harp_plugin_(type)_(name).so
+# harp_plugin_(type)_(name).$(PLUG_EXT)
 #
 # where type = {image, spec, psf}
 
@@ -22,27 +22,20 @@ all : harp_example harp_mpi_example
 
 
 harp_plugin_example.$(PLUG_EXT) : harp_plugin_example.o
-	$(CXX) $(PLUG_FLAGS) -o $@ $< $(PLUG_LINK) $(LINK)
+	$(CXX) $(PLUG_FLAGS) $(PLUG_LINK) -o $@ $< $(LINK)
 
 harp_plugin_example.o : harp_plugin_example.cpp harp_example.hpp
 	$(CXX) $(CXXFLAGS) $(PLUG_FLAGS) -o $@ -c $<
 
 
-harp_mpi_plugin_example.$(PLUG_EXT) : harp_mpi_plugin_example.o
-	$(MPICXX) $(PLUG_FLAGS) -o $@ $< $(PLUG_LINK) $(MPILINK)
-
-harp_mpi_plugin_example.o : harp_plugin_example.cpp harp_example.hpp
-	$(MPICXX) $(CXXFLAGS) $(PLUG_FLAGS) -DUSE_MPI -o $@ -c $<
-
-
-harp_example : harp_example.o harp_plugin_example.so
+harp_example : harp_example.o harp_plugin_example.$(PLUG_EXT)
 	$(CXX) -o $@ $< $(LINK)
 
 harp_example.o : harp_example.cpp
 	$(CXX) $(CXXFLAGS) -o $@ -c $<
 
 
-harp_mpi_example : harp_mpi_example.o harp_mpi_plugin_example.so
+harp_mpi_example : harp_mpi_example.o harp_plugin_example.$(PLUG_EXT)
 	$(MPICXX) -o $@ $< $(MPILINK)
 
 harp_mpi_example.o : harp_mpi_example.cpp
@@ -50,5 +43,5 @@ harp_mpi_example.o : harp_mpi_example.cpp
 
 
 clean :
-	rm -f *.so *.o harp_example harp_mpi_example *~
+	rm -f *.$(PLUG_EXT) *.o harp_example harp_mpi_example *~
 
