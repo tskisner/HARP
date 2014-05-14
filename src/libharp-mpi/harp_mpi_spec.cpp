@@ -22,19 +22,9 @@ harp::mpi_spec::mpi_spec ( boost::mpi::communicator const & comm, std::string co
   }
 
   // broadcast to all processes
+
+  mpi_comm_bcast ( comm_, local_, 0 );
   
-  mpi_comm_buffer_type buf;
-
-  if ( rank == 0 ) {
-    mpi_comm_pack ( local_, buf );
-  }
-
-  boost::mpi::broadcast ( comm_, buf, 0 );
-
-  if ( rank != 0 ) {
-    mpi_comm_unpack ( buf, local_ );
-  }
-
 }
 
 

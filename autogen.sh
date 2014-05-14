@@ -1111,21 +1111,28 @@ done
 echo "  " >> ${pluginhead}
 echo "#endif" >> ${pluginhead}
 echo "  " >> ${pluginhead}
+echo "" >> ${pluginmake}
 
-for typ in spec psf image; do
-    pluginfiles=`ls ${plugindir}/harp_plugin_${typ}_*.cpp`
+plugallsource=`ls ${plugindir}/*.c*`
 
-    for pfile in ${pluginfiles}; do
-        plugsource=`echo ${pfile} | sed -e "s#.*\/\(harp_plugin_${typ}_.*\.cpp\)#\1#"`
-        pluginname=`echo ${pfile} | sed -e "s#.*\/harp_plugin_${typ}_\(.*\)\.cpp#\1#"`
+# extract the plugins from the list of all sources
+for file in ${plugallsource}; do
 
-        echo "# ${pluginname}" >> ${pluginmake}
-        echo "libharpplugins_la_SOURCES += ${plugsource}" >> ${pluginmake}
-        echo "" >> ${pluginmake}
+    source=`echo ${file} | sed -e "s#.*\/\([^\.]*\.c.*\)#\1#"`
 
-        echo "register_${typ} ( \"${pluginname}\", ${typ}_${pluginname}_create, \"${gitrevision}\" );" >> ${pluginreg}
-        echo "" >> ${pluginreg}
+    for typ in spec psf image; do
+        check=`echo ${source} | sed -e "s#\(harp_plugin_${typ}\).*#\1#"`
+        if [ "x${check}" = "xharp_plugin_${typ}" ]; then
+            pluginname=`echo ${source} | sed -e "s#harp_plugin_${typ}_\(.*\)\.c.*#\1#"`
+            echo "register_${typ} ( \"${pluginname}\", ${typ}_${pluginname}_create, \"${gitrevision}\" );" >> ${pluginreg}
+            echo "" >> ${pluginreg}
+        fi
     done
+
+    if [ "${source}" != "plugin_register.cpp" ]; then
+        echo "libharpplugins_la_SOURCES += ${source}" >> ${pluginmake}
+    fi
+
 done
 
 echo "  " >> ${pluginmake}

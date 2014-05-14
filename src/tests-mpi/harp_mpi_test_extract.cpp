@@ -376,7 +376,7 @@ void harp::mpi_test_extract ( string const & datadir ) {
 
     for ( size_t p = 0; p < gangsize; ++p ) {
 
-      if ( p != 0 ) {
+      if ( p == 0 ) {
         gcomm.recv ( p, p, other_block );
       }
 

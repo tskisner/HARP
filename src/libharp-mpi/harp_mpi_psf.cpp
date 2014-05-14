@@ -23,17 +23,7 @@ harp::mpi_psf::mpi_psf ( boost::mpi::communicator const & comm, std::string cons
     
   // broadcast to all processes
 
-  mpi_comm_buffer_type buf;
-
-  if ( rank == 0 ) {
-    mpi_comm_pack ( local_, buf );
-  }
-
-  boost::mpi::broadcast ( comm_, buf, 0 );
-
-  if ( rank != 0 ) {
-    mpi_comm_unpack ( buf, local_ );
-  }
+  mpi_comm_bcast ( comm_, local_, 0 );
 
 }
 
@@ -44,21 +34,11 @@ mpi_psf * harp::mpi_psf::redistribute ( boost::mpi::communicator const & comm ) 
 
   ret->comm_ = comm;
 
-  if ( comm.rank() == 0 ) {
+  if ( ret->comm_.rank() == 0 ) {
     ret->local_ = local_;
   }
 
-  mpi_comm_buffer_type buf;
-
-  if ( comm.rank() == 0 ) {
-    mpi_comm_pack ( ret->local_, buf );
-  }
-
-  boost::mpi::broadcast ( comm, buf, 0 );
-
-  if ( comm.rank() != 0 ) {
-    mpi_comm_unpack ( buf, ret->local_ );
-  }
+  mpi_comm_bcast ( ret->comm_, local_, 0 );
 
   return ret;
 }

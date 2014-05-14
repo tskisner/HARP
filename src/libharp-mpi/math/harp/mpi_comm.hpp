@@ -42,6 +42,47 @@ namespace harp {
     return;
   }
 
+  template < typename T >
+  void mpi_comm_bcast ( boost::mpi::communicator const & comm, T & data, int root ) {
+
+    mpi_comm_buffer_type buf;
+
+    if ( comm.rank() == root ) {
+      mpi_comm_pack ( data, buf );
+    }
+
+    boost::mpi::broadcast ( comm, buf, root );
+
+    if ( comm.rank() != root ) {
+      mpi_comm_unpack ( buf, data );
+    }
+
+    return;
+  }
+
+  template < typename T >
+  void mpi_comm_send ( boost::mpi::communicator const & comm, T & data, int receiver, int tag ) {
+
+    mpi_comm_buffer_type buf;
+
+    mpi_comm_pack ( data, buf );
+
+    comm.send ( receiver, tag, buf );
+
+    return;
+  }
+
+  template < typename T >
+  void mpi_comm_recv ( boost::mpi::communicator const & comm, T & data, int sender, int tag ) {
+
+    mpi_comm_buffer_type buf;
+
+    comm.recv ( sender, tag, buf );
+
+    mpi_comm_unpack ( buf, data );
+
+    return;
+  }
 
 
 }
