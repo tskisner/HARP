@@ -16,7 +16,7 @@ namespace harp {
 
       ~mpi_psf ( ) { }
 
-      mpi_psf * redistribute ( boost::mpi::communicator const & comm );
+      mpi_psf * redistribute ( boost::mpi::communicator const & newcomm );
 
       boost::mpi::communicator comm ( ) { return comm_; }
 

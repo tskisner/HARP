@@ -367,16 +367,19 @@ void harp::mpi_test_extract ( string const & datadir ) {
   check_AT.clear();
 
   if ( grank != 0 ) {
+
     gcomm.send ( 0, grank, AT.block() );
+
   } else {
 
     check_AT.resize( AT.rows(), AT.cols(), false );
+    check_AT.clear();
 
     mpi_matrix_sparse_block other_block;
 
     for ( size_t p = 0; p < gangsize; ++p ) {
 
-      if ( p == 0 ) {
+      if ( p != 0 ) {
         gcomm.recv ( p, p, other_block );
       }
 
@@ -463,7 +466,7 @@ void harp::mpi_test_extract ( string const & datadir ) {
         double locval = check_AT(i,j);
 
         if ( fabs( serval ) > std::numeric_limits < double > :: epsilon() ) {
-          //cerr << "AT (" << i << ", " << j << ") " << serval << " " << locval << endl;
+          cerr << "AT (" << i << ", " << j << ") " << serval << " " << locval << endl;
           double rel = fabs ( ( locval - serval ) / serval );
           if ( rel > std::numeric_limits < double > :: epsilon() ) {
             cerr << "FAIL on AT [ " << i << ", " << j << " ], " << locval << " != " << serval << endl;

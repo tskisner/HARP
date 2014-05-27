@@ -28,17 +28,17 @@ harp::mpi_psf::mpi_psf ( boost::mpi::communicator const & comm, std::string cons
 }
 
 
-mpi_psf * harp::mpi_psf::redistribute ( boost::mpi::communicator const & comm ) {
+mpi_psf * harp::mpi_psf::redistribute ( boost::mpi::communicator const & newcomm ) {
 
   mpi_psf * ret = new mpi_psf();
 
-  ret->comm_ = comm;
+  ret->comm_ = newcomm;
 
-  if ( ret->comm_.rank() == 0 ) {
+  if ( newcomm.rank() == 0 ) {
     ret->local_ = local_;
   }
 
-  mpi_comm_bcast ( ret->comm_, local_, 0 );
+  mpi_comm_bcast ( newcomm, ret->local_, 0 );
 
   return ret;
 }
