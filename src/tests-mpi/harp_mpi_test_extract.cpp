@@ -372,6 +372,10 @@ void harp::mpi_test_extract ( string const & datadir ) {
 
   } else {
 
+    ostringstream outAT;
+    outAT << datadir << "/test_AT_" << gang << ".out";
+    fstream out ( outAT.str().c_str(), ios::out );
+
     check_AT.resize( AT.rows(), AT.cols(), false );
     check_AT.clear();
 
@@ -417,9 +421,12 @@ void harp::mpi_test_extract ( string const & datadir ) {
         double dat = cur.data[ v ];
 
         check_AT( brow, bcol ) = dat;
+        out << p << " " << v << " " << brow << " " << bcol << " " << dat << endl;
       }
 
     }
+
+    out.close();
 
   }
 
@@ -466,7 +473,6 @@ void harp::mpi_test_extract ( string const & datadir ) {
         double locval = check_AT(i,j);
 
         if ( fabs( serval ) > std::numeric_limits < double > :: epsilon() ) {
-          cerr << "AT (" << i << ", " << j << ") " << serval << " " << locval << endl;
           double rel = fabs ( ( locval - serval ) / serval );
           if ( rel > std::numeric_limits < double > :: epsilon() ) {
             cerr << "FAIL on AT [ " << i << ", " << j << " ], " << locval << " != " << serval << endl;
