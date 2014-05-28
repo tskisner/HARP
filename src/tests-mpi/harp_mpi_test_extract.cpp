@@ -373,7 +373,7 @@ void harp::mpi_test_extract ( string const & datadir ) {
   } else {
 
     ostringstream outAT;
-    outAT << datadir << "/test_AT_" << gang << ".out";
+    outAT << datadir << "/test_AT_" << gangsize << "-" << gang << ".out";
     fstream out ( outAT.str().c_str(), ios::out );
 
     check_AT.resize( AT.rows(), AT.cols(), false );
@@ -420,8 +420,8 @@ void harp::mpi_test_extract ( string const & datadir ) {
         size_t bcol = cur.col[ v ];
         double dat = cur.data[ v ];
 
-        check_AT( brow, bcol ) = dat;
-        out << p << " " << v << " " << brow << " " << bcol << " " << dat << endl;
+        check_AT( block_firstrow + brow, bcol ) = dat;
+        out << p << " " << v << " " << (block_firstrow + brow) << " " << bcol << " " << dat << endl;
       }
 
     }
