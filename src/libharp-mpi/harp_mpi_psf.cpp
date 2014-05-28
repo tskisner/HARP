@@ -87,23 +87,32 @@ void harp::mpi_psf::project_transpose ( std::map < size_t, std::set < size_t > >
 
   // first, select the bins that fall within our local range of rows
 
-  mpi_matrix_sparse_block & block = AT.block();
+  AT.clear();
 
-  std::map < size_t, std::set < size_t > > local_speclambda;
+  mpi_matrix_sparse_block & block = AT.block();
 
   size_t binoffset = 0;
 
-  for ( std::map < size_t, std::set < size_t > > :: const_iterator itspec = speclambda.begin(); itspec != speclambda.end(); ++itspec ) {
+  std::map < size_t, std::set < size_t > > local_speclambda;
+  local_speclambda.clear();
 
-    for ( std::set < size_t > :: const_iterator itlambda = itspec->second.begin(); itlambda != itspec->second.end(); ++itlambda ) {
+  if ( block.rows > 0 ) {
 
-      if ( ( binoffset >= block.firstrow ) && ( binoffset < ( block.firstrow + block.rows ) ) ) {
+    // populate our local bins
 
-        local_speclambda[ itspec->first ].insert ( *itlambda );
+    for ( std::map < size_t, std::set < size_t > > :: const_iterator itspec = speclambda.begin(); itspec != speclambda.end(); ++itspec ) {
+
+      for ( std::set < size_t > :: const_iterator itlambda = itspec->second.begin(); itlambda != itspec->second.end(); ++itlambda ) {
+
+        if ( ( binoffset >= block.firstrow ) && ( binoffset < ( block.firstrow + block.rows ) ) ) {
+
+          local_speclambda[ itspec->first ].insert ( *itlambda );
+
+        }
+
+        ++binoffset;
 
       }
-
-      ++binoffset;
 
     }
 
@@ -111,9 +120,9 @@ void harp::mpi_psf::project_transpose ( std::map < size_t, std::set < size_t > >
 
   // if we have any rows, get the projection for our local block, and populate the elements of A^T
 
-  if ( ! local_speclambda.empty() ) {
+  if ( block.rows > 0 ) {
 
-    matrix_double_sparse ( local_AT );
+    matrix_double_sparse local_AT ( block.rows, AT.cols() );
 
     local_->project_transpose ( local_speclambda, local_AT );
 
@@ -171,6 +180,10 @@ void harp::mpi_psf::project_transpose ( std::map < size_t, std::set < size_t > >
 
       ++dense_row;
 
+    }
+
+    if ( local_nnz != elem ) {
+      HARP_MPI_ABORT( AT.comm().rank(), "Local NNZ computed by iteration disagrees with return of nnz() method" );
     }
 
   }

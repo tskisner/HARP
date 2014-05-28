@@ -26,6 +26,10 @@ void harp::mpi_dist_1D ( boost::mpi::communicator const & comm, size_t n, size_t
   } else {
     offset = ( ( myn + 1 ) * leftover ) + ( myn * ( (size_t)rank - leftover ) );
   }
+
+  if ( myn == 0 ) {
+    offset = 0;
+  }
   
   return;
 }
