@@ -108,8 +108,7 @@ int main ( int argc, char *argv[] ) {
 
   // Get plugin registry
 
-  bool reg_mpi = true;
-  plugin_registry & reg = plugin_registry::get( reg_mpi );
+  plugin_registry & reg = plugin_registry::get();
 
   // intra-gang communicator and grid
 
