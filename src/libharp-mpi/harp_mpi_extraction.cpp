@@ -817,6 +817,25 @@ void harp::mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_m
 
   vector < spec_slice_region > regions = slice->regions();
 
+  // compute the global offset of our list of regions
+
+  size_t offset = 0;
+
+  vector < int > region_offsets ( slice->rank_comm().size() );
+  region_offsets.clear();
+
+  if ( slice->gang_comm().rank() == 0 ) {
+
+    region_offsets[ slice->rank_comm().rank() ] = regions.size();
+
+    boost::mpi::all_reduce ( slice->rank_comm(), region_offsets, std::plus );
+
+    for ( int p = 0; p < slice->rank_comm().rank(); ++p ) {
+      offset += region_offsets[p];
+    }
+
+  }
+
   for ( vector < spec_slice_region > :: const_iterator regit = regions.begin(); regit != regions.end(); ++regit ) {
 
     double tstart = MPI_Wtime();
@@ -1022,7 +1041,7 @@ void harp::mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_m
 
       int ret = MPI_Win_lock ( MPI_LOCK_EXCLUSIVE, 0, 0, printlock );
 
-      cout << status_prefix << " finished chunk " << region_index << endl;
+      cout << status_prefix << " finished chunk " << (offset + region_index) << endl;
       cout << status_prefix << "   computing A^T = " << time_design << " seconds" << endl;
       cout << status_prefix << "   building inverse covariance = " << time_inverse << " seconds" << endl;
       cout << status_prefix << "   eigendecompose inverse covariance = " << time_eigen << " seconds" << endl;
@@ -1034,6 +1053,7 @@ void harp::mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_m
       cout << status_prefix << "   compute noise weighted spec = " << time_nsespec << " seconds" << endl;
       cout << status_prefix << "   extraction = " << time_extract << " seconds" << endl;
       cout << status_prefix << "   total chunk time = " << time_chunk << " seconds" << endl;
+      cout.flush();
 
       // free the lock
       ret = MPI_Win_unlock ( 0, printlock );
