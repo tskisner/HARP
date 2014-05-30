@@ -826,9 +826,11 @@ void harp::mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_m
 
   if ( slice->gang_comm().rank() == 0 ) {
 
-    region_offsets[ slice->rank_comm().rank() ] = regions.size();
+    int mysize = regions.size();
 
-    boost::mpi::all_reduce ( slice->rank_comm(), region_offsets, std::plus );
+    boost::mpi::gather ( slice->rank_comm(), mysize, region_offsets, 0 );
+
+    boost::mpi::broadcast ( slice->rank_comm(), region_offsets, 0 );
 
     for ( int p = 0; p < slice->rank_comm().rank(); ++p ) {
       offset += region_offsets[p];
