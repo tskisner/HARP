@@ -40,11 +40,6 @@ namespace harp {
         HARP_THROW( "fell through to virtual method" );
         return;
       }
-
-      virtual boost::property_tree::ptree metadata ( ) const {
-        HARP_THROW( "fell through to virtual method" );
-        return boost::property_tree::ptree();
-      }
       
       void values ( matrix_double & data ) const {
 

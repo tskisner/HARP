@@ -246,12 +246,6 @@ int harp::psf_gauss::hdu_info ( fitsfile *fp, const char * psf_gauss_hdu ) {
 }
 
 
-boost::property_tree::ptree harp::psf_gauss::metadata ( ) const {
-
-  return boost::property_tree::ptree();
-}
-
-
 size_t harp::psf_gauss::response_nnz_estimate ( ) const {
   size_t est = 2 * pixcorr_ + 1;
   est *= est;

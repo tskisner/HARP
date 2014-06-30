@@ -20,7 +20,7 @@ libharpdata_la_includedir = $(includedir)/harp
 
 libharpdata_la_include_HEADERS = \
 	harp/fits.hpp \
-	harp/target.hpp \
+	harp/targets.hpp \
 	harp/image.hpp \
 	harp/spec.hpp \
 	harp/psf.hpp \
@@ -31,6 +31,7 @@ libharpdata_la_SOURCES = \
 	harp_spec.cpp \
 	harp_psf.cpp \
 	harp_fits.cpp \
+	harp_targets.cpp \
 	harp_plugin_registry.cpp \
 	harp_data.cpp
 

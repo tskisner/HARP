@@ -1120,7 +1120,7 @@ for file in ${plugallsource}; do
 
     source=`echo ${file} | sed -e "s#.*\/\([^\.]*\.c.*\)#\1#"`
 
-    for typ in spec psf image; do
+    for typ in spec psf image targets; do
         check=`echo ${source} | sed -e "s#\(harp_plugin_${typ}\).*#\1#"`
         if [ "x${check}" = "xharp_plugin_${typ}" ]; then
             pluginname=`echo ${source} | sed -e "s#harp_plugin_${typ}_\(.*\)\.c.*#\1#"`

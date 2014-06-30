@@ -243,6 +243,50 @@ void harp::accum_spec ( spec_slice_region const & sub_region, spec_slice_region 
 }
 
 
+void accum_diag_resolution ( spec_slice_region const & region, matrix_double const & R, matrix_double_sparse & diag ) {
+
+  size_t cur_spec;
+  size_t center;
+  size_t row;
+  size_t col;
+
+  for ( size_t s = 0; s < region.n_good_spec; ++s ) {
+    cur_spec = region.first_good_spec + s;
+
+    for ( size_t w = 0; w < region.n_good_lambda; ++w ) {
+
+      for ( size_t j = 0; j < region.n_lambda; ++j ) {
+
+
+      }
+
+
+    }
+
+  }
+
+
+
+
+
+      size_t overlap_spec;
+      size_t overlap_lambda;
+      size_t first_spec;
+      size_t first_lambda;
+      size_t first_good_spec;
+      size_t first_good_lambda;
+      size_t n_spec;
+      size_t n_lambda;
+      size_t n_good_spec;
+      size_t n_good_lambda;
+
+
+
+
+  return;
+}
+
+
 void harp::noise_weighted_spec ( matrix_double_sparse const & AT, vector_double const & invnoise, vector_mask const & mask, vector_double const & img, vector_double & z ) {
 
   size_t nbins = AT.size1();

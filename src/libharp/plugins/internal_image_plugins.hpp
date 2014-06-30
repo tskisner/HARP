@@ -38,8 +38,6 @@ namespace harp {
 
       void inv_variance ( vector_double & invvar ) const;
 
-      boost::property_tree::ptree metadata ( ) const;
-
     private :
 
       template < class Archive >
@@ -94,8 +92,6 @@ namespace harp {
       void values ( vector_double & data ) const;
 
       void inv_variance ( vector_double & invvar ) const;
-
-      boost::property_tree::ptree metadata ( ) const;
 
     private :
 

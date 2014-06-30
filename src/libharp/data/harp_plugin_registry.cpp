@@ -98,7 +98,7 @@ void harp::plugin_registry::register_spec ( std::string const & type, spec_facto
   string const & internal = source_version();
   if ( version != internal ) {
     ostringstream o;
-    o << "image plugin \"" << type << "\" was compiled with a different version HARP, refusing to load";
+    o << "spec plugin \"" << type << "\" was compiled with a different version HARP, refusing to load";
     HARP_THROW( o.str().c_str() );
   }
 
@@ -118,11 +118,31 @@ void harp::plugin_registry::register_psf ( std::string const & type, psf_factory
   string const & internal = source_version();
   if ( version != internal ) {
     ostringstream o;
-    o << "image plugin \"" << type << "\" was compiled with a different version HARP, refusing to load";
+    o << "psf plugin \"" << type << "\" was compiled with a different version HARP, refusing to load";
     HARP_THROW( o.str().c_str() );
   }
 
   psf_plugins_[ type ] = create;
+
+  return;
+}
+
+
+void harp::plugin_registry::register_targets ( std::string const & type, targets_factory create, std::string const & version ) {
+  if ( targets_plugins_.count ( type ) > 0 ) {
+    ostringstream o;
+    o << "targets plugin \"" << type << "\" is already registered";
+    HARP_THROW( o.str().c_str() );
+  }
+
+  string const & internal = source_version();
+  if ( version != internal ) {
+    ostringstream o;
+    o << "targets plugin \"" << type << "\" was compiled with a different version HARP, refusing to load";
+    HARP_THROW( o.str().c_str() );
+  }
+
+  targets_plugins_[ type ] = create;
 
   return;
 }
@@ -247,6 +267,7 @@ harp::plugin_registry::~plugin_registry ( ) {
   image_plugins_.clear();
   spec_plugins_.clear();
   psf_plugins_.clear();
+  targets_plugins_.clear();
 
   // dlclose all plugin files
 
@@ -302,5 +323,13 @@ spec * harp::plugin_registry::create_spec ( std::string const & type, boost::pro
 }
 
 
-
+targets * harp::plugin_registry::create_targets ( std::string const & type, boost::property_tree::ptree const & props ) {
+  if ( targets_plugins_.count ( type ) == 0 ) {
+    cerr << "harp:  targets plugin \"" << type << "\" is not registered- did you forget to set HARP_PLUGIN_PATH?" << endl;
+    ostringstream o;
+    o << "targets plugin \"" << type << "\" is not registered";
+    HARP_THROW( o.str().c_str() );
+  }
+  return (*targets_plugins_[type])( props );
+}
 

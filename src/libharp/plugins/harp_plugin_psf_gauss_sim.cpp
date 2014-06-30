@@ -164,12 +164,6 @@ void harp::psf_gauss_sim::spec2pix ( size_t spec, size_t specbin, double & x, do
 }
 
 
-boost::property_tree::ptree harp::psf_gauss_sim::metadata ( ) const {
-
-  return boost::property_tree::ptree();
-}
-
-
 size_t harp::psf_gauss_sim::response_nnz_estimate ( ) const {
   size_t est = 2 * pixcorr_ + 1;
   est *= est;

@@ -144,12 +144,6 @@ harp::spec_specter::~spec_specter ( ) {
 }
 
 
-boost::property_tree::ptree harp::spec_specter::metadata ( ) const {
-
-  return boost::property_tree::ptree();
-}
-
-
 void harp::spec_specter::values ( vector_double & data ) const {
 
   data.resize ( nglobal_ );

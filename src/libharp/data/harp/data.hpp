@@ -37,6 +37,7 @@ namespace harp {
   typedef harp::image * (*image_factory)( boost::property_tree::ptree const & );
   typedef harp::spec * (*spec_factory)( boost::property_tree::ptree const & );
   typedef harp::psf * (*psf_factory)( boost::property_tree::ptree const & );
+  typedef harp::targets * (*targets_factory)( boost::property_tree::ptree const & );
 
   // plugin registry
 
@@ -54,10 +55,12 @@ namespace harp {
       void register_image ( std::string const & type, image_factory create, std::string const & version );
       void register_spec ( std::string const & type, spec_factory create, std::string const & version );
       void register_psf ( std::string const & type, psf_factory create, std::string const & version );
+      void register_targets ( std::string const & type, targets_factory create, std::string const & version );
 
       image * create_image ( std::string const & type, boost::property_tree::ptree const & props );
       psf * create_psf ( std::string const & type, boost::property_tree::ptree const & props );
       spec * create_spec ( std::string const & type, boost::property_tree::ptree const & props );
+      targets * create_targets ( std::string const & type, boost::property_tree::ptree const & props );
       
     private :
 
@@ -74,6 +77,7 @@ namespace harp {
       std::map < std::string, image_factory > image_plugins_;
       std::map < std::string, spec_factory > spec_plugins_;
       std::map < std::string, psf_factory > psf_plugins_;
+      std::map < std::string, targets_factory > targets_plugins_;
       std::map < std::string, void * > handles_;
       
   };
