@@ -33,17 +33,15 @@ namespace harp {
 
       // overloaded virtual methods from base class
 
-      boost::property_tree::ptree metadata ( ) const { return boost::property_tree::ptree(); }
-
       size_t n_spec ( ) const { return nspec_; }
 
       size_t n_lambda ( ) const { return nlambda_; }
 
       void values ( vector_double & data ) const { return; }
 
-      void lambda ( vector_double & lambda_vals ) const { return; }
+      void inv_variance ( vector_double & data ) const { return; }
 
-      void targets ( std::vector < obs_target > & target_list ) const { return; }
+      void lambda ( vector_double & lambda_vals ) const { return; }
     
     private :
 
@@ -92,8 +90,6 @@ namespace harp {
       ~psf_example ( ) { }
 
       // overloaded virtual methods from base class
-
-      boost::property_tree::ptree metadata ( ) const { return boost::property_tree::ptree(); }
 
       size_t n_spec ( ) const { return nspec_; }
 
@@ -154,8 +150,6 @@ namespace harp {
       void values ( vector_double & data ) const { return; }
 
       void inv_variance ( vector_double & invvar ) const { return; }
-
-      boost::property_tree::ptree metadata ( ) const { return boost::property_tree::ptree(); }
 
     private :
 
