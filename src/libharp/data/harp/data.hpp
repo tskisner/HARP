@@ -25,7 +25,7 @@ namespace harp {
 
 #include <harp/fits.hpp>
 
-#include <harp/target.hpp>
+#include <harp/targets.hpp>
 #include <harp/image.hpp>
 #include <harp/spec.hpp>
 #include <harp/psf.hpp>

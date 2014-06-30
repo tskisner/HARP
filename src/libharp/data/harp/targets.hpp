@@ -98,7 +98,7 @@ namespace harp {
 
       virtual std::vector < object_p > objects ( ) const {
         HARP_THROW( "fell through to virtual method" );
-        return;
+        return std::vector < object_p > ();
       }
       
       template < class T >

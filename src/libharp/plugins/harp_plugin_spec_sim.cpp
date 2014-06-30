@@ -108,24 +108,6 @@ void harp::spec_sim::lambda ( vector_double & lambda_vals ) const {
 }
 
 
-void harp::spec_sim::targets ( std::vector < obs_target > & target_list ) const {
-
-  target_list.clear();
-
-  for ( size_t i = 0; i < nspec_; ++i ) {
-
-    if ( i % skymod_ == 0 ) {
-      target_list.push_back ( obs_target ( TARGET_SKY, "sky" ) );
-    } else {
-      target_list.push_back ( obs_target ( TARGET_UNKNOWN, "object" ) );
-    }
-
-  }
-  
-  return;
-}
-
-
 void harp::spec_sim::sky_truth ( vector_double & data ) const {
 
   double PI = std::atan2 ( 0.0, -1.0 );
