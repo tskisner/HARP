@@ -100,6 +100,8 @@ namespace harp {
         HARP_THROW( "fell through to virtual method" );
         return std::vector < object_p > ();
       }
+
+      std::string type ( ) const;
       
       template < class T >
       boost::shared_ptr < T > shared_ref ( ) {

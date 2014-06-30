@@ -54,3 +54,14 @@ std::string harp::object_type2str ( object_type const & in ) {
 }
 
 
+harp::targets::targets ( std::string const & type, boost::property_tree::ptree const & props ) {
+  props_ = props;
+  type_ = type;
+}
+
+
+string harp::targets::type ( ) const {
+  return type_;
+}
+
+

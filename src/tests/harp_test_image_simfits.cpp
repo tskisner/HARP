@@ -158,7 +158,7 @@ void harp::test_image_simfits ( string const & datadir ) {
 
   // write test
 
-  outimg.write ( imgpath, img_data, img_inv );
+  image_fits::write ( imgpath, img_nrows, img_data, img_inv );
 
   // read test
 

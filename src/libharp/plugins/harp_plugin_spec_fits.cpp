@@ -118,8 +118,8 @@ void harp::spec_fits::lambda ( vector_double & lambda_vals ) const {
 
 void harp::spec_fits::write ( std::string const & path, vector_double const & data, vector_double const & invvar, vector_double const & lambda ) {
 
-  nlambda = lambda.size();
-  nspec = (size_t)( data.size() / nlambda );
+  size_t nlambda = lambda.size();
+  size_t nspec = (size_t)( data.size() / nlambda );
 
   fitsfile * fp;
     

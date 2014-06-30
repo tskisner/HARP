@@ -142,12 +142,6 @@ int main ( int argc, char *argv[] ) {
   // write out the output image.  when writing data, we know exactly what format we are
   // writing and do not use the factory technique- we just instantiate the class directly.
 
-  boost::property_tree::ptree img_props;
-  img_props.put < size_t > ( "rows", checkrows );
-  img_props.put < size_t > ( "cols", checkcols );
-
-  image_fits outimg ( img_props );
-
   // for this example, we don't care about the inverse variance of each image (we ignored it
   // above).  here we just write fake data.
 
@@ -156,7 +150,7 @@ int main ( int argc, char *argv[] ) {
     fake_invvar[i] = 1.0;
   }
 
-  outimg.write ( outfile, stack[0], fake_invvar );
+  image_fits::write ( outfile, checkrows, stack[0], fake_invvar );
 
   return 0;
 }

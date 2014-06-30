@@ -198,16 +198,7 @@ int main ( int argc, char *argv[] ) {
 
     string out_img_path = outroot + "debug_input_image.fits";
 
-    boost::property_tree::ptree out_img_props;
-
-    out_img_props.clear();
-    out_img_props.put ( "format", "fits" );
-    out_img_props.put ( "rows", imgrows );
-    out_img_props.put ( "cols", imgcols );
-
-    image_fits outimg ( out_img_props );
-
-    outimg.write ( out_img_path, measured, invnoise );
+    image_fits::write ( out_img_path, imgrows, measured, invnoise );
 
     tstop = wtime();
 
@@ -223,10 +214,10 @@ int main ( int argc, char *argv[] ) {
   // eventually we will read a target list and this will be used for sky subtraction and will
   // be written to the output spectral files.  For now, we create a fake list here.
 
-  vector < obs_target > target_list ( psf_nspec );
+  vector < object_p > target_list ( psf_nspec );
 
   for ( size_t i = 0; i < psf_nspec; ++i ) {
-    target_list[i] = obs_target ( TARGET_UNKNOWN, "target" );
+    target_list[i].reset ( new object ( OBJECT_UNKNOWN, "" ) );
   }
 
 
@@ -275,11 +266,9 @@ int main ( int argc, char *argv[] ) {
     }
 
     vector_double truth_lambda;
-    vector < obs_target > truth_target_list;
 
     truth_spec->values ( data_truth );
     truth_spec->lambda ( truth_lambda );
-    truth_spec->targets ( truth_target_list );
 
     for ( size_t i = 0; i < psf_nlambda; ++i ) {
       if ( fabs ( truth_lambda[i] - lambda[i] ) / lambda[i] > 1.0e-5 ) {
@@ -363,25 +352,17 @@ int main ( int argc, char *argv[] ) {
 
   tstart = wtime();
 
-  boost::property_tree::ptree solution_props;
-  solution_props.put ( "nspec", psf_nspec );
-  solution_props.put ( "nlambda", psf_nlambda );
-
-  spec_specter outspec ( solution_props );
-
   string outfile = outroot + "spec_Rf.fits";
-  outspec.write ( outfile, data_Rf, lambda, target_list );
+  spec_fits::write ( outfile, data_Rf, data_err, lambda );
+
+  vector_double fake_err ( psf_nbins );
+  fake_err.clear();
 
   outfile = outroot + "spec_f.fits";
-  outspec.write ( outfile, data_f, lambda, target_list );
-
-  outfile = outroot + "spec_Rf-err.fits";
-  outspec.write ( outfile, data_err, lambda, target_list );
+  spec_fits::write ( outfile, data_f, fake_err, lambda );
 
   if ( dotruth ) {
-    outfile = outroot + "spec_Rtruth.fits";
-    outspec.write ( outfile, data_Rtruth, lambda, target_list );
-
+    
     vector_double data_chisq ( psf_nbins );
 
     double chisq_reduced = 0.0;
@@ -402,8 +383,8 @@ int main ( int argc, char *argv[] ) {
       cout << prefix << "  Reduced Chi square = " << chisq_reduced << endl;
     }
 
-    outfile = outroot + "spec_chisq.fits";
-    outspec.write ( outfile, data_chisq, lambda, target_list );
+    outfile = outroot + "spec_Rtruth.fits";
+    spec_fits::write ( outfile, data_Rtruth, data_chisq, lambda );
 
   }
 
@@ -430,12 +411,6 @@ int main ( int argc, char *argv[] ) {
 
     tstart = wtime();
 
-    solution_props.clear();
-    solution_props.put ( "rows", imgrows );
-    solution_props.put ( "cols", imgcols );
-
-    image_fits outimg ( solution_props );
-
     matrix_double_sparse AT;
     design->project_transpose ( AT );
 
@@ -445,7 +420,7 @@ int main ( int argc, char *argv[] ) {
     data_f.resize(0);
 
     outfile = outroot + "image_f-project.fits";
-    outimg.write ( outfile, f_projected, invnoise );
+    image_fits::write ( outfile, imgrows, f_projected, invnoise );
 
     tstop = wtime();
 
@@ -469,9 +444,6 @@ int main ( int argc, char *argv[] ) {
       AT.resize ( 0, 0, false );
       data_truth.resize(0);
 
-      outfile = outroot + "image_truth-project.fits";
-      outimg.write ( outfile, truth_projected, invnoise );
-
       // pixel space chi-square
 
       vector_double data_chisq ( npix );
@@ -494,8 +466,8 @@ int main ( int argc, char *argv[] ) {
         cout << prefix << "  Pixel space reduced Chi square = " << chisq_reduced << endl;
       }
 
-      outfile = outroot + "image_chisq.fits";
-      outimg.write ( outfile, data_chisq, invnoise );
+      outfile = outroot + "image_truth-project.fits";
+      image_fits::write ( outfile, imgrows, truth_projected, data_chisq );
 
       tstop = wtime();
 

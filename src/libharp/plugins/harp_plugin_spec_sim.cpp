@@ -94,6 +94,15 @@ void harp::spec_sim::values ( vector_double & data ) const {
 }
 
 
+void harp::spec_sim::inv_variance ( vector_double & data ) const {
+
+  data.resize ( size_ );
+  data.clear();
+
+  return;
+}
+
+
 void harp::spec_sim::lambda ( vector_double & lambda_vals ) const {
 
   lambda_vals.resize ( nlambda_ );
