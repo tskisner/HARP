@@ -101,7 +101,7 @@ namespace harp {
       
       ~spec_fits ( );
 
-      void write ( std::string const & path, vector_double const & data, vector_double const & invvar, vector_double const & lambda );
+      static void write ( std::string const & path, vector_double const & data, vector_double const & invvar, vector_double const & lambda );
 
       // overloaded virtual methods from base class
       

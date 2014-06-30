@@ -128,11 +128,11 @@ void harp::test_extract ( string const & datadir ) {
   spec_p testspec ( reg.create_spec ( "sim", spec_props ) );
 
   vector_double lambda;
-  vector < obs_target > target_list;
 
   testspec->values ( truth );
   testspec->lambda ( lambda );
-  testspec->targets ( target_list );
+  vector_double fakeinvvar ( truth );
+  fakeinvvar.clear();
 
   // instantiate the PSF
 
@@ -160,23 +160,11 @@ void harp::test_extract ( string const & datadir ) {
   img->values ( img_data );
   img->inv_variance ( img_inv );
 
-  boost::property_tree::ptree solution_props;
-  solution_props.clear();
-  solution_props.put ( "rows", img->n_rows() );
-  solution_props.put ( "cols", img->n_cols() );
-
-  image_fits outimg ( solution_props );
-
   string outfile = datadir + "/extract_image_input.fits.out";
-  outimg.write ( outfile, img_data, img_inv );
-
-  solution_props.clear();
-  solution_props.put ( "nspec", nspec );
-  solution_props.put ( "nlambda", nlambda );
-  spec_specter outspec ( solution_props );
+  image_fits::write ( outfile, img->n_rows(), img_data, img_inv );
 
   outfile = datadir + "/extract_spec_truth.fits.out";
-  outspec.write ( outfile, truth, lambda, target_list );
+  spec_fits::write ( outfile, truth, fakeinvvar, lambda );
 
   // do extraction
 
@@ -215,16 +203,13 @@ void harp::test_extract ( string const & datadir ) {
   cout << prefix << "Reduced Chi square = " << chisq_reduced << endl;
 
   outfile = datadir + "/extract_spec_Rf.fits.out";
-  outspec.write ( outfile, Rf, lambda, target_list );
+  spec_fits::write ( outfile, Rf, err, lambda );
 
   outfile = datadir + "/extract_spec_Rtruth.fits.out";
-  outspec.write ( outfile, Rtruth, lambda, target_list );
+  spec_fits::write ( outfile, Rtruth, fakeinvvar, lambda );
 
   outfile = datadir + "/extract_spec_f.fits.out";
-  outspec.write ( outfile, f, lambda, target_list );
-
-  outfile = datadir + "/extract_spec_Rf-err.fits.out";
-  outspec.write ( outfile, err, lambda, target_list );
+  spec_fits::write ( outfile, f, fakeinvvar, lambda );
 
   matrix_double_sparse AT;
   gauss_psf->project_transpose ( AT );
@@ -233,7 +218,7 @@ void harp::test_extract ( string const & datadir ) {
   sparse_mv_trans ( AT, f, f_projected );
 
   outfile = datadir + "/extract_image_f-project.fits.out";
-  outimg.write ( outfile, f_projected, img_inv );
+  image_fits::write ( outfile, img->n_rows(), f_projected, img_inv );
 
 
 
@@ -253,7 +238,6 @@ void harp::test_extract ( string const & datadir ) {
 
   testspec->values ( truth );
   testspec->lambda ( lambda );
-  testspec->targets ( target_list );
 
   // instantiate image and read
 
@@ -269,10 +253,11 @@ void harp::test_extract ( string const & datadir ) {
   img->inv_variance ( img_inv );
 
   outfile = datadir + "/flat_image_input.fits.out";
-  outimg.write ( outfile, img_data, img_inv );
+  image_fits::write ( outfile, img->n_rows(), img_data, img_inv );
 
   outfile = datadir + "/flat_spec_truth.fits.out";
-  outspec.write ( outfile, truth, lambda, target_list );
+  spec_fits::write ( outfile, truth, fakeinvvar, lambda );
+
 
   // do extraction
 
@@ -308,23 +293,21 @@ void harp::test_extract ( string const & datadir ) {
   cout << prefix << "Reduced Chi square = " << chisq_reduced << endl;
 
   outfile = datadir + "/flat_spec_Rf.fits.out";
-  outspec.write ( outfile, Rf, lambda, target_list );
+  spec_fits::write ( outfile, Rf, err, lambda );
 
   outfile = datadir + "/flat_spec_Rtruth.fits.out";
-  outspec.write ( outfile, Rtruth, lambda, target_list );
+  spec_fits::write ( outfile, Rtruth, fakeinvvar, lambda );
 
   outfile = datadir + "/flat_spec_f.fits.out";
-  outspec.write ( outfile, f, lambda, target_list );
+  spec_fits::write ( outfile, f, fakeinvvar, lambda );
 
-  outfile = datadir + "/flat_spec_Rf-err.fits.out";
-  outspec.write ( outfile, err, lambda, target_list );
 
   gauss_psf->project_transpose ( AT );
 
   sparse_mv_trans ( AT, f, f_projected );
 
   outfile = datadir + "/flat_image_f-project.fits.out";
-  outimg.write ( outfile, f_projected, img_inv );
+  image_fits::write ( outfile, img->n_rows(), f_projected, img_inv );
 
 
   cout << "  (PASSED)" << endl;

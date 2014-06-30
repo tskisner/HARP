@@ -24,9 +24,9 @@ namespace harp {
       
       ~image_fits ( );
 
-      void write ( std::string const & path, vector_double & data, vector_double & invvar );
+      static void write ( std::string const & path, size_t rows, vector_double & data, vector_double & invvar );
 
-      void write ( std::string const & path, matrix_double & data, matrix_double & invvar );
+      static void write ( std::string const & path, matrix_double & data, matrix_double & invvar );
 
       // overloaded virtual methods from base class
       

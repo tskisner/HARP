@@ -29,18 +29,16 @@ void harp::test_psf_gauss ( string const & datadir ) {
   spec_props.clear();
   spec_props.put ( "path", specpath );
 
-  spec_p checkspec ( reg.create_spec ( "specter", spec_props ) );
+  spec_p checkspec ( reg.create_spec ( "fits", spec_props ) );
 
   size_t spec_nspec = checkspec->n_spec();
   size_t spec_nlambda = checkspec->n_lambda();
 
   vector_double check_data;
   vector_double check_lambda;
-  vector < obs_target > check_target_list;
 
   checkspec->values ( check_data );
   checkspec->lambda ( check_lambda );
-  checkspec->targets ( check_target_list );
 
   // create the psf
 

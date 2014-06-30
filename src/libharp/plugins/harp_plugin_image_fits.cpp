@@ -94,25 +94,27 @@ void harp::image_fits::inv_variance ( vector_double & invvar ) const {
 }
 
 
-void harp::image_fits::write ( std::string const & path, vector_double & data, vector_double & invvar ) {
+void harp::image_fits::write ( std::string const & path, size_t rows, vector_double & data, vector_double & invvar ) {
 
-  if ( data.size() != rows_ * cols_ ) {
-    HARP_THROW( "data size does not match image dimensions" );
+  size_t cols = (size_t)( data.size() / rows );
+
+  if ( data.size() != rows * cols ) {
+    HARP_THROW( "data size does not match number of rows" );
   }
 
-  if ( invvar.size() != rows_ * cols_ ) {
-    HARP_THROW( "inverse variance size does not match image dimensions" );
+  if ( invvar.size() != data.size() ) {
+    HARP_THROW( "inverse variance size does not match data" );
   }
 
   fitsfile * fp;
     
   fits::create ( fp, path );
   
-  fits::img_append < double > ( fp, rows_, cols_ );
+  fits::img_append < double > ( fp, rows, cols );
   
   fits::img_write ( fp, data, true );
 
-  fits::img_append < double > ( fp, rows_, cols_ );
+  fits::img_append < double > ( fp, rows, cols );
   
   fits::img_write ( fp, invvar, true );
 
@@ -124,27 +126,26 @@ void harp::image_fits::write ( std::string const & path, vector_double & data, v
 
 void harp::image_fits::write ( std::string const & path, matrix_double & data, matrix_double & invvar ) {
 
-  size_t nelem = rows_ * cols_;
+  size_t rows = data.size2();
+  size_t cols = data.size1();
 
-  if ( ( rows_ != data.size2() ) || ( cols_ != data.size1() ) ) {
-    HARP_THROW( "data size does not match image dimensions" );
-  }
+  size_t nelem = rows * cols;
 
-  if ( ( rows_ != invvar.size2() ) || ( cols_ != invvar.size1() ) ) {
-    HARP_THROW( "inverse variance size does not match image dimensions" );
+  if ( ( rows != invvar.size2() ) || ( cols != invvar.size1() ) ) {
+    HARP_THROW( "inverse variance size does not match data dimensions" );
   }
 
   vector_double tempdata ( nelem );
   vector_double tempvar ( nelem );
 
-  for ( size_t i = 0; i < cols_; ++i ) {
-    for ( size_t j = 0; j < rows_; ++j ) {
-      tempdata[ i * rows_ + j ] = data( i, j );
-      tempvar[ i * rows_ + j ] = invvar( i, j );
+  for ( size_t i = 0; i < cols; ++i ) {
+    for ( size_t j = 0; j < rows; ++j ) {
+      tempdata[ i * rows + j ] = data( i, j );
+      tempvar[ i * rows + j ] = invvar( i, j );
     }
   }
 
-  write ( path, tempdata, tempvar );
+  write ( path, rows, tempdata, tempvar );
 
   return;
 }

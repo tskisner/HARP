@@ -30,23 +30,21 @@ void harp::test_image_simfits ( string const & datadir ) {
   spec_props.clear();
   spec_props.put ( "path", specpath );
 
-  spec_p checkspec ( reg.create_spec ( "specter", spec_props ) );
+  spec_p checkspec ( reg.create_spec ( "fits", spec_props ) );
 
   size_t spec_nspec = checkspec->n_spec();
   size_t spec_nlambda = checkspec->n_lambda();
 
   vector_double check_data;
   vector_double check_lambda;
-  vector < obs_target > check_target_list;
 
   checkspec->values ( check_data );
   checkspec->lambda ( check_lambda );
-  checkspec->targets ( check_target_list );
 
   // instantiate the PSF
 
   boost::property_tree::ptree gauss_props;
-  gauss_props.put ( "lambda_spec_type", "specter" );
+  gauss_props.put ( "lambda_spec_type", "fits" );
   gauss_props.put_child ( "lambda_spec", spec_props );
   gauss_props.put ( "bundle_size", 25 );
   gauss_props.put ( "nbundle", 1 );
@@ -61,7 +59,7 @@ void harp::test_image_simfits ( string const & datadir ) {
   // instantiate image
 
   boost::property_tree::ptree img_props;
-  img_props.put ( "spec_type", "specter" );
+  img_props.put ( "spec_type", "fits" );
   img_props.put ( "psf_type", "gauss_sim" );
   img_props.put_child ( "spec", spec_props );
   img_props.put_child ( "psf", gauss_props );

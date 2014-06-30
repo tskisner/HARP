@@ -28,13 +28,13 @@ void harp::test_psf_gauss_sim ( string const & datadir ) {
   spec_props.clear();
   spec_props.put ( "path", specpath );
 
-  spec_p checkspec ( reg.create_spec ( "specter", spec_props ) );
+  spec_p checkspec ( reg.create_spec ( "fits", spec_props ) );
 
   size_t spec_nspec = checkspec->n_spec();
   size_t spec_nlambda = checkspec->n_lambda();
 
   boost::property_tree::ptree gauss_props;
-  gauss_props.put ( "lambda_spec_type", "specter" );
+  gauss_props.put ( "lambda_spec_type", "fits" );
   gauss_props.put_child ( "lambda_spec", spec_props );
   gauss_props.put ( "bundle_size", 25 );
   gauss_props.put ( "nbundle", 1 );
@@ -89,11 +89,9 @@ void harp::test_psf_gauss_sim ( string const & datadir ) {
 
   vector_double check_data;
   vector_double check_lambda;
-  vector < obs_target > check_target_list;
 
   checkspec->values ( check_data );
   checkspec->lambda ( check_lambda );
-  checkspec->targets ( check_target_list );
 
   for ( size_t i = 0; i < gauss_lambda.size(); ++i ) {
     if ( fabs ( ( check_lambda[i] - gauss_lambda[i] ) / check_lambda[i] ) > 1.0e-5 ) {
