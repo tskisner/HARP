@@ -18,7 +18,7 @@ harp::targets_sim::targets_sim ( boost::property_tree::ptree const & props ) : t
 
   objects_.clear();
 
-  for ( size_t i = 0; i < nrows; ++i ) {
+  for ( size_t i = 0; i < nobjects_; ++i ) {
     object_type type;
     if ( i % skymod_ == 0 ) {
       type = OBJECT_SKY;

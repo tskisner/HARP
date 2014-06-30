@@ -118,19 +118,22 @@ void harp::spec_fits::lambda ( vector_double & lambda_vals ) const {
 
 void harp::spec_fits::write ( std::string const & path, vector_double const & data, vector_double const & invvar, vector_double const & lambda ) {
 
+  nlambda = lambda.size();
+  nspec = (size_t)( data.size() / nlambda );
+
   fitsfile * fp;
     
   fits::create ( fp, path );
 
-  fits::img_append < double > ( fp, nspec_, nlambda_ );
+  fits::img_append < double > ( fp, nspec, nlambda );
   fits::key_write ( fp, "EXTNAME", string("FLUX"), "" );
   fits::img_write ( fp, data, false );
 
-  fits::img_append < double > ( fp, nspec_, nlambda_ );
+  fits::img_append < double > ( fp, nspec, nlambda );
   fits::key_write ( fp, "EXTNAME", string("INV_VAR"), "" );
   fits::img_write ( fp, invvar, false );
 
-  fits::img_append < double > ( fp, 1, nlambda_ );
+  fits::img_append < double > ( fp, 1, nlambda );
   fits::key_write ( fp, "EXTNAME", string("WAVELENGTH"), "" );
   fits::img_write ( fp, lambda, false );
 

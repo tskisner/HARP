@@ -14,7 +14,7 @@ harp::targets_fits::targets_fits ( boost::property_tree::ptree const & props ) :
 
   path_ = props.get < string > ( targets_fits_key_path, "" );
 
-  hdu_ = props.get < int > ( targets_fits_key_hdu, 1 );
+  hdu_ = props.get < int > ( targets_fits_key_hdu, 2 );
 
   if ( path_ != "" ) {
 
@@ -61,7 +61,7 @@ void harp::targets_fits::write ( std::string const & path, int hdu, std::vector 
     
   fits::create ( fp, path );
 
-  int cur = 0;
+  int cur = 1;
 
   while ( cur < hdu ) {
     fits::img_append < double > ( fp, 0, 0 );
