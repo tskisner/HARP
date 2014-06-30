@@ -24,10 +24,8 @@ harp::targets_fits::targets_fits ( boost::property_tree::ptree const & props ) :
 
     fits::bin_seek ( fp, hdu_ );
 
-    size_t nrows;
-
     vector < string > colnames;
-    fits::bin_info ( fp, nrows, colnames );
+    fits::bin_info ( fp, nobjects_, colnames );
 
     vector < string > objcolnames(1);
     objcolnames[0] = "OBJTYPE";
@@ -36,11 +34,11 @@ harp::targets_fits::targets_fits ( boost::property_tree::ptree const & props ) :
     objcols = fits::bin_columns ( fp, objcolnames );
 
     vector < string > objtypes;
-    fits::bin_read_column_strings ( fp, 0, nrows - 1, objcols[0], objtypes );
+    fits::bin_read_column_strings ( fp, 0, nobjects_ - 1, objcols[0], objtypes );
 
     objects_.clear();
 
-    for ( size_t i = 0; i < nrows; ++i ) {
+    for ( size_t i = 0; i < nobjects_; ++i ) {
       object_type type = object_str2type ( objtypes[i] );
       objects_.push_back ( object_p ( new object ( type, "" ) ) );
     }
@@ -73,7 +71,7 @@ void harp::targets_fits::write ( std::string const & path, int hdu, std::vector 
   vector < string > colunits ( 1 );
 
   colnames[0] = "OBJTYPE";
-  coltypes[0] = "6A";
+  coltypes[0] = "8A";
   colunits[0] = "None";
 
   fits::bin_create ( fp, string("TARGETINFO"), objects.size(), colnames, coltypes, colunits );
