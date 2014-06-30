@@ -39,17 +39,15 @@ void harp::mpi_test_spec ( string const & datadir ) {
   size_t serial_nlambda;
   vector_double serial_data;
   vector_double serial_lambda;
-  vector < obs_target > serial_target_list;
 
   if ( myp == 0 ) {
 
-    spec_specter serial_spec ( spec_props );
+    spec_fits serial_spec ( spec_props );
 
     serial_nspec = serial_spec.n_spec();
     serial_nlambda = serial_spec.n_lambda();
     serial_spec.values ( serial_data );
     serial_spec.lambda ( serial_lambda );
-    serial_spec.targets ( serial_target_list );
 
   }
 
@@ -57,22 +55,19 @@ void harp::mpi_test_spec ( string const & datadir ) {
   boost::mpi::broadcast ( comm, serial_nlambda, 0 );
   boost::mpi::broadcast ( comm, serial_data, 0 );
   boost::mpi::broadcast ( comm, serial_lambda, 0 );
-  boost::mpi::broadcast ( comm, serial_target_list, 0 );
 
   // instantiate an MPI version and read
 
-  mpi_spec_p par_spec ( new mpi_spec ( comm, "specter", spec_props ) );
+  mpi_spec_p par_spec ( new mpi_spec ( comm, "fits", spec_props ) );
 
   size_t par_nspec = par_spec->n_spec();
   size_t par_nlambda = par_spec->n_lambda();
 
   vector_double par_data;
   vector_double par_lambda;
-  vector < obs_target > par_target_list;
 
   par_spec->values ( par_data );
   par_spec->lambda ( par_lambda );
-  par_spec->targets ( par_target_list );
 
   // verify
 
@@ -84,13 +79,6 @@ void harp::mpi_test_spec ( string const & datadir ) {
   if ( serial_nlambda != par_nlambda ) {
     cerr << "FAIL:  MPI nlambda (" << par_nlambda << ") does not match serial value (" << serial_nlambda << ")" << endl;
     exit(1);
-  }
-
-  for ( size_t i = 0; i < serial_target_list.size(); ++i ) {
-    if ( serial_target_list[i].type() != par_target_list[i].type() ) {
-      cerr << "FAIL:  MPI target element " << i << " does not match serial value" << endl;
-      exit(1);
-    }
   }
 
   for ( size_t i = 0; i < serial_lambda.size(); ++i ) {

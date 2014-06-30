@@ -26,8 +26,6 @@ namespace harp {
 
       void lambda ( vector_double & lambda ) const;
 
-      void targets ( std::vector < obs_target > & target_list ) const;
-
       std::string type ( ) const;
       
     private :

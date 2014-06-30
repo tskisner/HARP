@@ -66,16 +66,6 @@ void harp::mpi_spec::lambda ( vector_double & lambda_vals ) const {
 }
 
 
-void harp::mpi_spec::targets ( std::vector < obs_target > & target_list ) const {
-  int rank = comm_.rank();
-  if ( rank == 0 ) {
-    local_->targets ( target_list );
-  }
-  boost::mpi::broadcast ( comm_, target_list, 0 );
-  return;
-}
-
-
 std::string harp::mpi_spec::type ( ) const {
   return local_->type();
 }

@@ -249,22 +249,13 @@ int main ( int argc, char *argv[] ) {
 
       string out_img_path = outroot + "debug_input_image.fits";
 
-      boost::property_tree::ptree out_img_props;
-
-      out_img_props.clear();
-      out_img_props.put ( "format", "fits" );
-      out_img_props.put ( "rows", imgrows );
-      out_img_props.put ( "cols", imgcols );
-
-      image_fits outimg ( out_img_props );
-
       vector_double temp_measured;
       vector_double temp_invnoise;
 
       elem_to_ublas ( measured, temp_measured );
       elem_to_ublas ( invnoise, temp_invnoise );
 
-      outimg.write ( out_img_path, temp_measured, temp_invnoise );
+      image_fits::write ( out_img_path, imgrows, temp_measured, temp_invnoise );
 
     }
 
@@ -282,10 +273,11 @@ int main ( int argc, char *argv[] ) {
   // eventually we will read a target list and this will be used for sky subtraction and will
   // be written to the output spectral files.  For now, we create a fake list here.
 
-  vector < obs_target > target_list ( psf_nspec );
+
+  vector < object_p > target_list ( psf_nspec );
 
   for ( size_t i = 0; i < psf_nspec; ++i ) {
-    target_list[i] = obs_target ( TARGET_UNKNOWN, "target" );
+    target_list[i].reset ( new object ( OBJECT_UNKNOWN, "" ) );
   }
 
 
@@ -334,11 +326,9 @@ int main ( int argc, char *argv[] ) {
     }
 
     vector_double truth_lambda;
-    vector < obs_target > truth_target_list;
 
     truth_spec->values ( data_truth );
     truth_spec->lambda ( truth_lambda );
-    truth_spec->targets ( truth_target_list );
 
     for ( size_t i = 0; i < psf_nlambda; ++i ) {
       if ( fabs ( truth_lambda[i] - lambda[i] ) / lambda[i] > 1.0e-5 ) {
@@ -504,32 +494,26 @@ int main ( int argc, char *argv[] ) {
 
   if ( myp == 0 ) {
 
-    solution_props.clear();
-    solution_props.put ( "nspec", psf_nspec );
-    solution_props.put ( "nlambda", psf_nlambda );
-
-    spec_specter outspec ( solution_props );
+    vector_double errbuf;
+    elem_to_ublas ( loc_err, errbuf );
 
     vector_double ubuf;
 
     elem_to_ublas ( loc_Rf, ubuf );
     outfile = outroot + "spec_Rf.fits";
-    outspec.write ( outfile, ubuf, lambda, target_list );
+    spec_fits::write ( outfile, ubuf, errbuf, lambda );
+
+    vector_double fake_err ( ubuf.size() );
+    fake_err.clear();
 
     elem_to_ublas ( loc_f, ubuf );
     outfile = outroot + "spec_f.fits";
-    outspec.write ( outfile, ubuf, lambda, target_list );
-
-    elem_to_ublas ( loc_err, ubuf );
-    outfile = outroot + "spec_Rf-err.fits";
-    outspec.write ( outfile, ubuf, lambda, target_list );
+    spec_fits::write ( outfile, ubuf, fake_err, lambda );
 
     if ( dotruth ) {
 
       elem_to_ublas ( loc_Rtruth, ubuf );
-      outfile = outroot + "spec_Rtruth.fits";
-      outspec.write ( outfile, ubuf, lambda, target_list );
-
+      
       vector_double data_chisq ( psf_nbins );
 
       double chisq_reduced = 0.0;
@@ -550,8 +534,8 @@ int main ( int argc, char *argv[] ) {
         cout << prefix << "  Reduced Chi square = " << chisq_reduced << endl;
       }
 
-      outfile = outroot + "spec_chisq.fits";
-      outspec.write ( outfile, data_chisq, lambda, target_list );
+      outfile = outroot + "spec_Rtruth.fits";
+      spec_fits::write ( outfile, ubuf, data_chisq, lambda );
 
     }
 
@@ -594,11 +578,6 @@ int main ( int argc, char *argv[] ) {
 
     mpi_sparse_mv_trans ( AT, data_f, f_projected );
 
-    solution_props.clear();
-    solution_props.put ( "rows", imgrows );
-    solution_props.put ( "cols", imgcols );
-    image_fits outimg ( solution_props );
-
     vector_double u_f_projected;
     vector_double u_invnoise;
 
@@ -611,7 +590,7 @@ int main ( int argc, char *argv[] ) {
       invnoise.Empty();
 
       outfile = outroot + "image_f-project.fits";
-      outimg.write ( outfile, u_f_projected, u_invnoise );
+      image_fits::write ( outfile, imgrows, u_f_projected, u_invnoise );
 
     }
 
@@ -647,9 +626,6 @@ int main ( int argc, char *argv[] ) {
         elem_to_ublas ( truth_projected, u_truth_projected );
         truth_projected.Empty();
 
-        outfile = outroot + "image_truth-project.fits";
-        outimg.write ( outfile, u_truth_projected, u_invnoise );
-
         // pixel space chi-square
 
         vector_double data_chisq ( npix );
@@ -672,8 +648,8 @@ int main ( int argc, char *argv[] ) {
           cout << prefix << "  Pixel space reduced Chi square = " << chisq_reduced << endl;
         }
 
-        outfile = outroot + "image_chisq.fits";
-        outimg.write ( outfile, data_chisq, u_invnoise );
+        outfile = outroot + "image_truth-project.fits";
+        image_fits::write ( outfile, imgrows, u_truth_projected, data_chisq );
 
       }
 

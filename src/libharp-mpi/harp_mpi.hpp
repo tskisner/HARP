@@ -17,6 +17,7 @@ namespace harp {
 
 #include <harp/mpi_fits.hpp>
 
+#include <harp/mpi_targets.hpp>
 #include <harp/mpi_image.hpp>
 #include <harp/mpi_spec.hpp>
 #include <harp/mpi_psf.hpp>

@@ -58,11 +58,6 @@ void harp::mpi_image::inv_variance ( vector_double & invvar ) const {
 }
 
 
-boost::property_tree::ptree harp::mpi_image::metadata ( ) const {
-  return local_->metadata();
-}
-
-
 void harp::mpi_image::values ( matrix_double & data ) const {
   int rank = comm_.rank();
   if ( rank == 0 ) {

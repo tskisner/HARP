@@ -300,11 +300,9 @@ void harp::mpi_test_extract ( string const & datadir ) {
 
   mpi_matrix truth ( nbin, 1, grid );
   vector_double lambda;
-  vector < obs_target > target_list;
 
   testspec->values ( truth );
   testspec->lambda ( lambda );
-  testspec->targets ( target_list );
 
   // instantiate the PSF
 
@@ -648,33 +646,29 @@ void harp::mpi_test_extract ( string const & datadir ) {
 
   if ( myp == 0 ) {
 
-    boost::property_tree::ptree solution_props;
-    solution_props.clear();
-    solution_props.put ( "nspec", nspec );
-    solution_props.put ( "nlambda", nlambda );
-    spec_specter outspec ( solution_props );
-
     vector_double ubuf;
+    vector_double errbuf;
+
+    elem_to_ublas ( loc_err, errbuf );
+
+    vector_double fake_err ( errbuf );
+    fake_err.clear();
 
     elem_to_ublas ( loc_truth, ubuf );
     string outfile = datadir + "/mpi_extract_spec_truth.fits.out";
-    outspec.write ( outfile, ubuf, lambda, target_list );
+    spec_fits::write ( outfile, ubuf, fake_err, lambda );
 
     elem_to_ublas ( loc_Rtruth, ubuf );
     outfile = datadir + "/mpi_extract_spec_Rtruth.fits.out";
-    outspec.write ( outfile, ubuf, lambda, target_list );
+    spec_fits::write ( outfile, ubuf, fake_err, lambda );
 
     elem_to_ublas ( loc_Rf, ubuf );
     outfile = datadir + "/mpi_extract_spec_Rf.fits.out";
-    outspec.write ( outfile, ubuf, lambda, target_list );
+    spec_fits::write ( outfile, ubuf, errbuf, lambda );
 
     elem_to_ublas ( loc_f, ubuf );
     outfile = datadir + "/mpi_extract_spec_f.fits.out";
-    outspec.write ( outfile, ubuf, lambda, target_list );
-
-    elem_to_ublas ( loc_err, ubuf );
-    outfile = datadir + "/mpi_extract_spec_err.fits.out";
-    outspec.write ( outfile, ubuf, lambda, target_list );
+    spec_fits::write ( outfile, ubuf, fake_err, lambda );
 
     double chisq_reduced = 0.0;
     double val;
