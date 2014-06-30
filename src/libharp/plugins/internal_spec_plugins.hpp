@@ -42,8 +42,6 @@ namespace harp {
       void inv_variance ( vector_double & data ) const;
 
       void lambda ( vector_double & lambda_vals ) const;
-
-      void targets ( std::vector < obs_target > & target_list ) const;
     
     private :
 
@@ -81,39 +79,29 @@ namespace harp {
   BOOST_SERIALIZATION_SHARED_PTR(spec_sim)
 
   spec * spec_sim_create ( boost::property_tree::ptree const & props );
-
-
-
-  void specter_read_targets ( fitsfile * fp, std::vector < obs_target > & target_list );
-
-
-  void specter_write_targets ( fitsfile * fp, std::vector < obs_target > const & target_list );
   
 
-  class spec_specter : public spec {
+  class spec_fits : public spec {
 
     friend class boost::serialization::access;
     
     public :
 
-      spec_specter ( ) : spec () {
+      spec_fits ( ) : spec () {
         nspec_ = 0;
         nlambda_ = 0;
         nglobal_ = 0;
         path_ = "";
-        objonly_ = false;
         spechdu_ = -1;
+        invvarhdu_ = -1;
         lambdahdu_ = -1;
-        targethdu_ = -1;
       }
 
-      spec_specter ( boost::property_tree::ptree const & props );
+      spec_fits ( boost::property_tree::ptree const & props );
       
-      ~spec_specter ( );
+      ~spec_fits ( );
 
-      void write ( std::string const & path, vector_double & data, vector_double const & lambda, std::vector < obs_target > const & target_list );
-
-      void write ( std::string const & path, matrix_double & data, vector_double & lambda, std::vector < obs_target > const & target_list );
+      void write ( std::string const & path, vector_double const & data, vector_double const & invvar, vector_double const & lambda );
 
       // overloaded virtual methods from base class
       
@@ -126,8 +114,6 @@ namespace harp {
       void inv_variance ( vector_double & data ) const;
 
       void lambda ( vector_double & lambda_vals ) const;
-
-      void targets ( std::vector < obs_target > & target_list ) const;
     
     private :
 
@@ -138,10 +124,9 @@ namespace harp {
         ar & BOOST_SERIALIZATION_NVP(nlambda_);
         ar & BOOST_SERIALIZATION_NVP(nglobal_);
         ar & BOOST_SERIALIZATION_NVP(path_);
-        ar & BOOST_SERIALIZATION_NVP(objonly_);
         ar & BOOST_SERIALIZATION_NVP(spechdu_);
+        ar & BOOST_SERIALIZATION_NVP(invvarhdu_);
         ar & BOOST_SERIALIZATION_NVP(lambdahdu_);
-        ar & BOOST_SERIALIZATION_NVP(targethdu_);
         return;
       }
     
@@ -149,16 +134,15 @@ namespace harp {
       size_t nlambda_;
       size_t nglobal_;
       std::string path_;
-      bool objonly_;
       int spechdu_;
+      int invvarhdu_;
       int lambdahdu_;
-      int targethdu_;
     
   };
 
-  BOOST_SERIALIZATION_SHARED_PTR(spec_specter)
+  BOOST_SERIALIZATION_SHARED_PTR(spec_fits)
 
-  spec * spec_specter_create ( boost::property_tree::ptree const & props );
+  spec * spec_fits_create ( boost::property_tree::ptree const & props );
 
   
 }

@@ -45,11 +45,6 @@ namespace harp {
         return;
       }
 
-      virtual void targets ( std::vector < obs_target > & target_list ) const {
-        HARP_THROW( "fell through to virtual method" );
-        return;
-      }
-
       void values ( matrix_double & data ) const {
 
         size_t nspec = n_spec();
