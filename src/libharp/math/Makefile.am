@@ -34,7 +34,7 @@ uninstall-local:
 	rm -f $(DESTDIR)$(includedir)/boost/archive/portable_oarchive.hpp; \
 	numcontents=`ls -A $(DESTDIR)$(includedir)/boost/numeric`; \
 	archcontents=`ls -A $(DESTDIR)$(includedir)/boost/archive`; \
-	if [ x"$$contents$$archcontents" = "x" ]; then \
+	if [ x"$$numcontents$$archcontents" = "x" ]; then \
 		rm -rf $(DESTDIR)$(includedir)/boost; \
 	fi; \
 	rm -rf $(DESTDIR)$(includedir)/harp

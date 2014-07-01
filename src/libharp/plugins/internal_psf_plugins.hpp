@@ -351,6 +351,70 @@ namespace harp {
   psf * psf_gh_create ( boost::property_tree::ptree const & props );
 
 
+#ifdef HAVE_BOOST_PYTHON_HPP
+
+  /*
+  // Specter PSF formats
+
+  class psf_pyspecter : public psf {
+
+    friend class boost::serialization::access;
+    
+    public :
+
+      psf_pyspecter ( ) : psf () {
+
+      }
+
+      psf_pyspecter ( boost::property_tree::ptree const & props );
+
+      ~psf_pyspecter ( );
+
+      // overloaded virtual methods from base class
+
+      size_t n_spec ( ) const;
+
+      size_t n_lambda ( ) const;
+      
+      size_t img_rows ( ) const;
+      
+      size_t img_cols ( ) const;
+      
+      vector_double lambda ( ) const;
+
+      void extent ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, size_t & n_x, size_t & n_y ) const;
+
+      void response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch ) const;
+
+      size_t response_nnz_estimate ( ) const;
+
+    private :
+
+      template < class Archive >
+      void serialize ( Archive & ar, const unsigned int version ) {
+        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(psf);
+        ar & BOOST_SERIALIZATION_NVP(path_);
+        return;
+      }
+
+      std::string path_;
+      double wavemin_;
+      double wavemax_;
+      double wavebin_;
+      
+  };
+
+  BOOST_SERIALIZATION_SHARED_PTR(psf_pyspecter)
+
+  psf * psf_pyspecter_create ( boost::property_tree::ptree const & props );
+
+*/
+
+
+
+#endif
+
+
 }
 
 #endif

@@ -168,7 +168,7 @@ BOOST_REGEX([], [AC_MSG_ERROR([Could not find BOOST regex library])])
 BOOST_SERIALIZATION([], [AC_MSG_ERROR([Could not find BOOST serialization library])])
 BOOST_PROGRAM_OPTIONS([], [AC_MSG_ERROR([Could not find BOOST program options library])])
 if test x"$harp_python" != xno; then
-  BOOST_PYTHON([], [AC_MSG_WARN([Could not find boost::python, bindings will not be built])])
+  BOOST_PYTHON([], [harp_python=no;AC_MSG_WARN([Could not find boost::python, bindings will not be built])])
 fi
 if test x"$harp_mpi" != xno; then
   BOOST_MPI([harp_mpi=yes], [harp_mpi=no;AC_MSG_WARN([Could not find boost::mpi, MPI tools will not be built])])
@@ -179,10 +179,48 @@ dnl +------------------------------------------------
 if test x"$harp_mpi" != xno; then
   ACX_ELEMENTAL([harp_mpi=yes], [harp_mpi=no;AC_MSG_WARN([Could not find Elemental library, MPI tools will not be built])])
 fi
+dnl +------------------------------------------------
+dnl | Check for mpi4py header files
+dnl +------------------------------------------------
+AC_ARG_WITH(mpi4py, [AC_HELP_STRING([--with-mpi4py=<PATH>], [use mpi4py installed in subdirectories of PATH])])
+harp_mpi_python=no
+if test x"$harp_mpi" != xno; then
+  if test x"$harp_python" != xno; then
+    mpi4py_save_CXX=${CXX}
+    mpi4py_save_CXXCPP=${CXXCPP}
+    mpi4py_save_CPPFLAGS=${CPPFLAGS}
+    if test x"${MPICXX}" != x; then
+      CXX=${MPICXX}
+      CXXCPP="${MPICXX} -E"
+    fi
+    # check in /usr if no prefix specified
+    mpi4py_pref=${with_mpi4py}
+    if test x"${mpi4py_pref}" = x; then
+      mpi4py_pref="/usr"
+    fi
+    # try site-packages first
+    mpi4py_type="site"
+    MPI4PY_CPPFLAGS="-I${mpi4py_pref}/lib/python${PYTHON_VERSION}/${mpi4py_type}-packages/mpi4py/include"
+    CPPFLAGS="${mpi4py_save_CPPFLAGS} ${PYTHON_CPPFLAGS} ${MPI4PY_CPPFLAGS}"
+    AC_CHECK_HEADERS([mpi4py/mpi4py.h], [harp_mpi_python=yes], [], [])
+    if test x"$harp_mpi_python" = xno; then
+      # try dist-packages
+      mpi4py_type="dist"
+      MPI4PY_CPPFLAGS="-I${mpi4py_pref}/lib/python${PYTHON_VERSION}/${mpi4py_type}-packages/mpi4py/include"
+      CPPFLAGS="${mpi4py_save_CPPFLAGS} ${PYTHON_CPPFLAGS} ${MPI4PY_CPPFLAGS}"
+      AX_RESET_HEADERS_CACHE([mpi4py/mpi4py.h])
+      AC_CHECK_HEADERS([mpi4py/mpi4py.h], [harp_mpi_python=yes], [MPI4PY_CPPFLAGS="";AC_MSG_WARN([Could not find mpi4py headers])], [])
+    fi
+    CXX=${mpi4py_save_CXX}
+    CXXCPP=${mpi4py_save_CXXCPP}
+    CPPFLAGS=${mpi4py_save_CPPFLAGS}
+    AC_SUBST(MPI4PY_CPPFLAGS)
+  fi
+fi
 dnl +------------------------------------------------------------------------
 dnl | Set automake variables which control building of python and MPI tools
 dnl +------------------------------------------------------------------------
-AM_CONDITIONAL([HAVE_AM_PYTHON], [test "x$PYTHON_VERSION" != x && test "x$BOOST_PYTHON_LIBS" != x])
+AM_CONDITIONAL([HAVE_AM_PYTHON], [test "x$harp_python" = xyes])
 AM_CONDITIONAL([HAVE_AM_MPI], [test "x$harp_mpi" = xyes])
 dnl +------------------------------------------------
 dnl | Set outputs
@@ -196,8 +234,8 @@ AC_CONFIG_FILES([src/libharp/extract/Makefile])
 AC_CONFIG_FILES([src/libharp/Makefile])
 AC_CONFIG_FILES([src/tests/Makefile])
 AC_CONFIG_FILES([src/apps/Makefile])
-dnl AC_CONFIG_FILES([src/python/Makefile])
-dnl AC_CONFIG_FILES([src/tests-python/Makefile])
+AC_CONFIG_FILES([src/python/Makefile])
+AC_CONFIG_FILES([src/python/boost_numpy/Makefile])
 AC_CONFIG_FILES([src/libharp-mpi/math/Makefile])
 AC_CONFIG_FILES([src/libharp-mpi/Makefile])
 AC_CONFIG_FILES([src/tests-mpi/Makefile])
@@ -233,24 +271,28 @@ AC_MSG_NOTICE([  CFITSIO Compile           : $CFITSIO_CPPFLAGS])
 AC_MSG_NOTICE([  CFITSIO Link              : $CFITSIO])
 AC_MSG_NOTICE([  BLAS Link                 : $BLAS_LIBS])
 AC_MSG_NOTICE([  LAPACK Link               : $LAPACK_LIBS])
-if test x"${PYTHON_VERSION}" != x; then
-  AC_MSG_NOTICE([  Python                    : $PYTHON])
-else
-  AC_MSG_NOTICE([  Python                    : Disabled])
-fi
 AC_MSG_NOTICE([  Boost Compile             : $BOOST_CPPFLAGS])
 AC_MSG_NOTICE([  Boost Program Options     : $BOOST_PROGRAM_OPTIONS_LDFLAGS $BOOST_PROGRAM_OPTIONS_LIBS])
 AC_MSG_NOTICE([  Boost Serialization       : $BOOST_SERIALIZATION_LDFLAGS $BOOST_SERIALIZATION_LIBS])
-if test x"$BOOST_MPI_LIBS" != x; then
+if test x"$harp_mpi" = xyes; then
   AC_MSG_NOTICE([  Boost MPI                 : $BOOST_MPI_LDFLAGS $BOOST_MPI_LIBS])
-else
-  AC_MSG_NOTICE([  Boost MPI                 : Disabled])
-fi
-if test x"${acx_elemental_ok}" = xyes; then
   AC_MSG_NOTICE([  Elemental Compile         : $ELEMENTAL_CPPFLAGS])
   AC_MSG_NOTICE([  Elemental Link            : $ELEMENTAL])
 else
+  AC_MSG_NOTICE([  Boost MPI                 : Disabled])
   AC_MSG_NOTICE([  Elemental                 : Disabled])
+fi
+if test x"${harp_python}" = xyes; then
+  AC_MSG_NOTICE([  Python                    : $PYTHON])
+  AC_MSG_NOTICE([  Numpy                     : $NUMPY_CPPFLAGS])
+  AC_MSG_NOTICE([  Boost Python              : $BOOST_PYTHON_LDFLAGS $BOOST_PYTHON_LIBS])
+  if test x"${harp_mpi_python}" = xyes; then
+    AC_MSG_NOTICE([  mpi4py                    : $MPI4PY_CPPFLAGS])
+  else
+    AC_MSG_NOTICE([  mpi4py                    : Disabled])
+  fi
+else
+  AC_MSG_NOTICE([  Python                    : Disabled])
 fi
 AC_MSG_NOTICE([                                           ])
 if test x"${harp_plugins}" = xyes; then
