@@ -351,11 +351,8 @@ namespace harp {
   psf * psf_gh_create ( boost::property_tree::ptree const & props );
 
 
-#ifdef HAVE_BOOST_PYTHON_HPP
-
   // Specter PSF formats
 
-  /*
   class psf_pyspecter : public psf {
 
     friend class boost::serialization::access;
@@ -372,21 +369,37 @@ namespace harp {
 
       // overloaded virtual methods from base class
 
-      size_t n_spec ( ) const;
+      size_t n_spec ( ) const {
+        return nspec_;
+      }
 
-      size_t n_lambda ( ) const;
+      size_t n_lambda ( ) const {
+        return nlambda_;
+      }
       
-      size_t img_rows ( ) const;
+      size_t img_rows ( ) const {
+        return imgrows_;
+      }
       
-      size_t img_cols ( ) const;
+      size_t img_cols ( ) const {
+        return imgcols_;
+      }
       
-      vector_double lambda ( ) const;
+      vector_double lambda ( ) const {
+        return lambda_;
+      }
+
+      size_t response_nnz_estimate ( ) const {
+        return nnz_;
+      }
 
       void extent ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, size_t & n_x, size_t & n_y ) const;
 
       void response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch ) const;
 
-      size_t response_nnz_estimate ( ) const;
+      void project ( std::map < size_t, std::set < size_t > > const & speclambda, matrix_double & A ) const;
+
+      void project_transpose ( std::map < size_t, std::set < size_t > > const & speclambda, matrix_double_sparse & AT ) const;
 
     private :
 
@@ -394,17 +407,43 @@ namespace harp {
       void serialize ( Archive & ar, const unsigned int version ) {
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(psf);
         ar & BOOST_SERIALIZATION_NVP(path_);
+        ar & BOOST_SERIALIZATION_NVP(lambda_min_);
+        ar & BOOST_SERIALIZATION_NVP(lambda_max_);
         ar & BOOST_SERIALIZATION_NVP(wavemin_);
         ar & BOOST_SERIALIZATION_NVP(wavemax_);
         ar & BOOST_SERIALIZATION_NVP(wavebin_);
+        ar & BOOST_SERIALIZATION_NVP(nspec_);
+        ar & BOOST_SERIALIZATION_NVP(nlambda_);
+        ar & BOOST_SERIALIZATION_NVP(lambda_);
+        ar & BOOST_SERIALIZATION_NVP(nglobal_);
+        ar & BOOST_SERIALIZATION_NVP(imgrows_);
+        ar & BOOST_SERIALIZATION_NVP(imgcols_);
+        ar & BOOST_SERIALIZATION_NVP(npix_);
+        ar & BOOST_SERIALIZATION_NVP(nnz_);
         ar & BOOST_SERIALIZATION_NVP(pickled_);
         return;
       }
 
       std::string path_;
+      // maximum range of lambda available
+      double lambda_min_;
+      double lambda_max_;
+      // user-requested wavelengths
       double wavemin_;
       double wavemax_;
       double wavebin_;
+      // wavelengths used
+      size_t nspec_;
+      size_t nlambda_;
+      vector_double lambda_;
+      size_t nglobal_;
+      // image dims
+      size_t imgrows_;
+      size_t imgcols_;
+      size_t npix_;
+      // estimate
+      size_t nnz_;
+      // python class
       std::string pickled_;
       
   };
@@ -412,9 +451,6 @@ namespace harp {
   BOOST_SERIALIZATION_SHARED_PTR(psf_pyspecter)
 
   psf * psf_pyspecter_create ( boost::property_tree::ptree const & props );
-  */
-
-#endif
 
 
 }
