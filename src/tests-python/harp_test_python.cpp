@@ -9,15 +9,16 @@
 using namespace std;
 using namespace harp;
 
+namespace py = boost::python
+
 
 int add_five(int x) {
   return x + 5;
 }
 
-
 BOOST_PYTHON_MODULE(Pointless)
 {
-  boost::python::def("add_five", add_five);
+  py::def("add_five", add_five);
 }
 
 
@@ -29,17 +30,27 @@ int main ( int argc, char *argv[] ) {
 
     initPointless();
 
-    boost::python::object main_module = boost::python::import("__main__");
-    boost::python::object main_namespace = main_module.attr("__dict__");
+    py::object main_module = py::import("__main__");
+    py::object main_namespace = main_module.attr("__dict__");
 
-    boost::python::object ignored = boost::python::exec(
-      "import Pointless\n"
-      "print Pointless.add_five(4)\n"
-      "result = 5 ** 2\n"
-      "print result\n"
-      , main_namespace);
+    py::exec ( "import harp_test_python_module", main_namespace );
+    py::object harptest = py::eval ( "harp_test_python_module.HarpTest(\"my/path\", 1.5, 4.0)", main_namespace );
 
-  } catch ( boost::python::error_already_set ) {
+    string path = py::extract < string > ( harptest.attr("get_path")() );
+
+    cout << "path = " << path << endl;
+
+    double diff = py::extract < double > ( harptest.attr("get_diff")() );
+
+    cout << "diff = " << diff << endl;
+
+    py::exec ( "import Pointless", main_namespace );
+    py::object pntless = py::eval ( "Pointless.add_five(4)", main_namespace );
+    int result = py::extract < int > ( pntless );
+
+    cout << "pointless = " << result << endl;
+
+  } catch ( py::error_already_set ) {
     PyErr_Print();
   }
 
