@@ -353,9 +353,9 @@ namespace harp {
 
 #ifdef HAVE_BOOST_PYTHON_HPP
 
-  /*
   // Specter PSF formats
 
+  /*
   class psf_pyspecter : public psf {
 
     friend class boost::serialization::access;
@@ -394,6 +394,10 @@ namespace harp {
       void serialize ( Archive & ar, const unsigned int version ) {
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(psf);
         ar & BOOST_SERIALIZATION_NVP(path_);
+        ar & BOOST_SERIALIZATION_NVP(wavemin_);
+        ar & BOOST_SERIALIZATION_NVP(wavemax_);
+        ar & BOOST_SERIALIZATION_NVP(wavebin_);
+        ar & BOOST_SERIALIZATION_NVP(pickled_);
         return;
       }
 
@@ -401,16 +405,14 @@ namespace harp {
       double wavemin_;
       double wavemax_;
       double wavebin_;
+      std::string pickled_;
       
   };
 
   BOOST_SERIALIZATION_SHARED_PTR(psf_pyspecter)
 
   psf * psf_pyspecter_create ( boost::property_tree::ptree const & props );
-
-*/
-
-
+  */
 
 #endif
 
