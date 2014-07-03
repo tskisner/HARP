@@ -106,7 +106,7 @@ harp::psf_pyspecter::~psf_pyspecter ( ) {
 
 void harp::psf_pyspecter::extent ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, size_t & n_x, size_t & n_y ) const {
 
-
+  HARP_THROW( "psf_pyspecter::extent should never be called" );
 
   return;
 }
@@ -120,7 +120,14 @@ void harp::psf_pyspecter::response ( size_t spec, size_t lambda, size_t & x_offs
 }
 
 
-void harp::psf_pyspecter::project ( std::map < size_t, std::set < size_t > > const & speclambda, matrix_double & A ) const {
+void harp::psf_pyspecter::extent_multi ( std::map < size_t, std::set < size_t > > const & speclambda, std::vector < size_t > & x_offset, std::vector < size_t > & y_offset, std::vector < size_t > & n_x, std::vector < size_t > & n_y ) const {
+
+  size_t total = psf::total_bins ( speclambda );
+
+  x_offset.resize ( total );
+  y_offset.resize ( total );
+  n_x.resize ( total );
+  n_y.resize ( total );
 
   Py_Initialize();
 
@@ -136,15 +143,126 @@ void harp::psf_pyspecter::project ( std::map < size_t, std::set < size_t > > con
     main_module.attr ( "picklestr" ) = pickled_;
     py::exec ( "pypsf = pickle.loads( picklestr )", main_namespace );
 
+    size_t cur = 0;
 
+    for ( std::map < size_t, std::set < size_t > > :: const_iterator itspec = speclambda.begin(); itspec != speclambda.end(); ++itspec ) {
 
+      for ( std::set < size_t > :: const_iterator itlambda = itspec->second.begin(); itlambda != itspec->second.end(); ++itlambda ) {
 
+        double wave = lambda_[ (*itlambda) ];
+        main_module.attr ( "ext_spec" ) = itspec->first;
+        main_module.attr ( "ext_wave" ) = wave;
 
+        py::exec ( "xmin, xmax, ymin, ymax = pypsf.xyrange(ext_spec, ext_wave)", main_namespace );
+
+        size_t xmin = py::extract < size_t > ( py::eval ( "xmin", main_namespace ) );
+        size_t xmax = py::extract < size_t > ( py::eval ( "xmax", main_namespace ) );
+        size_t ymin = py::extract < size_t > ( py::eval ( "ymin", main_namespace ) );
+        size_t ymax = py::extract < size_t > ( py::eval ( "ymax", main_namespace ) );
+
+        size_t nx = xmax - xmin + 1;
+        size_t ny = ymax - ymin + 1;
+
+        x_offset[ cur ] = xmin;
+        y_offset[ cur ] = ymin;
+        n_x[ cur ] = nx;
+        n_y[ cur ] = ny;
+
+        ++cur;
+
+      }
+
+    }
 
   } catch ( py::error_already_set ) {
     PyErr_Print();
   }
 
+  return;
+}
+
+
+void harp::psf_pyspecter::project ( std::map < size_t, std::set < size_t > > const & speclambda, matrix_double & A ) const {
+
+  size_t total = psf::total_bins ( speclambda );
+
+  // resize output to correct dimensions
+
+  A.resize ( npix_, total, false );
+  A.clear();
+
+  // iterate over spectral bins and populate the matrix elements
+
+  Py_Initialize();
+
+  try {
+
+    py::object main_module = py::import("__main__");
+    py::object main_namespace = main_module.attr("__dict__");
+
+    py::exec ( "import pickle", main_namespace );
+    py::exec ( "import numpy", main_namespace );
+    py::exec ( "import specter", main_namespace );
+
+    // unpickle a new instance in python
+    main_module.attr ( "picklestr" ) = pickled_;
+    py::exec ( "pypsf = pickle.loads( picklestr )", main_namespace );
+
+    matrix_double patch;
+    size_t xoff;
+    size_t yoff;
+
+    size_t col = 0;
+    size_t row;
+
+    for ( std::map < size_t, std::set < size_t > > :: const_iterator itspec = speclambda.begin(); itspec != speclambda.end(); ++itspec ) {
+
+      for ( std::set < size_t > :: const_iterator itlambda = itspec->second.begin(); itlambda != itspec->second.end(); ++itlambda ) {
+
+        double wave = lambda_[ (*itlambda) ];
+        main_module.attr ( "ext_spec" ) = itspec->first;
+        main_module.attr ( "ext_wave" ) = wave;
+
+        py::exec ( "xmin, xmax, ymin, ymax = pypsf.xyrange(ext_spec, ext_wave)", main_namespace );
+        py::exec ( "xslice, yslice, pixels = pypsf.xypix(ext_spec, ext_wave, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax)", main_namespace );
+
+        // pass back to C++
+
+        xoff = py::extract < size_t > ( py::eval ( "xslice[0]", main_namespace ) );
+        yoff = py::extract < size_t > ( py::eval ( "yslice[0]", main_namespace ) );
+        patch = py::extract < matrix_double > ( py::eval ( "pixels", main_namespace ) );
+
+        for ( size_t patch_col = 0; patch_col < patch.size2(); ++patch_col ) {
+
+          if ( xoff + patch_col < imgcols_ ) {
+            // this column is within the image dimensions
+
+            for ( size_t patch_row = 0; patch_row < patch.size1(); ++patch_row ) {
+
+              if ( yoff + patch_row < imgrows_ ) {
+                // this row is within the image dimensions
+
+                row = ( xoff + patch_col ) * imgrows_ + yoff + patch_row;
+
+                A ( row, col ) = patch ( patch_row, patch_col );
+
+              }
+
+            }
+
+          }
+
+        }
+
+        ++col;
+
+      }
+
+    }
+
+  } catch ( py::error_already_set ) {
+    PyErr_Print();
+  }
 
   return;
 }
@@ -152,6 +270,23 @@ void harp::psf_pyspecter::project ( std::map < size_t, std::set < size_t > > con
 
 void harp::psf_pyspecter::project_transpose ( std::map < size_t, std::set < size_t > > const & speclambda, matrix_double_sparse & AT ) const {
 
+  size_t total = total_bins ( speclambda );
+
+  // resize output to correct dimensions
+
+  AT.resize ( total, npix_, false );
+  AT.clear();
+
+  // we use the estimated number of non-zeros per row times the number 
+  // of rows to reserve space in the sparse matrix.
+
+  size_t nnz_estimate = response_nnz_estimate();
+  nnz_estimate *= total;
+
+  AT.reserve ( nnz_estimate, false );
+
+  // iterate over spectral bins and populate the matrix elements
+
   Py_Initialize();
 
   try {
@@ -166,10 +301,57 @@ void harp::psf_pyspecter::project_transpose ( std::map < size_t, std::set < size
     main_module.attr ( "picklestr" ) = pickled_;
     py::exec ( "pypsf = pickle.loads( picklestr )", main_namespace );
 
+    matrix_double patch;
+    size_t xoff;
+    size_t yoff;
 
+    size_t row = 0;
+    size_t col;
 
+    for ( std::map < size_t, std::set < size_t > > :: const_iterator itspec = speclambda.begin(); itspec != speclambda.end(); ++itspec ) {
 
-    
+      for ( std::set < size_t > :: const_iterator itlambda = itspec->second.begin(); itlambda != itspec->second.end(); ++itlambda ) {
+
+        double wave = lambda_[ (*itlambda) ];
+        main_module.attr ( "ext_spec" ) = itspec->first;
+        main_module.attr ( "ext_wave" ) = wave;
+
+        py::exec ( "xmin, xmax, ymin, ymax = pypsf.xyrange(ext_spec, ext_wave)", main_namespace );
+        py::exec ( "xslice, yslice, pixels = pypsf.xypix(ext_spec, ext_wave, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax)", main_namespace );
+
+        // pass back to C++
+
+        xoff = py::extract < size_t > ( py::eval ( "xslice[0]", main_namespace ) );
+        yoff = py::extract < size_t > ( py::eval ( "yslice[0]", main_namespace ) );
+        patch = py::extract < matrix_double > ( py::eval ( "pixels", main_namespace ) );
+
+        for ( size_t patch_col = 0; patch_col < patch.size2(); ++patch_col ) {
+
+          if ( xoff + patch_col < imgcols_ ) {
+            // this column is within the image dimensions
+
+            for ( size_t patch_row = 0; patch_row < patch.size1(); ++patch_row ) {
+
+              if ( yoff + patch_row < imgrows_ ) {
+                // this row is within the image dimensions
+
+                col = ( xoff + patch_col ) * imgrows_ + yoff + patch_row;
+
+                AT ( row, col ) = patch ( patch_row, patch_col );
+
+              }
+
+            }
+
+          }
+
+        }
+
+        ++row;
+
+      }
+
+    }
 
   } catch ( py::error_already_set ) {
     PyErr_Print();
@@ -199,6 +381,9 @@ void harp::psf_pyspecter::response ( size_t spec, size_t lambda, size_t & x_offs
   return;
 }
 
+void harp::psf_pyspecter::extent_multi ( std::map < size_t, std::set < size_t > > const & speclambda, std::vector < size_t > & x_offset, std::vector < size_t > & y_offset, std::vector < size_t > & n_x, std::vector < size_t > & n_y ) const {
+  return;
+}
 
 void harp::psf_pyspecter::project ( std::map < size_t, std::set < size_t > > const & speclambda, matrix_double & A ) const {
   return;

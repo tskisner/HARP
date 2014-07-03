@@ -563,10 +563,10 @@ void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double cons
     // start by masking all pixels...
     mask.clear();
 
-    size_t xoff;
-    size_t yoff;
-    size_t nx;
-    size_t ny;
+    vector < size_t > xoff;
+    vector < size_t > yoff;
+    vector < size_t > nx;
+    vector < size_t > ny;
 
     // select our spectral bins
 
@@ -582,36 +582,33 @@ void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double cons
 
       // we un-mask all pixels that touch only the good bins we are solving for
 
+      map < size_t, set < size_t > > mask_speclambda;
+
       for ( size_t s = 0; s < regit->n_good_spec; ++s ) {
         for ( size_t l = 0; l < regit->n_good_lambda; ++l ) {
-
-          design->extent ( s + regit->first_good_spec, l + regit->first_good_lambda, xoff, yoff, nx, ny );
-
-          for ( size_t j = 0; j < nx; ++j ) {
-            for ( size_t i = 0; i < ny; ++i ) {
-              mask[ ( xoff + j ) * img_rows + yoff + i ] = 1;
-            }
-          }
-
+          mask_speclambda[ s + regit->first_good_spec ].insert ( l + regit->first_good_lambda );
         }
       }
+
+      design->extent_multi ( mask_speclambda, xoff, yoff, nx, ny );
+
 
     } else {
 
       // we un-mask all pixels that touch any of the bins we are solving for
 
-      for ( size_t s = 0; s < regit->n_spec; ++s ) {
-        for ( size_t l = 0; l < regit->n_lambda; ++l ) {
+      design->extent_multi ( speclambda, xoff, yoff, nx, ny );
 
-          design->extent ( s + regit->first_spec, l + regit->first_lambda, xoff, yoff, nx, ny );
+    }
 
-          for ( size_t j = 0; j < nx; ++j ) {
-            for ( size_t i = 0; i < ny; ++i ) {
-              mask[ ( xoff + j ) * img_rows + yoff + i ] = 1;
-            }
-          }
+    for ( size_t b = 0; b < xoff.size(); ++b ) {
 
+      for ( size_t j = 0; j < nx[b]; ++j ) {
+        
+        for ( size_t i = 0; i < ny[b]; ++i ) {
+          mask[ ( xoff[b] + j ) * img_rows + yoff[b] + i ] = 1;
         }
+
       }
 
     }

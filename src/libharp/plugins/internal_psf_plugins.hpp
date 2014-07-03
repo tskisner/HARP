@@ -397,6 +397,8 @@ namespace harp {
 
       void response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch ) const;
 
+      void extent_multi ( std::map < size_t, std::set < size_t > > const & speclambda, std::vector < size_t > & x_offset, std::vector < size_t > & y_offset, std::vector < size_t > & n_x, std::vector < size_t > & n_y ) const;
+
       void project ( std::map < size_t, std::set < size_t > > const & speclambda, matrix_double & A ) const;
 
       void project_transpose ( std::map < size_t, std::set < size_t > > const & speclambda, matrix_double_sparse & AT ) const;

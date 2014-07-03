@@ -27,8 +27,6 @@ if USE_AM_ALLSTATIC
 endif
 
 
-
-
 noinst_HEADERS = harp_test.hpp harp_test_serialize.hpp
 
 bin_PROGRAMS = harp_test

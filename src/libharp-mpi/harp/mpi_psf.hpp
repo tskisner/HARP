@@ -32,12 +32,9 @@ namespace harp {
 
       void extent ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, size_t & n_x, size_t & n_y ) const;
 
-      // The base class provides a default implementation of these 2 functions, so that derived classes
-      // only need to implement the response() method.
-      
-      void project_transpose ( std::map < size_t, std::set < size_t > > const & speclambda, mpi_matrix_sparse & AT ) const;
+      void extent_multi ( std::map < size_t, std::set < size_t > > const & speclambda, std::vector < size_t > & x_offset, std::vector < size_t > & y_offset, std::vector < size_t > & n_x, std::vector < size_t > & n_y ) const;
 
-      // These are convenience functions if you want the whole projection matrix
+      void project_transpose ( std::map < size_t, std::set < size_t > > const & speclambda, mpi_matrix_sparse & AT ) const;
 
       void project_transpose ( mpi_matrix_sparse & AT ) const;
       

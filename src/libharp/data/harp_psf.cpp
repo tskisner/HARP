@@ -32,6 +32,33 @@ size_t harp::psf::total_bins ( std::map < size_t, std::set < size_t > > const & 
 }
 
 
+void harp::psf::extent_multi ( std::map < size_t, std::set < size_t > > const & speclambda, std::vector < size_t > & x_offset, std::vector < size_t > & y_offset, std::vector < size_t > & n_x, std::vector < size_t > & n_y ) const {
+
+  size_t total = total_bins ( speclambda );
+
+  x_offset.resize ( total );
+  y_offset.resize ( total );
+  n_x.resize ( total );
+  n_y.resize ( total );
+
+  size_t cur = 0;
+
+  for ( std::map < size_t, std::set < size_t > > :: const_iterator itspec = speclambda.begin(); itspec != speclambda.end(); ++itspec ) {
+
+    for ( std::set < size_t > :: const_iterator itlambda = itspec->second.begin(); itlambda != itspec->second.end(); ++itlambda ) {
+
+      extent ( itspec->first, (*itlambda), x_offset[ cur ], y_offset[ cur ], n_x[ cur ], n_y[ cur ] );
+
+      ++cur;
+
+    }
+
+  }
+
+  return;
+}
+
+
 void harp::psf::project ( std::map < size_t, std::set < size_t > > const & speclambda, matrix_double & A ) const {
 
   size_t total = total_bins ( speclambda );

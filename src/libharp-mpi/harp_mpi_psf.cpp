@@ -75,6 +75,12 @@ void harp::mpi_psf::extent ( size_t spec, size_t lambda, size_t & x_offset, size
 }
 
 
+void harp::mpi_psf::extent_multi ( std::map < size_t, std::set < size_t > > const & speclambda, std::vector < size_t > & x_offset, std::vector < size_t > & y_offset, std::vector < size_t > & n_x, std::vector < size_t > & n_y ) const {
+  local_->extent_multi ( speclambda, x_offset, y_offset, n_x, n_y );
+  return;
+}
+
+
 void harp::mpi_psf::project_transpose ( std::map < size_t, std::set < size_t > > const & speclambda, mpi_matrix_sparse & AT ) const {
 
   // check for consistent dimensions

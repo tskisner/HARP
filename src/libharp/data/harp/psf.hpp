@@ -60,10 +60,10 @@ namespace harp {
         return 0;
       }
 
-      static size_t total_bins ( std::map < size_t, std::set < size_t > > const & speclambda );
+      // The base class provides a default implementation of these 3 functions, so that derived classes
+      // only need to implement the response() and extent() methods.
 
-      // The base class provides a default implementation of these 2 functions, so that derived classes
-      // only need to implement the response() method.
+      virtual void extent_multi ( std::map < size_t, std::set < size_t > > const & speclambda, std::vector < size_t > & x_offset, std::vector < size_t > & y_offset, std::vector < size_t > & n_x, std::vector < size_t > & n_y ) const;
       
       virtual void project ( std::map < size_t, std::set < size_t > > const & speclambda, matrix_double & A ) const;
 
@@ -74,6 +74,10 @@ namespace harp {
       void project ( matrix_double & A ) const;
 
       void project_transpose ( matrix_double_sparse & AT ) const;
+
+
+      // convenience function
+      static size_t total_bins ( std::map < size_t, std::set < size_t > > const & speclambda );
       
       std::string type ( ) const;
       
