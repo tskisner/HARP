@@ -10,7 +10,7 @@ AM_LIBS =
 include $(top_srcdir)/src/build_options.am
 
 
-lib_LTLIBRARIES = libboost_numpy.la
+noinst_LTLIBRARIES = libboost_numpy.la
 
 #harp_test_numpy_dtype_mod.la harp_test_numpy_indexing_mod.la harp_test_numpy_ndarray_mod.la harp_test_numpy_shapes_mod.la harp_test_numpy_templates_mod.la harp_test_numpy_ufunc_mod.la
 

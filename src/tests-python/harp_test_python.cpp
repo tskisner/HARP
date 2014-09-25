@@ -27,6 +27,8 @@ int main ( int argc, char *argv[] ) {
 
   Py_Initialize();
 
+  boost::numpy::initialize();
+
   try {
 
     initPointless();
@@ -84,11 +86,6 @@ int main ( int argc, char *argv[] ) {
     cout << duh.ptr() << endl;
     boost::numpy::ndarray nptest = py::extract < boost::numpy::ndarray > ( duh );
 
-    /*
-    
-    py::object duh = py::eval ( "duh", main_namespace );
-    boost::numpy::ndarray nptest = py::extract < boost::numpy::ndarray > ( duh );
-
     int npdims = nptest.get_nd();
     Py_intptr_t const * npshape = nptest.get_shape();
     cout << "nptest has " << npdims << " dimensions, first one is length " << npshape[0] << endl;
@@ -99,7 +96,7 @@ int main ( int argc, char *argv[] ) {
     for ( size_t i = 0; i < npshape[0]; ++i ) {
       cout << "nptest[" << i << "] = " << npdata[i] << endl;
     }
-    */
+
 
   } catch ( py::error_already_set ) {
     PyErr_Print();
