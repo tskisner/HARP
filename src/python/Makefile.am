@@ -1,19 +1,16 @@
-SUBDIRS = boost_numpy
 
-AUTOMAKE_OPTIONS = foreign
+# Initialize compile and linking flags
 
-AM_CPPFLAGS = -I$(top_srcdir)/src/libharp -I$(top_srcdir)/src/libharp/math -I$(top_srcdir)/src/libharp/data -I$(top_srcdir)/src/libharp/plugin -I$(top_srcdir)/src/python -I$(top_srcdir)/src/python/boost_numpy $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS) $(PYTHON_CPPFLAGS) $(NUMPY_CPPFLAGS)
-AM_LDFLAGS = 
-AM_LIBS = $(OPENMP_CXXFLAGS) $(BOOST_PYTHON_LDFLAGS) $(BOOST_PYTHON_LIBS) $(PYTHON_LDFLAGS)
-AM_CXXFLAGS = $(OPENMP_CXXFLAGS)
+AM_CPPFLAGS =
+AM_CXXFLAGS =
+AM_LDFLAGS =
+AM_LIBS = 
 
-if ENABLE_AM_DEBUG
-else
-  AM_CXXFLAGS += -DNDEBUG
-endif
+# Append compile and linking flags based on configure variables
+include $(top_srcdir)/src/build_options.am
+
 
 EXTRA_DIST = gen_python.sh
-
 
 pkgharpdir = $(pyexecdir)/harp
 

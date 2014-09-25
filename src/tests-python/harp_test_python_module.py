@@ -1,6 +1,6 @@
 
 import re
-#import numpy as np
+import numpy as np
 
 class HarpTest ( object ):
 	'''Class for testing embedded python.'''
@@ -11,11 +11,11 @@ class HarpTest ( object ):
 		self.minval = minval
 		self.maxval = maxval
 		self.diffval = maxval - minval
+		self.data_float64 = np.arange (10)
 
 	def get_path ( self ):
 		return self.path
 
 	def get_diff ( self ):
 		return self.diffval
-
 

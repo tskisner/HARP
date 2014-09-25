@@ -1,39 +1,25 @@
 
 SUBDIRS = math data extract plugins
 
-AM_CPPFLAGS = -I$(top_srcdir)/src/libharp/math -I$(top_srcdir)/src/libharp/data -I$(top_srcdir)/src/libharp/extract -I$(top_srcdir)/src/libharp/plugins -I$(top_srcdir)/src/libharp $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS) $(OPENMP_CXXFLAGS)
+# Initialize compile and linking flags
 
+AM_CPPFLAGS =
+AM_CXXFLAGS =
 AM_LDFLAGS =
+AM_LIBS = 
 
-AM_LIBS = $(OPENMP_CXXFLAGS)
+# Append compile and linking flags based on configure variables
+include $(top_srcdir)/src/build_options.am
 
-AM_CXXFLAGS = $(OPENMP_CXXFLAGS)
+# Get config variables
+include $(top_srcdir)/src/config.am
 
-if ENABLE_AM_DEBUG
-else
-  AM_CXXFLAGS += -DNDEBUG
-endif
 
 noinst_HEADERS = harp_internal.hpp
 include_HEADERS = harp.hpp
 
 noinst_SCRIPTS = gen_harpconfig.sh
 bin_SCRIPTS = harpconfig
-
-
-config_serial_link = -lharp $(LDFLAGS) $(BOOST_PROGRAM_OPTIONS_LDFLAGS) $(BOOST_PROGRAM_OPTIONS_LIBS) $(BOOST_REGEX_LDFLAGS) $(BOOST_REGEX_LIBS)
-config_mpi_link = -lharp-mpi $(LDFLAGS) $(ELEMENTAL) $(BOOST_MPI_LDFLAGS) $(BOOST_MPI_LIBS) $(BOOST_PROGRAM_OPTIONS_LDFLAGS) $(BOOST_PROGRAM_OPTIONS_LIBS) $(BOOST_REGEX_LDFLAGS) $(BOOST_REGEX_LIBS)
-
-if HAVE_AM_PYTHON
-  config_serial_link += -lboost_numpy $(BOOST_PYTHON_LDFLAGS) $(BOOST_PYTHON_LIBS) $(BOOST_SERIALIZATION_LDFLAGS) $(BOOST_SERIALIZATION_LIBS) $(PYTHON_LDFLAGS) $(PYTHON_LIBS)
-  config_mpi_link += -lboost_numpy $(BOOST_PYTHON_LDFLAGS) $(BOOST_PYTHON_LIBS) $(BOOST_SERIALIZATION_LDFLAGS) $(BOOST_SERIALIZATION_LIBS) $(PYTHON_LDFLAGS) $(PYTHON_LIBS)
-else
-  config_serial_link += $(BOOST_SERIALIZATION_LDFLAGS) $(BOOST_SERIALIZATION_LIBS)
-  config_mpi_link += $(BOOST_SERIALIZATION_LDFLAGS) $(BOOST_SERIALIZATION_LIBS)
-endif
-
-config_serial_link += $(CFITSIO) $(LAPACK_LIBS) $(BLAS_LIBS) $(FCLIBS) $(OPENMP_CXXFLAGS) $(LIBS) -lm
-config_mpi_link += $(CFITSIO) $(LAPACK_LIBS) $(BLAS_LIBS) $(FCLIBS) $(OPENMP_CXXFLAGS) $(LIBS) -lm
 
 
 harpconfig : harpconfig.in

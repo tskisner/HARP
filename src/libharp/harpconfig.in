@@ -12,8 +12,13 @@ CXXFLAGS="@CXXFLAGS@"
 CPPFLAGS="@CPPFLAGS@"
 LDFLAGS="@LDFLAGS@"
 LIBS="@LIBS@"
+
 MPICXX="@MPICXX@"
+MPICXXFLAGS="@MPICXXFLAGS@"
+MPICPPFLAGS="@MPICPPFLAGS@"
+MPILDFLAGS="@MPILDFLAGS@"
 MPILIBS="@MPILIBS@"
+
 PYPATH="@PYPATH@"
 PLUGCOMP="@PLUGCOMP@"
 PLUGLINK="@PLUGLINK@"
@@ -31,9 +36,12 @@ help() {
   echo "        [ --ldflags (print library include path) ]"
   echo "        [ --libs (print serial linking flags) ]"
   echo "        [ --link (print full serial link command) ]"
-  echo "        [ --mpicxx (print MPI compiler used) ]"
-  echo "        [ --mpilibs (print MPI linking flags) ]"
-  echo "        [ --mpilink (print full MPI link command) ]"
+  echo "        [ --mpi-cxx (print MPI compiler used) ]"
+  echo "        [ --mpi-cxxflags (print MPI compiler optimizations used) ]"
+  echo "        [ --mpi-cppflags (print MPI include flags) ]"
+  echo "        [ --mpi-ldflags (print MPI library include path) ]"
+  echo "        [ --mpi-libs (print MPI linking flags) ]"
+  echo "        [ --mpi-link (print full MPI link command) ]"
   echo "        [ --python (print python module location for PYTHONPATH) ]"
   echo "        [ --plugflags (print external plugin compiling flags) ]"
   echo "        [ --pluglink (print external plugin linking commands) ]"
@@ -57,9 +65,14 @@ DOCPPFLAGS=no
 DOLDFLAGS=no
 DOLIBS=no
 DOLINK=no
+
 DOMPICXX=no
+DOMPICXXFLAGS=no
+DOMPICPPFLAGS=no
+DOMPILDFLAGS=no
 DOMPILIBS=no
 DOMPILINK=no
+
 DOPYTHON=no
 DOPLUGCOMP=no
 DOPLUGLINK=no
@@ -88,13 +101,22 @@ while [ $# -gt 0 ]; do
     --link)
       DOLINK=yes
       ;;
-    --mpicxx)
+    --mpi-cxx)
       DOMPICXX=yes
       ;;
-    --mpilibs)
+    --mpi-cxxflags)
+      DOMPICXXFLAGS=yes
+      ;;
+    --mpi-cppflags)
+      DOMPICPPFLAGS=yes
+      ;;
+    --mpi-ldflags)
+      DOMPILDFLAGS=yes
+      ;;
+    --mpi-libs)
       DOMPILIBS=yes
       ;;
-    --mpilink)
+    --mpi-link)
       DOMPILINK=yes
       ;;
     --python)
@@ -151,8 +173,16 @@ if [ $DOCXXFLAGS = yes ]; then
   OUT="${OUT} ${CXXFLAGS}"
 fi
 
+if [ $DOMPICXXFLAGS = yes ]; then
+  OUT="${OUT} ${MPICXXFLAGS}"
+fi
+
 if [ $DOCPPFLAGS = yes ]; then
   OUT="${OUT} ${CPPFLAGS}"
+fi
+
+if [ $DOMPICPPFLAGS = yes ]; then
+  OUT="${OUT} ${MPICPPFLAGS}"
 fi
 
 if [ $DOPLUGCOMP = yes ]; then
@@ -167,12 +197,16 @@ if [ $DOLDFLAGS = yes ]; then
   OUT="${OUT} ${LDFLAGS}"
 fi
 
-if [ $DOMPILIBS = yes ]; then
-  OUT="${OUT} ${MPILIBS}"
+if [ $DOMPILDFLAGS = yes ]; then
+  OUT="${OUT} ${MPILDFLAGS}"
 fi
 
 if [ $DOLIBS = yes ]; then
   OUT="${OUT} ${LIBS}"
+fi
+
+if [ $DOMPILIBS = yes ]; then
+  OUT="${OUT} ${MPILIBS}"
 fi
 
 echo "${OUT}"

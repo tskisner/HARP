@@ -6,7 +6,7 @@ dnl | Initialize package info
 dnl +------------------------
 AC_INIT([HARP], [1.0-beta], [work@theodorekisner.com], [harp], [https://theodorekisner.com/software/harp/])
 AC_CONFIG_SRCDIR([Makefile.am])
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_HEADERS(config.h)
 AC_CONFIG_MACRO_DIR([m4])
 dnl +-------------------------
@@ -62,6 +62,7 @@ LT_INIT
 dnl LT_SYS_MODULE_EXT
 dnl LT_FUNC_DLSYM_USCORE
 AC_PROG_CXX
+AX_CXX_COMPILE_STDCXX_11([noext], [mandatory])
 AC_PROG_CC
 AC_LANG([C++])
 AC_CHECK_HEADERS([iostream])
@@ -228,6 +229,7 @@ dnl +------------------------------------------------
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([src/Makefile])
 AC_CONFIG_FILES([src/libharp/math/Makefile])
+AC_CONFIG_FILES([src/libharp/math/boost_numpy/Makefile])
 AC_CONFIG_FILES([src/libharp/data/Makefile])
 AC_CONFIG_FILES([src/libharp/plugins/Makefile])
 AC_CONFIG_FILES([src/libharp/extract/Makefile])
@@ -235,7 +237,6 @@ AC_CONFIG_FILES([src/libharp/Makefile])
 AC_CONFIG_FILES([src/tests/Makefile])
 AC_CONFIG_FILES([src/apps/Makefile])
 AC_CONFIG_FILES([src/python/Makefile])
-AC_CONFIG_FILES([src/python/boost_numpy/Makefile])
 AC_CONFIG_FILES([src/tests-python/Makefile])
 AC_CONFIG_FILES([src/libharp-mpi/math/Makefile])
 AC_CONFIG_FILES([src/libharp-mpi/Makefile])

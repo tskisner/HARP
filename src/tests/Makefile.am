@@ -1,31 +1,17 @@
 
-EXTRA_DIST = testdata
+# Initialize compile and linking flags
 
-AM_CPPFLAGS = -I$(top_srcdir)/src/libharp/math -I$(top_srcdir)/src/libharp/data -I$(top_srcdir)/src/libharp/extract -I$(top_srcdir)/src/libharp/plugins -I$(top_srcdir)/src/libharp -I$(top_srcdir)/src/tests $(BOOST_CPPFLAGS) $(CFITSIO_CPPFLAGS)
-
+AM_CPPFLAGS =
+AM_CXXFLAGS =
 AM_LDFLAGS =
+AM_LIBS = \
+$(top_builddir)/src/libharp/libharp.la
 
-AM_LIBS = $(top_builddir)/src/libharp/libharp.la $(BOOST_PROGRAM_OPTIONS_LDFLAGS) $(BOOST_PROGRAM_OPTIONS_LIBS) $(BOOST_REGEX_LDFLAGS) $(BOOST_REGEX_LIBS)
+# Append compile and linking flags based on configure variables
+include $(top_srcdir)/src/build_options.am
 
-if HAVE_AM_PYTHON
-  AM_LIBS += $(top_builddir)/src/python/boost_numpy/libboost_numpy.la $(BOOST_PYTHON_LDFLAGS) $(BOOST_PYTHON_LIBS) $(BOOST_SERIALIZATION_LDFLAGS) $(BOOST_SERIALIZATION_LIBS) $(PYTHON_LDFLAGS) $(PYTHON_LIBS)
-else
-  AM_LIBS += $(BOOST_SERIALIZATION_LDFLAGS) $(BOOST_SERIALIZATION_LIBS)
-endif
 
-AM_LIBS += $(CFITSIO) $(LAPACK_LIBS) $(BLAS_LIBS) $(FCLIBS) $(OPENMP_CXXFLAGS) -lm
-
-AM_CXXFLAGS = $(OPENMP_CXXFLAGS)
-
-if ENABLE_AM_DEBUG
-else
-  AM_CXXFLAGS += -DNDEBUG
-endif
-
-if USE_AM_ALLSTATIC
-  AM_LDFLAGS += -all-static
-endif
-
+EXTRA_DIST = testdata
 
 noinst_HEADERS = harp_test.hpp harp_test_serialize.hpp
 

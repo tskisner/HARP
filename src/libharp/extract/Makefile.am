@@ -1,16 +1,14 @@
 
-SUBDIRS = 
+# Initialize compile and linking flags
 
-AM_CPPFLAGS = -I$(top_srcdir)/src/libharp/math -I$(top_srcdir)/src/libharp/data -I$(top_srcdir)/src/libharp/plugins -I$(top_srcdir)/src/libharp/extract -I$(top_srcdir)/src/libharp $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS) $(OPENMP_CXXFLAGS)
+AM_CPPFLAGS =
+AM_CXXFLAGS =
 AM_LDFLAGS =
-AM_LIBS = $(OPENMP_CXXFLAGS)
+AM_LIBS = 
 
-AM_CXXFLAGS = $(OPENMP_CXXFLAGS)
+# Append compile and linking flags based on configure variables
+include $(top_srcdir)/src/build_options.am
 
-if ENABLE_AM_DEBUG
-else
-  AM_CXXFLAGS += -DNDEBUG
-endif
 
 noinst_LTLIBRARIES = libharpextract.la
 

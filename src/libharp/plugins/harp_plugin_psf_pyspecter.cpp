@@ -34,16 +34,19 @@ harp::psf_pyspecter::psf_pyspecter ( boost::property_tree::ptree const & props )
 
   Py_Initialize();
 
+  // Initialize NumPy
+  boost::numpy::initialize();
+
   try {
 
     py::object main_module = py::import("__main__");
     py::object main_namespace = main_module.attr("__dict__");
 
-    py::exec ( "import specter", main_namespace );
+    py::exec ( "import specter.psf as specpsf", main_namespace );
 
     ostringstream com;
     com.str("");
-    com << "pypsf = specter.load_psf(\"" << path_ << "\")";
+    com << "pypsf = specpsf.load_psf(\"" << path_ << "\")";
 
     // instantiate psf
     py::exec ( com.str().c_str(), main_namespace );
@@ -56,13 +59,16 @@ harp::psf_pyspecter::psf_pyspecter ( boost::property_tree::ptree const & props )
     imgcols_ = py::extract < size_t > ( py::eval ( "pypsf.npix_x", main_namespace ) );
 
     // get maximum wavelength extent that is valid for all spectra
-    lambda_min_ = py::extract < size_t > ( py::eval ( "pypsf._wmin", main_namespace ) );
-    lambda_max_ = py::extract < size_t > ( py::eval ( "pypsf._wmax", main_namespace ) );
+    lambda_min_ = py::extract < double > ( py::eval ( "pypsf._wmin", main_namespace ) );
+    lambda_max_ = py::extract < double > ( py::eval ( "pypsf._wmax", main_namespace ) );
+
+    // get copy of numpy array
+    //boost::numpy::ndarray nptest = py::extract < 
 
     // to get an estimate of the NNZ, we just use the first point.
 
     py::exec ( 
-      "xmin, xmax, ymin, ymax = pypsf.xyrange(0, 0)\n"
+      "xmin, xmax, ymin, ymax = pypsf.xyrange(0, pypsf._wmin)\n"
       "nnzapprox = (xmax-xmin)*(ymax-ymin)\n"
       , main_namespace );
 
@@ -73,7 +79,11 @@ harp::psf_pyspecter::psf_pyspecter ( boost::property_tree::ptree const & props )
     pickled_ = py::extract < string > ( py::eval ( "pickle.dumps( pypsf, -1 )", main_namespace ) );
 
   } catch ( py::error_already_set ) {
-    PyErr_Print();
+
+    string error_str = parse_python_exception();
+    throw std::runtime_error ( error_str );
+
+    //PyErr_Print();
   }
 
   wavemin_ = props.get < double > ( psf_pyspecter_key_wmin, lambda_min_ );
@@ -137,7 +147,7 @@ void harp::psf_pyspecter::extent_multi ( std::map < size_t, std::set < size_t > 
     py::object main_namespace = main_module.attr("__dict__");
 
     py::exec ( "import pickle", main_namespace );
-    py::exec ( "import specter", main_namespace );
+    py::exec ( "import specter.psf as specpsf", main_namespace );
 
     // unpickle a new instance in python
     main_module.attr ( "picklestr" ) = pickled_;
@@ -175,7 +185,11 @@ void harp::psf_pyspecter::extent_multi ( std::map < size_t, std::set < size_t > 
     }
 
   } catch ( py::error_already_set ) {
-    PyErr_Print();
+
+    string error_str = parse_python_exception();
+    throw std::runtime_error ( error_str );
+
+    //PyErr_Print();
   }
 
   return;
@@ -202,7 +216,7 @@ void harp::psf_pyspecter::project ( std::map < size_t, std::set < size_t > > con
 
     py::exec ( "import pickle", main_namespace );
     py::exec ( "import numpy", main_namespace );
-    py::exec ( "import specter", main_namespace );
+    py::exec ( "import specter.psf as specpsf", main_namespace );
 
     // unpickle a new instance in python
     main_module.attr ( "picklestr" ) = pickled_;
@@ -261,7 +275,11 @@ void harp::psf_pyspecter::project ( std::map < size_t, std::set < size_t > > con
     }
 
   } catch ( py::error_already_set ) {
-    PyErr_Print();
+
+    string error_str = parse_python_exception();
+    throw std::runtime_error ( error_str );
+
+    //PyErr_Print();
   }
 
   return;
@@ -295,7 +313,7 @@ void harp::psf_pyspecter::project_transpose ( std::map < size_t, std::set < size
     py::object main_namespace = main_module.attr("__dict__");
 
     py::exec ( "import pickle", main_namespace );
-    py::exec ( "import specter", main_namespace );
+    py::exec ( "import specter.psf as specpsf", main_namespace );
 
     // unpickle a new instance in python
     main_module.attr ( "picklestr" ) = pickled_;
@@ -354,7 +372,11 @@ void harp::psf_pyspecter::project_transpose ( std::map < size_t, std::set < size
     }
 
   } catch ( py::error_already_set ) {
-    PyErr_Print();
+
+    string error_str = parse_python_exception();
+    throw std::runtime_error ( error_str );
+
+    //PyErr_Print();
   }
 
 

@@ -79,6 +79,27 @@ int main ( int argc, char *argv[] ) {
 
     cout << "pointless = " << result << endl;
 
+    py::exec ( "duh = test2.data_float64", main_namespace );
+    py::object duh = py::eval ( "duh", main_namespace );
+    cout << duh.ptr() << endl;
+    boost::numpy::ndarray nptest = py::extract < boost::numpy::ndarray > ( duh );
+
+    /*
+    
+    py::object duh = py::eval ( "duh", main_namespace );
+    boost::numpy::ndarray nptest = py::extract < boost::numpy::ndarray > ( duh );
+
+    int npdims = nptest.get_nd();
+    Py_intptr_t const * npshape = nptest.get_shape();
+    cout << "nptest has " << npdims << " dimensions, first one is length " << npshape[0] << endl;
+
+    double const * npdata = reinterpret_cast < double * > ( nptest.get_data() );
+
+    
+    for ( size_t i = 0; i < npshape[0]; ++i ) {
+      cout << "nptest[" << i << "] = " << npdata[i] << endl;
+    }
+    */
 
   } catch ( py::error_already_set ) {
     PyErr_Print();

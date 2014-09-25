@@ -1,14 +1,16 @@
 
-AM_CPPFLAGS = -I$(top_srcdir)/src/libharp/math $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS)
-AM_LDFLAGS = 
-AM_LIBS = $(OPENMP_CXXFLAGS)
+SUBDIRS = boost_numpy
 
-AM_CXXFLAGS = $(OPENMP_CXXFLAGS)
+# Initialize compile and linking flags
 
-if ENABLE_AM_DEBUG
-else
-  AM_CXXFLAGS += -DNDEBUG
-endif
+AM_CPPFLAGS =
+AM_CXXFLAGS =
+AM_LDFLAGS =
+AM_LIBS = 
+
+# Append compile and linking flags based on configure variables
+include $(top_srcdir)/src/build_options.am
+
 
 EXTRA_DIST = boost
 
@@ -19,7 +21,8 @@ noinst_LTLIBRARIES = libharpmath.la
 libharpmath_la_includedir = $(includedir)/harp
 libharpmath_la_include_HEADERS = harp/math.hpp harp/linalg.hpp
 libharpmath_la_SOURCES = harp_linalg.cpp harp_math.cpp
-libharpmath_la_LIBADD = 
+libharpmath_la_LIBADD = \
+$(top_builddir)/src/libharp/math/boost_numpy/libboost_numpy.la
 
 install-data-local:
 	@$(mkinstalldirs) $(DESTDIR)$(includedir)/boost; \

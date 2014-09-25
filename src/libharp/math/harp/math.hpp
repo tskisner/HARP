@@ -72,6 +72,11 @@ namespace harp {
     (*handler) ( e ); \
   }
 
+  // if we have been built with python support, enable functions to
+  // repackage python exceptions into thrown C++ exceptions.
+
+  std::string parse_python_exception();
+
   // helper wrapper to gettimeofday
 
   double wtime ( );
