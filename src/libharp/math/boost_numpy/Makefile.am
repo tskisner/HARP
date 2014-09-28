@@ -9,6 +9,8 @@ AM_LIBS =
 # Append compile and linking flags based on configure variables
 include $(top_srcdir)/src/build_options.am
 
+EXTRA_DIST = LICENSE_1_0.txt version.txt
+
 
 noinst_LTLIBRARIES = libboost_numpy.la
 

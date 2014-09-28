@@ -1,5 +1,9 @@
 
-SUBDIRS = boost_numpy
+SUBDIRS =
+
+if HAVE_AM_PYTHON
+  SUBDIRS += boost_numpy
+endif
 
 # Initialize compile and linking flags
 

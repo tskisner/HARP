@@ -72,7 +72,7 @@ AC_CHECK_HEADERS([cstdlib])
 harp_openmp=yes
 ax_have_openmp=no
 AC_ARG_ENABLE(openmp, [AC_HELP_STRING([--disable-openmp], [Disable OpenMP])], [harp_openmp=$enable_openmp])
-if test x"$harp_openmp" != xno; then
+if test $harp_openmp = yes; then
   AX_OPENMP([ax_have_openmp=yes;AC_DEFINE(HAVE_OPENMP,1,[Define if OpenMP is enabled])])
 fi
 AM_CONDITIONAL([HAVE_AM_OPENMP], [test $ax_have_openmp = yes])
@@ -102,7 +102,7 @@ if test x"$enable_all_static" = x"yes"; then
 fi
 AM_CONDITIONAL([USE_AM_ALLSTATIC], [test "$harp_static" = "yes"])
 if test x"$enable_shared" = x"yes"; then
-  if test x"$harp_static" = xno; then
+  if test $harp_static = no; then
     harp_plugins=yes
     AC_DEFINE([USE_PLUGINS], 1, [Enable support for external plugins])
   else
@@ -142,7 +142,7 @@ dnl | Check for Python
 dnl +------------------------------------------------
 harp_python=yes
 AC_ARG_ENABLE(python, [AC_HELP_STRING([--disable-python], [Disable python bindings])], [harp_python=$enable_python])
-if test x"$harp_python" != xno; then
+if test $harp_python = yes; then
   AM_PATH_PYTHON
   ACX_PYTHON_DEV
   ACX_NUMPY

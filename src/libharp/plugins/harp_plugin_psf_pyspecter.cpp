@@ -62,9 +62,6 @@ harp::psf_pyspecter::psf_pyspecter ( boost::property_tree::ptree const & props )
     lambda_min_ = py::extract < double > ( py::eval ( "pypsf._wmin", main_namespace ) );
     lambda_max_ = py::extract < double > ( py::eval ( "pypsf._wmax", main_namespace ) );
 
-    // get copy of numpy array
-    //boost::numpy::ndarray nptest = py::extract < 
-
     // to get an estimate of the NNZ, we just use the first point.
 
     py::exec ( 
@@ -244,21 +241,33 @@ void harp::psf_pyspecter::project ( std::map < size_t, std::set < size_t > > con
 
         xoff = py::extract < size_t > ( py::eval ( "xslice[0]", main_namespace ) );
         yoff = py::extract < size_t > ( py::eval ( "yslice[0]", main_namespace ) );
-        patch = py::extract < matrix_double > ( py::eval ( "pixels", main_namespace ) );
 
-        for ( size_t patch_col = 0; patch_col < patch.size2(); ++patch_col ) {
+        boost::numpy::ndarray patch = py::extract < boost::numpy::ndarray > ( "pixels" );
+
+        int patchdims = patch.get_nd();
+
+        if ( patchdims != 2 ) {
+          HARP_THROW( "PSF patch is not a 2D array" );
+          return;
+        }
+
+        Py_intptr_t const * patchshape = patch.get_shape();
+
+        double * pydata = reinterpret_cast < double * > patch.get_data();
+
+        for ( size_t patch_col = 0; patch_col < patchshape[1]; ++patch_col ) {
 
           if ( xoff + patch_col < imgcols_ ) {
             // this column is within the image dimensions
 
-            for ( size_t patch_row = 0; patch_row < patch.size1(); ++patch_row ) {
+            for ( size_t patch_row = 0; patch_row < patchshape[0]; ++patch_row ) {
 
               if ( yoff + patch_row < imgrows_ ) {
                 // this row is within the image dimensions
 
                 row = ( xoff + patch_col ) * imgrows_ + yoff + patch_row;
 
-                A ( row, col ) = patch ( patch_row, patch_col );
+                A ( row, col ) = pydata[ patch_row * patchshape[1] + patch_col ];
 
               }
 
@@ -341,21 +350,33 @@ void harp::psf_pyspecter::project_transpose ( std::map < size_t, std::set < size
 
         xoff = py::extract < size_t > ( py::eval ( "xslice[0]", main_namespace ) );
         yoff = py::extract < size_t > ( py::eval ( "yslice[0]", main_namespace ) );
-        patch = py::extract < matrix_double > ( py::eval ( "pixels", main_namespace ) );
 
-        for ( size_t patch_col = 0; patch_col < patch.size2(); ++patch_col ) {
+        boost::numpy::ndarray patch = py::extract < boost::numpy::ndarray > ( "pixels" );
+
+        int patchdims = patch.get_nd();
+
+        if ( patchdims != 2 ) {
+          HARP_THROW( "PSF patch is not a 2D array" );
+          return;
+        }
+
+        Py_intptr_t const * patchshape = patch.get_shape();
+
+        double * pydata = reinterpret_cast < double * > patch.get_data();
+
+        for ( size_t patch_col = 0; patch_col < patchshape[1]; ++patch_col ) {
 
           if ( xoff + patch_col < imgcols_ ) {
             // this column is within the image dimensions
 
-            for ( size_t patch_row = 0; patch_row < patch.size1(); ++patch_row ) {
+            for ( size_t patch_row = 0; patch_row < patchshape[0]; ++patch_row ) {
 
               if ( yoff + patch_row < imgrows_ ) {
                 // this row is within the image dimensions
 
                 col = ( xoff + patch_col ) * imgrows_ + yoff + patch_row;
 
-                AT ( row, col ) = patch ( patch_row, patch_col );
+                AT ( row, col ) = pydata[ patch_row * patchshape[1] + patch_col ];
 
               }
 

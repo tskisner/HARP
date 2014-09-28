@@ -1,0 +1,109 @@
+
+# Use MPI compilers
+CXX = @MPICXX@
+CC = @MPICC@
+FC = @MPIFC@
+
+# All internal include paths needed
+
+AM_CPPFLAGS += \
+-I$(top_srcdir)/src/libharp \
+-I$(top_srcdir)/src/libharp/math \
+-I$(top_srcdir)/src/libharp/math/boost_numpy \
+-I$(top_srcdir)/src/libharp/data \
+-I$(top_srcdir)/src/libharp/plugins \
+-I$(top_srcdir)/src/libharp/extract \
+-I$(top_srcdir)/src/libharp-mpi \
+-I$(top_srcdir)/src/libharp-mpi/math \
+-I$(top_srcdir)/src/apps \
+-I$(top_srcdir)/src/tests \
+-I$(top_srcdir)/src/apps-mpi \
+-I$(top_srcdir)/src/tests-mpi
+
+# Enable debugging
+
+if ENABLE_AM_DEBUG
+else
+  AM_CXXFLAGS += -DNDEBUG
+endif
+
+# Append OpenMP flags
+
+if HAVE_AM_OPENMP
+  AM_CXXFLAGS += $(OPENMP_CXXFLAGS)
+  AM_LIBS += $(OPENMP_CXXFLAGS)
+endif
+
+# If building full-static, pass options to libtool
+
+if USE_AM_ALLSTATIC
+  AM_LDFLAGS += -all-static
+endif
+
+# Always require boost core functionality.  Optionally
+# enable boost python and MPI.  The linking order here is 
+# critical, and must be mpi --> python --> serialization.
+
+AM_CPPFLAGS += \
+$(BOOST_CPPFLAGS)
+
+AM_LDFLAGS += \
+$(BOOST_MPI_LDFLAGS) \
+$(BOOST_REGEX_LDFLAGS) \
+$(BOOST_PROGRAM_OPTIONS_LDFLAGS)
+
+AM_LIBS += \
+$(BOOST_MPI_LIBS) \
+$(BOOST_REGEX_LIBS) \
+$(BOOST_PROGRAM_OPTIONS_LIBS)
+
+if HAVE_AM_PYTHON
+  AM_CPPFLAGS += \
+  $(PYTHON_CPPFLAGS) \
+  $(NUMPY_CPPFLAGS) \
+  $(BOOST_PYTHON_CPPFLAGS)
+
+  AM_LDFLAGS += \
+  $(BOOST_PYTHON_LDFLAGS) \
+  $(BOOST_SERIALIZATION_LDFLAGS) \
+  $(PYTHON_LDFLAGS) 
+
+  AM_LIBS += \
+  $(BOOST_PYTHON_LIBS) \
+  $(BOOST_SERIALIZATION_LIBS) \
+  $(PYTHON_LIBS)
+else
+  AM_LDFLAGS += \
+  $(BOOST_SERIALIZATION_LDFLAGS)
+
+  AM_LIBS += \
+  $(BOOST_SERIALIZATION_LIBS)
+endif
+
+# MPI support requires elemental
+
+AM_CPPFLAGS += \
+$(ELEMENTAL_CPPFLAGS)
+
+AM_LIBS += \
+$(ELEMENTAL)
+
+# Always require CFITSIO
+
+AM_CPPFLAGS += \
+$(CFITSIO_CPPFLAGS)
+
+AM_LIBS += \
+$(CFITSIO)
+
+# Always require LAPACK/BLAS
+
+AM_LIBS += \
+$(LAPACK_LIBS) \
+$(BLAS_LIBS)
+
+# Always need the C math library for CFITSIO
+
+AM_LIBS += -lm
+
+

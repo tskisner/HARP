@@ -22,7 +22,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 m4_define([_BOOST_SERIAL], [m4_translit([
-# serial 21
+# serial 23
 ], [#
 ], [])])
 
@@ -426,7 +426,10 @@ for boost_rtopt_ in $boost_rtopt '' -d; do
              /opt/local/lib* /usr/local/lib* /opt/lib* /usr/lib* \
              "$with_boost" C:/Boost/lib /lib*
     do
-      test -e "$boost_ldpath" || continue
+      # Don't waste time with directories that don't exist.
+      if test x"$boost_ldpath" != x && test ! -e "$boost_ldpath"; then
+        continue
+      fi
       boost_save_LDFLAGS=$LDFLAGS
       # Are we looking for a static library?
       case $boost_ldpath:$boost_rtopt_ in #(
@@ -447,25 +450,33 @@ dnl generated only once above (before we start the for loops).
       LDFLAGS=$boost_save_LDFLAGS
       LIBS=$boost_save_LIBS
       if test x"$Boost_lib" = xyes; then
-        # Check or used cached result of whether or not using -R or -rpath makes sense.
-        # Some implementations of ld, such as for Mac OSX, require -rpath but
-        # -R is the flag known to work on other systems.
-        # https://github.com/tsuna/boost.m4/issues/19
+        # Check or used cached result of whether or not using -R or
+        # -rpath makes sense.  Some implementations of ld, such as for
+        # Mac OSX, require -rpath but -R is the flag known to work on
+        # other systems.  https://github.com/tsuna/boost.m4/issues/19
         AC_CACHE_VAL([boost_cv_rpath_link_ldflag],
-          [for boost_cv_rpath_link_ldflag in -Wl,-R, -Wl,-rpath,; do
-            LDFLAGS="$boost_save_LDFLAGS -L$boost_ldpath $boost_cv_rpath_link_ldflag$boost_ldpath"
-            LIBS="$boost_save_LIBS $Boost_lib_LIBS"
-            _BOOST_AC_LINK_IFELSE([],
-              [boost_rpath_link_ldflag_found=yes
-              break],
-              [boost_rpath_link_ldflag_found=no])
-          done
+          [case $boost_ldpath in
+           '') # Nothing to do.
+             boost_cv_rpath_link_ldflag=
+             boost_rpath_link_ldflag_found=yes;;
+           *)
+            for boost_cv_rpath_link_ldflag in -Wl,-R, -Wl,-rpath,; do
+              LDFLAGS="$boost_save_LDFLAGS -L$boost_ldpath $boost_cv_rpath_link_ldflag$boost_ldpath"
+              LIBS="$boost_save_LIBS $Boost_lib_LIBS"
+              _BOOST_AC_LINK_IFELSE([],
+                [boost_rpath_link_ldflag_found=yes
+                break],
+                [boost_rpath_link_ldflag_found=no])
+            done
+            ;;
+          esac
           AS_IF([test "x$boost_rpath_link_ldflag_found" != "xyes"],
             [AC_MSG_ERROR([Unable to determine whether to use -R or -rpath])])
           LDFLAGS=$boost_save_LDFLAGS
           LIBS=$boost_save_LIBS
           ])
-        Boost_lib_LDFLAGS="-L$boost_ldpath $boost_cv_rpath_link_ldflag$boost_ldpath"
+        test x"$boost_ldpath" != x &&
+          Boost_lib_LDFLAGS="-L$boost_ldpath $boost_cv_rpath_link_ldflag$boost_ldpath"
         Boost_lib_LDPATH="$boost_ldpath"
         break 7
       else
@@ -751,6 +762,14 @@ CXXCPP=${boost_save_CXXCPP}
 # Look for Boost.MultiArray
 BOOST_DEFUN([MultiArray],
 [BOOST_FIND_HEADER([boost/multi_array.hpp])])
+
+
+# BOOST_NUMERIC_UBLAS()
+# --------------------------
+# Look for Boost.NumericUblas (Basic Linear Algebra)
+BOOST_DEFUN([Numeric_Ublas],
+[BOOST_FIND_HEADER([boost/numeric/ublas/vector.hpp])
+])# BOOST_NUMERIC_UBLAS
 
 
 # BOOST_NUMERIC_CONVERSION()
@@ -1161,7 +1180,8 @@ m4_define([_BOOST_mingw_test],
 AC_DEFUN([_BOOST_FIND_COMPILER_TAG],
 [AC_REQUIRE([AC_PROG_CXX])dnl
 AC_REQUIRE([AC_CANONICAL_HOST])dnl
-AC_CACHE_CHECK([for the toolset name used by Boost for $CXX], [boost_cv_lib_tag],
+AC_CACHE_CHECK([for the toolset name used by Boost for $CXX],
+               [boost_cv_lib_tag],
 [boost_cv_lib_tag=unknown
 if test x$boost_cv_inc_path != xno; then
   AC_LANG_PUSH([C++])dnl
@@ -1179,23 +1199,27 @@ if test x$boost_cv_inc_path != xno; then
   # I'm not sure about my test for `il' (be careful: Intel's ICC pre-defines
   # the same defines as GCC's).
   for i in \
-    _BOOST_mingw_test(4,8) \
+    _BOOST_mingw_test(4, 10) \
+    _BOOST_gcc_test(4, 10) \
+    _BOOST_mingw_test(4, 9) \
+    _BOOST_gcc_test(4, 9) \
+    _BOOST_mingw_test(4, 8) \
     _BOOST_gcc_test(4, 8) \
-    _BOOST_mingw_test(4,7) \
+    _BOOST_mingw_test(4, 7) \
     _BOOST_gcc_test(4, 7) \
-    _BOOST_mingw_test(4,6) \
+    _BOOST_mingw_test(4, 6) \
     _BOOST_gcc_test(4, 6) \
-    _BOOST_mingw_test(4,5) \
+    _BOOST_mingw_test(4, 5) \
     _BOOST_gcc_test(4, 5) \
-    _BOOST_mingw_test(4,4) \
+    _BOOST_mingw_test(4, 4) \
     _BOOST_gcc_test(4, 4) \
-    _BOOST_mingw_test(4,3) \
+    _BOOST_mingw_test(4, 3) \
     _BOOST_gcc_test(4, 3) \
-    _BOOST_mingw_test(4,2) \
+    _BOOST_mingw_test(4, 2) \
     _BOOST_gcc_test(4, 2) \
-    _BOOST_mingw_test(4,1) \
+    _BOOST_mingw_test(4, 1) \
     _BOOST_gcc_test(4, 1) \
-    _BOOST_mingw_test(4,0) \
+    _BOOST_mingw_test(4, 0) \
     _BOOST_gcc_test(4, 0) \
     "defined __GNUC__ && __GNUC__ == 3 && !defined __ICC \
      && (defined WIN32 || defined WINNT || defined _WIN32 || defined __WIN32 \
