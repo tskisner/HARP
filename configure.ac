@@ -223,6 +223,7 @@ dnl | Set automake variables which control building of python and MPI tools
 dnl +------------------------------------------------------------------------
 AM_CONDITIONAL([HAVE_AM_PYTHON], [test "x$harp_python" = xyes])
 AM_CONDITIONAL([HAVE_AM_MPI], [test "x$harp_mpi" = xyes])
+AM_CONDITIONAL([HAVE_AM_MPI_PYTHON], [test "x$harp_mpi_python" = xyes])
 dnl +------------------------------------------------
 dnl | Set outputs
 dnl +------------------------------------------------

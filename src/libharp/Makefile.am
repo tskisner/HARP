@@ -24,17 +24,21 @@ bin_SCRIPTS = harpconfig
 
 harpconfig : harpconfig.in
 	@./gen_harpconfig.sh \
-	"$(CXX)" \
-	"$(CXXFLAGS) $(OPENMP_CXXFLAGS) $(HARP_PLUGIN_SHARED)" \
-	"-I$(DESTDIR)$(includedir) $(CFITSIO_CPPFLAGS) $(BOOST_CPPFLAGS) $(ELEMENTAL_CPPFLAGS)" \
-	"-L$(DESTDIR)$(libdir)" \
-	"$(config_serial_link)" \
-	"$(MPICXX)" \
-	"$(config_mpi_link)" \
+	"$(CONF_CXX)" \
+	"$(CONF_CXXFLAGS)" \
+	"$(CONF_CPPFLAGS)" \
+	"$(CONF_LDFLAGS)" \
+	"$(CONF_LIBS)" \
+	"$(CONF_MPI_CXX)" \
+	"$(CONF_MPI_CXXFLAGS)" \
+	"$(CONF_MPI_CPPFLAGS)" \
+	"$(CONF_MPI_LDFLAGS)" \
+	"$(CONF_MPI_LIBS)" \
 	"$(pyexecdir)" \
 	"$(HARP_PLUGIN_COMPILE)" \
 	"$(HARP_PLUGIN_LINK)" \
 	"$(HARP_PLUGIN_EXT)"
+
 
 lib_LTLIBRARIES = libharp.la
 

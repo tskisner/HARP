@@ -242,7 +242,7 @@ void harp::psf_pyspecter::project ( std::map < size_t, std::set < size_t > > con
         xoff = py::extract < size_t > ( py::eval ( "xslice[0]", main_namespace ) );
         yoff = py::extract < size_t > ( py::eval ( "yslice[0]", main_namespace ) );
 
-        boost::numpy::ndarray patch = py::extract < boost::numpy::ndarray > ( "pixels" );
+        boost::numpy::ndarray patch = py::extract < boost::numpy::ndarray > ( py::eval ( "pixels", main_namespace ) );
 
         int patchdims = patch.get_nd();
 
@@ -253,7 +253,7 @@ void harp::psf_pyspecter::project ( std::map < size_t, std::set < size_t > > con
 
         Py_intptr_t const * patchshape = patch.get_shape();
 
-        double * pydata = reinterpret_cast < double * > patch.get_data();
+        double * pydata = reinterpret_cast < double * > ( patch.get_data() );
 
         for ( size_t patch_col = 0; patch_col < patchshape[1]; ++patch_col ) {
 
@@ -351,7 +351,7 @@ void harp::psf_pyspecter::project_transpose ( std::map < size_t, std::set < size
         xoff = py::extract < size_t > ( py::eval ( "xslice[0]", main_namespace ) );
         yoff = py::extract < size_t > ( py::eval ( "yslice[0]", main_namespace ) );
 
-        boost::numpy::ndarray patch = py::extract < boost::numpy::ndarray > ( "pixels" );
+        boost::numpy::ndarray patch = py::extract < boost::numpy::ndarray > ( py::eval ( "pixels", main_namespace ) );
 
         int patchdims = patch.get_nd();
 
@@ -362,7 +362,7 @@ void harp::psf_pyspecter::project_transpose ( std::map < size_t, std::set < size
 
         Py_intptr_t const * patchshape = patch.get_shape();
 
-        double * pydata = reinterpret_cast < double * > patch.get_data();
+        double * pydata = reinterpret_cast < double * > ( patch.get_data() );
 
         for ( size_t patch_col = 0; patch_col < patchshape[1]; ++patch_col ) {
 
