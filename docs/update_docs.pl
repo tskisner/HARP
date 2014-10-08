@@ -5,6 +5,7 @@ use strict;
 # get git revision and update conf.py
 
 my $gitver = `git rev-parse --short HEAD`;
+chomp($gitver);
 
 my $docver = "";
 open ( CONF, "./sphinx/source/conf.py" ) || die;

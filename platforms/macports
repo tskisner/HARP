@@ -16,5 +16,7 @@ MPICXX="mpicxx" \
 CXXFLAGS="-O3 -std=c++11 -stdlib=libc++" \
 CPPFLAGS="-I/opt/local/include" \
 LDFLAGS="-L/opt/local/lib" \
-./configure ${OPTS}
+./configure \
+--with-mpi4py=/opt/local/Library/Frameworks/Python.framework/Versions/2.7 \
+${OPTS}
 

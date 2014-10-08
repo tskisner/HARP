@@ -13,8 +13,10 @@ Contents:
 
    intro
    install
-   serial
-   parallel
+   serial_utils
+   serial_data
+   serial_extract
+   parallel_extract
    cli
    dev
 

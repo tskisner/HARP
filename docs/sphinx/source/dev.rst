@@ -18,8 +18,4 @@ Construction
 
 During construction, all data classes should initialize themselves sufficiently so that
 
-New
-
-The 
-
 

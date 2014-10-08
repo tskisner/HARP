@@ -10,14 +10,14 @@
 #include <set>
 #include <sstream>
 
+#include <boost/smart_ptr/shared_ptr.hpp>
+#include <boost/smart_ptr/weak_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
+
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/archive/portable_oarchive.hpp>
 #include <boost/archive/portable_iarchive.hpp>
-
-#include <boost/smart_ptr/shared_ptr.hpp>
-#include <boost/smart_ptr/weak_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
 
 #include <boost/serialization/string.hpp>
 #include <boost/serialization/version.hpp>

@@ -1,6 +1,0 @@
-
-.. _parallel:
-
-Parallel Operations
-==================================
-

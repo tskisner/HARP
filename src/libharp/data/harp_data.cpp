@@ -12,6 +12,7 @@ using namespace harp;
 BOOST_CLASS_EXPORT(harp::image)
 BOOST_CLASS_EXPORT(harp::spec)
 BOOST_CLASS_EXPORT(harp::psf)
+BOOST_CLASS_EXPORT(harp::targets)
 
 // utilities
 
