@@ -77,13 +77,13 @@ void harp::test_serialize ( string const & datadir ) {
 
   {
     ofstream ofs ( path.c_str() );
-    eos::portable_oarchive oa ( ofs );
+    boost::archive::binary_oarchive oa ( ofs );
     oa << BOOST_SERIALIZATION_NVP(one);
   }
 
   {
     ifstream ifs ( path.c_str() );
-    eos::portable_iarchive ia ( ifs );
+    boost::archive::binary_iarchive ia ( ifs );
     ia >> BOOST_SERIALIZATION_NVP(one);
   }
 
@@ -107,13 +107,13 @@ void harp::test_serialize ( string const & datadir ) {
 
   {
     ofstream ofs ( path.c_str() );    
-    eos::portable_oarchive oa ( ofs );
+    boost::archive::binary_oarchive oa ( ofs );
     oa << BOOST_SERIALIZATION_NVP(d_one);
   }
 
   {
     ifstream ifs ( path.c_str() );
-    eos::portable_iarchive ia ( ifs );
+    boost::archive::binary_iarchive ia ( ifs );
     ia >> BOOST_SERIALIZATION_NVP(d_one);
   }
 
@@ -143,13 +143,13 @@ void harp::test_serialize ( string const & datadir ) {
 
   {
     ofstream ofs ( path.c_str() );    
-    eos::portable_oarchive oa ( ofs );
+    boost::archive::binary_oarchive oa ( ofs );
     oa << BOOST_SERIALIZATION_NVP(d_two);
   }
 
   {
     ifstream ifs ( path.c_str() );
-    eos::portable_iarchive ia ( ifs );
+    boost::archive::binary_iarchive ia ( ifs );
     ia >> BOOST_SERIALIZATION_NVP(d_two);
   }
 
@@ -173,13 +173,13 @@ void harp::test_serialize ( string const & datadir ) {
 
   {
     ofstream ofs ( path.c_str() );    
-    eos::portable_oarchive oa ( ofs );
+    boost::archive::binary_oarchive oa ( ofs );
     oa << BOOST_SERIALIZATION_NVP(dp);
   }
 
   {
     ifstream ifs ( path.c_str() );
-    eos::portable_iarchive ia ( ifs );
+    boost::archive::binary_iarchive ia ( ifs );
     ia >> BOOST_SERIALIZATION_NVP(dp);
   }
 

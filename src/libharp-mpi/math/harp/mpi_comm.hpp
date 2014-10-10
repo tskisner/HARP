@@ -7,9 +7,6 @@
 #include <boost/iostreams/stream.hpp>
 #include <boost/iostreams/device/back_inserter.hpp>
 
-#include <boost/archive/portable_oarchive.hpp>
-#include <boost/archive/portable_iarchive.hpp>
-
 
 namespace harp {
 
@@ -21,7 +18,7 @@ namespace harp {
     buf.clear();
 
     boost::iostreams::stream < boost::iostreams::back_insert_device < mpi_comm_buffer_type > > output_stream ( buf );
-    eos::portable_oarchive oa ( output_stream );
+    boost::archive::binary_oarchive oa ( output_stream );
 
     oa << data;
 
@@ -35,7 +32,7 @@ namespace harp {
 
     boost::iostreams::basic_array_source < char > source ( &buf[0], buf.size() );
     boost::iostreams::stream < boost::iostreams::basic_array_source < char > > input_stream ( source );
-    eos::portable_iarchive ia ( input_stream );
+    boost::archive::binary_iarchive ia ( input_stream );
   
     ia >> data;
 

@@ -16,8 +16,8 @@
 
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/archive/xml_iarchive.hpp>
-#include <boost/archive/portable_oarchive.hpp>
-#include <boost/archive/portable_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
 
 #include <boost/serialization/string.hpp>
 #include <boost/serialization/version.hpp>
