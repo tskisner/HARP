@@ -13,8 +13,7 @@ harp::mpi_psf::mpi_psf ( boost::mpi::communicator const & comm, std::string cons
 
   int rank = comm.rank();
 
-  bool reg_mpi = true;
-  plugin_registry & reg = plugin_registry::get( reg_mpi );
+  plugin_registry & reg = plugin_registry::get();
 
   if ( rank == 0 ) {
     // instantiate

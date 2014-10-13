@@ -13,8 +13,7 @@ harp::mpi_image::mpi_image ( boost::mpi::communicator const & comm, std::string 
 
   int rank = comm.rank();
 
-  bool reg_mpi = true;
-  plugin_registry & reg = plugin_registry::get( reg_mpi );
+  plugin_registry & reg = plugin_registry::get();
 
   if ( rank == 0 ) {
     // instantiate
