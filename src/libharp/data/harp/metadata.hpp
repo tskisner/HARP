@@ -6,17 +6,24 @@
 #include <list>
 
 
-namespace harp { namespace meta {
+namespace harp {
 
-  class psfgroup {
+  spec_p load_spec ( boost::property_tree::ptree const & tree );
+
+  image_p load_image ( boost::property_tree::ptree const & tree );
+
+  psf_p load_psf ( boost::property_tree::ptree const & tree );
+
+  targets_p load_targets ( boost::property_tree::ptree const & tree );
+
+
+  class group {
 
     public :
-      psfgroup ( );
-      psfgroup ( boost::property_tree::ptree & tree );
-      ~psfgroup ( ) { }
+      
+      group ( boost::property_tree::ptree const & tree );
 
-      void load ( boost::property_tree::ptree & tree );
-      boost::property_tree::ptree dump ( );
+      void load ( boost::property_tree::ptree const & tree );
 
       psf_p psf ( ) { return handle_; }
       std::list < image_p > images ( ) { return imgs_; }
@@ -27,20 +34,11 @@ namespace harp { namespace meta {
 
   };
 
-  typedef boost::shared_ptr < psfgroup > psfgroup_p;
+  typedef boost::shared_ptr < group > group_p;
 
-  std::list < psfgroup_p > job_load_extraction ( std::string const & path );
+  std::list < group_p > load_groups ( std::string const & path );
 
-  std::list < psfgroup_p > job_load_extraction ( std::istream & strm );
-
-  void job_dump_extraction ( std::list < psfgroup_p > & psfs, std::string const & path );
-
-  void job_dump_extraction ( std::list < psfgroup_p > & psfs, std::ostream & strm );  
-
-
-
-
-} }
+}
 
 #endif
 

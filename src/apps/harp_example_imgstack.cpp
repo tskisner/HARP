@@ -86,8 +86,7 @@ int main ( int argc, char *argv[] ) {
       // so we use the factory method to instantiate the image from parameters specified
       // in the JSON.
 
-      plugin_registry & reg = plugin_registry::get();
-      image_p img ( reg.create_image ( v->second.get < string > ( "type" ), v->second ) );
+      image_p img = load_image ( v->second );
 
       if ( checkrows == 0 ) {
         // this is the first image

@@ -18,126 +18,23 @@ using namespace harp;
 namespace popts = boost::program_options;
 
 
-string prefix = "harp:  ";
+string top_prefix = "harp:  ";
 
 
-void parse_opt ( string const & optstr, string & key, string & value ) {
-  size_t pos = 0;
-  size_t sep = optstr.find ( '=', pos );
 
-  if ( pos == string::npos ) {
-    cerr << "cannot parse key / value" << endl;
-    exit(1);
-  }
+void check_psf ( string const & prefix, psf_p chk_psf ) {
 
-  size_t len = sep - pos;
-
-  key = optstr.substr ( pos, len );
-
-  pos = sep + 1;
-  len = optstr.size() - pos;
-
-  value = optstr.substr ( pos, len );
-
-  return;
-}
-
-
-void parse_propstr ( string const & propstr, boost::property_tree::ptree & proptree, string & jsonpath, string & jsonclass ) {
-
-  proptree.clear();
-
-  boost::property_tree::ptree objprops;
-  objprops.clear();
-
-  size_t pos = 0;
-
-  size_t sep = propstr.find ( ':', pos );
-
-  if ( pos == string::npos ) {
-    cerr << "cannot parse object class" << endl;
-    exit(1);
-  }
-
-  size_t len = sep - pos;
-
-  jsonclass = propstr.substr ( pos, len );
-  jsonpath = jsonclass;
-
-  pos = sep + 1;
-
-  sep = propstr.find ( ':', pos );
-
-  if ( pos == string::npos ) {
-    cerr << "cannot parse object type" << endl;
-    exit(1);
-  }
-
-  len = sep - pos;
-
-  string jsontype = propstr.substr ( pos, len );
-
-  pos = sep + 1;
-
-  len = propstr.size() - pos;
-
-  string parstr = propstr.substr ( pos, len );
-
-  string typestr = jsonclass + "_type";
-  proptree.put ( typestr, jsontype );
-
-  if ( parstr.size() != 0 ) {
-
-    pos = 0;
-    sep = parstr.find ( ',', pos );
-
-    string optstr;
-    string key;
-    string val;
-
-    while ( sep != string::npos ) {
-      len = sep - pos;
-
-      optstr = parstr.substr ( pos, len );
-      parse_opt ( optstr, key, val );
-      objprops.put ( key, val );
-
-      pos = sep + 1;
-      sep = parstr.find ( ',', pos );
-    }
-
-    len = parstr.size() - pos;
-
-    optstr = parstr.substr ( pos, len );
-    parse_opt ( optstr, key, val );
-    objprops.put ( key, val );
-
-  }
-
-  proptree.put_child ( jsonclass, objprops );
-
-  return;
-}
-
-
-void check_psf ( string const & type, boost::property_tree::ptree & proptree ) {
-
-  cout << prefix << "Creating PSF of type " << type << endl;
-
-  plugin_registry & reg = plugin_registry::get();
-
-  psf_p design ( reg.create_psf ( type, proptree ) );
-
-  size_t imgrows = design->img_rows();
-  size_t imgcols = design->img_cols();
+  size_t imgrows = chk_psf->img_rows();
+  size_t imgcols = chk_psf->img_cols();
   size_t npix = imgrows * imgcols;
 
-  size_t nspec = design->n_spec();
-  size_t nlambda = design->n_lambda();
+  size_t nspec = chk_psf->n_spec();
+  size_t nlambda = chk_psf->n_lambda();
   size_t nbins = nspec * nlambda;
 
-  vector_double lambda = design->lambda();
+  vector_double lambda = chk_psf->lambda();
 
+  cout << prefix << "Checking PSF of type " << chk_psf->type() << endl;
   cout << prefix << "  " << nspec << " spectra each with " << nlambda << " wavelength points" << endl;
   cout << prefix << "    (" << nbins << " total)" << endl;
   cout << prefix << "    lambda = " << lambda[0] << " ... " << lambda[ lambda.size() - 1 ] << endl;
@@ -148,21 +45,16 @@ void check_psf ( string const & type, boost::property_tree::ptree & proptree ) {
 }
 
 
-void check_spec ( string const & type, boost::property_tree::ptree & proptree ) {
+void check_spec ( string const & prefix, spec_p chk_spec ) {
 
-  cout << prefix << "Creating spec of type " << type << endl;
-
-  plugin_registry & reg = plugin_registry::get();
-
-  spec_p sp ( reg.create_spec ( type, proptree ) );
-
-  size_t nspec = sp->n_spec();
-  size_t nlambda = sp->n_lambda();
+  size_t nspec = chk_spec->n_spec();
+  size_t nlambda = chk_spec->n_lambda();
   size_t nbins = nspec * nlambda;
 
   vector_double lambda;
-  sp->lambda( lambda );
+  chk_spec->lambda( lambda );
 
+  cout << prefix << "Checking spec of type " << chk_spec->type() << endl;
   cout << prefix << "  " << nspec << " spectra each with " << nlambda << " wavelength points" << endl;
   cout << prefix << "    (" << nbins << " total)" << endl;
   cout << prefix << "    lambda = " << lambda[0] << " ... " << lambda[ lambda.size() - 1 ] << endl;
@@ -171,18 +63,13 @@ void check_spec ( string const & type, boost::property_tree::ptree & proptree ) 
 }
 
 
-void check_image ( string const & type, boost::property_tree::ptree & proptree ) {
+void check_image ( string const & prefix, image_p chk_image ) {
 
-  cout << prefix << "Creating image of type " << type << endl;
-
-  plugin_registry & reg = plugin_registry::get();
-
-  image_p img ( reg.create_image ( type, proptree ) );
-
-  size_t imgrows = img->n_rows();
-  size_t imgcols = img->n_cols();
+  size_t imgrows = chk_image->n_rows();
+  size_t imgcols = chk_image->n_cols();
   size_t npix = imgrows * imgcols;
 
+  cout << prefix << "Checking image of type " << chk_image->type() << endl;
   cout << prefix << "  dimensions = " << imgcols << " x " << imgrows << " pixels" << endl;
   cout << prefix << "    (" << npix << " total)" << endl;
 
@@ -190,17 +77,11 @@ void check_image ( string const & type, boost::property_tree::ptree & proptree )
 }
 
 
-void check_targets ( string const & type, boost::property_tree::ptree & proptree ) {
+void check_targets ( string const & prefix, targets_p chk_targets ) {
 
-  cout << prefix << "Creating targets of type " << type << endl;
+  size_t nobj = chk_targets->n_objects();
 
-  plugin_registry & reg = plugin_registry::get();
-
-  targets_p trg ( reg.create_targets ( type, proptree ) );
-
-  size_t nobj = trg->n_objects();
-
-  vector < object_p > objs = trg->objects();
+  vector < object_p > objs = chk_targets->objects();
 
   size_t nsky = 0;
 
@@ -210,10 +91,28 @@ void check_targets ( string const & type, boost::property_tree::ptree & proptree
     }
   }
 
+  cout << prefix << "Checking targets of type " << chk_targets->type() << endl;
   cout << prefix << "  " << nobj << " total objects, " << nsky << " are sky" << endl;
 
   return;
 }
+
+
+void check_group ( string const & prefix, group_p chk_group ) {
+
+  cout << prefix << "Checking group" << endl;
+
+  string new_prefix = prefix + "  ";
+
+  check_psf ( new_prefix, chk_group->psf() );
+
+  for ( list < image_p > :: iterator it = chk_group->images().begin(); it != chk_group->images().end(); ++it ) {
+    check_image ( new_prefix, (*it) );
+  }
+
+  return;
+}
+
 
 
 
@@ -223,9 +122,6 @@ int main ( int argc, char *argv[] ) {
   cerr.precision ( 10 );
 
   string jsonpar = "";
-  string jsonpath = "";
-  string jsonclass = "";
-  string propstr = "";
   
   // Declare options
   
@@ -234,35 +130,30 @@ int main ( int argc, char *argv[] ) {
   desc.add_options()
   ( "help,h", "display usage information" )
   ( "debug,d", "write out intermediate data products for debugging" )
-  ( "props", popts::value < string > ( &propstr ), "property string (see below)" )
-  ( "json", popts::value < string > ( &jsonpar ), "JSON file" )
-  ( "jsonpath", popts::value < string > ( &jsonpath ), "JSON object to check, as a path (foo/bar/my_object)" )
-  ( "jsonclass", popts::value < string > ( &jsonclass ), "JSON object class (psf, image, spec, or targets)" )
   ;
 
-  popts::variables_map vm;
+  popts::options_description hidden ( "Hidden Options" );
 
-  popts::store(popts::command_line_parser( argc, argv ).options(desc).run(), vm);
-  
+  hidden.add_options()
+    ( "json", popts::value < string > ( &jsonpar ) )
+    ;
+
+  popts::options_description all ( "All Options" );
+
+  all.add(desc).add(hidden);
+
+  popts::positional_options_description p;
+  p.add("json", -1);
+
+  popts::variables_map vm;
+  popts::store(popts::command_line_parser( argc, argv ).options(all).positional(p).run(), vm);
   popts::notify(vm);
 
   if ( ( argc < 2 ) || vm.count( "help" ) ) {
     cerr << endl;
+    cerr << "Usage: " << argv[0] << " [options] [JSON file]" << endl;
+    cerr << endl;
     cerr << desc << endl;
-    cerr << "  You can specify either a JSON document and the object in that document" << endl;
-    cerr << "  to check, or you can manually specify properties of a single object" << endl;
-    cerr << "  to validate.  For a JSON object named \"my_object\", we expect to find" << endl;
-    cerr << "  an object called \"my_object_type\" at the same level of the document." << endl;
-    cerr << "  In the case of specifying a property string, the format is:" << endl << endl;
-
-    cerr << "  <object class>:<type>:<prop1>=<val1>,<prop2>=<val2>,<prop2>=<val2>" << endl << endl;
-    
-    cerr << "  where valid object classes are psf, spec, image, targets.  The type" << endl;
-    cerr << "  is any valid built-in or dynamically loaded plugin name of that" << endl;
-    cerr << "  object class." << endl << endl;
-
-    cerr << "  NOTE: for objects with nested properties (such as the simulated image" << endl;
-    cerr << "  type), you must specify this as a JSON document." << endl << endl;
     return 0;
   }
   
@@ -272,57 +163,52 @@ int main ( int argc, char *argv[] ) {
 
   // Read metadata
   
-  boost::property_tree::ptree proptree;
+  boost::property_tree::ptree tree;
 
   if ( vm.count( "json" ) ) {
-    cout << prefix << "Loading JSON file..." << endl;
-    boost::property_tree::json_parser::read_json ( jsonpar, proptree );
+    cout << top_prefix << "Loading JSON file..." << endl;
+    boost::property_tree::json_parser::read_json ( jsonpar, tree );
   } else {
-    cout << prefix << "Parsing parameter string..." << endl;
-    parse_propstr ( propstr, proptree, jsonpath, jsonclass );
+    cerr << "you must specify a JSON document to validate" << endl;
+    exit(0);
   }
 
-  // seek to our object of interest
+  // iterate over all recognized JSON keys and check
 
-  size_t pos = 0;
-  size_t len;
-  size_t sep = jsonpath.find ( '/', pos );
-  boost::property_tree::ptree parent = proptree;
-  boost::property_tree::ptree cursor;
+  boost::property_tree::ptree::const_iterator v = tree.begin();
 
-  while ( sep != string::npos ) {
-    len = sep - pos;
+  while ( v != tree.end() ) {
 
-    string substr = jsonpath.substr ( pos, len );
+    if ( v->first == "psf" ) {
 
-    cursor = parent.get_child ( substr );
+      psf_p chk_psf = load_psf ( v->second );
+      check_psf ( top_prefix, chk_psf );
 
-    pos = sep + 1;
-    sep = jsonpath.find ( '/', pos );
+    } else if ( v->first == "image" ) {
 
-    parent = cursor;
-  }
+      image_p chk_image = load_image ( v->second );
+      check_image ( top_prefix, chk_image );
 
-  // now we can get our object and its type
+    } else if ( v->first == "spec" ) {
 
-  len = jsonpath.size() - pos;
-  string name = jsonpath.substr ( pos, len );
-  string typestr = name + "_type";
+      spec_p chk_spec = load_spec ( v->second );
+      check_spec ( top_prefix, chk_spec );
+    
+    } else if ( v->first == "targets" ) {
 
-  string type = parent.get < string > ( typestr );
+      targets_p chk_targets = load_targets ( v->second );
+      check_targets ( top_prefix, chk_targets );
+    
+    } else if ( v->first == "group" ) {
 
-  cursor = parent.get_child ( name );
+      group_p chk_group ( new group ( v->second ) );
+      check_group ( top_prefix, chk_group );
+    
+    } else {
+      cout << "Skipping unrecognized object \"" << v->first << "\"" << endl;
+    }
 
-  if ( jsonclass == "psf" ) {
-    check_psf ( type, cursor );
-  } else if ( jsonclass == "image" ) {
-    check_image ( type, cursor );
-  } else if ( jsonclass == "spec" ) {
-    check_spec ( type, cursor );
-  } else if ( jsonclass == "targets" ) {
-    check_targets ( type, cursor );
-  } else {
-    cerr << "Invalid object class \"" << jsonclass << "\"" << endl;
+    ++v;
   }
 
   return 0;

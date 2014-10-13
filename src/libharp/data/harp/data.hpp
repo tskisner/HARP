@@ -84,5 +84,7 @@ namespace harp {
 
 }
 
+#include <harp/metadata.hpp>
+
 
 #endif

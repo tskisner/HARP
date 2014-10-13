@@ -22,7 +22,8 @@ libharpdata_la_include_HEADERS = \
 	harp/image.hpp \
 	harp/spec.hpp \
 	harp/psf.hpp \
-	harp/data.hpp
+	harp/data.hpp \
+	harp/metadata.hpp
 
 libharpdata_la_SOURCES = \
 	harp_image.cpp \
@@ -31,7 +32,8 @@ libharpdata_la_SOURCES = \
 	harp_fits.cpp \
 	harp_targets.cpp \
 	harp_plugin_registry.cpp \
-	harp_data.cpp
+	harp_data.cpp \
+	harp_metadata.cpp
 
 libharpdata_la_LIBADD = 
 

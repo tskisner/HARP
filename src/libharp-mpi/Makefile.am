@@ -26,7 +26,8 @@ libharp_mpi_la_include_HEADERS = \
 	harp/mpi_psf.hpp \
 	harp/mpi_targets.hpp \
 	harp/mpi_spec_slice.hpp \
-	harp/mpi_extraction.hpp
+	harp/mpi_extraction.hpp \
+	harp/mpi_metadata.hpp
 
 libharp_mpi_la_SOURCES = \
 	harp_mpi.cpp \
@@ -35,7 +36,8 @@ libharp_mpi_la_SOURCES = \
 	harp_mpi_psf.cpp \
 	harp_mpi_targets.cpp \
 	harp_mpi_spec_slice.cpp \
-	harp_mpi_extraction.cpp
+	harp_mpi_extraction.cpp \
+	harp_mpi_metadata.cpp
 
 libharp_mpi_la_LDFLAGS = -version-info @HARP_LT_VERSION@
 

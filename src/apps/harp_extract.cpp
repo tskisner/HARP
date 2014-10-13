@@ -89,10 +89,6 @@ int main ( int argc, char *argv[] ) {
     lambda_mask = false;
   }
 
-  // Get plugin registry
-
-  plugin_registry & reg = plugin_registry::get();
-
   // Read metadata
   
   boost::property_tree::ptree par;
@@ -103,6 +99,8 @@ int main ( int argc, char *argv[] ) {
 
   boost::property_tree::json_parser::read_json ( jsonpar, par );
 
+  // For now, we expect one psf and one image at the lop level of the
+  // document.
 
   // Create input PSF
 
@@ -112,11 +110,9 @@ int main ( int argc, char *argv[] ) {
 
   tstart = wtime();
 
-  boost::property_tree::ptree psf_props;
-  string psf_type = par.get < string > ( "psf_type" );
-  psf_props = par.get_child ( "psf" );
+  boost::property_tree::ptree psf_props = par.get_child ( "psf" );
 
-  psf_p design ( reg.create_psf ( psf_type, psf_props ) );
+  psf_p design = load_psf ( psf_props );
 
   size_t psf_imgrows = design->img_rows();
   size_t psf_imgcols = design->img_cols();
@@ -145,11 +141,9 @@ int main ( int argc, char *argv[] ) {
 
   tstart = wtime();
 
-  boost::property_tree::ptree img_props;
-  string img_type = par.get < string > ( "image_type" );
-  img_props = par.get_child ( "image" );
+  boost::property_tree::ptree img_props = par.get_child ( "image" );
 
-  image_p img ( reg.create_image ( img_type, img_props ) );
+  image_p img = load_image ( img_props );
 
   size_t imgrows = img->n_rows();
   size_t imgcols = img->n_cols();
@@ -251,10 +245,9 @@ int main ( int argc, char *argv[] ) {
 
     tstart = wtime();
 
-    string truth_type = par.get < string > ( "truth_type" );
     boost::property_tree::ptree truth_props = par.get_child ( "truth" );
 
-    spec_p truth_spec ( reg.create_spec ( truth_type, truth_props ) );
+    spec_p truth_spec = load_spec ( truth_props );
     size_t truth_nspec = truth_spec->n_spec();
     size_t truth_nlambda = truth_spec->n_lambda();
     size_t truth_nbins = truth_nspec * truth_nlambda;

@@ -106,10 +106,6 @@ int main ( int argc, char *argv[] ) {
     lambda_mask = false;
   }
 
-  // Get plugin registry
-
-  plugin_registry & reg = plugin_registry::get();
-
   // intra-gang communicator and grid
 
   if ( gangsize == 0 ) {
@@ -155,6 +151,9 @@ int main ( int argc, char *argv[] ) {
 
   boost::mpi::broadcast ( comm, par, 0 );
 
+  // For now, we expect one psf and one image at the lop level of the
+  // document.
+
   // Create input globally-distributed PSF
 
   if ( ( myp == 0 ) && ( ! quiet ) ) {
@@ -163,11 +162,9 @@ int main ( int argc, char *argv[] ) {
 
   tstart = MPI_Wtime();
 
-  boost::property_tree::ptree psf_props;
-  string psf_type = par.get < string > ( "psf_type" );
-  psf_props = par.get_child ( "psf" );
+  boost::property_tree::ptree psf_props = par.get_child ( "psf" );
 
-  mpi_psf_p design ( new mpi_psf ( comm, psf_type, psf_props ) );
+  mpi_psf_p design = mpi_load_psf ( comm, psf_props );
 
   size_t psf_imgrows = design->img_rows();
   size_t psf_imgcols = design->img_cols();
@@ -195,11 +192,9 @@ int main ( int argc, char *argv[] ) {
 
   tstart = MPI_Wtime();
 
-  boost::property_tree::ptree img_props;
-  string img_type = par.get < string > ( "image_type" );
-  img_props = par.get_child ( "image" );
+  boost::property_tree::ptree img_props = par.get_child ( "image" );
 
-  mpi_image_p img ( new mpi_image ( comm, img_type, img_props ) );
+  mpi_image_p img = mpi_load_image ( comm, img_props );
 
   size_t imgrows = img->n_rows();
   size_t imgcols = img->n_cols();
@@ -311,10 +306,9 @@ int main ( int argc, char *argv[] ) {
 
     tstart = MPI_Wtime();
 
-    string truth_type = par.get < string > ( "truth_type" );
     boost::property_tree::ptree truth_props = par.get_child ( "truth" );
 
-    mpi_spec_p truth_spec ( new mpi_spec ( comm, truth_type, truth_props ) );
+    mpi_spec_p truth_spec = mpi_load_spec ( comm, truth_props );
     size_t truth_nspec = truth_spec->n_spec();
     size_t truth_nlambda = truth_spec->n_lambda();
     size_t truth_nbins = truth_nspec * truth_nlambda;
