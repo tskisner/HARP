@@ -275,13 +275,13 @@ if [ "x$AUTOCONF_OPTIONS" = "x" ] ; then
     AUTOCONF_OPTIONS="-f"
 fi
 if [ "x$AUTOMAKE_OPTIONS" = "x" ] ; then
-    AUTOMAKE_OPTIONS="-a -c -f"
+    AUTOMAKE_OPTIONS="--foreign"
 fi
-ALT_AUTOMAKE_OPTIONS="-a -c"
+ALT_AUTOMAKE_OPTIONS="--foreign"
 if [ "x$LIBTOOLIZE_OPTIONS" = "x" ] ; then
-    LIBTOOLIZE_OPTIONS="--automake -c -f"
+    LIBTOOLIZE_OPTIONS="--automake"
 fi
-ALT_LIBTOOLIZE_OPTIONS="--automake --copy --force"
+ALT_LIBTOOLIZE_OPTIONS="--automake"
 if [ "x$ACLOCAL_OPTIONS" = "x" ] ; then
     ACLOCAL_OPTIONS=""
 fi
@@ -1005,12 +1005,12 @@ initialize ( ) {
     ##########################################
     # make sure certain required files exist #
     ##########################################
-    for file in AUTHORS COPYING ChangeLog INSTALL NEWS README ; do
-	if test ! -f $file ; then
-	    $VERBOSE_ECHO "Touching ${file} since it does not exist"
-	    touch $file
-	fi
-    done
+    #for file in AUTHORS COPYING ChangeLog INSTALL NEWS README ; do
+	#if test ! -f $file ; then
+	#    $VERBOSE_ECHO "Touching ${file} since it does not exist"
+	#    touch $file
+	#fi
+    #done
 
     ##################################################
     # make sure certain generated files do not exist #
