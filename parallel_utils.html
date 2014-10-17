@@ -1,0 +1,267 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Parallel Utilities &mdash; HARP Pre-1.0 (2c7ffce) documentation</title>
+    
+    <link rel="stylesheet" href="_static/haiku.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/breathe.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     'Pre-1.0 (2c7ffce)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="HARP Pre-1.0 (2c7ffce) documentation" href="index.html" />
+    <link rel="next" title="Parallel Data I/O" href="parallel_data.html" />
+    <link rel="prev" title="Serial Spectral Extraction" href="serial_extract.html" /> 
+  </head>
+  <body>
+      <div class="header"><h1 class="heading"><a href="index.html">
+          <span>HARP Pre-1.0 (2c7ffce) documentation</span></a></h1>
+        <h2 class="heading"><span>Parallel Utilities</span></h2>
+      </div>
+      <div class="topnav">
+      
+        <p>
+        «&#160;&#160;<a href="serial_extract.html">Serial Spectral Extraction</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="index.html">Contents</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="parallel_data.html">Parallel Data I/O</a>&#160;&#160;»
+        </p>
+
+      </div>
+      <div class="content">
+        
+        
+  <div class="section" id="parallel-utilities">
+<span id="parallel-utils"></span><h1>Parallel Utilities<a class="headerlink" href="#parallel-utilities" title="Permalink to this headline">¶</a></h1>
+<p>The parallel HARP library uses the Elemental library for dense linear algebra, and also includes a custom class for handling distributed sparse matrices.</p>
+<div class="section" id="communication-helper-functions">
+<span id="parallel-utils-comm"></span><h2>Communication Helper Functions<a class="headerlink" href="#communication-helper-functions" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="linear-algebra">
+<span id="parallel-utils-math"></span><h2>Linear Algebra<a class="headerlink" href="#linear-algebra" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt>
+<span class="target" id="project0namespaceharp_1a348c900ed3ec6382ff65a6ee6a7fbfcc"></span>void <tt class="descname">mpi_matrix_zero</tt><big>(</big>mpi_matrix &amp; <em>mat</em><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0namespaceharp_1a1cfe52d883df6a8fadbf7fcd603efc9b"></span>void <tt class="descname">local_matrix_zero</tt><big>(</big>elem_matrix_local &amp; <em>mat</em><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0namespaceharp_1a882ef1d30227f41df4c373065aacc78b"></span>void <tt class="descname">mpi_eigen_decompose</tt><big>(</big>mpi_matrix const &amp; <em>invcov</em>, mpi_matrix &amp; <em>D</em>, mpi_matrix &amp; <em>W</em>, bool <em>regularize</em><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0namespaceharp_1ac2bd7ced5e8503c513745be5ed6628c3"></span>void <tt class="descname">mpi_eigen_compose</tt><big>(</big>eigen_op <em>op</em>, mpi_matrix const &amp; <em>D</em>, mpi_matrix const &amp; <em>W</em>, mpi_matrix &amp; <em>out</em><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0namespaceharp_1a385616aa095e461c7918a4fc57ce7d91"></span>void <tt class="descname">mpi_column_norm</tt><big>(</big>mpi_matrix const &amp; <em>mat</em>, mpi_matrix &amp; <em>S</em><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0namespaceharp_1ae3314bd6e9cf3d3e7d463c7bcc62a698"></span>void <tt class="descname">mpi_apply_norm</tt><big>(</big>mpi_matrix const &amp; <em>S</em>, mpi_matrix &amp; <em>mat</em><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0namespaceharp_1ab14dfe89c7cd5c88eb5a8916798547e0"></span>void <tt class="descname">mpi_apply_inverse_norm</tt><big>(</big>mpi_matrix const &amp; <em>S</em>, mpi_matrix &amp; <em>mat</em><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0namespaceharp_1a2a0a10763966c0260c6cde9893163fb3"></span>void <tt class="descname">mpi_norm</tt><big>(</big>mpi_matrix const &amp; <em>D</em>, mpi_matrix const &amp; <em>W</em>, mpi_matrix &amp; <em>S</em><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0namespaceharp_1acc9b5ae6b057044bbc49171d31b3f318"></span>void <tt class="descname">mpi_sparse_mv_trans</tt><big>(</big><a class="reference internal" href="#project0classharp_1_1mpi__matrix__sparse"><em>mpi_matrix_sparse</em></a> const &amp; <em>AT</em>, mpi_matrix const &amp; <em>in</em>, elem_matrix_local &amp; <em>out</em><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0namespaceharp_1ae5a2b51b3212d55c7bfa03af5ea9f657"></span>void <tt class="descname">mpi_gang_distribute</tt><big>(</big>mpi_matrix const &amp; <em>mat</em>, mpi_matrix &amp; <em>gmat</em><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0namespaceharp_1a966f3fc9ed48daed512c91831d9da30e"></span>void <tt class="descname">mpi_gang_accum</tt><big>(</big>mpi_matrix const &amp; <em>gmat</em>, mpi_matrix &amp; <em>mat</em><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt>
+<span class="target" id="project0classharp_1_1mpi__matrix__sparse__block"></span><em>class</em> <tt class="descname">harp::mpi_matrix_sparse_block</tt></dt>
+<dd><dl class="public-func">
+<dt>
+<em>Public Functions</em></dt>
+<dd><dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1mpi__matrix__sparse__block_1a1e74fb81f225ec6e960fd98655677e87"></span><tt class="descname">mpi_matrix_sparse_block</tt><big>(</big><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1mpi__matrix__sparse__block_1a457cdfd53c086fe9e4cc995d6b7152cd"></span><tt class="descname">~mpi_matrix_sparse_block</tt><big>(</big><big>)</big></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="public-attrib">
+<dt>
+<em>Public Members</em></dt>
+<dd><dl class="variable">
+<dt>
+<span class="target" id="project0classharp_1_1mpi__matrix__sparse__block_1abaffbf05ca2bf20424b7bd2121376f10"></span>size_t <tt class="descname">firstrow</tt></dt>
+<dd></dd></dl>
+
+<dl class="variable">
+<dt>
+<span class="target" id="project0classharp_1_1mpi__matrix__sparse__block_1aa83683551713cf9ef0adcc366fd05f23"></span>size_t <tt class="descname">rows</tt></dt>
+<dd></dd></dl>
+
+<dl class="variable">
+<dt>
+<span class="target" id="project0classharp_1_1mpi__matrix__sparse__block_1affb5639ae8fa1433e45b1816dec5222d"></span>size_t <tt class="descname">vals</tt></dt>
+<dd></dd></dl>
+
+<dl class="variable">
+<dt>
+<span class="target" id="project0classharp_1_1mpi__matrix__sparse__block_1abab148d21ecda44ced28dfffa235d6a3"></span>std::vector&lt; size_t &gt; <tt class="descname">row</tt></dt>
+<dd></dd></dl>
+
+<dl class="variable">
+<dt>
+<span class="target" id="project0classharp_1_1mpi__matrix__sparse__block_1a235d88d6556192171f4dec1dbf2f7c44"></span>std::vector&lt; size_t &gt; <tt class="descname">col</tt></dt>
+<dd></dd></dl>
+
+<dl class="variable">
+<dt>
+<span class="target" id="project0classharp_1_1mpi__matrix__sparse__block_1ac5122540e30360ba4a31cff2874d0dec"></span>std::vector&lt; size_t &gt; <tt class="descname">row_offset</tt></dt>
+<dd></dd></dl>
+
+<dl class="variable">
+<dt>
+<span class="target" id="project0classharp_1_1mpi__matrix__sparse__block_1ae174d1b8ceefec15c248e7d28d4c787b"></span>std::vector&lt; size_t &gt; <tt class="descname">row_nnz</tt></dt>
+<dd></dd></dl>
+
+<dl class="variable">
+<dt>
+<span class="target" id="project0classharp_1_1mpi__matrix__sparse__block_1a668e3a27ee645818cff2ff44506f21c0"></span>vector_double <tt class="descname">data</tt></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="private-func">
+</dl>
+
+<dl class="friend">
+<dt>
+<em>Friends</em></dt>
+<dd><dl class="friend">
+<dt>
+<span class="target" id="project0classharp_1_1mpi__matrix__sparse__block_1ac98d07dd8f7b70e16ccb9a01abf56b9c"></span>friend class <tt class="descname">boost::serialization::access</tt></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt>
+<span class="target" id="project0classharp_1_1mpi__matrix__sparse"></span><em>class</em> <tt class="descname">harp::mpi_matrix_sparse</tt></dt>
+<dd><dl class="public-func">
+<dt>
+<em>Public Functions</em></dt>
+<dd><dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1mpi__matrix__sparse_1a006a86cee85a83672ce45fc19c354b5b"></span><tt class="descname">mpi_matrix_sparse</tt><big>(</big>boost::mpi::communicator const &amp; <em>comm</em>, size_t <em>rows</em>, size_t <em>cols</em><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1mpi__matrix__sparse_1a69d53a75e40a08e2633ae47b873aaaf0"></span><tt class="descname">~mpi_matrix_sparse</tt><big>(</big><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1mpi__matrix__sparse_1aba83a989a4709a562b8ef72f82fd017c"></span>void <tt class="descname">clear</tt><big>(</big><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1mpi__matrix__sparse_1a29e215412e88c297a2a87fecabbfb496"></span>boost::mpi::communicator const &amp; <tt class="descname">comm</tt><big>(</big><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1mpi__matrix__sparse_1a24065739710f3c93a0ca0b828ab41c37"></span><a class="reference internal" href="#project0classharp_1_1mpi__matrix__sparse__block"><em>mpi_matrix_sparse_block</em></a> &amp; <tt class="descname">block</tt><big>(</big><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1mpi__matrix__sparse_1af5c154aa4f1cad537a42c74b5606ae76"></span><a class="reference internal" href="#project0classharp_1_1mpi__matrix__sparse__block"><em>mpi_matrix_sparse_block</em></a> const &amp; <tt class="descname">block</tt><big>(</big><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1mpi__matrix__sparse_1ad4f877ede3d631d9cc6be91d67de23c4"></span>size_t <tt class="descname">rows</tt><big>(</big><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1mpi__matrix__sparse_1a793c50127608c37f5ebd71841596fa09"></span>size_t <tt class="descname">cols</tt><big>(</big><big>)</big> const</dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="private-attrib">
+</dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+      </div>
+      <div class="bottomnav">
+      
+        <p>
+        «&#160;&#160;<a href="serial_extract.html">Serial Spectral Extraction</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="index.html">Contents</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="parallel_data.html">Parallel Data I/O</a>&#160;&#160;»
+        </p>
+
+      </div>
+
+    <div class="footer">
+        &copy; Copyright 2013-2015, Theodore Kisner.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

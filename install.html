@@ -1,0 +1,216 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Installation &mdash; HARP Pre-1.0 (2c7ffce) documentation</title>
+    
+    <link rel="stylesheet" href="_static/haiku.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/breathe.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     'Pre-1.0 (2c7ffce)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="HARP Pre-1.0 (2c7ffce) documentation" href="index.html" />
+    <link rel="next" title="Serial Utilities" href="serial_utils.html" />
+    <link rel="prev" title="Introduction" href="intro.html" /> 
+  </head>
+  <body>
+      <div class="header"><h1 class="heading"><a href="index.html">
+          <span>HARP Pre-1.0 (2c7ffce) documentation</span></a></h1>
+        <h2 class="heading"><span>Installation</span></h2>
+      </div>
+      <div class="topnav">
+      
+        <p>
+        «&#160;&#160;<a href="intro.html">Introduction</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="index.html">Contents</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="serial_utils.html">Serial Utilities</a>&#160;&#160;»
+        </p>
+
+      </div>
+      <div class="content">
+        
+        
+  <div class="section" id="installation">
+<span id="install"></span><h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<p>HARP uses an autotools-based build system.  If you are installing from a distribution tarball, then you do not need to actually have autotools installed.  If you are installing from a git checkout, then you need to have recent versions of automake, autoconf, and libtool installed.</p>
+<div class="section" id="dependencies">
+<span id="install-deps"></span><h2>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h2>
+<p>The first step to installing HARP is to make sure that you have all of the dependencies installed.  You should probably use a package manager to install these dependencies (see below).  The minimal required dependencies for the serial toolkit are CFITSIO, LAPACK, and a full installation of BOOST:</p>
+<div class="line-block">
+<div class="line"><a class="reference external" href="http://heasarc.gsfc.nasa.gov/fitsio/">http://heasarc.gsfc.nasa.gov/fitsio/</a></div>
+<div class="line"><a class="reference external" href="http://www.netlib.org/lapack/">http://www.netlib.org/lapack/</a></div>
+<div class="line"><a class="reference external" href="http://www.boost.org">http://www.boost.org</a></div>
+</div>
+<p>Note that many High Performance Computing (HPC) systems have vendor-tuned BLAS/LAPACK libraries, which should be used if possible.  If you would like to build the Python language interface, then you additionally must have installed python and numpy:</p>
+<div class="line-block">
+<div class="line"><a class="reference external" href="http://www.python.org">http://www.python.org</a></div>
+<div class="line"><a class="reference external" href="http://www.numpy.org">http://www.numpy.org</a></div>
+</div>
+<p>If you would like to use the parallel toolkit, then obviously you need an MPI implementation (e.g. MPICH or OpenMPI) that has been built with or is compatible with the serial compilers you are using.  You must also install Elemental:</p>
+<div class="line-block">
+<div class="line"><a class="reference external" href="http://libelemental.org">http://libelemental.org</a></div>
+</div>
+<p>The table below shows these dependencies and what optional features are enabled by each.  Dependencies detected at configure time.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="15%" />
+<col width="18%" />
+<col width="17%" />
+<col width="17%" />
+<col width="17%" />
+<col width="17%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">&nbsp;</th>
+<th class="head">LAPACK / BOOST / CFITSIO</th>
+<th class="head">Python / Numpy</th>
+<th class="head">MPI / boost::mpi</th>
+<th class="head">Elemental</th>
+<th class="head">mpi4py</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Serial Tools</td>
+<td><img alt="_images/yesmark.png" class="first last" src="_images/yesmark.png" />
+</td>
+<td><img alt="_images/noxmark.png" class="first last" src="_images/noxmark.png" />
+</td>
+<td><img alt="_images/noxmark.png" class="first last" src="_images/noxmark.png" />
+</td>
+<td><img alt="_images/noxmark.png" class="first last" src="_images/noxmark.png" />
+</td>
+<td><img alt="_images/noxmark.png" class="first last" src="_images/noxmark.png" />
+</td>
+</tr>
+<tr class="row-odd"><td>Python Bindings</td>
+<td><img alt="_images/yesmark.png" class="first last" src="_images/yesmark.png" />
+</td>
+<td><img alt="_images/yesmark.png" class="first last" src="_images/yesmark.png" />
+</td>
+<td><img alt="_images/noxmark.png" class="first last" src="_images/noxmark.png" />
+</td>
+<td><img alt="_images/noxmark.png" class="first last" src="_images/noxmark.png" />
+</td>
+<td><img alt="_images/noxmark.png" class="first last" src="_images/noxmark.png" />
+</td>
+</tr>
+<tr class="row-even"><td>MPI Tools</td>
+<td><img alt="_images/yesmark.png" class="first last" src="_images/yesmark.png" />
+</td>
+<td><img alt="_images/noxmark.png" class="first last" src="_images/noxmark.png" />
+</td>
+<td><img alt="_images/yesmark.png" class="first last" src="_images/yesmark.png" />
+</td>
+<td><img alt="_images/yesmark.png" class="first last" src="_images/yesmark.png" />
+</td>
+<td><img alt="_images/noxmark.png" class="first last" src="_images/noxmark.png" />
+</td>
+</tr>
+<tr class="row-odd"><td>MPI Python Bindings</td>
+<td><img alt="_images/yesmark.png" class="first last" src="_images/yesmark.png" />
+</td>
+<td><img alt="_images/yesmark.png" class="first last" src="_images/yesmark.png" />
+</td>
+<td><img alt="_images/yesmark.png" class="first last" src="_images/yesmark.png" />
+</td>
+<td><img alt="_images/yesmark.png" class="first last" src="_images/yesmark.png" />
+</td>
+<td><img alt="_images/yesmark.png" class="first last" src="_images/yesmark.png" />
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="installing-dependencies-on-ubuntu">
+<span id="install-ubuntu"></span><h2>Installing Dependencies on Ubuntu<a class="headerlink" href="#installing-dependencies-on-ubuntu" title="Permalink to this headline">¶</a></h2>
+<p>On Ubuntu 14.04, you can get all dependencies except for Elemental by doing:</p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">$&gt; sudo apt-get install build-essential libopenblas-dev liblapack-dev libboost-all-dev python-numpy python-mpi4py libcfitsio3-dev</div>
+</div>
+</div></blockquote>
+<p>Then download and install Elemental.  For default options, you can just specify the install prefix and remember to do an out-of-source build.  In this example we downloaded and extracted the 0.84 tarball and made a build directory in the same place as that extracted directory:</p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">$&gt; mkdir build</div>
+<div class="line">$&gt; cd build</div>
+<div class="line">$&gt; cmake -D CMAKE_INSTALL_PREFIX=/home/&lt;blah&gt;/software ../Elemental-0.84-p1</div>
+<div class="line">$&gt; make</div>
+<div class="line">$&gt; make install</div>
+</div>
+</div></blockquote>
+</div>
+<div class="section" id="installing-dependencies-on-os-x">
+<span id="install-osx"></span><h2>Installing Dependencies on OS X<a class="headerlink" href="#installing-dependencies-on-os-x" title="Permalink to this headline">¶</a></h2>
+<p>The easiest way by far to get things like boost installed on OS X is to install macports:</p>
+<blockquote>
+<div><div class="line-block">
+<div class="line"><a class="reference external" href="https://www.macports.org">https://www.macports.org</a></div>
+</div>
+</div></blockquote>
+<p>Then use macports to install all dependencies except Elemental:</p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">$&gt; sudo port install cfitsio py27-numpy boost +python27 +openmpi py27-mpi4py -mpich +openmpi</div>
+</div>
+</div></blockquote>
+<p>Then download and install Elemental.  For default options, you can just specify the install prefix and remember to do an out-of-source build.  In this example we downloaded and extracted the 0.84 tarball and made a build directory in the same place as that extracted directory:</p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">$&gt; mkdir build</div>
+<div class="line">$&gt; cd build</div>
+<div class="line">$&gt; cmake -D CMAKE_INSTALL_PREFIX=/Users/&lt;blah&gt;/software ../Elemental-0.84-p1</div>
+<div class="line">$&gt; make</div>
+<div class="line">$&gt; make install</div>
+</div>
+</div></blockquote>
+</div>
+<div class="section" id="configuring-harp">
+<span id="install-config"></span><h2>Configuring HARP<a class="headerlink" href="#configuring-harp" title="Permalink to this headline">¶</a></h2>
+<p>Before configuring HARP, you should determine:</p>
+<ol class="arabic simple">
+<li>where you want to install HARP.</li>
+<li>which compilers you are using.</li>
+<li>whether any dependencies are installed in a non-standard place (and where that place is).</li>
+</ol>
+</div>
+</div>
+
+
+      </div>
+      <div class="bottomnav">
+      
+        <p>
+        «&#160;&#160;<a href="intro.html">Introduction</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="index.html">Contents</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="serial_utils.html">Serial Utilities</a>&#160;&#160;»
+        </p>
+
+      </div>
+
+    <div class="footer">
+        &copy; Copyright 2013-2015, Theodore Kisner.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

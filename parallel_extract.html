@@ -1,0 +1,117 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Parallel Spectral Extraction &mdash; HARP Pre-1.0 (2c7ffce) documentation</title>
+    
+    <link rel="stylesheet" href="_static/haiku.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/breathe.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     'Pre-1.0 (2c7ffce)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="HARP Pre-1.0 (2c7ffce) documentation" href="index.html" />
+    <link rel="next" title="Commandline Tools" href="cli.html" />
+    <link rel="prev" title="Parallel Data I/O" href="parallel_data.html" /> 
+  </head>
+  <body>
+      <div class="header"><h1 class="heading"><a href="index.html">
+          <span>HARP Pre-1.0 (2c7ffce) documentation</span></a></h1>
+        <h2 class="heading"><span>Parallel Spectral Extraction</span></h2>
+      </div>
+      <div class="topnav">
+      
+        <p>
+        «&#160;&#160;<a href="parallel_data.html">Parallel Data I/O</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="index.html">Contents</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="cli.html">Commandline Tools</a>&#160;&#160;»
+        </p>
+
+      </div>
+      <div class="content">
+        
+        
+  <div class="section" id="parallel-spectral-extraction">
+<span id="parallel-extract"></span><h1>Parallel Spectral Extraction<a class="headerlink" href="#parallel-spectral-extraction" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt>
+<span class="target" id="project0classharp_1_1mpi__spec__slice"></span><em>class</em> <tt class="descname">harp::mpi_spec_slice</tt></dt>
+<dd><dl class="public-func">
+<dt>
+<em>Public Functions</em></dt>
+<dd><dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1mpi__spec__slice_1aa9c864295c3cfc66fcad2e9ad94a0ff9"></span><tt class="descname">mpi_spec_slice</tt><big>(</big>boost::mpi::communicator const &amp; <em>rcomm</em>, boost::mpi::communicator const &amp; <em>gcomm</em>, size_t <em>nspec</em>, size_t <em>nlambda</em>, size_t <em>chunk_nspec</em>, size_t <em>chunk_nlambda</em>, size_t <em>overlap_spec</em>, size_t <em>overlap_lambda</em><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1mpi__spec__slice_1ab30fc59cb90829f733d19833dfa3818d"></span><tt class="descname">~mpi_spec_slice</tt><big>(</big><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1mpi__spec__slice_1aa28404dccdaed1339f6a215abe9e21a3"></span><a class="reference internal" href="serial_extract.html#project0classharp_1_1spec__slice__region"><em>spec_slice_region</em></a> const &amp; <tt class="descname">full_region</tt><big>(</big><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1mpi__spec__slice_1a3df7bf0c4f78fa73be6dbad8ecf05148"></span>std::vector&lt; <a class="reference internal" href="serial_extract.html#project0classharp_1_1spec__slice__region"><em>spec_slice_region</em></a> &gt; <tt class="descname">regions</tt><big>(</big><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1mpi__spec__slice_1a0323162dc2973109640c4edbca7ea319"></span>boost::mpi::communicator <tt class="descname">gang_comm</tt><big>(</big><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1mpi__spec__slice_1acd4468f9b4a5f5daae1da234a16db3d3"></span>boost::mpi::communicator <tt class="descname">rank_comm</tt><big>(</big><big>)</big></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="private-attrib">
+</dl>
+
+</dd></dl>
+
+</div>
+
+
+      </div>
+      <div class="bottomnav">
+      
+        <p>
+        «&#160;&#160;<a href="parallel_data.html">Parallel Data I/O</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="index.html">Contents</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="cli.html">Commandline Tools</a>&#160;&#160;»
+        </p>
+
+      </div>
+
+    <div class="footer">
+        &copy; Copyright 2013-2015, Theodore Kisner.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

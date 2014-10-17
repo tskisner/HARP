@@ -1,0 +1,264 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Serial Spectral Extraction &mdash; HARP Pre-1.0 (2c7ffce) documentation</title>
+    
+    <link rel="stylesheet" href="_static/haiku.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/breathe.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     'Pre-1.0 (2c7ffce)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="HARP Pre-1.0 (2c7ffce) documentation" href="index.html" />
+    <link rel="next" title="Parallel Utilities" href="parallel_utils.html" />
+    <link rel="prev" title="Serial Data I/O" href="serial_data.html" /> 
+  </head>
+  <body>
+      <div class="header"><h1 class="heading"><a href="index.html">
+          <span>HARP Pre-1.0 (2c7ffce) documentation</span></a></h1>
+        <h2 class="heading"><span>Serial Spectral Extraction</span></h2>
+      </div>
+      <div class="topnav">
+      
+        <p>
+        «&#160;&#160;<a href="serial_data.html">Serial Data I/O</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="index.html">Contents</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="parallel_utils.html">Parallel Utilities</a>&#160;&#160;»
+        </p>
+
+      </div>
+      <div class="content">
+        
+        
+  <div class="section" id="serial-spectral-extraction">
+<span id="serial-extract"></span><h1>Serial Spectral Extraction<a class="headerlink" href="#serial-spectral-extraction" title="Permalink to this headline">¶</a></h1>
+<p>The serial spectral extraction tools in HARP are useful debugging new data plugins or testing algorithms on small toy problems.  If you are performing production spectral extraction, you should use the <a class="reference internal" href="parallel_extract.html#parallel-extract"><em>parallel extraction tools</em></a>.</p>
+<dl class="class">
+<dt>
+<span class="target" id="project0classharp_1_1spec__slice__region"></span><em>class</em> <tt class="descname">harp::spec_slice_region</tt></dt>
+<dd><dl class="public-func">
+<dt>
+<em>Public Functions</em></dt>
+<dd><dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1spec__slice__region_1ace4a3af8897872a2dbbb14e81903d883"></span><tt class="descname">spec_slice_region</tt><big>(</big><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1spec__slice__region_1a1072bbd62d23f58a4229f4491ae920bb"></span><tt class="descname">~spec_slice_region</tt><big>(</big><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1spec__slice__region_1a6decef4b1acc2fd53303d7436eb6b0ce"></span><tt class="descname">spec_slice_region</tt><big>(</big><a class="reference internal" href="#project0classharp_1_1spec__slice__region"><em>spec_slice_region</em></a> const &amp; <em>orig</em><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1spec__slice__region_1a0b052610a731c33929da67c668242b82"></span><a class="reference internal" href="#project0classharp_1_1spec__slice__region"><em>spec_slice_region</em></a> &amp; <tt class="descname">operator=</tt><big>(</big><a class="reference internal" href="#project0classharp_1_1spec__slice__region"><em>spec_slice_region</em></a> const &amp; <em>rhs</em><big>)</big></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="public-attrib">
+<dt>
+<em>Public Members</em></dt>
+<dd><dl class="variable">
+<dt>
+<span class="target" id="project0classharp_1_1spec__slice__region_1ab7f4c6240ea9a0805fcca8de4ab1ebfa"></span>size_t <tt class="descname">overlap_spec</tt></dt>
+<dd></dd></dl>
+
+<dl class="variable">
+<dt>
+<span class="target" id="project0classharp_1_1spec__slice__region_1a1721f325cce412d2cd50e44f2d82d27f"></span>size_t <tt class="descname">overlap_lambda</tt></dt>
+<dd></dd></dl>
+
+<dl class="variable">
+<dt>
+<span class="target" id="project0classharp_1_1spec__slice__region_1abd6852314c02ee846ea19b7e4677ae30"></span>size_t <tt class="descname">first_spec</tt></dt>
+<dd></dd></dl>
+
+<dl class="variable">
+<dt>
+<span class="target" id="project0classharp_1_1spec__slice__region_1ae89dc464b6bd7bab924c1e5c2e8045d8"></span>size_t <tt class="descname">first_lambda</tt></dt>
+<dd></dd></dl>
+
+<dl class="variable">
+<dt>
+<span class="target" id="project0classharp_1_1spec__slice__region_1a25bb9c02b7cf366cb24d4dae5d1db37e"></span>size_t <tt class="descname">first_good_spec</tt></dt>
+<dd></dd></dl>
+
+<dl class="variable">
+<dt>
+<span class="target" id="project0classharp_1_1spec__slice__region_1a87b51c87c1c4eccaf046577a89ceede7"></span>size_t <tt class="descname">first_good_lambda</tt></dt>
+<dd></dd></dl>
+
+<dl class="variable">
+<dt>
+<span class="target" id="project0classharp_1_1spec__slice__region_1a6235b04c97d500f3d1bfd212144ced9b"></span>size_t <tt class="descname">n_spec</tt></dt>
+<dd></dd></dl>
+
+<dl class="variable">
+<dt>
+<span class="target" id="project0classharp_1_1spec__slice__region_1ae0242719207c7e82351aaa21ee6a923f"></span>size_t <tt class="descname">n_lambda</tt></dt>
+<dd></dd></dl>
+
+<dl class="variable">
+<dt>
+<span class="target" id="project0classharp_1_1spec__slice__region_1a3c5e7a0f74fb20a6c0f4031bb5988295"></span>size_t <tt class="descname">n_good_spec</tt></dt>
+<dd></dd></dl>
+
+<dl class="variable">
+<dt>
+<span class="target" id="project0classharp_1_1spec__slice__region_1a227a6b054d4c5b00885bffd2c0a0c539"></span>size_t <tt class="descname">n_good_lambda</tt></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="private-func">
+</dl>
+
+<dl class="friend">
+<dt>
+<em>Friends</em></dt>
+<dd><dl class="friend">
+<dt>
+<span class="target" id="project0classharp_1_1spec__slice__region_1ac98d07dd8f7b70e16ccb9a01abf56b9c"></span>friend class <tt class="descname">boost::serialization::access</tt></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt>
+<span class="target" id="project0classharp_1_1spec__slice"></span><em>class</em> <tt class="descname">harp::spec_slice</tt></dt>
+<dd><dl class="public-func">
+<dt>
+<em>Public Functions</em></dt>
+<dd><dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1spec__slice_1a1cb9f9d8f042c94999dd3c97aa808889"></span><tt class="descname">spec_slice</tt><big>(</big><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1spec__slice_1a49e378d6003a2af9ceb4a75f1fa44149"></span><tt class="descname">spec_slice</tt><big>(</big>size_t <em>nworker</em>, size_t <em>nspec</em>, size_t <em>nlambda</em>, size_t <em>chunk_nspec</em>, size_t <em>chunk_nlambda</em>, size_t <em>overlap_spec</em>, size_t <em>overlap_lambda</em><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1spec__slice_1aa653ce9e263a1fb1915823b2608c916d"></span><tt class="descname">~spec_slice</tt><big>(</big><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1spec__slice_1a101486162282ba5616888fec776ff4af"></span><a class="reference internal" href="#project0classharp_1_1spec__slice__region"><em>spec_slice_region</em></a> const &amp; <tt class="descname">full_region</tt><big>(</big><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1spec__slice_1ac0191fc63f1818ce3b3b763404db51de"></span>std::vector&lt; <a class="reference internal" href="#project0classharp_1_1spec__slice__region"><em>spec_slice_region</em></a> &gt; <tt class="descname">regions</tt><big>(</big>size_t const &amp; <em>worker</em><big>)</big> const</dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="private-func">
+</dl>
+
+<dl class="private-attrib">
+</dl>
+
+<dl class="friend">
+<dt>
+<em>Friends</em></dt>
+<dd><dl class="friend">
+<dt>
+<span class="target" id="project0classharp_1_1spec__slice_1ac98d07dd8f7b70e16ccb9a01abf56b9c"></span>friend class <tt class="descname">boost::serialization::access</tt></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0namespaceharp_1aabb88103d8032ff0397bbdb22093a9f4"></span>void <tt class="descname">sub_spec</tt><big>(</big><a class="reference internal" href="#project0classharp_1_1spec__slice__region"><em>spec_slice_region</em></a> const &amp; <em>full_region</em>, <a class="reference internal" href="#project0classharp_1_1spec__slice__region"><em>spec_slice_region</em></a> const &amp; <em>sub_region</em>, vector_double const &amp; <em>full_data</em>, bool <em>use_good_sub</em>, vector_double &amp; <em>sub_data</em><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0namespaceharp_1aed939bdbb1ad122cf54e541493b368a9"></span>void <tt class="descname">accum_spec</tt><big>(</big><a class="reference internal" href="#project0classharp_1_1spec__slice__region"><em>spec_slice_region</em></a> const &amp; <em>sub_region</em>, <a class="reference internal" href="#project0classharp_1_1spec__slice__region"><em>spec_slice_region</em></a> const &amp; <em>full_region</em>, vector_double const &amp; <em>sub_data</em>, bool <em>use_good_sub</em>, vector_double &amp; <em>full_data</em><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0namespaceharp_1adcdf5168c6b75f2700d46724b9643bd5"></span>void <tt class="descname">noise_weighted_spec</tt><big>(</big>matrix_double_sparse const &amp; <em>AT</em>, vector_double const &amp; <em>invnoise</em>, vector_mask const &amp; <em>mask</em>, vector_double const &amp; <em>img</em>, vector_double &amp; <em>z</em><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0namespaceharp_1ab20858a9191c07ac623e5cad49fb954d"></span>void <tt class="descname">inverse_covariance</tt><big>(</big>matrix_double_sparse const &amp; <em>AT</em>, vector_double const &amp; <em>invnoise</em>, vector_mask const &amp; <em>mask</em>, matrix_double &amp; <em>invC</em><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0namespaceharp_1a1dabbc0c04c92207784776540e2c8c31"></span>void <tt class="descname">resolution</tt><big>(</big>vector_double const &amp; <em>D</em>, matrix_double const &amp; <em>W</em>, vector_double &amp; <em>S</em>, matrix_double &amp; <em>R</em><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0namespaceharp_1aa49c6c1a33621ebb71afd0fd018a9a9d"></span>void <tt class="descname">accum_diag_resolution</tt><big>(</big><a class="reference internal" href="#project0classharp_1_1spec__slice__region"><em>spec_slice_region</em></a> const &amp; <em>region</em>, matrix_double const &amp; <em>R</em>, matrix_double_sparse &amp; <em>diag</em><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0namespaceharp_1acfc578ce2c83160976ca12f478d240f7"></span>void <tt class="descname">extract</tt><big>(</big>vector_double const &amp; <em>D</em>, matrix_double const &amp; <em>W</em>, vector_double const &amp; <em>S</em>, vector_double const &amp; <em>z</em>, vector_double &amp; <em>Rf</em>, vector_double &amp; <em>f</em><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0namespaceharp_1adbba4850496613801bb44d0be8d6f103"></span>void <tt class="descname">extract_slices</tt><big>(</big>spec_slice_p <em>slice</em>, psf_p <em>design</em>, vector_double const &amp; <em>img</em>, vector_double const &amp; <em>img_inv_var</em>, vector_double const &amp; <em>truth</em>, vector_double &amp; <em>Rf</em>, vector_double &amp; <em>f</em>, vector_double &amp; <em>err</em>, vector_double &amp; <em>Rtruth</em>, std::map&lt; std::string, double &gt; &amp; <em>profile</em>, bool <em>region_threads</em>, bool <em>lambda_mask</em>, std::string const &amp; <em>status_prefix</em> = &quot;&quot;<big>)</big></dt>
+<dd></dd></dl>
+
+</div>
+
+
+      </div>
+      <div class="bottomnav">
+      
+        <p>
+        «&#160;&#160;<a href="serial_data.html">Serial Data I/O</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="index.html">Contents</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="parallel_utils.html">Parallel Utilities</a>&#160;&#160;»
+        </p>
+
+      </div>
+
+    <div class="footer">
+        &copy; Copyright 2013-2015, Theodore Kisner.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

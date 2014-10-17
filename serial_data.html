@@ -1,0 +1,477 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Serial Data I/O &mdash; HARP Pre-1.0 (2c7ffce) documentation</title>
+    
+    <link rel="stylesheet" href="_static/haiku.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/breathe.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     'Pre-1.0 (2c7ffce)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="HARP Pre-1.0 (2c7ffce) documentation" href="index.html" />
+    <link rel="next" title="Serial Spectral Extraction" href="serial_extract.html" />
+    <link rel="prev" title="Serial Utilities" href="serial_utils.html" /> 
+  </head>
+  <body>
+      <div class="header"><h1 class="heading"><a href="index.html">
+          <span>HARP Pre-1.0 (2c7ffce) documentation</span></a></h1>
+        <h2 class="heading"><span>Serial Data I/O</span></h2>
+      </div>
+      <div class="topnav">
+      
+        <p>
+        «&#160;&#160;<a href="serial_utils.html">Serial Utilities</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="index.html">Contents</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="serial_extract.html">Serial Spectral Extraction</a>&#160;&#160;»
+        </p>
+
+      </div>
+      <div class="content">
+        
+        
+  <div class="section" id="serial-data-i-o">
+<span id="serial-data"></span><h1>Serial Data I/O<a class="headerlink" href="#serial-data-i-o" title="Permalink to this headline">¶</a></h1>
+<p>For each type of object, HARP provides several derived classes which support specific data &#8220;formats&#8221;.  Some of these classes actually generate data on demand, or simulate the data at construction and cache it internally.  There are two ways in which these classes should be instantiated, depending on your use case:</p>
+<ol class="arabic simple">
+<li>If you are writing general tools that can work with any format for a particular type, use the factory method for that type.  Always wrap the returned raw pointer in a shared_ptr (see examples) to ensure proper destruction of the object.</li>
+<li>If you are instantiating a particular format of an object (for example so that you can create it and write data out), then just declare the variable.</li>
+</ol>
+<p>The first of the two use cases above allows us to implement <a class="reference external" href="http://en.wikipedia.org/wiki/Inversion_of_control">inversion of control</a>.  In other words, it allows us to write general analysis tools that work with any kind of data that provides the correct interface.</p>
+<div class="section" id="spectra">
+<span id="serial-data-spec"></span><h2>Spectra<a class="headerlink" href="#spectra" title="Permalink to this headline">¶</a></h2>
+<p>A collection of spectra are handled in HARP by the &#8220;spec&#8221; class.  This represents one or more spectra with a common wavelength solution.  This class also specifies which spectra represent &#8220;sky&#8221; signal.</p>
+<dl class="class">
+<dt>
+<span class="target" id="project0classharp_1_1spec"></span><em>class</em> <tt class="descname">harp::spec</tt></dt>
+<dd><dl class="public-func">
+<dt>
+<em>Public Functions</em></dt>
+<dd><dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1spec_1a8f986a434caaeffb553176ff49e6ba55"></span><tt class="descname">spec</tt><big>(</big><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1spec_1a53bce39b7acb9d2b63435810c6587d87"></span><tt class="descname">spec</tt><big>(</big>std::string const &amp; <em>type</em>, boost::property_tree::ptree const &amp; <em>props</em><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1spec_1a481f022ccedaf6571c3dca40bfa42d1d"></span>virtual <tt class="descname">~spec</tt><big>(</big><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1spec_1a44e0953520d73859940b7adeebf15468"></span>virtual size_t <tt class="descname">n_spec</tt><big>(</big><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1spec_1a6518c67db1e93c95d22bef70abc47868"></span>virtual size_t <tt class="descname">n_lambda</tt><big>(</big><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1spec_1ac0908964845f31bc12dbaaaaa2bdf13e"></span>virtual void <tt class="descname">values</tt><big>(</big>vector_double &amp; <em>data</em><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1spec_1a36b2cdaa37b83a80c48e48b2f7e050cd"></span>virtual void <tt class="descname">inv_variance</tt><big>(</big>vector_double &amp; <em>data</em><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1spec_1a19a735bc0d694b8e7d13b621ad8eb009"></span>virtual void <tt class="descname">lambda</tt><big>(</big>vector_double &amp; <em>lambda_vals</em><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1spec_1a9cd927a62b37d3b86423c620c29a99fb"></span>void <tt class="descname">values</tt><big>(</big>matrix_double &amp; <em>data</em><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1spec_1a42f4e403740ede0371612f8474be0004"></span>void <tt class="descname">inv_variance</tt><big>(</big>matrix_double &amp; <em>data</em><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1spec_1a408235bd447aa6f21f09a895cb52dd3d"></span>std::string <tt class="descname">type</tt><big>(</big><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1spec_1a2e3856b8f6c3d17a472d0834b0985a88"></span><div class="line">template &lt;class T&gt; </div>
+boost::shared_ptr&lt; T &gt; <tt class="descname">shared_ref</tt><big>(</big><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1spec_1aad7519ad88e6d472cebf731e8be4f65d"></span><div class="line">template &lt;class T&gt; </div>
+boost::weak_ptr&lt; T &gt; <tt class="descname">weak_ref</tt><big>(</big><big>)</big></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="private-func">
+</dl>
+
+<dl class="private-attrib">
+</dl>
+
+<dl class="friend">
+<dt>
+<em>Friends</em></dt>
+<dd><dl class="friend">
+<dt>
+<span class="target" id="project0classharp_1_1spec_1ac98d07dd8f7b70e16ccb9a01abf56b9c"></span>friend class <tt class="descname">boost::serialization::access</tt></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="images">
+<span id="serial-data-image"></span><h2>Images<a class="headerlink" href="#images" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt>
+<span class="target" id="project0classharp_1_1image"></span><em>class</em> <tt class="descname">harp::image</tt></dt>
+<dd><dl class="public-func">
+<dt>
+<em>Public Functions</em></dt>
+<dd><dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1image_1a4b9e15e5f64f0428b1a633d19677dc4c"></span><tt class="descname">image</tt><big>(</big><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1image_1a0b97d05417f1251dcb9ba4effc068eb0"></span><tt class="descname">image</tt><big>(</big>std::string const &amp; <em>type</em>, boost::property_tree::ptree const &amp; <em>props</em><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1image_1a9263c91e27c07d75d93109e314344bb1"></span>virtual <tt class="descname">~image</tt><big>(</big><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1image_1ac8435bd33177015e910babd0721e705e"></span>virtual size_t <tt class="descname">n_rows</tt><big>(</big><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1image_1a25964a9d0287f95ac217043168eb2a8b"></span>virtual size_t <tt class="descname">n_cols</tt><big>(</big><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1image_1a79f6c76e38c4a117fea592bc7a001ead"></span>virtual void <tt class="descname">values</tt><big>(</big>vector_double &amp; <em>data</em><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1image_1a85e3f1670570bbdf21ca5d332f7fddb9"></span>virtual void <tt class="descname">inv_variance</tt><big>(</big>vector_double &amp; <em>invvar</em><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1image_1a9e6708d93180e70be729dae5fb75fac1"></span>void <tt class="descname">values</tt><big>(</big>matrix_double &amp; <em>data</em><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1image_1aab8468ceaee54c5651912d21ceb22f26"></span>void <tt class="descname">inv_variance</tt><big>(</big>matrix_double &amp; <em>invvar</em><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1image_1a4637e7168e059cfacc14fb8b6c5eba45"></span>std::string <tt class="descname">type</tt><big>(</big><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1image_1a56aaad72071c588b8536d4b0b322e64d"></span><div class="line">template &lt;class T&gt; </div>
+boost::shared_ptr&lt; T &gt; <tt class="descname">shared_ref</tt><big>(</big><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1image_1adc532db0b95b6f4f4116eb33a3d1c1e9"></span><div class="line">template &lt;class T&gt; </div>
+boost::weak_ptr&lt; T &gt; <tt class="descname">weak_ref</tt><big>(</big><big>)</big></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="private-func">
+</dl>
+
+<dl class="private-attrib">
+</dl>
+
+<dl class="friend">
+<dt>
+<em>Friends</em></dt>
+<dd><dl class="friend">
+<dt>
+<span class="target" id="project0classharp_1_1image_1ac98d07dd8f7b70e16ccb9a01abf56b9c"></span>friend class <tt class="descname">boost::serialization::access</tt></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="point-spread-functions">
+<span id="serial-data-psf"></span><h2>Point Spread Functions<a class="headerlink" href="#point-spread-functions" title="Permalink to this headline">¶</a></h2>
+<p>The HARP &#8220;psf&#8221; class represents the point spread function of the instrument and describes the projection of flux from individual wavelength points of each spectrum onto an image.</p>
+<dl class="class">
+<dt>
+<span class="target" id="project0classharp_1_1psf"></span><em>class</em> <tt class="descname">harp::psf</tt></dt>
+<dd><dl class="public-func">
+<dt>
+<em>Public Functions</em></dt>
+<dd><dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1psf_1aa769ca1d1c20f02df8dae93ddc729e05"></span><tt class="descname">psf</tt><big>(</big><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1psf_1a7651ae6281408782743eeb1845dea273"></span><tt class="descname">psf</tt><big>(</big>std::string const &amp; <em>type</em>, boost::property_tree::ptree const &amp; <em>props</em><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1psf_1aa9cd95530498c7d31999f36c443dc1d6"></span>virtual <tt class="descname">~psf</tt><big>(</big><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1psf_1a7025fb7eecf2d0612d3c1feed963f80b"></span>virtual size_t <tt class="descname">n_spec</tt><big>(</big><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1psf_1a4df87366693b498a9f32fcf50e210da3"></span>virtual size_t <tt class="descname">n_lambda</tt><big>(</big><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1psf_1a0a291d46633b8196ff15877b5db414ce"></span>virtual size_t <tt class="descname">img_rows</tt><big>(</big><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1psf_1abea28a1b2c1554d39a9bfbeceb37881a"></span>virtual size_t <tt class="descname">img_cols</tt><big>(</big><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1psf_1a58dfa3e40751885926da31e217f3cbb7"></span>virtual vector_double <tt class="descname">lambda</tt><big>(</big><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1psf_1ab94b5ecbdf274c059890ffdc235faa66"></span>virtual void <tt class="descname">extent</tt><big>(</big>size_t <em>spec</em>, size_t <em>lambda</em>, size_t &amp; <em>x_offset</em>, size_t &amp; <em>y_offset</em>, size_t &amp; <em>n_x</em>, size_t &amp; <em>n_y</em><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1psf_1a424a06756daff1ed24c88b440b2ad7ff"></span>virtual void <tt class="descname">response</tt><big>(</big>size_t <em>spec</em>, size_t <em>lambda</em>, size_t &amp; <em>x_offset</em>, size_t &amp; <em>y_offset</em>, matrix_double &amp; <em>patch</em><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1psf_1aaa20d99aa3813416395b0e62dfc8b6a2"></span>virtual size_t <tt class="descname">response_nnz_estimate</tt><big>(</big><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1psf_1ad0d48c26ea1f6bbc903325c92f9059ca"></span>virtual void <tt class="descname">extent_multi</tt><big>(</big>std::map&lt; size_t, std::set&lt; size_t &gt; &gt; const &amp; <em>speclambda</em>, std::vector&lt; size_t &gt; &amp; <em>x_offset</em>, std::vector&lt; size_t &gt; &amp; <em>y_offset</em>, std::vector&lt; size_t &gt; &amp; <em>n_x</em>, std::vector&lt; size_t &gt; &amp; <em>n_y</em><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1psf_1ac1d0c9b7a9861e69576055fd609defcc"></span>virtual void <tt class="descname">project</tt><big>(</big>std::map&lt; size_t, std::set&lt; size_t &gt; &gt; const &amp; <em>speclambda</em>, matrix_double &amp; <em>A</em><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1psf_1a79e74adfaf4d6e67502bc04ee14bdddd"></span>virtual void <tt class="descname">project_transpose</tt><big>(</big>std::map&lt; size_t, std::set&lt; size_t &gt; &gt; const &amp; <em>speclambda</em>, matrix_double_sparse &amp; <em>AT</em><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1psf_1a6bd0240617cde90ad09898f65df27371"></span>void <tt class="descname">project</tt><big>(</big>matrix_double &amp; <em>A</em><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1psf_1a0d2fecabd2a2c08eb2c82c867dffad60"></span>void <tt class="descname">project_transpose</tt><big>(</big>matrix_double_sparse &amp; <em>AT</em><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1psf_1a0b0dd076d18b67f6e39d45d22f9b2ce0"></span>std::string <tt class="descname">type</tt><big>(</big><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1psf_1a52ae7c6cab582ed2a8748af55551d79c"></span><div class="line">template &lt;class T&gt; </div>
+boost::shared_ptr&lt; T &gt; <tt class="descname">shared_ref</tt><big>(</big><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1psf_1afd387bfef9f113bb2d01f5f7ed1ebad9"></span><div class="line">template &lt;class T&gt; </div>
+boost::weak_ptr&lt; T &gt; <tt class="descname">weak_ref</tt><big>(</big><big>)</big></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="public-static-func">
+<dt>
+<em>Public Static Functions</em></dt>
+<dd><dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1psf_1aa803919eeee05b7757c003fe8e42827f"></span>size_t <tt class="descname">total_bins</tt><big>(</big>std::map&lt; size_t, std::set&lt; size_t &gt; &gt; const &amp; <em>speclambda</em><big>)</big></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="private-func">
+</dl>
+
+<dl class="private-attrib">
+</dl>
+
+<dl class="friend">
+<dt>
+<em>Friends</em></dt>
+<dd><dl class="friend">
+<dt>
+<span class="target" id="project0classharp_1_1psf_1ac98d07dd8f7b70e16ccb9a01abf56b9c"></span>friend class <tt class="descname">boost::serialization::access</tt></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="targets">
+<span id="serial-data-targets"></span><h2>Targets<a class="headerlink" href="#targets" title="Permalink to this headline">¶</a></h2>
+<p>The HARP &#8220;targets&#8221; class represents a collection of objects.</p>
+<dl class="class">
+<dt>
+<span class="target" id="project0classharp_1_1targets"></span><em>class</em> <tt class="descname">harp::targets</tt></dt>
+<dd><dl class="public-func">
+<dt>
+<em>Public Functions</em></dt>
+<dd><dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1targets_1a7dab92ab7289f1893752fa10ce88de50"></span><tt class="descname">targets</tt><big>(</big><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1targets_1a994e95de7fed7ec5cd040e767aae9dfb"></span><tt class="descname">targets</tt><big>(</big>std::string const &amp; <em>type</em>, boost::property_tree::ptree const &amp; <em>props</em><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1targets_1ad5f0ee32fbc3f5227d1706cff7c483ec"></span>virtual <tt class="descname">~targets</tt><big>(</big><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1targets_1af2ebe11f3dd4905daf46eb88c2240f88"></span>virtual size_t <tt class="descname">n_objects</tt><big>(</big><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1targets_1ac391aba38aa4edbe140c70c5af2c9934"></span>virtual std::vector&lt; object_p &gt; <tt class="descname">objects</tt><big>(</big><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1targets_1acc0aea524565861548e4a68cc6babb2a"></span>std::string <tt class="descname">type</tt><big>(</big><big>)</big> const</dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1targets_1aba93d2a377a1251d724d2f6a97b14b12"></span><div class="line">template &lt;class T&gt; </div>
+boost::shared_ptr&lt; T &gt; <tt class="descname">shared_ref</tt><big>(</big><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0classharp_1_1targets_1a3e7599d6f944fb7c98f5f8e1b6a5d0a3"></span><div class="line">template &lt;class T&gt; </div>
+boost::weak_ptr&lt; T &gt; <tt class="descname">weak_ref</tt><big>(</big><big>)</big></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="private-func">
+</dl>
+
+<dl class="private-attrib">
+</dl>
+
+<dl class="friend">
+<dt>
+<em>Friends</em></dt>
+<dd><dl class="friend">
+<dt>
+<span class="target" id="project0classharp_1_1targets_1ac98d07dd8f7b70e16ccb9a01abf56b9c"></span>friend class <tt class="descname">boost::serialization::access</tt></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+      </div>
+      <div class="bottomnav">
+      
+        <p>
+        «&#160;&#160;<a href="serial_utils.html">Serial Utilities</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="index.html">Contents</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="serial_extract.html">Serial Spectral Extraction</a>&#160;&#160;»
+        </p>
+
+      </div>
+
+    <div class="footer">
+        &copy; Copyright 2013-2015, Theodore Kisner.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,133 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Serial Utilities &mdash; HARP Pre-1.0 (2c7ffce) documentation</title>
+    
+    <link rel="stylesheet" href="_static/haiku.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/breathe.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     'Pre-1.0 (2c7ffce)',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="HARP Pre-1.0 (2c7ffce) documentation" href="index.html" />
+    <link rel="next" title="Serial Data I/O" href="serial_data.html" />
+    <link rel="prev" title="Installation" href="install.html" /> 
+  </head>
+  <body>
+      <div class="header"><h1 class="heading"><a href="index.html">
+          <span>HARP Pre-1.0 (2c7ffce) documentation</span></a></h1>
+        <h2 class="heading"><span>Serial Utilities</span></h2>
+      </div>
+      <div class="topnav">
+      
+        <p>
+        «&#160;&#160;<a href="install.html">Installation</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="index.html">Contents</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="serial_data.html">Serial Data I/O</a>&#160;&#160;»
+        </p>
+
+      </div>
+      <div class="content">
+        
+        
+  <div class="section" id="serial-utilities">
+<span id="serial-utils"></span><h1>Serial Utilities<a class="headerlink" href="#serial-utilities" title="Permalink to this headline">¶</a></h1>
+<p>The serial HARP library provides some useful math functions and a C++ interface to BLAS/LAPACK operations.  It also provides helper functions for reading / writing FITS data structures.</p>
+<div class="section" id="low-level-math">
+<span id="serial-utils-math"></span><h2>Low-Level Math<a class="headerlink" href="#low-level-math" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="c-blas-lapack-interface">
+<h3>C++ BLAS / LAPACK Interface<a class="headerlink" href="#c-blas-lapack-interface" title="Permalink to this headline">¶</a></h3>
+<p><a class="reference external" href="http://svn.boost.org/svn/boost/sandbox/numeric_bindings/libs/numeric/bindings/doc/html/index.html">http://svn.boost.org/svn/boost/sandbox/numeric_bindings/libs/numeric/bindings/doc/html/index.html</a></p>
+</div>
+<div class="section" id="linear-algebra-helper-functions">
+<h3>Linear Algebra Helper Functions<a class="headerlink" href="#linear-algebra-helper-functions" title="Permalink to this headline">¶</a></h3>
+<dl class="function">
+<dt>
+<span class="target" id="project0namespaceharp_1accf261be3cb9d269909e6de12b774f3f"></span>void <tt class="descname">eigen_decompose</tt><big>(</big>matrix_double const &amp; <em>invcov</em>, vector_double &amp; <em>D</em>, matrix_double &amp; <em>W</em>, bool <em>regularize</em><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0namespaceharp_1a1129c8191ca288d2d136f36dfb0e58d7"></span>void <tt class="descname">eigen_compose</tt><big>(</big>eigen_op <em>op</em>, vector_double const &amp; <em>D</em>, matrix_double const &amp; <em>W</em>, matrix_double &amp; <em>out</em><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0namespaceharp_1a152cb36968e85af667ee08003ff770c3"></span>void <tt class="descname">column_norm</tt><big>(</big>matrix_double const &amp; <em>mat</em>, vector_double &amp; <em>S</em><big>)</big></dt>
+<dd></dd></dl>
+
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p>doxygenfunction: Unable to resolve multiple matches for function &#8220;harp::apply_norm&#8221; with arguments () in doxygen xml output for project &#8220;project0&#8221; from directory: ../../xml/.
+Potential matches:
+</p>
+<pre class="last literal-block">
+- void apply_norm(vector_double const &amp;, vector_double &amp;)
+- void apply_norm(vector_double const &amp;, matrix_double &amp;)
+</pre>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p>doxygenfunction: Unable to resolve multiple matches for function &#8220;harp::apply_inverse_norm&#8221; with arguments () in doxygen xml output for project &#8220;project0&#8221; from directory: ../../xml/.
+Potential matches:
+</p>
+<pre class="last literal-block">
+- void apply_inverse_norm(vector_double const &amp;, vector_double &amp;)
+- void apply_inverse_norm(vector_double const &amp;, matrix_double &amp;)
+</pre>
+</div>
+<dl class="function">
+<dt>
+<span class="target" id="project0namespaceharp_1a3ae6b947a900c2db3370235bbd305d46"></span>void <tt class="descname">norm</tt><big>(</big>vector_double const &amp; <em>D</em>, matrix_double const &amp; <em>W</em>, vector_double &amp; <em>S</em><big>)</big></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="project0namespaceharp_1a406380a07310b0c2de2fbe2c653200e5"></span>void <tt class="descname">sparse_mv_trans</tt><big>(</big>matrix_double_sparse const &amp; <em>AT</em>, vector_double const &amp; <em>in</em>, vector_double &amp; <em>out</em><big>)</big></dt>
+<dd></dd></dl>
+
+</div>
+</div>
+<div class="section" id="fits-helper-tools">
+<span id="serial-utils-fits"></span><h2>FITS Helper Tools<a class="headerlink" href="#fits-helper-tools" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+      </div>
+      <div class="bottomnav">
+      
+        <p>
+        «&#160;&#160;<a href="install.html">Installation</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="index.html">Contents</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="serial_data.html">Serial Data I/O</a>&#160;&#160;»
+        </p>
+
+      </div>
+
+    <div class="footer">
+        &copy; Copyright 2013-2015, Theodore Kisner.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    </div>
+  </body>
+</html>
