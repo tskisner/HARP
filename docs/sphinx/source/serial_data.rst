@@ -51,5 +51,16 @@ The HARP "psf" class represents the point spread function of the instrument and 
 	:members:
 
 
+.. _serial_data_targets:
+
+Targets
+----------------------------
+
+The HARP "targets" class represents a collection of objects.
+
+
+.. doxygenclass:: harp::targets
+	:members:
+
 
 

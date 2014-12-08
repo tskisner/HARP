@@ -16,6 +16,8 @@ Contents:
    serial_utils
    serial_data
    serial_extract
+   parallel_utils
+   parallel_data
    parallel_extract
    cli
    dev
