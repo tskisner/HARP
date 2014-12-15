@@ -394,7 +394,7 @@ int main ( int argc, char *argv[] ) {
 
         }
 
-        gcomm.barrier();
+        rcomm.barrier();
 
       }
 
