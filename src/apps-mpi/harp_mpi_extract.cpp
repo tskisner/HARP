@@ -377,11 +377,11 @@ int main ( int argc, char *argv[] ) {
 
     // each gang prints info about assigned slices
 
-    if ( gcomm->rank() == 0 ) {
+    if ( gcomm.rank() == 0 ) {
 
       vector < spec_slice_region > gslices = slice->regions();
 
-      for ( size_t r = 0; r < gcomm->size(); ++r ) {
+      for ( size_t r = 0; r < gcomm.size(); ++r ) {
 
         if ( rcomm.rank() == r ) {
 
@@ -394,7 +394,9 @@ int main ( int argc, char *argv[] ) {
 
         }
 
-        gcomm->barrier();
+        gcomm.barrier();
+
+      }
 
     }
 
