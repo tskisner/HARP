@@ -309,6 +309,16 @@ int main ( int argc, char *argv[] ) {
     cout << prefix << "Extracting " << regions.size() << " spectral chunks, each with " << spec_width << " spectra ( overlap = " << spec_overlap << " ) and " << lambda_width << " lambda points ( overlap = " << lambda_overlap << " )" << endl;
   }
 
+  if ( debug && ( ! quiet ) ) {
+
+    for ( vector < spec_slice_region > :: const_iterator gsit = regions.begin(); gsit != regions.end(); ++gsit ) {
+      cout << prefix << "    spec (" << gsit->first_good_spec << " - " << (gsit->first_good_spec + gsit->n_good_spec - 1) << ") wavelength (" << gsit->first_good_lambda << " - " << (gsit->first_good_lambda + gsit->n_good_lambda - 1) << ")" << endl;
+    }
+
+    cout.flush();
+
+  }
+
 
   // timing results
 

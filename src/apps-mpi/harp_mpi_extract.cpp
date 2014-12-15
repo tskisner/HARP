@@ -373,6 +373,33 @@ int main ( int argc, char *argv[] ) {
     cout << prefix << "Extracting " << nregion << " spectral chunks, each with " << spec_width << " spectra ( overlap = " << spec_overlap << " ) and " << lambda_width << " lambda points ( overlap = " << lambda_overlap << " )" << endl;
   }
 
+  if ( debug && ( ! quiet ) ) {
+
+    // each gang prints info about assigned slices
+
+    if ( gcomm->rank() == 0 ) {
+
+      vector < spec_slice_region > gslices = slice->regions();
+
+      for ( size_t r = 0; r < gcomm->size(); ++r ) {
+
+        if ( rcomm.rank() == r ) {
+
+          cout << prefix << "  Gang " << r << " processing " << gslices.size() << " chunks:" << endl;
+          for ( vector < spec_slice_region > :: const_iterator gsit = gslices.begin(); gsit != gslices.end(); ++gsit ) {
+            cout << prefix << "    spec (" << gsit->first_good_spec << " - " << (gsit->first_good_spec + gsit->n_good_spec - 1) << ") wavelength (" << gsit->first_good_lambda << " - " << (gsit->first_good_lambda + gsit->n_good_lambda - 1) << ")" << endl;
+          }
+
+          cout.flush();
+
+        }
+
+        gcomm->barrier();
+
+    }
+
+  }
+
 
   // timing results
 
