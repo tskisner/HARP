@@ -20,9 +20,12 @@ CXX="${HPCP_CXX}" \
 MPICXX="${HPCP_MPICXX}" \
 CXXFLAGS="-O0 -g -std=c++11" \
 OPENMP_CXXFLAGS="${HPCP_OMPFLAGS}" \
-LDFLAGS="${HPCP_LDFLAGS} ${HPCP_OMPFLAGS}" \
+LDFLAGS="${HPCP_LDFLAGS} ${HPCP_OMPFLAGS} -L${boost_PREFIX}/lib" \
 LIBS="${HPCP_LIBS}" \
 ./configure ${sharedopt} ${OPTS} \
---enable-debug \
---with-blas="${blas_LIBS_CXX}" \
+--with-blas="${blas_LIBS_CXX} ${HPCP_FCLIBS}" \
 --with-lapack="${lapack_LIBS_CXX}" \
+--with-boost="${boost_PREFIX}" \
+--with-cfitsio="${cfitsio_PREFIX}" \
+--with-elemental="${elemental_PREFIX}"
+
