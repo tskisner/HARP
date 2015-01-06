@@ -396,6 +396,10 @@ int main ( int argc, char *argv[] ) {
 
         rcomm.barrier();
 
+        cout.flush();
+
+        rcomm.barrier();
+
       }
 
     }

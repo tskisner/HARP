@@ -453,17 +453,21 @@ void harp::mpi_inverse_covariance ( mpi_matrix_sparse const & AT, elem_matrix_lo
 
       rhs_col = AT.block().col[ rhs_off ];
 
-      for ( j = 0; j < lhs_nnz; ++j ) {
+      if ( rhs_nnz > 0 ) {
 
-        lhs_col = AT.block().col[ lhs_off + j ];
-        
-        while ( ( rhs_col < lhs_col ) && ( k < rhs_nnz - 1 ) ) {
-          ++k;
-          rhs_col = AT.block().col[ rhs_off + k ];
-        }
+        for ( j = 0; j < lhs_nnz; ++j ) {
 
-        if ( rhs_col == lhs_col ) {
-          val += invnoise.Get( lhs_col, 0 ) * (double)mask[ lhs_col ] * AT.block().data[ lhs_off + j ] * AT.block().data[ rhs_off + k ];
+          lhs_col = AT.block().col[ lhs_off + j ];
+          
+          while ( ( rhs_col < lhs_col ) && ( k < rhs_nnz - 1 ) ) {
+            ++k;
+            rhs_col = AT.block().col[ rhs_off + k ];
+          }
+
+          if ( rhs_col == lhs_col ) {
+            val += invnoise.Get( lhs_col, 0 ) * (double)mask[ lhs_col ] * AT.block().data[ lhs_off + j ] * AT.block().data[ rhs_off + k ];
+          }
+
         }
 
       }
@@ -569,17 +573,21 @@ void harp::mpi_inverse_covariance ( mpi_matrix_sparse const & AT, elem_matrix_lo
           k = 0;
           rhs_col = recv_block.col[ rhs_off ];
 
-          for ( j = 0; j < lhs_nnz; ++j ) {
+          if ( rhs_nnz > 0 ) {
 
-            lhs_col = AT.block().col[ lhs_off + j ];
-            
-            while ( ( rhs_col < lhs_col ) && ( k < rhs_nnz - 1 ) ) {
-              ++k;
-              rhs_col = recv_block.col[ rhs_off + k ];
-            }
+            for ( j = 0; j < lhs_nnz; ++j ) {
 
-            if ( rhs_col == lhs_col ) {
-              val += invnoise.Get( lhs_col, 0 ) * (double)mask[ lhs_col ] * AT.block().data[ lhs_off + j ] * recv_block.data[ rhs_off + k ];
+              lhs_col = AT.block().col[ lhs_off + j ];
+              
+              while ( ( rhs_col < lhs_col ) && ( k < rhs_nnz - 1 ) ) {
+                ++k;
+                rhs_col = recv_block.col[ rhs_off + k ];
+              }
+
+              if ( rhs_col == lhs_col ) {
+                val += invnoise.Get( lhs_col, 0 ) * (double)mask[ lhs_col ] * AT.block().data[ lhs_off + j ] * recv_block.data[ rhs_off + k ];
+              }
+
             }
 
           }
@@ -620,17 +628,21 @@ void harp::mpi_inverse_covariance ( mpi_matrix_sparse const & AT, elem_matrix_lo
           k = 0;
           rhs_col = recv_block.col[ rhs_off ];
 
-          for ( j = 0; j < lhs_nnz; ++j ) {
+          if ( rhs_nnz > 0 ) {
 
-            lhs_col = AT.block().col[ lhs_off + j ];
-            
-            while ( ( rhs_col < lhs_col ) && ( k < rhs_nnz - 1 ) ) {
-              ++k;
-              rhs_col = recv_block.col[ rhs_off + k ];
-            }
+            for ( j = 0; j < lhs_nnz; ++j ) {
 
-            if ( rhs_col == lhs_col ) {
-              val += invnoise.Get( lhs_col, 0 ) * (double)mask[ lhs_col ] * AT.block().data[ lhs_off + j ] * recv_block.data[ rhs_off + k ];
+              lhs_col = AT.block().col[ lhs_off + j ];
+              
+              while ( ( rhs_col < lhs_col ) && ( k < rhs_nnz - 1 ) ) {
+                ++k;
+                rhs_col = recv_block.col[ rhs_off + k ];
+              }
+
+              if ( rhs_col == lhs_col ) {
+                val += invnoise.Get( lhs_col, 0 ) * (double)mask[ lhs_col ] * AT.block().data[ lhs_off + j ] * recv_block.data[ rhs_off + k ];
+              }
+
             }
 
           }

@@ -143,10 +143,15 @@ void harp::mpi_psf::project_transpose ( std::map < size_t, std::set < size_t > >
 
     block.vals = local_nnz;
     block.row.resize ( local_nnz );
+    block.row.reserve ( local_nnz );
     block.col.resize ( local_nnz );
+    block.col.reserve ( local_nnz );
     block.row_offset.resize ( block.rows );
+    block.row_offset.reserve ( block.rows );
     block.row_nnz.resize ( block.rows );
+    block.row_nnz.reserve ( block.rows );
     block.data.resize ( local_nnz );
+    block.data.reserve ( local_nnz );
 
     // iterate over non-zeros of boost sparse matrix and populate local piece of 
     // distributed matrix.  Our local block stores the offsets and nnz of rows that are empty,
