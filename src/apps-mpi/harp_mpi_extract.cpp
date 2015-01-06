@@ -381,7 +381,7 @@ int main ( int argc, char *argv[] ) {
 
       vector < spec_slice_region > gslices = slice->regions();
 
-      for ( size_t r = 0; r < gcomm.size(); ++r ) {
+      for ( size_t r = 0; r < rcomm.size(); ++r ) {
 
         if ( rcomm.rank() == r ) {
 
