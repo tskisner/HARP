@@ -38,11 +38,7 @@ mpi_psf * harp::mpi_psf::redistribute ( boost::mpi::communicator const & newcomm
 
   ret->comm_ = newcomm;
 
-  if ( newcomm.rank() == 0 ) {
-    ret->local_ = local_;
-  }
-
-  mpi_comm_bcast ( newcomm, ret->local_, 0 );
+  ret->local_ = local_;
 
   return ret;
 }
