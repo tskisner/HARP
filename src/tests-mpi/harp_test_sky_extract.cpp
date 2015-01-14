@@ -84,7 +84,7 @@ void harp::test_sky_extract ( string const & datadir ) {
   testspec->read( truth, lambda, sky );
 
   string outfile = datadir + "/sky_extract_truth.out";
-  elem::Write ( truth, "truth", outfile );
+  El::Write ( truth, "truth", outfile );
 
   // Read image and noise covariance
 
@@ -118,7 +118,7 @@ void harp::test_sky_extract ( string const & datadir ) {
   fstream fout;
   fout.precision(16);
 
-  elem::Grid grid ( elem::mpi::COMM_WORLD );
+  El::Grid grid ( El::mpi::COMM_WORLD );
   
   matrix_dist inv ( nbins, nbins, grid );
 
@@ -140,7 +140,7 @@ void harp::test_sky_extract ( string const & datadir ) {
   }
 
   outfile = datadir + "/sky_extract_orig_eigen.out";
-  elem::Write ( D, "eigen", outfile );
+  El::Write ( D, "eigen", outfile );
 
   matrix_dist S ( nbins, 1, grid );
 
@@ -152,7 +152,7 @@ void harp::test_sky_extract ( string const & datadir ) {
   }
 
   outfile = datadir + "/sky_extract_orig_colnorm.out";
-  elem::Write ( S, "colnorm", outfile );
+  El::Write ( S, "colnorm", outfile );
 
   matrix_dist z ( nbins, 1 );
   matrix_dist Rf ( nbins, 1 );
@@ -166,7 +166,7 @@ void harp::test_sky_extract ( string const & datadir ) {
   }
 
   outfile = datadir + "/sky_extract_orig_rhs.out";
-  elem::Write ( z, "rhs", outfile );
+  El::Write ( z, "rhs", outfile );
 
   tstart = MPI_Wtime();
   extract ( D, W, S, z, Rf, f );
@@ -176,7 +176,7 @@ void harp::test_sky_extract ( string const & datadir ) {
   }
 
   outfile = datadir + "/sky_extract_orig_Rf.out";
-  elem::Write ( Rf, "Rf", outfile );
+  El::Write ( Rf, "Rf", outfile );
 
   matrix_dist Rtruth ( nbins, 1 );
   matrix_dist R ( nbins, nbins, grid );
@@ -190,10 +190,10 @@ void harp::test_sky_extract ( string const & datadir ) {
 
   // resolution-convolved truth
 
-  elem::Gemv ( elem::NORMAL, 1.0, R, truth, 0.0, Rtruth );
+  El::Gemv ( El::NORMAL, 1.0, R, truth, 0.0, Rtruth );
 
   outfile = datadir + "/sky_extract_orig_Rtruth.out";
-  elem::Write ( Rtruth, "Rtruth", outfile );
+  El::Write ( Rtruth, "Rtruth", outfile );
 
 
   // write outputs
@@ -331,7 +331,7 @@ void harp::test_sky_extract ( string const & datadir ) {
   }
 
   outfile = datadir + "/sky_extract_eigen.out";
-  elem::Write ( D_sky, "eigen", outfile );
+  El::Write ( D_sky, "eigen", outfile );
 
   matrix_dist S_sky ( nbins_sky, 1, grid );
 
@@ -343,7 +343,7 @@ void harp::test_sky_extract ( string const & datadir ) {
   }
 
   outfile = datadir + "/sky_extract_colnorm.out";
-  elem::Write ( S_sky, "colnorm", outfile );
+  El::Write ( S_sky, "colnorm", outfile );
 
   matrix_dist z_sky ( nbins_sky, 1 );
   matrix_dist Rf_sky ( nbins_sky, 1 );
@@ -357,7 +357,7 @@ void harp::test_sky_extract ( string const & datadir ) {
   }
 
   outfile = datadir + "/sky_extract_rhs.out";
-  elem::Write ( z_sky, "rhs", outfile );
+  El::Write ( z_sky, "rhs", outfile );
 
   tstart = MPI_Wtime();
   extract ( D_sky, W_sky, S_sky, z_sky, Rf_sky, f_sky );
@@ -367,7 +367,7 @@ void harp::test_sky_extract ( string const & datadir ) {
   }
 
   outfile = datadir + "/sky_extract_Rf.out";
-  elem::Write ( Rf_sky, "Rf", outfile );
+  El::Write ( Rf_sky, "Rf", outfile );
 
   matrix_dist R_sky ( nbins_sky, nbins_sky, grid );
 
@@ -382,7 +382,7 @@ void harp::test_sky_extract ( string const & datadir ) {
 
   matrix_dist Rtruth_sky ( nbins_sky, 1, grid );
 
-  elem::Gemv ( elem::NORMAL, 1.0, R_sky, truth_sky, 0.0, Rtruth_sky );
+  El::Gemv ( El::NORMAL, 1.0, R_sky, truth_sky, 0.0, Rtruth_sky );
 
   // projected truth
 

@@ -21,7 +21,7 @@ void harp::mpi_test_linalg ( string const & datadir ) {
   int np = comm.size();
   int myp = comm.rank();
 
-  elem::Grid grid ( comm );
+  El::Grid grid ( El::mpi::Comm ( comm ) );
 
 
   typedef boost::ecuyer1988 base_generator_type;
@@ -55,7 +55,8 @@ void harp::mpi_test_linalg ( string const & datadir ) {
     }
   }
 
-  mpi_matrix outtest_mpi ( SIZE, 1, grid );
+  mpi_matrix outtest_mpi ( SIZE, 1 );
+  outtest_mpi.SetGrid ( grid );
 
   ublas_to_elem ( intest, outtest_mpi );
 
@@ -173,8 +174,8 @@ void harp::mpi_test_linalg ( string const & datadir ) {
 
   mpi_matrix sym ( SIZE, SIZE, grid );
 
-  elem::Gemm ( elem::TRANSPOSE, elem::NORMAL, 1.0, a1, a1, 0.0, sym );
-  elem::Gemm ( elem::TRANSPOSE, elem::NORMAL, 1.0, a2, a2, 1.0, sym );
+  El::Gemm ( El::TRANSPOSE, El::NORMAL, 1.0, a1, a1, 0.0, sym );
+  El::Gemm ( El::TRANSPOSE, El::NORMAL, 1.0, a2, a2, 1.0, sym );
 
   // get eigenvectors and eigenvalues
 
@@ -193,8 +194,8 @@ void harp::mpi_test_linalg ( string const & datadir ) {
     wdiag.Set ( i, i, wval );
   }
 
-  elem::Gemm ( elem::NORMAL, elem::NORMAL, 1.0, sym, Z, 0.0, symprod );
-  elem::Gemm ( elem::NORMAL, elem::NORMAL, 1.0, Z, wdiag, 0.0, eprod );
+  El::Gemm ( El::NORMAL, El::NORMAL, 1.0, sym, Z, 0.0, symprod );
+  El::Gemm ( El::NORMAL, El::NORMAL, 1.0, Z, wdiag, 0.0, eprod );
 
   double relerr;
   double eval, sval;
@@ -305,10 +306,11 @@ void harp::mpi_test_linalg ( string const & datadir ) {
 
   // create gang process grids
 
-  elem::Grid gang_grid ( gcomm );
+  El::Grid gang_grid ( El::mpi::Comm ( gcomm ) );
 
   mpi_matrix redist_comp ( outcomp );
-  mpi_matrix gout_comp ( SIZE, SIZE, gang_grid );
+  mpi_matrix gout_comp ( SIZE, SIZE );
+  gout_comp.SetGrid ( gang_grid );
 
   mpi_gang_distribute ( outcomp, gout_comp );
 

@@ -72,7 +72,7 @@ void harp::test_small_extract ( string const & datadir ) {
   testspec->read( truth, lambda, sky );
 
   string outfile = datadir + "/small_extract_truth.out";
-  elem::Write ( truth, "truth", outfile );
+  El::Write ( truth, "truth", outfile );
 
   // Read image and noise covariance
 
@@ -103,7 +103,7 @@ void harp::test_small_extract ( string const & datadir ) {
     cerr << "  Time for PSF creation = " << tstop-tstart << " seconds" << endl;
   }
 
-  elem::Grid grid ( elem::mpi::COMM_WORLD );
+  El::Grid grid ( El::mpi::COMM_WORLD );
   
   matrix_dist inv ( nbins, nbins, grid );
 
@@ -125,7 +125,7 @@ void harp::test_small_extract ( string const & datadir ) {
   }
 
   outfile = datadir + "/small_extract_eigen.out";
-  elem::Write ( D, "eigen", outfile );
+  El::Write ( D, "eigen", outfile );
 
   matrix_dist S ( nbins, 1, grid );
 
@@ -137,7 +137,7 @@ void harp::test_small_extract ( string const & datadir ) {
   }
 
   outfile = datadir + "/small_extract_colnorm.out";
-  elem::Write ( S, "colnorm", outfile );
+  El::Write ( S, "colnorm", outfile );
 
   matrix_dist z ( nbins, 1 );
   matrix_dist Rf ( nbins, 1 );
@@ -151,7 +151,7 @@ void harp::test_small_extract ( string const & datadir ) {
   }
 
   outfile = datadir + "/small_extract_rhs.out";
-  elem::Write ( z, "rhs", outfile );
+  El::Write ( z, "rhs", outfile );
 
   tstart = MPI_Wtime();
   extract ( D, W, S, z, Rf, f );
@@ -161,7 +161,7 @@ void harp::test_small_extract ( string const & datadir ) {
   }
 
   outfile = datadir + "/small_extract_Rf.out";
-  elem::Write ( Rf, "Rf", outfile );
+  El::Write ( Rf, "Rf", outfile );
 
   matrix_dist Rtruth ( nbins, 1 );
   matrix_dist R ( nbins, nbins, grid );
@@ -171,7 +171,7 @@ void harp::test_small_extract ( string const & datadir ) {
   tstop = MPI_Wtime();
 
   outfile = datadir + "/small_extract_colnorm-res.out";
-  elem::Write ( S, "colnorm-res", outfile );
+  El::Write ( S, "colnorm-res", outfile );
 
   if ( myp == 0 ) {
     cerr << "  Time for R matrix construction = " << tstop-tstart << " seconds" << endl;
@@ -179,10 +179,10 @@ void harp::test_small_extract ( string const & datadir ) {
 
   // resolution-convolved truth
 
-  elem::Gemv ( elem::NORMAL, 1.0, R, truth, 0.0, Rtruth );
+  El::Gemv ( El::NORMAL, 1.0, R, truth, 0.0, Rtruth );
 
   outfile = datadir + "/small_extract_Rtruth.out";
-  elem::Write ( Rtruth, "Rtruth", outfile );
+  El::Write ( Rtruth, "Rtruth", outfile );
 
   // do some sub spec and accum operations to test those...
 
