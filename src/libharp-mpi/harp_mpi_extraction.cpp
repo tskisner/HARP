@@ -562,7 +562,7 @@ void harp::mpi_inverse_covariance ( mpi_matrix_sparse const & AT, elem_matrix_lo
       axpy_row = recv_block.firstrow;
       axpy_col = local_firstrow;
 
-      if ( ( local_nvals > 0 ) && ( recv_block.nvals > 0 ) ) {
+      if ( ( local_nvals > 0 ) && ( recv_block.vals > 0 ) ) {
 
         for ( size_t lhs_row = 0; lhs_row < local_nrows; ++lhs_row ) {
 
@@ -621,7 +621,7 @@ void harp::mpi_inverse_covariance ( mpi_matrix_sparse const & AT, elem_matrix_lo
       axpy_row = local_firstrow;
       axpy_col = recv_block.firstrow;
 
-      if ( ( local_nvals > 0 ) && ( recv_block.nvals > 0 ) ) {
+      if ( ( local_nvals > 0 ) && ( recv_block.vals > 0 ) ) {
 
         for ( size_t lhs_row = 0; lhs_row < local_nrows; ++lhs_row ) {
 
