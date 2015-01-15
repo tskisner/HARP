@@ -74,7 +74,7 @@ void harp::mpi_eigen_decompose ( mpi_matrix const & invcov, mpi_matrix & D, mpi_
 
   mpi_matrix temp ( invcov );
 
-  El::DistMatrix < double, El::VR, El::STAR > eigvals ( invcov.Height(), 1, invcov.Grid() );
+  El::DistMatrix < double, El::DistNS::VR, El::DistNS::STAR > eigvals ( invcov.Height(), 1, invcov.Grid() );
 
   El::HermitianEig ( El::LOWER, temp, eigvals, W );
 

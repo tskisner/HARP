@@ -17,7 +17,7 @@ namespace harp {
 
   typedef El::Matrix < double > elem_matrix_local;
 
-  typedef El::DistMatrix < double, El::MC, El::MR > elem_matrix;
+  typedef El::DistMatrix < double, El::DistNS::MC, El::DistNS::MR > elem_matrix;
 
   typedef elem_matrix mpi_matrix;
 

@@ -23,7 +23,6 @@ void harp::mpi_test_linalg ( string const & datadir ) {
 
   El::Grid grid ( El::mpi::Comm ( comm ) );
 
-
   typedef boost::ecuyer1988 base_generator_type;
   typedef boost::uniform_01<> distribution_type;
   typedef boost::variate_generator < base_generator_type&, distribution_type > gen_type;
@@ -55,8 +54,7 @@ void harp::mpi_test_linalg ( string const & datadir ) {
     }
   }
 
-  mpi_matrix outtest_mpi ( SIZE, 1 );
-  outtest_mpi.SetGrid ( grid );
+  mpi_matrix outtest_mpi ( (El::Int) SIZE, (El::Int)1, grid, (El::Int)0 );
 
   ublas_to_elem ( intest, outtest_mpi );
 
@@ -309,8 +307,7 @@ void harp::mpi_test_linalg ( string const & datadir ) {
   El::Grid gang_grid ( El::mpi::Comm ( gcomm ) );
 
   mpi_matrix redist_comp ( outcomp );
-  mpi_matrix gout_comp ( SIZE, SIZE );
-  gout_comp.SetGrid ( gang_grid );
+  mpi_matrix gout_comp ( SIZE, SIZE, gang_grid );
 
   mpi_gang_distribute ( outcomp, gout_comp );
 
