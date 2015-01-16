@@ -28,7 +28,7 @@ namespace harp {
 
   // FIXME: add information here about sky location, etc.
 
-  class object {
+  class object : public boost::enable_shared_from_this < object > {
 
     friend class boost::serialization::access;
     
@@ -44,7 +44,7 @@ namespace harp {
         name_ = name;
       }
 
-      ~object ( ) { }
+      virtual ~object ( ) { }
 
       // default copy / assignment operators are fine for now.  if 
       // class becomes more complicated, define them here.
@@ -57,6 +57,16 @@ namespace harp {
 
       std::string name ( ) const {
         return name_;
+      }
+
+      void set_type ( object_type t ) {
+        type_ = t;
+        return;
+      }
+
+      void set_name ( std::string const & n ) {
+        name_ = n;
+        return;
       }
 
       bool is_sky ( ) const {
@@ -76,6 +86,8 @@ namespace harp {
       object_type type_;
       
   };
+
+  BOOST_SERIALIZATION_ASSUME_ABSTRACT(object)
 
   BOOST_SERIALIZATION_SHARED_PTR(object)
   

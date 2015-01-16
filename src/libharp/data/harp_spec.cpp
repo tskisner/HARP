@@ -22,3 +22,48 @@ string harp::spec::type ( ) const {
   return type_;
 }
 
+
+void harp::spec::values ( matrix_double & data ) const {
+
+  size_t nspec = n_spec();
+  size_t nlambda = n_lambda();
+
+  size_t nelem = nspec * nlambda;
+
+  data.resize ( nlambda, nspec );
+
+  vector_double tempdata ( nelem );
+
+  values ( tempdata );
+
+  for ( size_t i = 0; i < nspec; ++i ) {
+    for ( size_t j = 0; j < nlambda; ++j ) {
+      data( j, i ) = tempdata[ i * nlambda + j ];
+    }
+  }
+
+  return;
+}
+
+void harp::spec::inv_variance ( matrix_double & data ) const {
+
+  size_t nspec = n_spec();
+  size_t nlambda = n_lambda();
+
+  size_t nelem = nspec * nlambda;
+
+  data.resize ( nlambda, nspec );
+
+  vector_double tempdata ( nelem );
+
+  inv_variance ( tempdata );
+
+  for ( size_t i = 0; i < nspec; ++i ) {
+    for ( size_t j = 0; j < nlambda; ++j ) {
+      data( j, i ) = tempdata[ i * nlambda + j ];
+    }
+  }
+
+  return;
+}
+

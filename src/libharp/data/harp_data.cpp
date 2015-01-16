@@ -48,5 +48,11 @@ string const & harp::source_version ( ) {
 }
 
 
+plugin_registry & harp::plugin_registry::get ( bool debug ) {
+  static plugin_registry instance ( debug );
+  return instance;
+}
+
+
 
 

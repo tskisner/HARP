@@ -125,6 +125,8 @@ namespace harp { namespace fits {
 
   void key_read ( fitsfile * fp, std::string const & keyname, double & val );
 
+  void key_read ( fitsfile * fp, std::string const & keyname, float & val );
+
   void key_write ( fitsfile * fp, std::string const & keyname, std::string const & keyval, std::string const & keycom );
 
   void key_write ( fitsfile * fp, std::string const & keyname, char * keyval, std::string const & keycom );
@@ -136,6 +138,8 @@ namespace harp { namespace fits {
   void key_write ( fitsfile * fp, std::string const & keyname, long long int const & keyval, std::string const & keycom );
 
   void key_write ( fitsfile * fp, std::string const & keyname, double const & keyval, std::string const & keycom );
+
+  void key_write ( fitsfile * fp, std::string const & keyname, float const & keyval, std::string const & keycom );
 
 
   // image operations

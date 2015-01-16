@@ -52,10 +52,7 @@ namespace harp {
 
       ~plugin_registry ( );
 
-      static plugin_registry & get ( bool debug = false ) {
-        static plugin_registry instance ( debug );
-        return instance;
-      }
+      static plugin_registry & get ( bool debug = false );
 
       void register_image ( std::string const & type, image_factory create, std::string const & version );
       void register_spec ( std::string const & type, spec_factory create, std::string const & version );

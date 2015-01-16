@@ -20,9 +20,9 @@ namespace harp {
         rows_ = 0;
         cols_ = 0;
         path_ = "";
-        sighdu_ = -1;
-        nsehdu_ = -1;
-        skyhdu_ = -1;
+        sighdu_ = 1;
+        nsehdu_ = 2;
+        skyhdu_ = 3;
       }
       
       image_fits ( boost::property_tree::ptree const & props );
@@ -133,6 +133,83 @@ namespace harp {
 
   image * image_sim_create ( boost::property_tree::ptree const & props );
   
+
+  class image_desi : public image {
+
+    friend class boost::serialization::access;
+    
+    public :
+
+      image_desi ( ) : image () {
+        rows_ = 0;
+        cols_ = 0;
+        path_ = "";
+        sighdu_ = -1;
+        nsehdu_ = -1;
+        mskhdu_ = -1;
+        camera_ = "";
+        vspecter_ = "";
+        exptime_ = 0.0;
+        rdnoise_ = 0.0;
+        flavor_ = "";
+      }
+      
+      image_desi ( boost::property_tree::ptree const & props );
+      
+      ~image_desi ( );
+
+      static void write ( std::string const & path, boost::property_tree::ptree const & meta, size_t rows, vector_double & data, vector_double & invvar, vector_mask & msk );
+
+      static void write ( std::string const & path, boost::property_tree::ptree const & meta, matrix_double & data, matrix_double & invvar, matrix_mask & msk );
+
+      // overloaded virtual methods from base class
+      
+      size_t n_rows ( ) const { return rows_; }
+      
+      size_t n_cols ( ) const { return cols_; }
+      
+      void values ( vector_double & data ) const;
+
+      void inv_variance ( vector_double & invvar ) const;
+
+      void mask ( vector_mask & msk ) const;
+
+    private :
+
+      template < class Archive >
+      void serialize ( Archive & ar, const unsigned int version ) {
+        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(image);
+        ar & BOOST_SERIALIZATION_NVP(rows_);
+        ar & BOOST_SERIALIZATION_NVP(cols_);
+        ar & BOOST_SERIALIZATION_NVP(path_);
+        ar & BOOST_SERIALIZATION_NVP(sighdu_);
+        ar & BOOST_SERIALIZATION_NVP(nsehdu_);
+        ar & BOOST_SERIALIZATION_NVP(mskhdu_);
+        ar & BOOST_SERIALIZATION_NVP(camera_);
+        ar & BOOST_SERIALIZATION_NVP(vspecter_);
+        ar & BOOST_SERIALIZATION_NVP(exptime_);
+        ar & BOOST_SERIALIZATION_NVP(rdnoise_);
+        ar & BOOST_SERIALIZATION_NVP(flavor_);
+        return;
+      }
+    
+      size_t rows_;
+      size_t cols_;
+      std::string path_;
+      int sighdu_;
+      int nsehdu_;
+      int mskhdu_;
+      std::string camera_;
+      std::string vspecter_;
+      float exptime_;
+      float rdnoise_;
+      std::string flavor_;
+    
+  };
+
+  BOOST_SERIALIZATION_SHARED_PTR(image_desi)
+
+  image * image_desi_create ( boost::property_tree::ptree const & props );
   
 }
 

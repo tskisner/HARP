@@ -50,49 +50,9 @@ namespace harp {
         return;
       }
 
-      void values ( matrix_double & data ) const {
+      void values ( matrix_double & data ) const;
 
-        size_t nspec = n_spec();
-        size_t nlambda = n_lambda();
-
-        size_t nelem = nspec * nlambda;
-
-        data.resize ( nlambda, nspec );
-
-        vector_double tempdata ( nelem );
-
-        values ( tempdata );
-
-        for ( size_t i = 0; i < nspec; ++i ) {
-          for ( size_t j = 0; j < nlambda; ++j ) {
-            data( j, i ) = tempdata[ i * nlambda + j ];
-          }
-        }
-
-        return;
-      }
-
-      void inv_variance ( matrix_double & data ) const {
-
-        size_t nspec = n_spec();
-        size_t nlambda = n_lambda();
-
-        size_t nelem = nspec * nlambda;
-
-        data.resize ( nlambda, nspec );
-
-        vector_double tempdata ( nelem );
-
-        inv_variance ( tempdata );
-
-        for ( size_t i = 0; i < nspec; ++i ) {
-          for ( size_t j = 0; j < nlambda; ++j ) {
-            data( j, i ) = tempdata[ i * nlambda + j ];
-          }
-        }
-
-        return;
-      }
+      void inv_variance ( matrix_double & data ) const;
 
       std::string type ( ) const;
       

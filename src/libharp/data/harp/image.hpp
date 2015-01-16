@@ -26,69 +26,22 @@ namespace harp {
       
       virtual ~image ( ) { }
       
-      virtual size_t n_rows ( ) const {
-        HARP_THROW( "fell through to virtual method" );
-        return 0;
-      }
+      virtual size_t n_rows ( ) const;
       
-      virtual size_t n_cols ( ) const {
-        HARP_THROW( "fell through to virtual method" );
-        return 0;
-      }
+      virtual size_t n_cols ( ) const;
       
-      virtual void values ( vector_double & data ) const {
-        HARP_THROW( "fell through to virtual method" );
-        return;
-      }
+      virtual void values ( vector_double & data ) const;
 
-      virtual void inv_variance ( vector_double & invvar ) const {
-        HARP_THROW( "fell through to virtual method" );
-        return;
-      }
+      virtual void inv_variance ( vector_double & invvar ) const;
+
+      virtual void mask ( vector_mask & msk ) const;
       
-      void values ( matrix_double & data ) const {
+      void values ( matrix_double & data ) const;
 
-        size_t imgrows = n_rows();
-        size_t imgcols = n_cols();
+      void inv_variance ( matrix_double & invvar ) const;
 
-        size_t nelem = imgrows * imgcols;
+      void mask ( matrix_mask & msk ) const;
 
-        data.resize ( imgrows, imgcols );
-
-        vector_double tempdata ( nelem );
-
-        values ( tempdata );
-
-        for ( size_t i = 0; i < imgcols; ++i ) {
-          for ( size_t j = 0; j < imgrows; ++j ) {
-            data( j, i ) = tempdata[ i * imgrows + j ];
-          }
-        }
-
-        return;
-      }
-
-      void inv_variance ( matrix_double & invvar ) const {
-
-        size_t imgrows = n_rows();
-        size_t imgcols = n_cols();
-
-        size_t nelem = imgrows * imgcols;
-
-        invvar.resize ( imgrows, imgcols );
-
-        vector_double tempvar ( nelem );
-
-        inv_variance ( tempvar );
-
-        for ( size_t i = 0; i < imgcols; ++i ) {
-          for ( size_t j = 0; j < imgrows; ++j ) {
-            invvar( j, i ) = tempvar[ i * imgrows + j ];
-          }
-        }
-
-        return;
-      }
 
       std::string type ( ) const;
       
