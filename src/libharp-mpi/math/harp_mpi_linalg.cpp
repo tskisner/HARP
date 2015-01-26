@@ -468,8 +468,8 @@ void harp::mpi_gang_distribute ( mpi_matrix const & mat, mpi_matrix & gmat ) {
   int gang_np;
   int gang_myp;
 
-  MPI_Comm_size ( gmat.Grid().Comm(), &gang_np );
-  MPI_Comm_rank ( gmat.Grid().Comm(), &gang_myp );
+  MPI_Comm_size ( gmat.Grid().Comm().comm, &gang_np );
+  MPI_Comm_rank ( gmat.Grid().Comm().comm, &gang_myp );
 
   if ( ( mat.Height() != gmat.Height() ) || ( mat.Width() != gmat.Width() ) ) {
     HARP_MPI_ABORT( gang_myp, "matrix dimensions do not match" );
@@ -519,8 +519,8 @@ void harp::mpi_gang_accum ( mpi_matrix const & gmat, mpi_matrix & mat ) {
   int gang_np;
   int gang_myp;
 
-  MPI_Comm_size ( gmat.Grid().Comm(), &gang_np );
-  MPI_Comm_rank ( gmat.Grid().Comm(), &gang_myp );
+  MPI_Comm_size ( gmat.Grid().Comm().comm, &gang_np );
+  MPI_Comm_rank ( gmat.Grid().Comm().comm, &gang_myp );
 
   if ( ( mat.Height() != gmat.Height() ) || ( mat.Width() != gmat.Width() ) ) {
     HARP_MPI_ABORT( gang_myp, "matrix dimensions do not match" );

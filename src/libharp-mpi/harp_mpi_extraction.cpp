@@ -20,8 +20,8 @@ void harp::mpi_sub_spec ( spec_slice_region const & full_region, spec_slice_regi
   int np;
   int myp;
 
-  MPI_Comm_size ( full_data.Grid().Comm(), &np );
-  MPI_Comm_rank ( full_data.Grid().Comm(), &myp );
+  MPI_Comm_size ( full_data.Grid().Comm().comm, &np );
+  MPI_Comm_rank ( full_data.Grid().Comm().comm, &myp );
 
   if ( full_data.Grid() != sub_data.Grid() ) {
     std::ostringstream o;
@@ -189,8 +189,8 @@ void harp::mpi_accum_spec ( spec_slice_region const & sub_region, spec_slice_reg
   int np;
   int myp;
 
-  MPI_Comm_size ( full_data.Grid().Comm(), &np );
-  MPI_Comm_rank ( full_data.Grid().Comm(), &myp );
+  MPI_Comm_size ( full_data.Grid().Comm().comm, &np );
+  MPI_Comm_rank ( full_data.Grid().Comm().comm, &myp );
 
   if ( full_data.Grid() != sub_data.Grid() ) {
     std::ostringstream o;
