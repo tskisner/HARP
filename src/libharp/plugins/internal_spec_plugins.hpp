@@ -16,19 +16,7 @@ namespace harp {
     
     public :
 
-      spec_sim ( ) : spec () {
-        size_ = 0;
-        nspec_ = 0;
-        nlambda_ = 0;
-        background_ = 0.0;
-        atmpeak_ = 0.0;
-        objpeak_ = 0.0;
-        atmspace_ = 0;
-        objspace_ = 0;
-        skymod_ = 0;
-        first_lambda_ = 0.0;
-        last_lambda_ = 0.0;
-      }
+      spec_sim ( );
 
       spec_sim ( boost::property_tree::ptree const & props );
       
@@ -38,9 +26,9 @@ namespace harp {
       
       // overloaded virtual methods from base class
 
-      size_t n_spec ( ) const { return nspec_; }
+      size_t n_spec ( ) const;
 
-      size_t n_lambda ( ) const { return nlambda_; }
+      size_t n_lambda ( ) const;
 
       void values ( vector_double & data ) const;
 
@@ -92,15 +80,7 @@ namespace harp {
     
     public :
 
-      spec_fits ( ) : spec () {
-        nspec_ = 0;
-        nlambda_ = 0;
-        nglobal_ = 0;
-        path_ = "";
-        spechdu_ = -1;
-        invvarhdu_ = -1;
-        lambdahdu_ = -1;
-      }
+      spec_fits ( );
 
       spec_fits ( boost::property_tree::ptree const & props );
       
@@ -110,9 +90,9 @@ namespace harp {
 
       // overloaded virtual methods from base class
       
-      size_t n_spec ( ) const { return nspec_; }
+      size_t n_spec ( ) const;
 
-      size_t n_lambda ( ) const { return nlambda_; }
+      size_t n_lambda ( ) const;
 
       void values ( vector_double & data ) const;
 
@@ -157,34 +137,41 @@ namespace harp {
     
     public :
 
-      spec_desi ( ) : spec () {
-        nspec_ = 0;
-        nlambda_ = 0;
-        nglobal_ = 0;
-        path_ = "";
-        spechdu_ = -1;
-        invvarhdu_ = -1;
-        lambdahdu_ = -1;
-      }
+      spec_desi ( );
 
       spec_desi ( boost::property_tree::ptree const & props );
       
       ~spec_desi ( );
 
-      static void write ( std::string const & path, vector_double const & data, vector_double const & invvar, vector_double const & lambda );
+      static void write ( std::string const & path, boost::property_tree::ptree const & meta, vector_double const & data, vector_double const & invvar, vector_double const & lambda );
 
       // overloaded virtual methods from base class
       
-      size_t n_spec ( ) const { return nspec_; }
+      size_t n_spec ( ) const;
 
-      size_t n_lambda ( ) const { return nlambda_; }
+      size_t n_lambda ( ) const;
 
       void values ( vector_double & data ) const;
 
       void inv_variance ( vector_double & data ) const;
 
       void lambda ( vector_double & lambda_vals ) const;
-    
+
+      // desi-specific
+
+      float crval;
+      float cdelt;
+      std::string airorvac;
+      int loglam;
+      std::string simfile;
+      std::string camera;
+      std::string vharp;
+      float exptime;
+      float rdnoise;
+      std::string flavor;
+      std::string in_psf;
+      std::string in_img;
+
     private :
 
       template < class Archive >
@@ -197,6 +184,18 @@ namespace harp {
         ar & BOOST_SERIALIZATION_NVP(spechdu_);
         ar & BOOST_SERIALIZATION_NVP(invvarhdu_);
         ar & BOOST_SERIALIZATION_NVP(lambdahdu_);
+        ar & BOOST_SERIALIZATION_NVP(crval);
+        ar & BOOST_SERIALIZATION_NVP(cdelt);
+        ar & BOOST_SERIALIZATION_NVP(airorvac);
+        ar & BOOST_SERIALIZATION_NVP(loglam);
+        ar & BOOST_SERIALIZATION_NVP(simfile);
+        ar & BOOST_SERIALIZATION_NVP(camera);
+        ar & BOOST_SERIALIZATION_NVP(vharp);
+        ar & BOOST_SERIALIZATION_NVP(exptime);
+        ar & BOOST_SERIALIZATION_NVP(rdnoise);
+        ar & BOOST_SERIALIZATION_NVP(flavor);
+        ar & BOOST_SERIALIZATION_NVP(in_psf);
+        ar & BOOST_SERIALIZATION_NVP(in_img);
         return;
       }
     

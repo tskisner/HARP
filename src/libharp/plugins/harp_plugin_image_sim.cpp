@@ -20,6 +20,12 @@ static const char * image_sim_key_psf = "psf";
 static const char * image_sim_key_spec = "spec";
 
 
+harp::image_sim::image_sim ( ) : image () {
+  rows_ = 0;
+  cols_ = 0;
+}
+      
+
 harp::image_sim::image_sim ( boost::property_tree::ptree const & props ) : image ( "sim", props ) {
 
   psf_type_ = props.get < string > ( image_sim_key_psf_type );

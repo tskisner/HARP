@@ -23,6 +23,22 @@ static const char * spec_sim_key_atmspace = "atmspace";
 static const char * spec_sim_key_skymod = "skymod";
 
 
+
+harp::spec_sim::spec_sim ( ) : spec () {
+  size_ = 0;
+  nspec_ = 0;
+  nlambda_ = 0;
+  background_ = 0.0;
+  atmpeak_ = 0.0;
+  objpeak_ = 0.0;
+  atmspace_ = 0;
+  objspace_ = 0;
+  skymod_ = 0;
+  first_lambda_ = 0.0;
+  last_lambda_ = 0.0;
+}
+
+
 harp::spec_sim::spec_sim ( boost::property_tree::ptree const & props ) : spec ( "sim", props ) {
   
   nspec_ = props.get < size_t > ( spec_sim_key_nspec );
@@ -52,6 +68,16 @@ harp::spec_sim::spec_sim ( boost::property_tree::ptree const & props ) : spec ( 
 
 harp::spec_sim::~spec_sim ( ) {
   
+}
+
+
+size_t harp::spec_sim::n_spec ( ) const {
+  return nspec_;
+}
+
+
+size_t harp::spec_sim::n_lambda ( ) const {
+  return nlambda_;
 }
 
 

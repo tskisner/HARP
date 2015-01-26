@@ -18,6 +18,16 @@ static const char * image_fits_key_rows = "rows";
 static const char * image_fits_key_cols = "cols";
 
 
+harp::image_fits::image_fits ( ) : image () {
+  rows_ = 0;
+  cols_ = 0;
+  path_ = "";
+  sighdu_ = 1;
+  nsehdu_ = 2;
+  skyhdu_ = 3;
+}
+
+
 harp::image_fits::image_fits ( boost::property_tree::ptree const & props ) : image ( "fits", props ) {
 
   sighdu_ = props.get ( image_fits_key_signal, 1 );

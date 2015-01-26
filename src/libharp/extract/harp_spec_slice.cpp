@@ -11,6 +11,10 @@ using namespace std;
 using namespace harp;
 
 
+spec_slice_region const & harp::spec_slice::full_region ( ) const {
+  return full_region_;
+}
+
 // helper function for 1-D decomposition
 
 void harp::spec_slice::calc ( size_t n, size_t chunk, size_t overlap, vector < size_t > & start, vector < size_t > & stop, vector < size_t > & good_start, vector < size_t > & good_stop ) {

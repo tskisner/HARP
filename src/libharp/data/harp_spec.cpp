@@ -12,9 +12,48 @@ using namespace std;
 using namespace harp;
 
 
+harp::spec::spec ( ) {
+  type_ = "";
+}
+
+
 harp::spec::spec ( std::string const & type, boost::property_tree::ptree const & props ) {
   props_ = props;
   type_ = type;
+}
+
+
+harp::spec::~spec ( ) {
+}
+
+
+size_t harp::spec::n_spec ( ) const {
+  HARP_THROW( "fell through to virtual method" );
+  return 0;
+}
+
+
+size_t harp::spec::n_lambda ( ) const {
+  HARP_THROW( "fell through to virtual method" );
+  return 0;
+}
+
+
+void harp::spec::values ( vector_double & data ) const {
+  HARP_THROW( "fell through to virtual method" );
+  return;
+}
+
+
+void harp::spec::inv_variance ( vector_double & data ) const {
+  HARP_THROW( "fell through to virtual method" );
+  return;
+}
+
+
+void harp::spec::lambda ( vector_double & lambda_vals ) const {
+  HARP_THROW( "fell through to virtual method" );
+  return;
 }
 
 
@@ -44,6 +83,7 @@ void harp::spec::values ( matrix_double & data ) const {
 
   return;
 }
+
 
 void harp::spec::inv_variance ( matrix_double & data ) const {
 

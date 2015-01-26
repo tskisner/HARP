@@ -39,18 +39,7 @@ namespace harp {
         min( orig.min ),
         ang( orig.ang ) { }
 
-      psf_gauss_resp & operator= ( psf_gauss_resp const & rhs ) {
-        if ( &rhs != this ) {
-          x = rhs.x;
-          y = rhs.y;
-          lambda = rhs.lambda;
-          amp = rhs.amp;
-          maj = rhs.maj;
-          min = rhs.min;
-          ang = rhs.ang;
-        }
-        return *this;
-      }
+      psf_gauss_resp & operator= ( psf_gauss_resp const & rhs );
 
       void sample ( size_t x_offset, size_t y_offset, matrix_double & patch ) const;
 
@@ -89,16 +78,7 @@ namespace harp {
     
     public :
 
-      psf_gauss ( ) : psf () {
-        nspec_ = 0;
-        nlambda_ = 0;
-        rows_ = 0;
-        cols_ = 0;
-        nglobal_ = 0;
-        npix_ = 0;
-        pixcorr_ = 0;
-        path_ = "";
-      }
+      psf_gauss ( );
 
       psf_gauss ( boost::property_tree::ptree const & props );
 
@@ -108,15 +88,15 @@ namespace harp {
 
       // overloaded virtual methods from base class
 
-      size_t n_spec ( ) const { return nspec_; }
+      size_t n_spec ( ) const;
 
-      size_t n_lambda ( ) const { return nlambda_; }
+      size_t n_lambda ( ) const;
       
-      size_t img_rows ( ) const { return rows_; }
+      size_t img_rows ( ) const;
       
-      size_t img_cols ( ) const { return cols_; }
+      size_t img_cols ( ) const;
       
-      vector_double lambda ( ) const { return lambda_; }
+      vector_double lambda ( ) const;
 
       void extent ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, size_t & n_x, size_t & n_y ) const;
 
@@ -172,24 +152,7 @@ namespace harp {
     
     public :
 
-      psf_gauss_sim ( ) : psf () {
-        nspec_ = 0;
-        nlambda_ = 0;
-        rows_ = 0;
-        cols_ = 0;
-        nglobal_ = 0;
-        npix_ = 0;
-        pixcorr_ = 0;
-        n_bundle_ = 0;
-        bundle_size_ = 0;
-        pix_margin_ = 0.0;
-        pix_gap_ = 0.0;
-        pix_bundle_ = 0.0;
-        pix_offset_ = 0.0;
-        psf_fwhm_ = 0.0;
-        first_lambda_ = 0.0;
-        last_lambda_ = 0.0;
-      }
+      psf_gauss_sim ( );
 
       psf_gauss_sim ( boost::property_tree::ptree const & props );
 
@@ -199,15 +162,15 @@ namespace harp {
 
       // overloaded virtual methods from base class
 
-      size_t n_spec ( ) const { return nspec_; }
+      size_t n_spec ( ) const;
 
-      size_t n_lambda ( ) const { return nlambda_; }
+      size_t n_lambda ( ) const;
       
-      size_t img_rows ( ) const { return rows_; }
+      size_t img_rows ( ) const;
       
-      size_t img_cols ( ) const { return cols_; }
+      size_t img_cols ( ) const;
       
-      vector_double lambda ( ) const { return lambda_; }
+      vector_double lambda ( ) const;
 
       void extent ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, size_t & n_x, size_t & n_y ) const;
 
@@ -284,16 +247,7 @@ namespace harp {
     
     public :
 
-      psf_gh ( ) : psf () {
-        nspec_ = 0;
-        nlambda_ = 0;
-        rows_ = 0;
-        cols_ = 0;
-        nglobal_ = 0;
-        npix_ = 0;
-        pixcorr_ = 0;
-        path_ = "";
-      }
+      psf_gh ( );
 
       psf_gh ( boost::property_tree::ptree const & props );
 
@@ -306,17 +260,17 @@ namespace harp {
 
       // overloaded virtual methods from base class
 
-      size_t n_spec ( ) const { return nspec_; }
+      size_t n_spec ( ) const;
 
-      size_t n_lambda ( ) const { return nlambda_; }
+      size_t n_lambda ( ) const;
       
-      size_t img_rows ( ) const { return rows_; }
+      size_t img_rows ( ) const;
       
-      size_t img_cols ( ) const { return cols_; }
+      size_t img_cols ( ) const;
       
-      vector_double lambda ( ) const { return lambda_; }
+      vector_double lambda ( ) const;
 
-      void extent ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, size_t & n_x, size_t & n_y ) const { return; }
+      void extent ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, size_t & n_x, size_t & n_y ) const;
 
       void response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch ) const;
 
@@ -364,9 +318,7 @@ namespace harp {
     
     public :
 
-      psf_pyspecter ( ) : psf () {
-
-      }
+      psf_pyspecter ( );
 
       psf_pyspecter ( boost::property_tree::ptree const & props );
 
@@ -374,29 +326,17 @@ namespace harp {
 
       // overloaded virtual methods from base class
 
-      size_t n_spec ( ) const {
-        return nspec_;
-      }
+      size_t n_spec ( ) const;
 
-      size_t n_lambda ( ) const {
-        return nlambda_;
-      }
+      size_t n_lambda ( ) const;
       
-      size_t img_rows ( ) const {
-        return imgrows_;
-      }
+      size_t img_rows ( ) const;
       
-      size_t img_cols ( ) const {
-        return imgcols_;
-      }
+      size_t img_cols ( ) const;
       
-      vector_double lambda ( ) const {
-        return lambda_;
-      }
+      vector_double lambda ( ) const;
 
-      size_t response_nnz_estimate ( ) const {
-        return nnz_;
-      }
+      size_t response_nnz_estimate ( ) const;
 
       void extent ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, size_t & n_x, size_t & n_y ) const;
 

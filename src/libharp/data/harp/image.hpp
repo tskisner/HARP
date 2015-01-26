@@ -18,13 +18,11 @@ namespace harp {
     
     public :
 
-      image ( ) {
-        type_ = "";
-      }
+      image ( );
 
       image ( std::string const & type, boost::property_tree::ptree const & props );
       
-      virtual ~image ( ) { }
+      virtual ~image ( );
       
       virtual size_t n_rows ( ) const;
       

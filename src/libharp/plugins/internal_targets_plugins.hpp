@@ -17,12 +17,7 @@ namespace harp {
     
     public :
 
-      targets_fits ( ) : targets () {
-        nobjects_ = 0;
-        objects_.clear();
-        hdu_ = 1;
-        path_ = "";
-      }
+      targets_fits ( );
 
       targets_fits ( boost::property_tree::ptree const & props );
       
@@ -32,9 +27,9 @@ namespace harp {
 
       // overloaded virtual methods from base class
 
-      size_t n_objects ( ) const { return nobjects_; }
+      size_t n_objects ( ) const;
 
-      std::vector < object_p > objects ( ) const { return objects_; }
+      std::vector < object_p > objects ( ) const;
     
     private :
 
@@ -67,11 +62,7 @@ namespace harp {
     
     public :
 
-      targets_sim ( ) : targets () {
-        nobjects_ = 0;
-        objects_.clear();
-        skymod_ = 0;
-      }
+      targets_sim ( );
 
       targets_sim ( boost::property_tree::ptree const & props );
       
@@ -79,9 +70,9 @@ namespace harp {
 
       // overloaded virtual methods from base class
 
-      size_t n_objects ( ) const { return nobjects_; }
+      size_t n_objects ( ) const;
 
-      std::vector < object_p > objects ( ) const { return objects_; }
+      std::vector < object_p > objects ( ) const;
     
     private :
 
@@ -203,14 +194,21 @@ namespace harp {
 
       static void write ( std::string const & path, boost::property_tree::ptree const & meta, std::vector < object_desi_p > const & objects );
 
-      std::vector < object_desi_p > desi_objects ( ) const;
-
       // overloaded virtual methods from base class
 
       size_t n_objects ( ) const;
 
       std::vector < object_p > objects ( ) const;
 
+      // desi-specific
+
+      std::vector < object_desi_p > desi_objects ( ) const;
+
+      static std::vector < std::string > colnames ();
+
+      static object_type desi2harp ( std::string const & name );
+
+      static std::string harp2desi ( object_type type );
 
       int tileid;
       float tilera;

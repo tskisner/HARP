@@ -284,6 +284,25 @@ void harp::fits::key_read ( fitsfile * fp, std::string const & keyname, long lon
 }
 
 
+void harp::fits::key_read ( fitsfile * fp, std::string const & keyname, int & val ) {
+
+  int ret;
+  int status = 0;
+  
+  char keycopy[FLEN_VALUE];
+  strncpy ( keycopy, keyname.c_str(), FLEN_VALUE );
+
+  char comment[FLEN_VALUE];
+  
+  ret = fits_read_key ( fp, TINT, keycopy, (void*)&val, comment, &status );
+  if ( status != 0 ) {
+    val = 0;
+  }
+
+  return;
+}
+
+
 void harp::fits::key_write ( fitsfile * fp, std::string const & keyname, std::string const & keyval, std::string const & keycom ) {
 
   int ret;
@@ -397,6 +416,30 @@ void harp::fits::key_write ( fitsfile * fp, std::string const & keyname, float c
     strncpy ( comment, keycom.c_str(), FLEN_VALUE );
 
     ret = fits_update_key ( fp, TFLOAT, keycopy, (void*)&keyval, comment, &status );
+    fits::check ( status );
+
+  }
+
+  return;
+}
+
+
+void harp::fits::key_write ( fitsfile * fp, std::string const & keyname, int const & keyval, std::string const & keycom ) {
+
+  int ret;
+  int status = 0;
+
+  if ( key_exclude ( keyname ) ) {
+    cerr << "WARNING:  ignoring attempt to write non-modifiable keyword \"" << keyname << "\"" << endl;
+  } else {
+
+    char keycopy[FLEN_VALUE];
+    strncpy ( keycopy, keyname.c_str(), FLEN_VALUE );
+    
+    char comment[FLEN_VALUE];
+    strncpy ( comment, keycom.c_str(), FLEN_VALUE );
+
+    ret = fits_update_key ( fp, TINT, keycopy, (void*)&keyval, comment, &status );
     fits::check ( status );
 
   }

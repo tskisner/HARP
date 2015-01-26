@@ -34,44 +34,26 @@ namespace harp {
     
     public :
 
-      object ( ) {
-        type_ = OBJECT_UNKNOWN;
-        name_ = "";
-      }
+      object ( );
 
-      object ( object_type type, std::string name ) {
-        type_ = type;
-        name_ = name;
-      }
+      object ( object_type type, std::string name );
 
-      virtual ~object ( ) { }
+      virtual ~object ( );
 
       // default copy / assignment operators are fine for now.  if 
       // class becomes more complicated, define them here.
 
       // accessor methods
 
-      object_type type ( ) const {
-        return type_;
-      }
+      object_type type ( ) const;
 
-      std::string name ( ) const {
-        return name_;
-      }
+      std::string name ( ) const;
 
-      void set_type ( object_type t ) {
-        type_ = t;
-        return;
-      }
+      void set_type ( object_type t );
 
-      void set_name ( std::string const & n ) {
-        name_ = n;
-        return;
-      }
+      void set_name ( std::string const & n );
 
-      bool is_sky ( ) const {
-        return ( type_ == OBJECT_SKY );
-      }
+      bool is_sky ( ) const;
       
     private :
 
@@ -100,24 +82,16 @@ namespace harp {
     
     public :
 
-      targets ( ) {
-        type_ = "";
-      }
+      targets ( );
 
       targets ( std::string const & type, boost::property_tree::ptree const & props );
       
-      virtual ~targets ( ) { }
+      virtual ~targets ( );
 
-      virtual size_t n_objects ( ) const {
-        HARP_THROW( "fell through to virtual method" );
-        return 0;
-      }
+      virtual size_t n_objects ( ) const;
 
-      virtual std::vector < object_p > objects ( ) const {
-        HARP_THROW( "fell through to virtual method" );
-        return std::vector < object_p > ();
-      }
-
+      virtual std::vector < object_p > objects ( ) const;
+      
       std::string type ( ) const;
       
       template < class T >

@@ -17,53 +17,27 @@ namespace harp {
     
     public :
 
-      psf ( ) {
-        type_ = "";
-      }
+      psf ( );
 
       psf ( std::string const & type, boost::property_tree::ptree const & props );
 
-      virtual ~psf ( ) { }
+      virtual ~psf ( );
 
-      virtual size_t n_spec ( ) const {
-        HARP_THROW( "fell through to virtual method" );
-        return 0;
-      }
+      virtual size_t n_spec ( ) const;
       
-      virtual size_t n_lambda ( ) const {
-        HARP_THROW( "fell through to virtual method" );
-        return 0;
-      }
+      virtual size_t n_lambda ( ) const;
 
-      virtual size_t img_rows ( ) const {
-        HARP_THROW( "fell through to virtual method" );
-        return 0;
-      }
+      virtual size_t img_rows ( ) const;
 
-      virtual size_t img_cols ( ) const {
-        HARP_THROW( "fell through to virtual method" );
-        return 0;
-      }
+      virtual size_t img_cols ( ) const;
 
-      virtual vector_double lambda ( ) const {
-        HARP_THROW( "fell through to virtual method" );
-        return vector_double();
-      }
+      virtual vector_double lambda ( ) const;
 
-      virtual void extent ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, size_t & n_x, size_t & n_y ) const {
-        HARP_THROW( "fell through to virtual method" );
-        return;
-      }
+      virtual void extent ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, size_t & n_x, size_t & n_y ) const;
 
-      virtual void response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch ) const {
-        HARP_THROW( "fell through to virtual method" );
-        return;
-      }
+      virtual void response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch ) const;
 
-      virtual size_t response_nnz_estimate ( ) const {
-        HARP_THROW( "fell through to virtual method" );
-        return 0;
-      }
+      virtual size_t response_nnz_estimate ( ) const;
 
       // The base class provides a default implementation of these 3 functions, so that derived classes
       // only need to implement the response() and extent() methods.

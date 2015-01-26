@@ -59,9 +59,72 @@ std::string harp::object_type2str ( object_type const & in ) {
 }
 
 
+harp::object::object ( ) {
+  type_ = OBJECT_UNKNOWN;
+  name_ = "";
+}
+
+
+harp::object::object ( object_type type, std::string name ) {
+  type_ = type;
+  name_ = name;
+}
+
+harp::object::~object ( ) {
+}
+
+
+object_type harp::object::type ( ) const {
+  return type_;
+}
+
+
+std::string harp::object::name ( ) const {
+  return name_;
+}
+
+
+void harp::object::set_type ( object_type t ) {
+  type_ = t;
+  return;
+}
+
+
+void harp::object::set_name ( std::string const & n ) {
+  name_ = n;
+  return;
+}
+
+
+bool harp::object::is_sky ( ) const {
+  return ( type_ == OBJECT_SKY );
+}
+
+
+harp::targets::targets ( ) {
+  type_ = "";
+}
+
+
 harp::targets::targets ( std::string const & type, boost::property_tree::ptree const & props ) {
   props_ = props;
   type_ = type;
+}
+
+
+harp::targets::~targets ( ) {
+}
+
+
+size_t harp::targets::n_objects ( ) const {
+  HARP_THROW( "fell through to virtual method" );
+  return 0;
+}
+
+
+std::vector < object_p > harp::targets::objects ( ) const {
+  HARP_THROW( "fell through to virtual method" );
+  return std::vector < object_p > ();
 }
 
 

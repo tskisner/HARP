@@ -17,38 +17,21 @@ namespace harp {
     
     public :
 
-      spec ( ) {
-        type_ = "";
-      }
-
+      spec ( );
+      
       spec ( std::string const & type, boost::property_tree::ptree const & props );
       
-      virtual ~spec ( ) { }
+      virtual ~spec ( );
 
-      virtual size_t n_spec ( ) const {
-        HARP_THROW( "fell through to virtual method" );
-        return 0;
-      }
+      virtual size_t n_spec ( ) const;
 
-      virtual size_t n_lambda ( ) const {
-        HARP_THROW( "fell through to virtual method" );
-        return 0;
-      }
+      virtual size_t n_lambda ( ) const;
 
-      virtual void values ( vector_double & data ) const {
-        HARP_THROW( "fell through to virtual method" );
-        return;
-      }
+      virtual void values ( vector_double & data ) const;
 
-      virtual void inv_variance ( vector_double & data ) const {
-        HARP_THROW( "fell through to virtual method" );
-        return;
-      }
+      virtual void inv_variance ( vector_double & data ) const;
 
-      virtual void lambda ( vector_double & lambda_vals ) const {
-        HARP_THROW( "fell through to virtual method" );
-        return;
-      }
+      virtual void lambda ( vector_double & lambda_vals ) const;
 
       void values ( matrix_double & data ) const;
 

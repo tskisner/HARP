@@ -12,9 +12,18 @@ using namespace std;
 using namespace harp;
 
 
+harp::image::image ( ) {
+  type_ = "";
+}
+
+
 harp::image::image ( std::string const & type, boost::property_tree::ptree const & props ) {
   props_ = props;
   type_ = type;
+}
+
+
+harp::image::~image ( ) {
 }
 
 

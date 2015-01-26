@@ -20,6 +20,21 @@ static const char * image_desi_key_flavor = "FLAVOR";
 
 
 
+harp::image_desi::image_desi ( ) : image () {
+  rows_ = 0;
+  cols_ = 0;
+  path_ = "";
+  sighdu_ = -1;
+  nsehdu_ = -1;
+  mskhdu_ = -1;
+  camera = "";
+  vspecter = "";
+  exptime = 0.0;
+  rdnoise = 0.0;
+  flavor = "";
+}
+      
+
 harp::image_desi::image_desi ( boost::property_tree::ptree const & props ) : image ( "desi", props ) {
 
   sighdu_ = 1;
@@ -37,15 +52,15 @@ harp::image_desi::image_desi ( boost::property_tree::ptree const & props ) : ima
   fits::img_seek ( fp, sighdu_ );
   fits::img_dims ( fp, rows_, cols_ );
 
-  fits::key_read ( fp, string(image_desi_key_camera), camera_ );
+  fits::key_read ( fp, string(image_desi_key_camera), camera );
 
-  fits::key_read ( fp, string(image_desi_key_vspecter), vspecter_ );
+  fits::key_read ( fp, string(image_desi_key_vspecter), vspecter );
 
-  fits::key_read ( fp, string(image_desi_key_exptime), exptime_ );
+  fits::key_read ( fp, string(image_desi_key_exptime), exptime );
 
-  fits::key_read ( fp, string(image_desi_key_rdnoise), rdnoise_ );
+  fits::key_read ( fp, string(image_desi_key_rdnoise), rdnoise );
 
-  fits::key_read ( fp, string(image_desi_key_flavor), flavor_ );
+  fits::key_read ( fp, string(image_desi_key_flavor), flavor );
 
   // check second HDU
 

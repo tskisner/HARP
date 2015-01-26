@@ -16,14 +16,7 @@ namespace harp {
     
     public :
 
-      image_fits ( ) : image () {
-        rows_ = 0;
-        cols_ = 0;
-        path_ = "";
-        sighdu_ = 1;
-        nsehdu_ = 2;
-        skyhdu_ = 3;
-      }
+      image_fits ( );
       
       image_fits ( boost::property_tree::ptree const & props );
       
@@ -79,10 +72,7 @@ namespace harp {
     
     public :
 
-      image_sim ( ) : image () {
-        rows_ = 0;
-        cols_ = 0;
-      }
+      image_sim ( );
 
       image_sim ( boost::property_tree::ptree const & props );
       
@@ -140,19 +130,7 @@ namespace harp {
     
     public :
 
-      image_desi ( ) : image () {
-        rows_ = 0;
-        cols_ = 0;
-        path_ = "";
-        sighdu_ = -1;
-        nsehdu_ = -1;
-        mskhdu_ = -1;
-        camera_ = "";
-        vspecter_ = "";
-        exptime_ = 0.0;
-        rdnoise_ = 0.0;
-        flavor_ = "";
-      }
+      image_desi ( );
       
       image_desi ( boost::property_tree::ptree const & props );
       
@@ -174,6 +152,14 @@ namespace harp {
 
       void mask ( vector_mask & msk ) const;
 
+      // desi-specific
+
+      std::string camera;
+      std::string vspecter;
+      float exptime;
+      float rdnoise;
+      std::string flavor;
+
     private :
 
       template < class Archive >
@@ -185,11 +171,11 @@ namespace harp {
         ar & BOOST_SERIALIZATION_NVP(sighdu_);
         ar & BOOST_SERIALIZATION_NVP(nsehdu_);
         ar & BOOST_SERIALIZATION_NVP(mskhdu_);
-        ar & BOOST_SERIALIZATION_NVP(camera_);
-        ar & BOOST_SERIALIZATION_NVP(vspecter_);
-        ar & BOOST_SERIALIZATION_NVP(exptime_);
-        ar & BOOST_SERIALIZATION_NVP(rdnoise_);
-        ar & BOOST_SERIALIZATION_NVP(flavor_);
+        ar & BOOST_SERIALIZATION_NVP(camera);
+        ar & BOOST_SERIALIZATION_NVP(vspecter);
+        ar & BOOST_SERIALIZATION_NVP(exptime);
+        ar & BOOST_SERIALIZATION_NVP(rdnoise);
+        ar & BOOST_SERIALIZATION_NVP(flavor);
         return;
       }
     
@@ -199,11 +185,6 @@ namespace harp {
       int sighdu_;
       int nsehdu_;
       int mskhdu_;
-      std::string camera_;
-      std::string vspecter_;
-      float exptime_;
-      float rdnoise_;
-      std::string flavor_;
     
   };
 

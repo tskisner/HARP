@@ -18,6 +18,18 @@ static const char * psf_gh_key_corr = "corr";
 static const char * psf_gh_key_path = "path";
 
 
+harp::psf_gh::psf_gh ( ) : psf () {
+  nspec_ = 0;
+  nlambda_ = 0;
+  rows_ = 0;
+  cols_ = 0;
+  nglobal_ = 0;
+  npix_ = 0;
+  pixcorr_ = 0;
+  path_ = "";
+}
+
+
 harp::psf_gh::psf_gh ( boost::property_tree::ptree const & props ) : psf ( "gh", props ) {
 
   pixcorr_ = props.get < int > ( psf_gh_key_corr );
@@ -66,6 +78,36 @@ harp::psf_gh::psf_gh ( boost::property_tree::ptree const & props ) : psf ( "gh",
 
 harp::psf_gh::~psf_gh ( ) {
   
+}
+
+
+size_t harp::psf_gh::n_spec ( ) const {
+  return nspec_;
+}
+
+
+size_t harp::psf_gh::n_lambda ( ) const {
+  return nlambda_;
+}
+
+
+size_t harp::psf_gh::img_rows ( ) const {
+  return rows_;
+}
+
+
+size_t harp::psf_gh::img_cols ( ) const {
+  return cols_;
+}
+
+
+vector_double harp::psf_gh::lambda ( ) const {
+  return lambda_;
+}
+
+
+void harp::psf_gh::extent ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, size_t & n_x, size_t & n_y ) const {
+  return;
 }
 
 

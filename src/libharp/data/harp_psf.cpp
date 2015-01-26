@@ -12,9 +12,67 @@ using namespace std;
 using namespace harp;
 
 
+
+harp::psf::psf ( ) {
+  type_ = "";
+}
+
+
 harp::psf::psf ( std::string const & type, boost::property_tree::ptree const & props ) {
   props_ = props;
   type_ = type;
+}
+
+
+harp::psf::~psf ( ) {
+}
+
+
+size_t harp::psf::n_spec ( ) const {
+  HARP_THROW( "fell through to virtual method" );
+  return 0;
+}
+
+
+size_t harp::psf::n_lambda ( ) const {
+  HARP_THROW( "fell through to virtual method" );
+  return 0;
+}
+
+
+size_t harp::psf::img_rows ( ) const {
+  HARP_THROW( "fell through to virtual method" );
+  return 0;
+}
+
+
+size_t harp::psf::img_cols ( ) const {
+  HARP_THROW( "fell through to virtual method" );
+  return 0;
+}
+
+
+vector_double harp::psf::lambda ( ) const {
+  HARP_THROW( "fell through to virtual method" );
+  return vector_double();
+}
+
+
+void harp::psf::extent ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, size_t & n_x, size_t & n_y ) const {
+  HARP_THROW( "fell through to virtual method" );
+  return;
+}
+
+
+void harp::psf::response ( size_t spec, size_t lambda, size_t & x_offset, size_t & y_offset, matrix_double & patch ) const {
+  HARP_THROW( "fell through to virtual method" );
+  return;
+}
+
+
+size_t harp::psf::response_nnz_estimate ( ) const {
+  HARP_THROW( "fell through to virtual method" );
+  return 0;
 }
 
 

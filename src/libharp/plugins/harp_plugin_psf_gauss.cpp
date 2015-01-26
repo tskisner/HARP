@@ -13,6 +13,20 @@ using namespace std;
 using namespace harp;
 
 
+psf_gauss_resp & harp::psf_gauss_resp::operator= ( psf_gauss_resp const & rhs ) {
+  if ( &rhs != this ) {
+    x = rhs.x;
+    y = rhs.y;
+    lambda = rhs.lambda;
+    amp = rhs.amp;
+    maj = rhs.maj;
+    min = rhs.min;
+    ang = rhs.ang;
+  }
+  return *this;
+}
+
+
 void harp::psf_gauss_resp::sample ( size_t x_offset, size_t y_offset, matrix_double & patch ) const {
 
   double PI = std::atan2 ( 0.0, -1.0 );
@@ -87,6 +101,18 @@ static const char * psf_gauss_hdu_amp = "Amplitude";
 static const char * psf_gauss_hdu_maj = "MajorAxis";
 static const char * psf_gauss_hdu_min = "MinorAxis";
 static const char * psf_gauss_hdu_ang = "Angle";
+
+
+harp::psf_gauss::psf_gauss ( ) : psf () {
+  nspec_ = 0;
+  nlambda_ = 0;
+  rows_ = 0;
+  cols_ = 0;
+  nglobal_ = 0;
+  npix_ = 0;
+  pixcorr_ = 0;
+  path_ = "";
+}
 
 
 harp::psf_gauss::psf_gauss ( boost::property_tree::ptree const & props ) : psf ( "gauss", props ) {
@@ -231,7 +257,31 @@ harp::psf_gauss::psf_gauss ( boost::property_tree::ptree const & props ) : psf (
 
 
 harp::psf_gauss::~psf_gauss ( ) {
-  
+}
+
+
+size_t harp::psf_gauss::n_spec ( ) const {
+  return nspec_;
+}
+
+
+size_t harp::psf_gauss::n_lambda ( ) const {
+  return nlambda_;
+}
+
+
+size_t harp::psf_gauss::img_rows ( ) const {
+  return rows_;
+}
+
+
+size_t harp::psf_gauss::img_cols ( ) const {
+  return cols_;
+}
+
+
+vector_double harp::psf_gauss::lambda ( ) const {
+  return lambda_;
 }
 
 

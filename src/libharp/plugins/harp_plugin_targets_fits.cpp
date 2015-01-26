@@ -15,6 +15,15 @@ using namespace harp;
 static const char * targets_fits_key_path = "path";
 static const char * targets_fits_key_hdu = "hdu";
 
+
+harp::targets_fits::targets_fits ( ) : targets () {
+  nobjects_ = 0;
+  objects_.clear();
+  hdu_ = 1;
+  path_ = "";
+}
+
+
 harp::targets_fits::targets_fits ( boost::property_tree::ptree const & props ) : targets ( "fits", props ) {
 
   path_ = props.get < string > ( targets_fits_key_path, "" );
@@ -55,6 +64,16 @@ harp::targets_fits::targets_fits ( boost::property_tree::ptree const & props ) :
 
 harp::targets_fits::~targets_fits ( ) {
   
+}
+
+
+size_t harp::targets_fits::n_objects ( ) const {
+  return nobjects_;
+}
+
+
+std::vector < object_p > harp::targets_fits::objects ( ) const {
+  return objects_;
 }
 
 

@@ -42,6 +42,26 @@ static const char * psf_gauss_sim_hdu_min = "MinorAxis";
 static const char * psf_gauss_sim_hdu_ang = "Angle";
 
 
+harp::psf_gauss_sim::psf_gauss_sim ( ) : psf () {
+  nspec_ = 0;
+  nlambda_ = 0;
+  rows_ = 0;
+  cols_ = 0;
+  nglobal_ = 0;
+  npix_ = 0;
+  pixcorr_ = 0;
+  n_bundle_ = 0;
+  bundle_size_ = 0;
+  pix_margin_ = 0.0;
+  pix_gap_ = 0.0;
+  pix_bundle_ = 0.0;
+  pix_offset_ = 0.0;
+  psf_fwhm_ = 0.0;
+  first_lambda_ = 0.0;
+  last_lambda_ = 0.0;
+}
+
+
 harp::psf_gauss_sim::psf_gauss_sim ( boost::property_tree::ptree const & props ) : psf ( "gauss_sim", props ) {
 
   // check to see if we are getting the wavelength solution from a spec
@@ -153,6 +173,31 @@ harp::psf_gauss_sim::psf_gauss_sim ( boost::property_tree::ptree const & props )
 
 harp::psf_gauss_sim::~psf_gauss_sim ( ) {
   
+}
+
+
+size_t harp::psf_gauss_sim::n_spec ( ) const {
+  return nspec_;
+}
+
+
+size_t harp::psf_gauss_sim::n_lambda ( ) const {
+  return nlambda_;
+}
+
+
+size_t harp::psf_gauss_sim::img_rows ( ) const {
+  return rows_;
+}
+
+
+size_t harp::psf_gauss_sim::img_cols ( ) const {
+  return cols_;
+}
+
+
+vector_double harp::psf_gauss_sim::lambda ( ) const {
+  return lambda_;
 }
 
 

@@ -15,6 +15,14 @@ using namespace harp;
 static const char * targets_sim_key_nobj = "nobj";
 static const char * targets_sim_key_skymod = "skymod";
 
+
+harp::targets_sim::targets_sim ( ) : targets () {
+  nobjects_ = 0;
+  objects_.clear();
+  skymod_ = 0;
+}
+
+
 harp::targets_sim::targets_sim ( boost::property_tree::ptree const & props ) : targets ( "sim", props ) {
 
   nobjects_ = props.get < size_t > ( targets_sim_key_nobj );
@@ -38,6 +46,16 @@ harp::targets_sim::targets_sim ( boost::property_tree::ptree const & props ) : t
 
 harp::targets_sim::~targets_sim ( ) {
   
+}
+
+
+size_t harp::targets_sim::n_objects ( ) const {
+  return nobjects_;
+}
+
+
+std::vector < object_p > harp::targets_sim::objects ( ) const {
+  return objects_;
 }
 
 

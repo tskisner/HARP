@@ -30,6 +30,10 @@ static const char * psf_pyspecter_key_wbin = "wavebin";
 namespace py = boost::python;
 
 
+harp::psf_pyspecter::psf_pyspecter ( ) : psf () {
+}
+
+
 harp::psf_pyspecter::psf_pyspecter ( boost::property_tree::ptree const & props ) : psf ( "pyspecter", props ) {
 
   path_ = props.get < string > ( psf_pyspecter_key_path );
@@ -111,6 +115,36 @@ harp::psf_pyspecter::psf_pyspecter ( boost::property_tree::ptree const & props )
 
 harp::psf_pyspecter::~psf_pyspecter ( ) {
   
+}
+
+
+size_t harp::psf_pyspecter::n_spec ( ) const {
+  return nspec_;
+}
+
+
+size_t harp::psf_pyspecter::n_lambda ( ) const {
+  return nlambda_;
+}
+
+
+size_t harp::psf_pyspecter::img_rows ( ) const {
+  return imgrows_;
+}
+
+
+size_t harp::psf_pyspecter::img_cols ( ) const {
+  return imgcols_;
+}
+
+
+vector_double harp::psf_pyspecter::lambda ( ) const {
+  return lambda_;
+}
+
+
+size_t harp::psf_pyspecter::response_nnz_estimate ( ) const {
+  return nnz_;
 }
 
 

@@ -20,6 +20,17 @@ static const char * spec_fits_key_hduinvvar = "hduinvvar";
 static const char * spec_fits_key_hdulambda = "hdulambda";
 
 
+harp::spec_fits::spec_fits ( ) : spec () {
+  nspec_ = 0;
+  nlambda_ = 0;
+  nglobal_ = 0;
+  path_ = "";
+  spechdu_ = -1;
+  invvarhdu_ = -1;
+  lambdahdu_ = -1;
+}
+
+
 harp::spec_fits::spec_fits ( boost::property_tree::ptree const & props ) : spec ( "fits", props ) {
 
   path_ = props.get < string > ( spec_fits_key_path, "" );
@@ -57,6 +68,16 @@ harp::spec_fits::spec_fits ( boost::property_tree::ptree const & props ) : spec 
 
 harp::spec_fits::~spec_fits ( ) {
   
+}
+
+
+size_t harp::spec_fits::n_spec ( ) const {
+  return nspec_;
+}
+
+
+size_t harp::spec_fits::n_lambda ( ) const {
+  return nlambda_;
 }
 
 

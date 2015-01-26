@@ -114,7 +114,7 @@ namespace harp {
       
       ~spec_slice ( ) { }
 
-      spec_slice_region const & full_region ( ) const { return full_region_; }
+      spec_slice_region const & full_region ( ) const;
 
       std::vector < spec_slice_region > regions ( size_t const & worker ) const;
       
