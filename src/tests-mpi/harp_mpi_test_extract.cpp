@@ -106,7 +106,7 @@ void harp::mpi_test_extract ( string const & datadir ) {
   int np = comm.size();
   int myp = comm.rank();
 
-  elem::Grid grid ( elem::mpi::COMM_WORLD );
+  El::Grid grid ( El::mpi::COMM_WORLD );
 
   // fake rank communicator for use with the global one
 
@@ -138,7 +138,7 @@ void harp::mpi_test_extract ( string const & datadir ) {
 
   boost::mpi::communicator gcomm = comm.split ( gang, grank );
 
-  elem::Grid gang_grid ( (MPI_Comm)gcomm );
+  El::Grid gang_grid ( (MPI_Comm)gcomm );
 
   // inter-gang communicator
 
@@ -499,8 +499,8 @@ void harp::mpi_test_extract ( string const & datadir ) {
 
   elem_matrix_local local_invC;
 
-  elem::AxpyInterface < double > globloc;
-  globloc.Attach( elem::GLOBAL_TO_LOCAL, invC );
+  El::AxpyInterface < double > globloc;
+  globloc.Attach( El::GLOBAL_TO_LOCAL, invC );
 
   if ( grank == 0 ) {
     local_invC.Resize ( test_nbin, test_nbin );
@@ -548,7 +548,7 @@ void harp::mpi_test_extract ( string const & datadir ) {
 
   elem_matrix_local loc_z;
 
-  globloc.Attach( elem::GLOBAL_TO_LOCAL, z_spec );
+  globloc.Attach( El::GLOBAL_TO_LOCAL, z_spec );
   if ( grank == 0 ) {
     loc_z.Resize ( z_spec.Height(), 1 );
     local_matrix_zero ( loc_z );
@@ -604,7 +604,7 @@ void harp::mpi_test_extract ( string const & datadir ) {
   elem_matrix_local loc_f;
   elem_matrix_local loc_err;
 
-  globloc.Attach( elem::GLOBAL_TO_LOCAL, Rtruth );
+  globloc.Attach( El::GLOBAL_TO_LOCAL, Rtruth );
   if ( myp == 0 ) {
     loc_Rtruth.Resize ( Rtruth.Height(), 1 );
     local_matrix_zero ( loc_Rtruth );
@@ -612,7 +612,7 @@ void harp::mpi_test_extract ( string const & datadir ) {
   }
   globloc.Detach();
 
-  globloc.Attach( elem::GLOBAL_TO_LOCAL, truth );
+  globloc.Attach( El::GLOBAL_TO_LOCAL, truth );
   if ( myp == 0 ) {
     loc_truth.Resize ( truth.Height(), 1 );
     local_matrix_zero ( loc_truth );
@@ -620,7 +620,7 @@ void harp::mpi_test_extract ( string const & datadir ) {
   }
   globloc.Detach();
 
-  globloc.Attach( elem::GLOBAL_TO_LOCAL, Rf );
+  globloc.Attach( El::GLOBAL_TO_LOCAL, Rf );
   if ( myp == 0 ) {
     loc_Rf.Resize ( Rf.Height(), 1 );
     local_matrix_zero ( loc_Rf );
@@ -628,7 +628,7 @@ void harp::mpi_test_extract ( string const & datadir ) {
   }
   globloc.Detach();
 
-  globloc.Attach( elem::GLOBAL_TO_LOCAL, f );
+  globloc.Attach( El::GLOBAL_TO_LOCAL, f );
   if ( myp == 0 ) {
     loc_f.Resize ( f.Height(), 1 );
     local_matrix_zero ( loc_f );
@@ -636,7 +636,7 @@ void harp::mpi_test_extract ( string const & datadir ) {
   }
   globloc.Detach();
 
-  globloc.Attach( elem::GLOBAL_TO_LOCAL, err );
+  globloc.Attach( El::GLOBAL_TO_LOCAL, err );
   if ( myp == 0 ) {
     loc_err.Resize ( err.Height(), 1 );
     local_matrix_zero ( loc_err );

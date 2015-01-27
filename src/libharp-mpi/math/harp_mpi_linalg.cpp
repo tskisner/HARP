@@ -74,13 +74,13 @@ void harp::mpi_eigen_decompose ( mpi_matrix const & invcov, mpi_matrix & D, mpi_
 
   mpi_matrix temp ( invcov );
 
-  elem::DistMatrix < double, elem::VR, elem::STAR > eigvals ( invcov.Height(), 1, invcov.Grid() );
+  El::DistMatrix < double, El::DistNS::VR, El::DistNS::STAR > eigvals ( invcov.Height(), 1, invcov.Grid() );
 
-  elem::HermitianEig ( elem::LOWER, temp, eigvals, W );
+  El::HermitianEig ( El::LOWER, temp, eigvals, W );
 
   // I don't think we need this, since we never need to order the
   // eigenpairs.
-  //elem::SortEig( eigvals, W );
+  //El::SortEig( eigvals, W );
 
   D = eigvals;
 
@@ -118,9 +118,9 @@ void harp::mpi_eigen_decompose ( mpi_matrix const & invcov, mpi_matrix & D, mpi_
 
     // find global min / max
 
-    elem::mpi::AllReduce ( &min, 1, elem::mpi::MIN, D.Grid().Comm() );
+    El::mpi::AllReduce ( &min, 1, El::mpi::MIN, D.Grid().Comm() );
 
-    elem::mpi::AllReduce ( &max, 1, elem::mpi::MAX, D.Grid().Comm() );
+    El::mpi::AllReduce ( &max, 1, El::mpi::MAX, D.Grid().Comm() );
 
     // compute condition number
 
@@ -165,8 +165,8 @@ void harp::mpi_eigen_compose ( eigen_op op, mpi_matrix const & D, mpi_matrix con
   elem_matrix_local scaled ( D.Height(), 1 );
   local_matrix_zero ( scaled );
 
-  elem::AxpyInterface < double > globloc;
-  globloc.Attach( elem::GLOBAL_TO_LOCAL, D );
+  El::AxpyInterface < double > globloc;
+  globloc.Attach( El::GLOBAL_TO_LOCAL, D );
   globloc.Axpy ( 1.0, scaled, 0, 0 );
   globloc.Detach();
 
@@ -245,7 +245,7 @@ void harp::mpi_eigen_compose ( eigen_op op, mpi_matrix const & D, mpi_matrix con
 
   // compute out = ( W * op(D) ) * W^T
 
-  elem::Gemm ( elem::NORMAL, elem::TRANSPOSE, 1.0, temp, W, 0.0, out );
+  El::Gemm ( El::NORMAL, El::TRANSPOSE, 1.0, temp, W, 0.0, out );
 
   return;
 }
@@ -280,8 +280,8 @@ void harp::mpi_column_norm ( mpi_matrix const & mat, mpi_matrix & S ) {
 
   // Reduce
 
-  elem::AxpyInterface < double > locglob;
-  locglob.Attach( elem::LOCAL_TO_GLOBAL, S );
+  El::AxpyInterface < double > locglob;
+  locglob.Attach( El::LOCAL_TO_GLOBAL, S );
   locglob.Axpy ( 1.0, Sloc, 0, 0 );
   locglob.Detach();
 
@@ -309,8 +309,8 @@ void harp::mpi_apply_norm ( mpi_matrix const & S, mpi_matrix & mat ) {
   elem_matrix_local Sloc ( S.Height(), 1 );
   local_matrix_zero ( Sloc );
 
-  elem::AxpyInterface < double > globloc;
-  globloc.Attach( elem::GLOBAL_TO_LOCAL, S );
+  El::AxpyInterface < double > globloc;
+  globloc.Attach( El::GLOBAL_TO_LOCAL, S );
   globloc.Axpy ( 1.0, Sloc, 0, 0 );
   globloc.Detach();
 
@@ -345,8 +345,8 @@ void harp::mpi_apply_inverse_norm ( mpi_matrix const & S, mpi_matrix & mat ) {
   elem_matrix_local Sloc ( S.Height(), 1 );
   local_matrix_zero ( Sloc );
 
-  elem::AxpyInterface < double > globloc;
-  globloc.Attach( elem::GLOBAL_TO_LOCAL, S );
+  El::AxpyInterface < double > globloc;
+  globloc.Attach( El::GLOBAL_TO_LOCAL, S );
   globloc.Axpy ( 1.0, Sloc, 0, 0 );
   globloc.Detach();
 
@@ -415,8 +415,8 @@ void harp::mpi_sparse_mv_trans ( mpi_matrix_sparse const & AT, mpi_matrix const 
   }
   local_matrix_zero ( local_in );
 
-  elem::AxpyInterface < double > globloc;
-  globloc.Attach( elem::GLOBAL_TO_LOCAL, in );
+  El::AxpyInterface < double > globloc;
+  globloc.Attach( El::GLOBAL_TO_LOCAL, in );
   if ( local_nrows > 0 ) {
     globloc.Axpy ( 1.0, local_in, local_firstrow, 0 );
   }
@@ -447,15 +447,15 @@ void harp::mpi_sparse_mv_trans ( mpi_matrix_sparse const & AT, mpi_matrix const 
   mpi_matrix globout ( ncols, 1, in.Grid() );
   mpi_matrix_zero ( globout );
 
-  elem::AxpyInterface < double > locglob;
-  locglob.Attach( elem::LOCAL_TO_GLOBAL, globout );
+  El::AxpyInterface < double > locglob;
+  locglob.Attach( El::LOCAL_TO_GLOBAL, globout );
   locglob.Axpy ( 1.0, out, 0, 0 );
   locglob.Detach();
 
   // get local copy for output
   
   local_matrix_zero ( out );
-  globloc.Attach( elem::GLOBAL_TO_LOCAL, globout );
+  globloc.Attach( El::GLOBAL_TO_LOCAL, globout );
   globloc.Axpy ( 1.0, out, 0, 0 );
   globloc.Detach();
 
@@ -481,8 +481,8 @@ void harp::mpi_gang_distribute ( mpi_matrix const & mat, mpi_matrix & gmat ) {
 
   // compute local gang-matrix elements
 
-  elem::AxpyInterface < double > globloc;
-  elem::AxpyInterface < double > locglob;
+  El::AxpyInterface < double > globloc;
+  El::AxpyInterface < double > locglob;
 
   // iterate over all columns
 
@@ -494,7 +494,7 @@ void harp::mpi_gang_distribute ( mpi_matrix const & mat, mpi_matrix & gmat ) {
 
     // get full local copy of the column
 
-    globloc.Attach( elem::GLOBAL_TO_LOCAL, mat );
+    globloc.Attach( El::GLOBAL_TO_LOCAL, mat );
     if ( gang_myp == 0 ) {
       globloc.Axpy ( 1.0, colmat, 0, col );
     }
@@ -502,7 +502,7 @@ void harp::mpi_gang_distribute ( mpi_matrix const & mat, mpi_matrix & gmat ) {
 
     // distribute to gang
 
-    locglob.Attach( elem::LOCAL_TO_GLOBAL, gmat );
+    locglob.Attach( El::LOCAL_TO_GLOBAL, gmat );
     if ( gang_myp == 0 ) {
       locglob.Axpy ( 1.0, colmat, 0, col );
     }
@@ -532,8 +532,8 @@ void harp::mpi_gang_accum ( mpi_matrix const & gmat, mpi_matrix & mat ) {
 
   // compute local gang-matrix elements
 
-  elem::AxpyInterface < double > globloc;
-  elem::AxpyInterface < double > locglob;
+  El::AxpyInterface < double > globloc;
+  El::AxpyInterface < double > locglob;
 
   // iterate over all columns
 
@@ -545,7 +545,7 @@ void harp::mpi_gang_accum ( mpi_matrix const & gmat, mpi_matrix & mat ) {
 
     // get full local copy of the gang column
 
-    globloc.Attach( elem::GLOBAL_TO_LOCAL, gmat );
+    globloc.Attach( El::GLOBAL_TO_LOCAL, gmat );
     if ( gang_myp == 0 ) {
       globloc.Axpy ( 1.0, colmat, 0, col );
     }
@@ -553,7 +553,7 @@ void harp::mpi_gang_accum ( mpi_matrix const & gmat, mpi_matrix & mat ) {
 
     // each gang root process accumulates to global column
 
-    locglob.Attach( elem::LOCAL_TO_GLOBAL, mat );
+    locglob.Attach( El::LOCAL_TO_GLOBAL, mat );
     if ( gang_myp == 0 ) {
       locglob.Axpy ( 1.0, colmat, 0, col );
     }

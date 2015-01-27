@@ -335,12 +335,12 @@ void harp::sky_subtract ( size_t nobj, matrix_dist const & Rf_orig, matrix_dist 
   matrix_local local_sky_err ( nlambda, 1 );
   local_matrix_zero ( local_sky_err );
 
-  elem::AxpyInterface < double > globloc;
-  globloc.Attach( elem::GLOBAL_TO_LOCAL, Rf_orig );
+  El::AxpyInterface < double > globloc;
+  globloc.Attach( El::GLOBAL_TO_LOCAL, Rf_orig );
   globloc.Axpy ( 1.0, local_sky, (nobj * nlambda), 0 );
   globloc.Detach();
 
-  globloc.Attach( elem::GLOBAL_TO_LOCAL, err_orig );
+  globloc.Attach( El::GLOBAL_TO_LOCAL, err_orig );
   globloc.Axpy ( 1.0, local_sky_err, (nobj * nlambda), 0 );
   globloc.Detach();
 

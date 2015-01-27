@@ -116,8 +116,8 @@ void harp::mpi_sub_spec ( spec_slice_region const & full_region, spec_slice_regi
   elem_matrix_local full_loc ( full_data.Height(), 1 );
   local_matrix_zero ( full_loc );
 
-  elem::AxpyInterface < double > globloc;
-  globloc.Attach( elem::GLOBAL_TO_LOCAL, full_data );
+  El::AxpyInterface < double > globloc;
+  globloc.Attach( El::GLOBAL_TO_LOCAL, full_data );
   globloc.Axpy ( 1.0, full_loc, 0, 0 );
   globloc.Detach();
 
@@ -318,8 +318,8 @@ void harp::mpi_accum_spec ( spec_slice_region const & sub_region, spec_slice_reg
 
   // accumulate
 
-  elem::AxpyInterface < double > locglob;
-  locglob.Attach( elem::LOCAL_TO_GLOBAL, full_data );
+  El::AxpyInterface < double > locglob;
+  locglob.Attach( El::LOCAL_TO_GLOBAL, full_data );
   locglob.Axpy ( 1.0, full_loc, 0, 0 );
   locglob.Detach();
 
@@ -385,8 +385,8 @@ void harp::mpi_noise_weighted_spec ( mpi_matrix_sparse const & AT, elem_matrix_l
 
   // accumulate to output
 
-  elem::AxpyInterface < double > locglob;
-  locglob.Attach( elem::LOCAL_TO_GLOBAL, z );
+  El::AxpyInterface < double > locglob;
+  locglob.Attach( El::LOCAL_TO_GLOBAL, z );
   if ( local_nrows > 0 ) {
     locglob.Axpy ( 1.0, local_z, local_firstrow, 0 );
   }
@@ -483,8 +483,8 @@ void harp::mpi_inverse_covariance ( mpi_matrix_sparse const & AT, elem_matrix_lo
 
   }
 
-  elem::AxpyInterface < double > locglob;
-  locglob.Attach( elem::LOCAL_TO_GLOBAL, invcov );
+  El::AxpyInterface < double > locglob;
+  locglob.Attach( El::LOCAL_TO_GLOBAL, invcov );
   if ( local_nrows > 0 ) {
     locglob.Axpy ( 1.0, local_inv, local_firstrow, local_firstrow );
   }
@@ -681,7 +681,7 @@ void harp::mpi_inverse_covariance ( mpi_matrix_sparse const & AT, elem_matrix_lo
 
     // accumulate to global matrix
 
-    locglob.Attach( elem::LOCAL_TO_GLOBAL, invcov );
+    locglob.Attach( El::LOCAL_TO_GLOBAL, invcov );
     if ( participate ) {
       locglob.Axpy ( 1.0, local_inv, axpy_row, axpy_col );
     }
@@ -727,13 +727,13 @@ void harp::mpi_extract ( mpi_matrix & D, mpi_matrix & W, mpi_matrix & S, mpi_mat
 
   // Compute R * f.
 
-  elem::Gemv ( elem::NORMAL, 1.0, composed, z, 0.0, Rf );
+  El::Gemv ( El::NORMAL, 1.0, composed, z, 0.0, Rf );
 
   // compute deconvolved spectra (numerically unstable, but useful for visualization).
 
   mpi_eigen_compose ( EIG_INV, D, W, composed );
 
-  elem::Gemv ( elem::NORMAL, 1.0, composed, z, 0.0, f );
+  El::Gemv ( El::NORMAL, 1.0, composed, z, 0.0, f );
 
   return;
 }
@@ -800,7 +800,7 @@ void harp::mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_m
 
   // gang-distributed quantities and redistribution
 
-  elem::Grid gang_grid ( (MPI_Comm)slice->gang_comm() );
+  El::Grid gang_grid ( (MPI_Comm)slice->gang_comm() );
 
   mpi_matrix gang_truth ( truth.Height(), 1, gang_grid );
   mpi_matrix_zero ( gang_truth );
@@ -1011,7 +1011,7 @@ void harp::mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_m
 
       mpi_resolution ( eig_vals, eig_vecs, slice_err, res );
 
-      elem::Gemv ( elem::NORMAL, 1.0, res, slice_truth, 0.0, slice_Rtruth );
+      El::Gemv ( El::NORMAL, 1.0, res, slice_truth, 0.0, slice_Rtruth );
 
       mpi_accum_spec ( (*regit), full_region, slice_Rtruth, true, gang_Rtruth );
 

@@ -9,7 +9,7 @@ using namespace harp;
 
 int main ( int argc, char *argv[] ) {
 
-  elem::Initialize ( argc, argv );
+  El::Initialize ( argc, argv );
 
   boost::mpi::environment env;
   boost::mpi::communicator comm;
@@ -37,7 +37,7 @@ int main ( int argc, char *argv[] ) {
     cout << endl;
   }
 
-  elem::Finalize();
+  El::Finalize();
   
   return 0;
 }

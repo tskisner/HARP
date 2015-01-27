@@ -8,16 +8,16 @@
 #ifndef HARP_MPI_LINALG_HPP
 #define HARP_MPI_LINALG_HPP
 
-#include <elemental.hpp>
+#include <El.hpp>
 
 
 namespace harp {
 
   // convenience typedefs
 
-  typedef elem::Matrix < double > elem_matrix_local;
+  typedef El::Matrix < double > elem_matrix_local;
 
-  typedef elem::DistMatrix < double, elem::MC, elem::MR > elem_matrix;
+  typedef El::DistMatrix < double, El::DistNS::MC, El::DistNS::MR > elem_matrix;
 
   typedef elem_matrix mpi_matrix;
 
@@ -90,8 +90,8 @@ namespace harp {
 
     elem_matrix_local local ( in.Height(), 1 );
 
-    elem::AxpyInterface < double > globloc;
-    globloc.Attach( elem::GLOBAL_TO_LOCAL, in );
+    El::AxpyInterface < double > globloc;
+    globloc.Attach( El::GLOBAL_TO_LOCAL, in );
     globloc.Axpy ( 1.0, local, 0, 0 );
     globloc.Detach();
 

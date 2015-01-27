@@ -21,7 +21,7 @@ void harp::test_invcov ( string const & datadir ) {
   MPI_Comm_size ( MPI_COMM_WORLD, &np );
   MPI_Comm_rank ( MPI_COMM_WORLD, &myp );
 
-  elem::Grid grid ( elem::mpi::COMM_WORLD );
+  El::Grid grid ( El::mpi::COMM_WORLD );
 
   if ( myp == 0 ) {
     cerr << "Testing inverse covariance construction..." << endl;
@@ -32,7 +32,7 @@ void harp::test_invcov ( string const & datadir ) {
   
   // construct random sparse matrix
 
-  matrix_sparse AT ( SIGSIZE, DATASIZE, elem::mpi::COMM_WORLD );
+  matrix_sparse AT ( SIGSIZE, DATASIZE, El::mpi::COMM_WORLD );
 
   matrix_local compAT ( SIGSIZE, DATASIZE );
   local_matrix_zero ( compAT );
@@ -126,10 +126,10 @@ void harp::test_invcov ( string const & datadir ) {
 
   }
 
-  elem::Gemm ( elem::NORMAL, elem::TRANSPOSE, 1.0, compATN, compAT, 0.0, compinv );
+  El::Gemm ( El::NORMAL, El::TRANSPOSE, 1.0, compATN, compAT, 0.0, compinv );
 
   if ( myp == 0 ) {
-    elem::Print ( compinv, "Serial inverse covariance" );
+    El::Print ( compinv, "Serial inverse covariance" );
   }
 
   // parallel implementation
@@ -138,15 +138,15 @@ void harp::test_invcov ( string const & datadir ) {
 
   inverse_covariance ( AT, invpix, inv );
 
-  elem::Print ( inv, "MPI inverse covariance" );
+  El::Print ( inv, "MPI inverse covariance" );
 
   // compare results in lower triangle
 
   matrix_local local_inv ( SIGSIZE, SIGSIZE );
   local_matrix_zero ( local_inv );
 
-  elem::AxpyInterface < double > globloc;
-  globloc.Attach( elem::GLOBAL_TO_LOCAL, inv );
+  El::AxpyInterface < double > globloc;
+  globloc.Attach( El::GLOBAL_TO_LOCAL, inv );
   globloc.Axpy ( 1.0, local_inv, 0, 0 );
   globloc.Detach();
 
@@ -174,7 +174,7 @@ void harp::test_invcov ( string const & datadir ) {
   matrix_dist sq ( SIGSIZE, SIGSIZE, grid );
   eigen_compose ( EIG_SQRT, D, W, sq );
 
-  elem::Print ( sq, "sqrt of invcov" );
+  El::Print ( sq, "sqrt of invcov" );
 
   matrix_dist Rdirect ( sq );
   matrix_dist R ( SIGSIZE, SIGSIZE, grid );
@@ -182,15 +182,15 @@ void harp::test_invcov ( string const & datadir ) {
 
   norm ( D, W, S );
 
-  elem::Print ( S, "column norm from eigen decomposition" );
+  El::Print ( S, "column norm from eigen decomposition" );
 
   apply_norm ( S, Rdirect );
 
-  elem::Print ( Rdirect, "direct resolution matrix" );
+  El::Print ( Rdirect, "direct resolution matrix" );
 
   resolution ( D, W, S, R );
 
-  elem::Print ( R, "resolution matrix" );
+  El::Print ( R, "resolution matrix" );
 
   matrix_dist f ( SIGSIZE, 1, grid );
 
@@ -200,7 +200,7 @@ void harp::test_invcov ( string const & datadir ) {
 
   matrix_dist Rtruth ( SIGSIZE, 1, grid );
 
-  elem::Gemv ( elem::NORMAL, 1.0, R, truth, 0.0, Rtruth );
+  El::Gemv ( El::NORMAL, 1.0, R, truth, 0.0, Rtruth );
 
   for ( size_t i = 0; i < SIGSIZE; ++i ) {
     double tr = truth.Get ( i, 0 );

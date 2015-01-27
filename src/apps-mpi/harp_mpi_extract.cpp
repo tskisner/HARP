@@ -26,7 +26,7 @@ namespace popts = boost::program_options;
 
 int main ( int argc, char *argv[] ) {
 
-  elem::Initialize ( argc, argv );
+  El::Initialize ( argc, argv );
 
   boost::mpi::environment env;
 
@@ -64,7 +64,7 @@ int main ( int argc, char *argv[] ) {
   int np = comm.size();
   int myp = comm.rank();
 
-  elem::Grid grid ( elem::mpi::COMM_WORLD );
+  El::Grid grid ( El::mpi::COMM_WORLD );
   
   // Declare options
   
@@ -95,7 +95,7 @@ int main ( int argc, char *argv[] ) {
       cerr << endl;
       cerr << desc << endl;
     }
-    elem::Finalize();
+    El::Finalize();
     return 0;
   }
   
@@ -136,7 +136,7 @@ int main ( int argc, char *argv[] ) {
 
   boost::mpi::communicator gcomm = comm.split ( gang, grank );
 
-  elem::Grid gang_grid ( (MPI_Comm)gcomm );
+  El::Grid gang_grid ( (MPI_Comm)gcomm );
 
   // inter-gang communicator
 
@@ -479,9 +479,9 @@ int main ( int argc, char *argv[] ) {
   elem_matrix_local loc_f;
   elem_matrix_local loc_err;
 
-  elem::AxpyInterface < double > globloc;
+  El::AxpyInterface < double > globloc;
 
-  globloc.Attach( elem::GLOBAL_TO_LOCAL, data_Rtruth );
+  globloc.Attach( El::GLOBAL_TO_LOCAL, data_Rtruth );
   if ( myp == 0 ) {
     loc_Rtruth.Resize ( data_Rtruth.Height(), 1 );
     local_matrix_zero ( loc_Rtruth );
@@ -489,7 +489,7 @@ int main ( int argc, char *argv[] ) {
   }
   globloc.Detach();
 
-  globloc.Attach( elem::GLOBAL_TO_LOCAL, data_truth );
+  globloc.Attach( El::GLOBAL_TO_LOCAL, data_truth );
   if ( myp == 0 ) {
     loc_truth.Resize ( data_truth.Height(), 1 );
     local_matrix_zero ( loc_truth );
@@ -497,7 +497,7 @@ int main ( int argc, char *argv[] ) {
   }
   globloc.Detach();
 
-  globloc.Attach( elem::GLOBAL_TO_LOCAL, data_Rf );
+  globloc.Attach( El::GLOBAL_TO_LOCAL, data_Rf );
   if ( myp == 0 ) {
     loc_Rf.Resize ( data_Rf.Height(), 1 );
     local_matrix_zero ( loc_Rf );
@@ -505,7 +505,7 @@ int main ( int argc, char *argv[] ) {
   }
   globloc.Detach();
 
-  globloc.Attach( elem::GLOBAL_TO_LOCAL, data_f );
+  globloc.Attach( El::GLOBAL_TO_LOCAL, data_f );
   if ( myp == 0 ) {
     loc_f.Resize ( data_f.Height(), 1 );
     local_matrix_zero ( loc_f );
@@ -513,7 +513,7 @@ int main ( int argc, char *argv[] ) {
   }
   globloc.Detach();
 
-  globloc.Attach( elem::GLOBAL_TO_LOCAL, data_err );
+  globloc.Attach( El::GLOBAL_TO_LOCAL, data_err );
   if ( myp == 0 ) {
     loc_err.Resize ( data_err.Height(), 1 );
     local_matrix_zero ( loc_err );
@@ -703,7 +703,7 @@ int main ( int argc, char *argv[] ) {
     cout << prefix << "Total run time = " << global_stop-global_start << " seconds" << endl;
   }
 
-  elem::Finalize();
+  El::Finalize();
 
   return 0;
 }
