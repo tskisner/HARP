@@ -21,7 +21,7 @@ void harp::mpi_test_linalg ( string const & datadir ) {
   int np = comm.size();
   int myp = comm.rank();
 
-  elem::Grid grid ( comm );
+  elem::Grid grid ( elem::mpi::Comm ( comm ) );
 
 
   typedef boost::ecuyer1988 base_generator_type;
