@@ -26,6 +26,8 @@ namespace harp {
       std::vector < object_p > objects ( ) const;
 
       std::string type ( ) const;
+
+      targets_p local ();
       
     private :
 

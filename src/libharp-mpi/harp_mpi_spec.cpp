@@ -75,5 +75,8 @@ std::string harp::mpi_spec::type ( ) const {
 }
 
 
+spec_p harp::mpi_spec::local ( ) {
+  return local_;
+}
 
 

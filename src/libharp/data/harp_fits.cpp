@@ -500,6 +500,11 @@ boost::property_tree::ptree harp::fits::key_read_all ( fitsfile * fp ) {
     ret = fits_read_keyn ( fp, i+1, keyname, keyval, keycom, &status );
     fits::check ( status );
 
+    string keycheck = keyname;
+    if ( key_exclude( keycheck ) ) {
+      continue;
+    }
+
     ret = fits_get_keytype ( keyval, &dtype, &status );
     if ( status != 0 ) {
       // cannot detect type- must be an empty string
@@ -583,6 +588,116 @@ void harp::fits::key_write_all ( fitsfile * fp, boost::property_tree::ptree cons
     }
 
     ++v;
+  }
+
+  return;
+}
+
+
+void harp::fits::key_parse ( boost::property_tree::ptree const & keys, std::string const & name, std::string & val ) {
+
+  boost::property_tree::ptree child = keys.get_child ( name );
+
+  if ( child.get < string > ("TYPE") != "C" ) {
+    ostringstream o;
+    o << "cannot get string value for key \"" << name << "\", which is not a string type";
+    HARP_THROW( o.str().c_str() );
+  }
+
+  val = child.get < string > ("VAL");
+
+  return;
+}
+
+
+void harp::fits::key_parse ( boost::property_tree::ptree const & keys, std::string const & name, bool & val ) {
+
+  boost::property_tree::ptree child = keys.get_child ( name );
+
+  if ( child.get < string > ("TYPE") != "L" ) {
+    ostringstream o;
+    o << "cannot get bool value for key \"" << name << "\", which is not a logical type";
+    HARP_THROW( o.str().c_str() );
+  }
+
+  val = child.get < bool > ("VAL");
+
+  return;
+}
+
+
+void harp::fits::key_parse ( boost::property_tree::ptree const & keys, std::string const & name, long long int & val ) {
+
+  boost::property_tree::ptree child = keys.get_child ( name );
+
+  if ( child.get < string > ("TYPE") != "I" ) {
+    ostringstream o;
+    o << "cannot get long long int value for key \"" << name << "\", which is not an integer type";
+    HARP_THROW( o.str().c_str() );
+  }
+
+  val = child.get < long long int > ("VAL");
+
+  return;
+}
+
+
+void harp::fits::key_parse ( boost::property_tree::ptree const & keys, std::string const & name, int & val ) {
+
+  boost::property_tree::ptree child = keys.get_child ( name );
+
+  if ( child.get < string > ("TYPE") != "I" ) {
+    ostringstream o;
+    o << "cannot get int value for key \"" << name << "\", which is not an integer type";
+    HARP_THROW( o.str().c_str() );
+  }
+
+  val = child.get < int > ("VAL");
+
+  return;
+}
+
+
+void harp::fits::key_parse ( boost::property_tree::ptree const & keys, std::string const & name, double & val ) {
+
+  boost::property_tree::ptree child = keys.get_child ( name );
+
+  if ( child.get < string > ("TYPE") != "F" ) {
+    ostringstream o;
+    o << "cannot get double value for key \"" << name << "\", which is not a double type";
+    HARP_THROW( o.str().c_str() );
+  }
+
+  val = child.get < double > ("VAL");
+
+  return;
+}
+
+
+void harp::fits::key_parse ( boost::property_tree::ptree const & keys, std::string const & name, float & val ) {
+
+  boost::property_tree::ptree child = keys.get_child ( name );
+
+  if ( child.get < string > ("TYPE") != "F" ) {
+    ostringstream o;
+    o << "cannot get float value for key \"" << name << "\", which is not a double type";
+    HARP_THROW( o.str().c_str() );
+  }
+
+  val = child.get < float > ("VAL");
+
+  return;
+}
+
+
+void harp::fits::key_require ( boost::property_tree::ptree const & keys, std::string const & name, std::string const & type ) {
+
+  boost::property_tree::ptree child = keys.get_child ( name );
+
+  if ( child.get < string > ("TYPE") != type ) {
+    ostringstream o;
+    o << "key \"" << name << "\" has type \"" << child.get < string > ("TYPE") << "\", rather than required type \"" << type << "\"";
+    HARP_THROW( o.str().c_str() );
   }
 
   return;

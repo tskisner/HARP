@@ -159,6 +159,8 @@ namespace harp {
 
       // desi-specific
 
+      boost::property_tree::ptree meta () const;
+
       float crval;
       float cdelt;
       std::string airorvac;
@@ -181,6 +183,7 @@ namespace harp {
         ar & BOOST_SERIALIZATION_NVP(nlambda_);
         ar & BOOST_SERIALIZATION_NVP(nglobal_);
         ar & BOOST_SERIALIZATION_NVP(path_);
+        ar & BOOST_SERIALIZATION_NVP(meta_);
         ar & BOOST_SERIALIZATION_NVP(spechdu_);
         ar & BOOST_SERIALIZATION_NVP(invvarhdu_);
         ar & BOOST_SERIALIZATION_NVP(lambdahdu_);
@@ -199,6 +202,7 @@ namespace harp {
         return;
       }
     
+      boost::property_tree::ptree meta_;
       size_t nspec_;
       size_t nlambda_;
       size_t nglobal_;
@@ -212,6 +216,75 @@ namespace harp {
   BOOST_SERIALIZATION_SHARED_PTR(spec_desi)
 
   spec * spec_desi_create ( boost::property_tree::ptree const & props );
+
+
+  class spec_desisim : public spec {
+
+    friend class boost::serialization::access;
+    
+    public :
+
+      spec_desisim ( );
+
+      spec_desisim ( boost::property_tree::ptree const & props );
+      
+      ~spec_desisim ( );
+
+      // overloaded virtual methods from base class
+      
+      size_t n_spec ( ) const;
+
+      size_t n_lambda ( ) const;
+
+      void values ( vector_double & data ) const;
+
+      void inv_variance ( vector_double & data ) const;
+
+      void lambda ( vector_double & lambda_vals ) const;
+
+      // desi-specific
+
+      boost::property_tree::ptree meta () const;
+
+      void sky ( vector_double & data ) const;
+
+      float crval;
+      float cdelt;
+      std::string airorvac;
+      int loglam;
+
+    private :
+
+      template < class Archive >
+      void serialize ( Archive & ar, const unsigned int version ) {
+        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(spec);
+        ar & BOOST_SERIALIZATION_NVP(nspec_);
+        ar & BOOST_SERIALIZATION_NVP(nlambda_);
+        ar & BOOST_SERIALIZATION_NVP(nglobal_);
+        ar & BOOST_SERIALIZATION_NVP(path_);
+        ar & BOOST_SERIALIZATION_NVP(meta_);
+        ar & BOOST_SERIALIZATION_NVP(objhdu_);
+        ar & BOOST_SERIALIZATION_NVP(skyhdu_);
+        ar & BOOST_SERIALIZATION_NVP(crval);
+        ar & BOOST_SERIALIZATION_NVP(cdelt);
+        ar & BOOST_SERIALIZATION_NVP(airorvac);
+        ar & BOOST_SERIALIZATION_NVP(loglam);
+        return;
+      }
+    
+      boost::property_tree::ptree meta_;
+      size_t nspec_;
+      size_t nlambda_;
+      size_t nglobal_;
+      std::string path_;
+      int objhdu_;
+      int skyhdu_;
+    
+  };
+
+  BOOST_SERIALIZATION_SHARED_PTR(spec_desisim)
+
+  spec * spec_desisim_create ( boost::property_tree::ptree const & props );
 
 }
 

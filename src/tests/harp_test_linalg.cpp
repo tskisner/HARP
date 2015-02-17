@@ -49,7 +49,7 @@ void harp::test_linalg ( string const & datadir ) {
   boost::numeric::bindings::blas::gemv ( 1.0, mat, input, 0.0, output );
 
   for ( size_t i = 0; i < dim; ++i ) {
-    if ( fabs ( ( output[i] - check[i] ) / check[i] ) > std::numeric_limits < double > :: epsilon() ) {
+    if ( fabs ( ( output[i] - check[i] ) / check[i] ) > std::numeric_limits < float > :: epsilon() ) {
       cerr << "FAIL:  blas::gemv output element " << i << " is wrong (" << output[i]
  << " != " << check[i] << ")" << endl;
       exit(1);

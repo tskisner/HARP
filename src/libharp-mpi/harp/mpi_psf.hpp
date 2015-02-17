@@ -44,6 +44,8 @@ namespace harp {
       void project_transpose ( mpi_matrix_sparse & AT ) const;
       
       std::string type ( ) const;
+
+      psf_p local ();
       
     private :
     

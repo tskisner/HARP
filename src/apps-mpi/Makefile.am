@@ -13,7 +13,7 @@ include $(top_srcdir)/src/build_options_mpi.am
 
 bin_SCRIPTS =
 
-bin_PROGRAMS = harp_mpi_extract
+bin_PROGRAMS = harp_mpi_extract harp_mpi_desi
 
 BUILT_SOURCES =
 
@@ -21,4 +21,7 @@ CLEANFILES =
 
 harp_mpi_extract_SOURCES = harp_mpi_extract.cpp
 harp_mpi_extract_LDADD = $(AM_LIBS)
+
+harp_mpi_desi_SOURCES = harp_mpi_desi.cpp
+harp_mpi_desi_LDADD = $(AM_LIBS)
 

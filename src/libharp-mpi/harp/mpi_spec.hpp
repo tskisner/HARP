@@ -32,6 +32,8 @@ namespace harp {
       void lambda ( vector_double & lambda ) const;
 
       std::string type ( ) const;
+
+      spec_p local ();
       
     private :
 

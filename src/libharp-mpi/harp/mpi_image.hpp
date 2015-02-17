@@ -37,7 +37,13 @@ namespace harp {
 
       void inv_variance ( elem_matrix_local & invvar ) const;
 
+      void mask ( vector_mask & msk ) const;
+
+      void mask ( matrix_mask & msk ) const;
+
       std::string type ( ) const;
+
+      image_p local ();
       
     private :
     

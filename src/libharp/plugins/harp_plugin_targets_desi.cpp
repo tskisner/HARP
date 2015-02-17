@@ -92,8 +92,8 @@ harp::targets_desi::targets_desi ( ) : targets () {
   hdu_ = 1;
   path_ = "";
   tileid = -1;
-  tilera = -1.0;
-  tiledec = -1.0;
+  telera = -1.0;
+  teledec = -1.0;
   expid = -1;
   night = "";
   vdmodel = "";
@@ -120,35 +120,37 @@ harp::targets_desi::targets_desi ( boost::property_tree::ptree const & props ) :
 
   // read keywords
 
-  fits::key_read ( fp, string(targets_desi_key_tileid), tileid );
+  meta_ = fits::key_read_all ( fp );
 
-  fits::key_read ( fp, string(targets_desi_key_telera), tilera );
+  fits::key_parse ( meta_, targets_desi_key_tileid, tileid );
 
-  fits::key_read ( fp, string(targets_desi_key_teledec), tiledec );
+  fits::key_parse ( meta_, targets_desi_key_telera, telera );
 
-  fits::key_read ( fp, string(targets_desi_key_expid), expid );
+  fits::key_parse ( meta_, targets_desi_key_teledec, teledec );
 
-  fits::key_read ( fp, string(targets_desi_key_night), night );
+  fits::key_parse ( meta_, targets_desi_key_expid, expid );
 
-  fits::key_read ( fp, string(targets_desi_key_vdmodel), vdmodel );
+  fits::key_parse ( meta_, targets_desi_key_night, night );
 
-  fits::key_read ( fp, string(targets_desi_key_voptics), voptics );
+  fits::key_parse ( meta_, targets_desi_key_vdmodel, vdmodel );
 
-  fits::key_read ( fp, string(targets_desi_key_vfibvcam), vfibvcam );
+  fits::key_parse ( meta_, targets_desi_key_voptics, voptics );
 
-  fits::key_read ( fp, string(targets_desi_key_hexpdrot), hexpdrot );
+  fits::key_parse ( meta_, targets_desi_key_vfibvcam, vfibvcam );
 
-  fits::key_read ( fp, string(targets_desi_key_dateobs), dateobs );
+  fits::key_parse ( meta_, targets_desi_key_hexpdrot, hexpdrot );
+
+  fits::key_parse ( meta_, targets_desi_key_dateobs, dateobs );
+
 
   // read table and populate object list
 
   vector < string > fnames;
   fits::bin_info ( fp, nobjects_, fnames );
 
-  vector < string > cols = colnames();
+  vector < string > cnames = colnames();
 
-  vector < int > colidx;
-  colidx = fits::bin_columns ( fp, cols );
+  vector < int > colidx = fits::bin_columns ( fp, cnames );
 
   // get optimal number of rows to process at once
 
@@ -156,6 +158,8 @@ harp::targets_desi::targets_desi ( boost::property_tree::ptree const & props ) :
   long optimal;
   int ret = fits_get_rowsize ( fp, &optimal, &status );
   fits::check ( status );
+
+  //cerr << "target optimal rows = " << optimal << endl;
 
   // read data in buffered way
 
@@ -219,69 +223,71 @@ harp::targets_desi::targets_desi ( boost::property_tree::ptree const & props ) :
         }
       }
 
-      ret = fits_read_col_str ( fp, colidx[0], offset + 1, 1, n, empty, objstr, &anynul, &status );
+      //cerr << "ctor reading rows " << offset << " - " << offset + n - 1 << endl;
+
+      ret = fits_read_col_str ( fp, 1 + colidx[0], offset + 1, 1, n, empty, objstr, &anynul, &status );
       fits::check ( status );
 
-      ret = fits_read_col_str ( fp, colidx[1], offset + 1, 1, n, empty, targetcat, &anynul, &status );
+      ret = fits_read_col_str ( fp, 1 + colidx[1], offset + 1, 1, n, empty, targetcat, &anynul, &status );
       fits::check ( status );
 
-      ret = fits_read_col_lnglng ( fp, colidx[2], offset + 1, 1, n, 0, targetid, &anynul, &status );
+      ret = fits_read_col_lnglng ( fp, 1 + colidx[2], offset + 1, 1, n, 0, targetid, &anynul, &status );
       fits::check ( status );
 
-      ret = fits_read_col_lnglng ( fp, colidx[3], offset + 1, 1, n, 0, targetmask, &anynul, &status );
+      ret = fits_read_col_lnglng ( fp, 1 + colidx[3], offset + 1, 1, n, 0, targetmask, &anynul, &status );
       fits::check ( status );
 
-      ret = fits_read_col_flt ( fp, colidx[4], offset + 1, 1, n, 0, mag, &anynul, &status );
+      ret = fits_read_col_flt ( fp, 1 + colidx[4], offset + 1, 1, 5*n, 0, mag, &anynul, &status );
       fits::check ( status );
 
-      ret = fits_read_col_str ( fp, colidx[5], offset + 1, 1, n, empty, filter, &anynul, &status );
+      ret = fits_read_col_str ( fp, 1 + colidx[5], offset + 1, 1, n, empty, filter, &anynul, &status );
       fits::check ( status );
 
-      ret = fits_read_col_lnglng ( fp, colidx[6], offset + 1, 1, n, 0, spectroid, &anynul, &status );
+      ret = fits_read_col_lnglng ( fp, 1 + colidx[6], offset + 1, 1, n, 0, spectroid, &anynul, &status );
       fits::check ( status );
 
-      ret = fits_read_col_lnglng ( fp, colidx[7], offset + 1, 1, n, 0, positioner, &anynul, &status );
+      ret = fits_read_col_lnglng ( fp, 1 + colidx[7], offset + 1, 1, n, 0, positioner, &anynul, &status );
       fits::check ( status );
 
-      ret = fits_read_col_int ( fp, colidx[8], offset + 1, 1, n, 0, fiber, &anynul, &status );
+      ret = fits_read_col_int ( fp, 1 + colidx[8], offset + 1, 1, n, 0, fiber, &anynul, &status );
       fits::check ( status );
 
-      ret = fits_read_col_flt ( fp, colidx[9], offset + 1, 1, n, 0, lambdaref, &anynul, &status );
+      ret = fits_read_col_flt ( fp, 1 + colidx[9], offset + 1, 1, n, 0, lambdaref, &anynul, &status );
       fits::check ( status );
 
-      ret = fits_read_col_dbl ( fp, colidx[10], offset + 1, 1, n, 0, ra_target, &anynul, &status );
+      ret = fits_read_col_dbl ( fp, 1 + colidx[10], offset + 1, 1, n, 0, ra_target, &anynul, &status );
       fits::check ( status );
 
-      ret = fits_read_col_dbl ( fp, colidx[11], offset + 1, 1, n, 0, dec_target, &anynul, &status );
+      ret = fits_read_col_dbl ( fp, 1 + colidx[11], offset + 1, 1, n, 0, dec_target, &anynul, &status );
       fits::check ( status );
 
-      ret = fits_read_col_dbl ( fp, colidx[12], offset + 1, 1, n, 0, ra_obs, &anynul, &status );
+      ret = fits_read_col_dbl ( fp, 1 + colidx[12], offset + 1, 1, n, 0, ra_obs, &anynul, &status );
       fits::check ( status );
 
-      ret = fits_read_col_dbl ( fp, colidx[13], offset + 1, 1, n, 0, dec_obs, &anynul, &status );
+      ret = fits_read_col_dbl ( fp, 1 + colidx[13], offset + 1, 1, n, 0, dec_obs, &anynul, &status );
       fits::check ( status );
 
-      ret = fits_read_col_dbl ( fp, colidx[14], offset + 1, 1, n, 0, x_target, &anynul, &status );
+      ret = fits_read_col_dbl ( fp, 1 + colidx[14], offset + 1, 1, n, 0, x_target, &anynul, &status );
       fits::check ( status );
 
-      ret = fits_read_col_dbl ( fp, colidx[15], offset + 1, 1, n, 0, y_target, &anynul, &status );
+      ret = fits_read_col_dbl ( fp, 1 + colidx[15], offset + 1, 1, n, 0, y_target, &anynul, &status );
       fits::check ( status );
 
-      ret = fits_read_col_dbl ( fp, colidx[16], offset + 1, 1, n, 0, x_fvcobs, &anynul, &status );
+      ret = fits_read_col_dbl ( fp, 1 + colidx[16], offset + 1, 1, n, 0, x_fvcobs, &anynul, &status );
       fits::check ( status );
 
-      ret = fits_read_col_dbl ( fp, colidx[17], offset + 1, 1, n, 0, y_fvcobs, &anynul, &status );
+      ret = fits_read_col_dbl ( fp, 1 + colidx[17], offset + 1, 1, n, 0, y_fvcobs, &anynul, &status );
       fits::check ( status );
 
-      ret = fits_read_col_flt ( fp, colidx[18], offset + 1, 1, n, 0, x_fvcerr, &anynul, &status );
+      ret = fits_read_col_flt ( fp, 1 + colidx[18], offset + 1, 1, n, 0, x_fvcerr, &anynul, &status );
       fits::check ( status );
 
-      ret = fits_read_col_flt ( fp, colidx[19], offset + 1, 1, n, 0, y_fvcerr, &anynul, &status );
+      ret = fits_read_col_flt ( fp, 1 + colidx[19], offset + 1, 1, n, 0, y_fvcerr, &anynul, &status );
       fits::check ( status );
 
       for ( size_t i = 0; i < n; ++i ) {
 
-        object_desi_p obj ( new object_desi ( desi2harp ( objstr[i] ),
+        objects_.push_back ( object_desi_p ( new object_desi ( desi2harp ( objstr[i] ),
           targetcat[i],
           targetid[i],
           targetmask[i],
@@ -300,9 +306,24 @@ harp::targets_desi::targets_desi ( boost::property_tree::ptree const & props ) :
           x_fvcobs[i],
           y_fvcobs[i],
           x_fvcerr[i],
-          y_fvcerr[i] ) );
+          y_fvcerr[i] ) ) );
 
-        objects_.push_back ( boost::dynamic_pointer_cast < object_desi, object > ( obj->shared_from_this() ) );
+        /*
+        cerr << offset + i << " : " << endl;
+        cerr << "  " << targetcat[i] << endl;
+        cerr << "  " << targetid[i] << endl;
+        cerr << "  " << targetmask[i] << endl;
+        cerr << "  mag = " << endl;
+        cerr << "   " << mag[5*i+0] << endl;
+        cerr << "   " << mag[5*i+1] << endl;
+        cerr << "   " << mag[5*i+2] << endl;
+        cerr << "   " << mag[5*i+3] << endl;
+        cerr << "   " << mag[5*i+4] << endl;
+        cerr << "  " << filter[i] << endl;
+        cerr << "  " << spectroid[i] << endl;
+        cerr << "  " << positioner[i] << endl;
+        cerr << "  " << fiber[i] << endl;
+        */
 
       }
 
@@ -336,9 +357,14 @@ size_t harp::targets_desi::n_objects ( ) const {
 vector < object_p > harp::targets_desi::objects ( ) const {
   vector < object_p > temp;
   for ( vector < object_desi_p > :: const_iterator it = objects_.begin(); it != objects_.end(); ++it ) {
-    //temp.push_back ( (*it)-> )
+    temp.push_back ( boost::dynamic_pointer_cast < object_desi, object > ( *it ) );
   }
   return temp;
+}
+
+
+boost::property_tree::ptree harp::targets_desi::meta () const {
+  return meta_;
 }
 
 
@@ -399,93 +425,95 @@ void harp::targets_desi::write ( std::string const & path, boost::property_tree:
   types[11] = "1D";   //DEC_TARGET
   units[11] = "None";
 
-  types[0] = "1D";   //RA_OBS
-  units[0] = "None";
+  types[12] = "1D";   //RA_OBS
+  units[12] = "None";
 
-  types[0] = "1D";   //DEC_OBS
-  units[0] = "None";
+  types[13] = "1D";   //DEC_OBS
+  units[13] = "None";
 
-  types[0] = "1D";   //X_TARGET
-  units[0] = "None";
+  types[14] = "1D";   //X_TARGET
+  units[14] = "None";
 
-  types[0] = "1D";   //Y_TARGET
-  units[0] = "None";
+  types[15] = "1D";   //Y_TARGET
+  units[15] = "None";
 
-  types[0] = "1D";   //X_FVCOBS
-  units[0] = "None";
+  types[16] = "1D";   //X_FVCOBS
+  units[16] = "None";
 
-  types[0] = "1D";   //Y_FVCOBS
-  units[0] = "None";
+  types[17] = "1D";   //Y_FVCOBS
+  units[17] = "None";
 
-  types[0] = "1E";   //Y_FVCERR
-  units[0] = "None";
+  types[18] = "1E";   //Y_FVCERR
+  units[18] = "None";
 
-  types[0] = "1E";   //X_FVCERR
-  units[0] = "None";
+  types[19] = "1E";   //X_FVCERR
+  units[19] = "None";
 
   fits::bin_create ( fp, string("FIBERMAP"), objects.size(), names, types, units );
 
-  // write keywords
+  // check required keywords and write
 
   if ( meta.count ( targets_desi_key_tileid ) ) {
-    fits::key_write ( fp, targets_desi_key_tileid, meta.get < int > ( targets_desi_key_tileid ), "Tile ID" );
+    fits::key_require ( meta, targets_desi_key_tileid, "I" );
   } else {
     HARP_THROW( "you must specify the Tile ID" );
   }
 
   if ( meta.count ( targets_desi_key_telera ) ) {
-    fits::key_write ( fp, targets_desi_key_telera, meta.get < float > ( targets_desi_key_telera ), "Telescope central RA [deg]" );
+    fits::key_require ( meta, targets_desi_key_telera, "F" );
   } else {
     HARP_THROW( "you must specify the telescope RA" );
   }
 
   if ( meta.count ( targets_desi_key_teledec ) ) {
-    fits::key_write ( fp, targets_desi_key_teledec, meta.get < float > ( targets_desi_key_teledec ), "Telescope central dec [deg]" );
+    fits::key_require ( meta, targets_desi_key_teledec, "F" );
   } else {
     HARP_THROW( "you must specify the telescope DEC" );
   }
 
   if ( meta.count ( targets_desi_key_expid ) ) {
-    fits::key_write ( fp, targets_desi_key_expid, meta.get < int > ( targets_desi_key_expid ), "Exposure number" );
+    fits::key_require ( meta, targets_desi_key_expid, "I" );
   } else {
     HARP_THROW( "you must specify the exposure number" );
   }
 
   if ( meta.count ( targets_desi_key_night ) ) {
-    fits::key_write ( fp, targets_desi_key_night, meta.get < string > ( targets_desi_key_night ), "Night YEARMMDD" );
+    fits::key_require ( meta, targets_desi_key_night, "C" );
   } else {
     HARP_THROW( "you must specify the night" );
   }
 
   if ( meta.count ( targets_desi_key_vdmodel ) ) {
-    fits::key_write ( fp, targets_desi_key_vdmodel, meta.get < string > ( targets_desi_key_vdmodel ), "desimodel version" );
+    fits::key_require ( meta, targets_desi_key_vdmodel, "C" );
   } else {
     HARP_THROW( "you must specify the desimodel version" );
   }
 
   if ( meta.count ( targets_desi_key_voptics ) ) {
-    fits::key_write ( fp, targets_desi_key_voptics, meta.get < string > ( targets_desi_key_voptics ), "optics model version" );
+    fits::key_require ( meta, targets_desi_key_voptics, "C" );
   } else {
     HARP_THROW( "you must specify the optics model version" );
   }
 
   if ( meta.count ( targets_desi_key_vfibvcam ) ) {
-    fits::key_write ( fp, targets_desi_key_vfibvcam, meta.get < string > ( targets_desi_key_vfibvcam ), "fiber view code version" );
+    fits::key_require ( meta, targets_desi_key_vfibvcam, "C" );
   } else {
     HARP_THROW( "you must specify the fiber view code version" );
   }
 
   if ( meta.count ( targets_desi_key_hexpdrot ) ) {
-    fits::key_write ( fp, targets_desi_key_hexpdrot, meta.get < float > ( targets_desi_key_hexpdrot ), "hexapod rotation [deg]" );
+    fits::key_require ( meta, targets_desi_key_hexpdrot, "F" );
   } else {
     HARP_THROW( "you must specify the hexapod rotation angle" );
   }
 
   if ( meta.count ( targets_desi_key_dateobs ) ) {
-    fits::key_write ( fp, targets_desi_key_dateobs, meta.get < string > ( targets_desi_key_dateobs ), "Date of observation in UTC" );
+    fits::key_require ( meta, targets_desi_key_dateobs, "C" );
   } else {
     HARP_THROW( "you must specify the date of observation" );
   }
+
+  fits::key_write_all ( fp, meta );
 
   // write data
 
@@ -554,44 +582,46 @@ void harp::targets_desi::write ( std::string const & path, boost::property_tree:
 
       for ( size_t i = 0; i < n; ++i ) {
 
-        strncpy ( objstr[i], harp2desi( objects[i]->type() ).c_str(), 10 );
-        strncpy ( targetcat[i], objects[i]->targetcat.c_str(), 20 );
+        strncpy ( objstr[i], harp2desi( objects[offset+i]->type() ).c_str(), 10 );
+        strncpy ( targetcat[i], objects[offset+i]->targetcat.c_str(), 20 );
 
-        targetid[i] = objects[i]->targetid;
-        targetmask[i] = objects[i]->targetmask;
+        targetid[i] = objects[offset+i]->targetid;
+        targetmask[i] = objects[offset+i]->targetmask;
 
-        mag[ 5*i ] = objects[i]->mag[0];
-        mag[ 5*i + 1 ] = objects[i]->mag[1];
-        mag[ 5*i + 2 ] = objects[i]->mag[2];
-        mag[ 5*i + 3 ] = objects[i]->mag[3];
-        mag[ 5*i + 4 ] = objects[i]->mag[4];
+        mag[ 5*i ] = objects[offset+i]->mag[0];
+        mag[ 5*i + 1 ] = objects[offset+i]->mag[1];
+        mag[ 5*i + 2 ] = objects[offset+i]->mag[2];
+        mag[ 5*i + 3 ] = objects[offset+i]->mag[3];
+        mag[ 5*i + 4 ] = objects[offset+i]->mag[4];
 
-        strncpy ( filter[i], objects[i]->filter.c_str(), 50 );
+        strncpy ( filter[i], objects[offset+i]->filter.c_str(), 50 );
 
-        spectroid[i] = objects[i]->spectroid;
+        spectroid[i] = objects[offset+i]->spectroid;
 
-        positioner[i] = objects[i]->positioner;
+        positioner[i] = objects[offset+i]->positioner;
 
-        fiber[i] = objects[i]->fiber;
+        fiber[i] = objects[offset+i]->fiber;
 
-        lambdaref[i] = objects[i]->lambdaref;
+        lambdaref[i] = objects[offset+i]->lambdaref;
 
-        ra_target[i] = objects[i]->ra_target;
-        dec_target[i] = objects[i]->dec_target;
+        ra_target[i] = objects[offset+i]->ra_target;
+        dec_target[i] = objects[offset+i]->dec_target;
 
-        ra_obs[i] = objects[i]->ra_obs;
-        dec_obs[i] = objects[i]->dec_obs;
+        ra_obs[i] = objects[offset+i]->ra_obs;
+        dec_obs[i] = objects[offset+i]->dec_obs;
 
-        x_target[i] = objects[i]->x_target;
-        y_target[i] = objects[i]->y_target;
+        x_target[i] = objects[offset+i]->x_target;
+        y_target[i] = objects[offset+i]->y_target;
 
-        x_fvcobs[i] = objects[i]->x_fvcobs;
-        y_fvcobs[i] = objects[i]->y_fvcobs;
+        x_fvcobs[i] = objects[offset+i]->x_fvcobs;
+        y_fvcobs[i] = objects[offset+i]->y_fvcobs;
 
-        x_fvcerr[i] = objects[i]->x_fvcerr;
-        y_fvcerr[i] = objects[i]->y_fvcerr;
+        x_fvcerr[i] = objects[offset+i]->x_fvcerr;
+        y_fvcerr[i] = objects[offset+i]->y_fvcerr;
 
       }
+
+      //cerr << "writing rows " << offset << " - " << offset + n - 1 << endl;
 
       ret = fits_write_col_str ( fp, 1, offset + 1, 1, n, objstr, &status );
       fits::check ( status );
@@ -605,7 +635,7 @@ void harp::targets_desi::write ( std::string const & path, boost::property_tree:
       ret = fits_write_col_lnglng ( fp, 4, offset + 1, 1, n, targetmask, &status );
       fits::check ( status );
 
-      ret = fits_write_col_flt ( fp, 5, offset + 1, 1, n, mag, &status );
+      ret = fits_write_col_flt ( fp, 5, offset + 1, 1, 5*n, mag, &status );
       fits::check ( status );
 
       ret = fits_write_col_str ( fp, 6, offset + 1, 1, n, filter, &status );

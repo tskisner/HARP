@@ -28,6 +28,8 @@ namespace harp {
 
   void test_image_simfits ( std::string const & datadir );
 
+  void test_desi ( std::string const & datadir );
+
   void test_specslice ( std::string const & datadir );
 
   void test_extract ( std::string const & datadir );

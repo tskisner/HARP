@@ -202,6 +202,8 @@ namespace harp {
 
       // desi-specific
 
+      boost::property_tree::ptree meta () const;
+
       std::vector < object_desi_p > desi_objects ( ) const;
 
       static std::vector < std::string > colnames ();
@@ -211,8 +213,8 @@ namespace harp {
       static std::string harp2desi ( object_type type );
 
       int tileid;
-      float tilera;
-      float tiledec;
+      float telera;
+      float teledec;
       int expid;
       std::string night;
       std::string vdmodel;
@@ -230,9 +232,10 @@ namespace harp {
         ar & BOOST_SERIALIZATION_NVP(path_);
         ar & BOOST_SERIALIZATION_NVP(hdu_);
         ar & BOOST_SERIALIZATION_NVP(objects_);
+        ar & BOOST_SERIALIZATION_NVP(meta_);
         ar & BOOST_SERIALIZATION_NVP(tileid);
-        ar & BOOST_SERIALIZATION_NVP(tilera);
-        ar & BOOST_SERIALIZATION_NVP(tiledec);
+        ar & BOOST_SERIALIZATION_NVP(telera);
+        ar & BOOST_SERIALIZATION_NVP(teledec);
         ar & BOOST_SERIALIZATION_NVP(expid);
         ar & BOOST_SERIALIZATION_NVP(night);
         ar & BOOST_SERIALIZATION_NVP(vdmodel);
@@ -243,6 +246,7 @@ namespace harp {
         return;
       }
     
+      boost::property_tree::ptree meta_;
       size_t nobjects_;
       std::string path_;
       int hdu_;

@@ -72,6 +72,26 @@ void harp::mpi_image::values ( matrix_double & data ) const {
 }
 
 
+void harp::mpi_image::mask ( vector_mask & msk ) const {
+  int rank = comm_.rank();
+  if ( rank == 0 ) {
+    local_->mask ( msk );
+  }
+  boost::mpi::broadcast ( comm_, msk, 0 );
+  return;
+}
+
+
+void harp::mpi_image::mask ( matrix_mask & msk ) const {
+  int rank = comm_.rank();
+  if ( rank == 0 ) {
+    local_->mask ( msk );
+  }
+  boost::mpi::broadcast ( comm_, msk, 0 );
+  return;
+}
+
+
 void harp::mpi_image::inv_variance ( matrix_double & invvar ) const {
   int rank = comm_.rank();
   if ( rank == 0 ) {
@@ -103,6 +123,9 @@ std::string harp::mpi_image::type ( ) const {
 }
 
 
+image_p harp::mpi_image::local ( ) {
+  return local_;
+}
 
 
 

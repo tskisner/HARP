@@ -47,5 +47,9 @@ std::string harp::mpi_targets::type ( ) const {
 }
 
 
+targets_p harp::mpi_targets::local ( ) {
+  return local_;
+}
+
 
 

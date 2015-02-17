@@ -117,6 +117,20 @@ namespace harp { namespace fits {
 
   void key_write_all ( fitsfile * fp, boost::property_tree::ptree const & keys );
 
+  void key_require ( boost::property_tree::ptree const & keys, std::string const & name, std::string const & type );
+
+  void key_parse ( boost::property_tree::ptree const & keys, std::string const & name, std::string & val );
+
+  void key_parse ( boost::property_tree::ptree const & keys, std::string const & name, bool & val );
+
+  void key_parse ( boost::property_tree::ptree const & keys, std::string const & name, long long int & val );
+
+  void key_parse ( boost::property_tree::ptree const & keys, std::string const & name, int & val );
+
+  void key_parse ( boost::property_tree::ptree const & keys, std::string const & name, double & val );
+
+  void key_parse ( boost::property_tree::ptree const & keys, std::string const & name, float & val );
+
   void key_read ( fitsfile * fp, std::string const & keyname, std::string & val );
 
   void key_read ( fitsfile * fp, std::string const & keyname, bool & val );
@@ -144,6 +158,8 @@ namespace harp { namespace fits {
   void key_write ( fitsfile * fp, std::string const & keyname, double const & keyval, std::string const & keycom );
 
   void key_write ( fitsfile * fp, std::string const & keyname, float const & keyval, std::string const & keycom );
+
+  
 
 
   // image operations

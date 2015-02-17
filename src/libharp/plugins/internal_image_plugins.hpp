@@ -154,6 +154,8 @@ namespace harp {
 
       // desi-specific
 
+      boost::property_tree::ptree meta () const;
+
       std::string camera;
       std::string vspecter;
       float exptime;
@@ -168,6 +170,7 @@ namespace harp {
         ar & BOOST_SERIALIZATION_NVP(rows_);
         ar & BOOST_SERIALIZATION_NVP(cols_);
         ar & BOOST_SERIALIZATION_NVP(path_);
+        ar & BOOST_SERIALIZATION_NVP(meta_);
         ar & BOOST_SERIALIZATION_NVP(sighdu_);
         ar & BOOST_SERIALIZATION_NVP(nsehdu_);
         ar & BOOST_SERIALIZATION_NVP(mskhdu_);
@@ -179,6 +182,7 @@ namespace harp {
         return;
       }
     
+      boost::property_tree::ptree meta_;
       size_t rows_;
       size_t cols_;
       std::string path_;

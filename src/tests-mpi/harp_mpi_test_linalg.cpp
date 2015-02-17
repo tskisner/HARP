@@ -17,11 +17,12 @@ using namespace harp;
 void harp::mpi_test_linalg ( string const & datadir ) {
 
   boost::mpi::communicator comm;
+  El::mpi::Comm el_comm ( comm );
 
   int np = comm.size();
   int myp = comm.rank();
 
-  El::Grid grid ( El::mpi::Comm ( comm ) );
+  const El::Grid grid ( el_comm );
 
   typedef boost::ecuyer1988 base_generator_type;
   typedef boost::uniform_01<> distribution_type;
@@ -54,7 +55,7 @@ void harp::mpi_test_linalg ( string const & datadir ) {
     }
   }
 
-  mpi_matrix outtest_mpi ( (El::Int) SIZE, (El::Int)1, grid, (El::Int)0 );
+  mpi_matrix outtest_mpi ( SIZE, 1, grid );
 
   ublas_to_elem ( intest, outtest_mpi );
 
@@ -301,10 +302,11 @@ void harp::mpi_test_linalg ( string const & datadir ) {
   }
 
   boost::mpi::communicator gcomm = comm.split ( gang, grank );
+  El::mpi::Comm el_gcomm ( gcomm );
 
   // create gang process grids
 
-  El::Grid gang_grid ( El::mpi::Comm ( gcomm ) );
+  const El::Grid gang_grid ( el_gcomm );
 
   mpi_matrix redist_comp ( outcomp );
   mpi_matrix gout_comp ( SIZE, SIZE, gang_grid );

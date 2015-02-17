@@ -69,27 +69,29 @@ harp::spec_desi::spec_desi ( boost::property_tree::ptree const & props ) : spec 
 
   // read keywords
 
-  fits::key_read ( fp, string(spec_desi_key_crval), crval );
+  meta_ = fits::key_read_all ( fp );
 
-  fits::key_read ( fp, string(spec_desi_key_cdelt), cdelt );
+  fits::key_parse ( meta_, spec_desi_key_crval, crval );
 
-  fits::key_read ( fp, string(spec_desi_key_airorvac), airorvac );
+  fits::key_parse ( meta_, spec_desi_key_cdelt, cdelt );
 
-  fits::key_read ( fp, string(spec_desi_key_loglam), loglam );
+  fits::key_parse ( meta_, spec_desi_key_airorvac, airorvac );
 
-  fits::key_read ( fp, string(spec_desi_key_simfile), simfile );
+  fits::key_parse ( meta_, spec_desi_key_loglam, loglam );
 
-  fits::key_read ( fp, string(spec_desi_key_camera), camera );
+  fits::key_parse ( meta_, spec_desi_key_simfile, simfile );
 
-  fits::key_read ( fp, string(spec_desi_key_exptime), exptime );
+  fits::key_parse ( meta_, spec_desi_key_camera, camera );
 
-  fits::key_read ( fp, string(spec_desi_key_rdnoise), rdnoise );
+  fits::key_parse ( meta_, spec_desi_key_exptime, exptime );
 
-  fits::key_read ( fp, string(spec_desi_key_flavor), flavor );
+  fits::key_parse ( meta_, spec_desi_key_rdnoise, rdnoise );
 
-  fits::key_read ( fp, string(spec_desi_key_inpsf), in_psf );
-
-  fits::key_read ( fp, string(spec_desi_key_inimg), in_img );
+  fits::key_parse ( meta_, spec_desi_key_flavor, flavor );
+  
+  fits::key_parse ( meta_, spec_desi_key_inpsf, in_psf );
+  
+  fits::key_parse ( meta_, spec_desi_key_inimg, in_img );
 
   fits::close ( fp );
 
@@ -174,6 +176,11 @@ void harp::spec_desi::lambda ( vector_double & lambda_vals ) const {
 }
 
 
+boost::property_tree::ptree harp::spec_desi::meta () const {
+  return meta_;
+}
+
+
 void harp::spec_desi::write ( std::string const & path, boost::property_tree::ptree const & meta, vector_double const & data, vector_double const & invvar, vector_double const & lambda ) {
 
   size_t nlambda = lambda.size();
@@ -185,71 +192,71 @@ void harp::spec_desi::write ( std::string const & path, boost::property_tree::pt
 
   fits::img_append < double > ( fp, nspec, nlambda );
 
+  // check required keywords and write
+
   if ( meta.count ( spec_desi_key_crval ) ) {
-    fits::key_write ( fp, spec_desi_key_crval, meta.get < float > ( spec_desi_key_crval ), "Starting wavelength [Angstroms]" );
+    fits::key_require ( meta, spec_desi_key_crval, "F" );
   } else {
     HARP_THROW( "you must specify the starting wavelength" );
   }
 
   if ( meta.count ( spec_desi_key_cdelt ) ) {
-    fits::key_write ( fp, spec_desi_key_cdelt, meta.get < float > ( spec_desi_key_cdelt ), "Wavelength step [Angstroms]" );
+    fits::key_require ( meta, spec_desi_key_cdelt, "F" );
   } else {
     HARP_THROW( "you must specify the wavelength step" );
   }
 
   if ( meta.count ( spec_desi_key_airorvac ) ) {
-    fits::key_write ( fp, spec_desi_key_airorvac, meta.get < string > ( spec_desi_key_airorvac ), "Air or Vacuum wavelengths" );
+    fits::key_require ( meta, spec_desi_key_airorvac, "C" );
   } else {
     HARP_THROW( "you must specify air or vac" );
   }
 
   if ( meta.count ( spec_desi_key_loglam ) ) {
-    fits::key_write ( fp, spec_desi_key_loglam, meta.get < int > ( spec_desi_key_loglam ), "linear wavelength steps, not log10" );
+    fits::key_require ( meta, spec_desi_key_loglam, "I" );
   } else {
     HARP_THROW( "you must specify log lambda" );
   }
 
-  if ( meta.count ( spec_desi_key_simfile ) ) {
-    fits::key_write ( fp, spec_desi_key_simfile, meta.get < string > ( spec_desi_key_simfile ), "Input simulation file" );
-  }
-
   if ( meta.count ( spec_desi_key_camera ) ) {
-    fits::key_write ( fp, spec_desi_key_camera, meta.get < string > ( spec_desi_key_camera ), "Spectograph Camera" );
+    fits::key_require ( meta, spec_desi_key_camera, "C" );
   } else {
     HARP_THROW( "you must specify the camera name" );
   }
 
-  fits::key_write ( fp, spec_desi_key_harp, source_version(), "HARP Version" );
-
   if ( meta.count ( spec_desi_key_exptime ) ) {
-    fits::key_write ( fp, spec_desi_key_exptime, meta.get < float > ( spec_desi_key_exptime ), "Exposure time [sec]" );
+    fits::key_require ( meta, spec_desi_key_exptime, "F" );
   } else {
     HARP_THROW( "you must specify the exposure time" );
   }
 
   if ( meta.count ( spec_desi_key_rdnoise ) ) {
-    fits::key_write ( fp, spec_desi_key_rdnoise, meta.get < float > ( spec_desi_key_rdnoise ), "Read noise [electrons]" );
+    fits::key_require ( meta, spec_desi_key_rdnoise, "F" );
   } else {
     HARP_THROW( "you must specify the read noise" );
   }
 
   if ( meta.count ( spec_desi_key_flavor ) ) {
-    fits::key_write ( fp, spec_desi_key_flavor, meta.get < string > ( spec_desi_key_flavor ), "Exposure type (arc, flat, science)" );
+    fits::key_require ( meta, spec_desi_key_flavor, "C" );
   } else {
     HARP_THROW( "you must specify the exposure flavor" );
   }
 
   if ( meta.count ( spec_desi_key_inpsf ) ) {
-    fits::key_write ( fp, spec_desi_key_inpsf, meta.get < string > ( spec_desi_key_inpsf ), "Input spectral PSF" );
+    fits::key_require ( meta, spec_desi_key_inpsf, "C" );
   } else {
     HARP_THROW( "you must specify the input PSF" );
   }
 
   if ( meta.count ( spec_desi_key_inimg ) ) {
-    fits::key_write ( fp, spec_desi_key_inimg, meta.get < string > ( spec_desi_key_inimg ), "Input image" );
+    fits::key_require ( meta, spec_desi_key_inimg, "C" );
   } else {
     HARP_THROW( "you must specify the input image" );
   }
+
+  fits::key_write ( fp, spec_desi_key_harp, source_version(), "HARP Version" );
+
+  fits::key_write_all ( fp, meta );
 
 
   fits::img_write ( fp, data, false );

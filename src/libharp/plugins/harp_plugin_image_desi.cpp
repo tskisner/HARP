@@ -52,15 +52,17 @@ harp::image_desi::image_desi ( boost::property_tree::ptree const & props ) : ima
   fits::img_seek ( fp, sighdu_ );
   fits::img_dims ( fp, rows_, cols_ );
 
-  fits::key_read ( fp, string(image_desi_key_camera), camera );
+  meta_ = fits::key_read_all ( fp );
 
-  fits::key_read ( fp, string(image_desi_key_vspecter), vspecter );
+  fits::key_parse ( meta_, image_desi_key_camera, camera );
 
-  fits::key_read ( fp, string(image_desi_key_exptime), exptime );
+  fits::key_parse ( meta_, image_desi_key_vspecter, vspecter );
 
-  fits::key_read ( fp, string(image_desi_key_rdnoise), rdnoise );
+  fits::key_parse ( meta_, image_desi_key_exptime, exptime );
 
-  fits::key_read ( fp, string(image_desi_key_flavor), flavor );
+  fits::key_parse ( meta_, image_desi_key_rdnoise, rdnoise );
+
+  fits::key_parse ( meta_, image_desi_key_flavor, flavor );
 
   // check second HDU
 
@@ -154,6 +156,11 @@ void harp::image_desi::mask ( vector_mask & msk ) const {
 }
 
 
+boost::property_tree::ptree harp::image_desi::meta () const {
+  return meta_;
+}
+
+
 void harp::image_desi::write ( std::string const & path, boost::property_tree::ptree const & meta, size_t rows, vector_double & data, vector_double & invvar, vector_mask & msk ) {
 
   size_t cols = (size_t)( data.size() / rows );
@@ -179,34 +186,36 @@ void harp::image_desi::write ( std::string const & path, boost::property_tree::p
   fits::img_append < double > ( fp, rows, cols );
 
   if ( meta.count ( image_desi_key_camera ) ) {
-    fits::key_write ( fp, image_desi_key_camera, meta.get < string > ( image_desi_key_camera ), "Spectograph Camera" );
+    fits::key_require ( meta, image_desi_key_camera, "C" );
   } else {
     HARP_THROW( "you must specify the camera name" );
   }
 
   if ( meta.count ( image_desi_key_vspecter ) ) {
-    fits::key_write ( fp, image_desi_key_vspecter, meta.get < string > ( image_desi_key_vspecter ), "Specter Version" );
+    fits::key_require ( meta, image_desi_key_vspecter, "C" );
   } else {
     HARP_THROW( "you must specify the specter version" );
   }
 
   if ( meta.count ( image_desi_key_exptime ) ) {
-    fits::key_write ( fp, image_desi_key_exptime, meta.get < float > ( image_desi_key_exptime ), "Exposure time [sec]" );
+    fits::key_require ( meta, image_desi_key_exptime, "F" );
   } else {
     HARP_THROW( "you must specify the exposure time" );
   }
 
   if ( meta.count ( image_desi_key_rdnoise ) ) {
-    fits::key_write ( fp, image_desi_key_rdnoise, meta.get < float > ( image_desi_key_rdnoise ), "Read noise [electrons]" );
+    fits::key_require ( meta, image_desi_key_rdnoise, "F" );
   } else {
     HARP_THROW( "you must specify the read noise" );
   }
 
   if ( meta.count ( image_desi_key_flavor ) ) {
-    fits::key_write ( fp, image_desi_key_flavor, meta.get < string > ( image_desi_key_flavor ), "Exposure type (arc, flat, science)" );
+    fits::key_require ( meta, image_desi_key_flavor, "C" );
   } else {
     HARP_THROW( "you must specify the exposure flavor" );
   }
+
+  fits::key_write_all ( fp, meta );
 
   fits::img_write ( fp, data, true );
 
@@ -215,7 +224,6 @@ void harp::image_desi::write ( std::string const & path, boost::property_tree::p
   fits::img_append < double > ( fp, rows, cols );
 
   fits::key_write ( fp, "EXTNAME", "IVAR", "" );
-  fits::key_write ( fp, image_desi_key_rdnoise, meta.get < float > ( image_desi_key_rdnoise ), "Read noise [electrons]" );
 
   fits::img_write ( fp, invvar, true );
 

@@ -223,3 +223,7 @@ std::string harp::mpi_psf::type ( ) const {
 }
 
 
+psf_p harp::mpi_psf::local ( ) {
+  return local_;
+}
+
