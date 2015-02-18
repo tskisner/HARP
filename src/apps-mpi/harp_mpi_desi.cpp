@@ -649,7 +649,7 @@ int main ( int argc, char *argv[] ) {
 
       elem_to_ublas ( loc_Rtruth, ubuf );
 
-      outfile = outdir + "/frame_harp_rsim-" + camera + "-" + expid + ".fits";
+      outfile = outdir + "/harp_rsim-" + camera + "-" + expid + ".fits";
       spec_desi::write ( outfile, solution_props, ubuf, errbuf, lambda );
       
       vector_double data_chisq ( psf_nbins );
@@ -672,7 +672,7 @@ int main ( int argc, char *argv[] ) {
         cout << prefix << "  Reduced Chi square = " << chisq_reduced << endl;
       }
 
-      outfile = outdir + "/frame_harp_chisq-" + camera + "-" + expid + ".fits";
+      outfile = outdir + "/harp_chisq-" + camera + "-" + expid + ".fits";
       spec_desi::write ( outfile, solution_props, data_chisq, errbuf, lambda );
 
     }
@@ -727,7 +727,7 @@ int main ( int argc, char *argv[] ) {
       elem_to_ublas ( invnoise, u_invnoise );
       invnoise.Empty();
 
-      outfile = outdir + "/frame_harp_rpix-" + camera + "-" + expid + ".fits";
+      outfile = outdir + "/harp_rpix-" + camera + "-" + expid + ".fits";
       image_desi::write ( outfile, solution_props, imgrows, u_f_projected, u_invnoise, msk );
 
     }
@@ -786,10 +786,10 @@ int main ( int argc, char *argv[] ) {
           cout << prefix << "  Pixel space reduced Chi square = " << chisq_reduced << endl;
         }
 
-        outfile = outdir + "/frame_harp_rsimpix-" + camera + "-" + expid + ".fits";
+        outfile = outdir + "/harp_rsimpix-" + camera + "-" + expid + ".fits";
         image_desi::write ( outfile, solution_props, imgrows, u_truth_projected, u_invnoise, msk );
 
-        outfile = outdir + "/frame_harp_chisqpix-" + camera + "-" + expid + ".fits";
+        outfile = outdir + "/harp_chisqpix-" + camera + "-" + expid + ".fits";
         image_desi::write ( outfile, solution_props, imgrows, data_chisq, u_invnoise, msk );
 
       }
