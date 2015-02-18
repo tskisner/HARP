@@ -317,16 +317,23 @@ int main ( int argc, char *argv[] ) {
 
   // target list
 
-  pathprops.clear();
-  pathprops.put ( "path", fibermap );
+  mpi_targets_p fibers;
+  vector < object_p > target_list;
 
-  props.clear();
-  props.put ( "type", "desi" );
-  props.put_child ( "props", pathprops );
+  if ( fibermap != "" ) {
 
-  mpi_targets_p fibers = mpi_load_targets ( comm, props );
+    pathprops.clear();
+    pathprops.put ( "path", fibermap );
 
-  vector < object_p > target_list = fibers->objects();
+    props.clear();
+    props.put ( "type", "desi" );
+    props.put_child ( "props", pathprops );
+
+    fibers = mpi_load_targets ( comm, props );
+
+    target_list = fibers->objects();
+
+  }
 
 
   // output spectral products
