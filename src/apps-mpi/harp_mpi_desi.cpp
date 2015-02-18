@@ -134,7 +134,14 @@ int main ( int argc, char *argv[] ) {
 
   // attempt to get metadata from the file name
 
-  size_t off = in_image.find ( '-', 0 );
+  size_t baseoff = 0;
+  size_t basetmp = in_image.find( '/', baseoff );
+  while ( basetmp != string::npos ) {
+    baseoff = basetmp + 1;
+    basetmp = in_image.find( '/', baseoff );
+  }
+
+  size_t off = in_image.find ( '-', baseoff );
   if ( off != string::npos ) {
     off += 1;
     size_t pos = in_image.find ( '-', off );
