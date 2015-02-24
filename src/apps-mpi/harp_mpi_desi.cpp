@@ -645,6 +645,10 @@ int main ( int argc, char *argv[] ) {
 
     vector_double errbuf;
     elem_to_ublas ( loc_err, errbuf );
+    // convert from rms to inverse variance
+    for ( size_t i = 0; i < errbuf.size(); ++i ) {
+      errbuf[i] = 1.0 / ( errbuf[i] * errbuf[i] );
+    }
 
     vector_double ubuf;
     elem_to_ublas ( loc_Rf, ubuf );
