@@ -24,7 +24,7 @@ namespace harp {
 
   void mpi_extract ( mpi_matrix & D, mpi_matrix & W, mpi_matrix & S, mpi_matrix & z, mpi_matrix & Rf, mpi_matrix & f );
 
-  void mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_matrix_local const & img, elem_matrix_local const & img_inv_var, mpi_matrix const & truth, mpi_matrix & Rf, mpi_matrix & f, mpi_matrix & err, mpi_matrix & Rtruth, std::map < std::string, double > & profile, bool lambda_mask, std::string const & status_prefix = "" );
+  void mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_matrix_local const & img, elem_matrix_local const & img_inv_var, mpi_matrix const & truth, size_t Rband, mpi_matrix & Rdiag, mpi_matrix & Rf, mpi_matrix & f, mpi_matrix & err, mpi_matrix & Rtruth, std::map < std::string, double > & profile, bool lambda_mask, std::string const & status_prefix = "" );
 
 }
 

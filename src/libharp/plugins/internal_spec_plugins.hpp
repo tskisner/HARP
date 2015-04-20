@@ -187,6 +187,7 @@ namespace harp {
         ar & BOOST_SERIALIZATION_NVP(spechdu_);
         ar & BOOST_SERIALIZATION_NVP(invvarhdu_);
         ar & BOOST_SERIALIZATION_NVP(lambdahdu_);
+        ar & BOOST_SERIALIZATION_NVP(reshdu_);
         ar & BOOST_SERIALIZATION_NVP(crval);
         ar & BOOST_SERIALIZATION_NVP(cdelt);
         ar & BOOST_SERIALIZATION_NVP(airorvac);
@@ -210,6 +211,7 @@ namespace harp {
       int spechdu_;
       int invvarhdu_;
       int lambdahdu_;
+      int reshdu_;
     
   };
 

@@ -35,6 +35,7 @@ harp::spec_desi::spec_desi ( ) : spec () {
   spechdu_ = 1;
   invvarhdu_ = 2;
   lambdahdu_ = 3;
+  reshdu_ = 4;
   crval = 0.0;
   cdelt = 0.0;
   airorvac = "vac";
@@ -58,6 +59,8 @@ harp::spec_desi::spec_desi ( boost::property_tree::ptree const & props ) : spec 
   invvarhdu_ = 2;
 
   lambdahdu_ = 3;
+
+  reshdu_ = 4;
 
   fitsfile * fp;
 

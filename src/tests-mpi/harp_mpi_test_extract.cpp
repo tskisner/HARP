@@ -583,10 +583,14 @@ void harp::mpi_test_extract ( string const & datadir ) {
     cout << "Testing high-level, chunked extraction..." << endl;
   }
   
+  size_t Rwidth = 0;
+  size_t Rband = 2 * Rwidth + 1;
+
   mpi_matrix Rtruth ( nbin, 1, grid );
   mpi_matrix f ( nbin, 1, grid );
   mpi_matrix Rf ( nbin, 1, grid );
   mpi_matrix err ( nbin, 1, grid );
+  mpi_matrix Rdiag ( nbin, Rband, grid );
 
   // do extraction
 
@@ -596,7 +600,7 @@ void harp::mpi_test_extract ( string const & datadir ) {
 
   map < string, double > timing;
 
-  mpi_extract_slices ( gang_slice, gauss_psf, img_data, img_inv, truth, Rf, f, err, Rtruth, timing, lambda_mask, prefix );
+  mpi_extract_slices ( gang_slice, gauss_psf, img_data, img_inv, truth, Rband, Rdiag, Rf, f, err, Rtruth, timing, lambda_mask, prefix );
 
   elem_matrix_local loc_truth;
   elem_matrix_local loc_Rtruth;

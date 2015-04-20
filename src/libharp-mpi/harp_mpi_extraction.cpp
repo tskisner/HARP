@@ -739,7 +739,7 @@ void harp::mpi_extract ( mpi_matrix & D, mpi_matrix & W, mpi_matrix & S, mpi_mat
 }
 
 
-void harp::mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_matrix_local const & img, elem_matrix_local const & img_inv_var, mpi_matrix const & truth, mpi_matrix & Rf, mpi_matrix & f, mpi_matrix & err, mpi_matrix & Rtruth, std::map < std::string, double > & profile, bool lambda_mask, std::string const & status_prefix ) {
+void harp::mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_matrix_local const & img, elem_matrix_local const & img_inv_var, mpi_matrix const & truth, size_t Rband, mpi_matrix & Rdiag, mpi_matrix & Rf, mpi_matrix & f, mpi_matrix & err, mpi_matrix & Rtruth, std::map < std::string, double > & profile, bool lambda_mask, std::string const & status_prefix ) {
 
   // This function assumes that the slice has been distributed over the gangs, and that
   // the design matrix and spectral domain quantities have been distributed over the
@@ -774,6 +774,9 @@ void harp::mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_m
 
   err.Resize ( psf_specsize, 1 );
   mpi_matrix_zero ( err );
+
+  Rdiag.Resize ( psf_specsize, Rband );
+  mpi_matrix_zero ( Rdiag );
 
   Rtruth.Resize ( truth.Height(), 1 );
   mpi_matrix_zero ( Rtruth );
@@ -816,6 +819,9 @@ void harp::mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_m
   
   mpi_matrix gang_err ( psf_specsize, 1, gang_grid );
   mpi_matrix_zero ( gang_err );
+
+  mpi_matrix gang_Rdiag ( psf_specsize, Rband, gang_grid );
+  mpi_matrix_zero ( gang_Rdiag );
 
   mpi_gang_distribute ( truth, gang_truth );
 
@@ -883,6 +889,9 @@ void harp::mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_m
 
     mpi_matrix slice_err ( nbins, 1, gang_grid );
     mpi_matrix_zero ( slice_err );
+
+    mpi_matrix slice_Rdiag ( nbins, Rband, gang_grid );
+    mpi_matrix_zero ( slice_Rdiag );
 
     mpi_matrix slice_truth ( 1, 1, gang_grid );
     mpi_matrix slice_Rtruth ( 1, 1, gang_grid );
@@ -999,25 +1008,20 @@ void harp::mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_m
     tsubstop = MPI_Wtime();
     double time_eigen = ( tsubstop - tsubstart );
 
-    // if we are convolving input truth spectra, then we need to explicitly compute the resolution
-    // matrix, and so we do that while computing the column norm that we need.  If we are not
-    // processing truth spectra, we can just compute the norm.
+    // We always explicitly compute the resolution matrix, so that we can accumulate
+    // the block diagonal result.
 
     tsubstart = MPI_Wtime();
 
+    mpi_matrix res ( nbins, nbins, gang_grid );
+
+    mpi_resolution ( eig_vals, eig_vecs, slice_err, res );
+
     if ( truth.Height() > 0 ) {
-
-      mpi_matrix res ( nbins, nbins, gang_grid );
-
-      mpi_resolution ( eig_vals, eig_vecs, slice_err, res );
 
       El::Gemv ( El::NORMAL, 1.0, res, slice_truth, 0.0, slice_Rtruth );
 
       mpi_accum_spec ( (*regit), full_region, slice_Rtruth, true, gang_Rtruth );
-
-    } else {
-
-      mpi_norm ( eig_vals, eig_vecs, slice_err );
 
     }
 
@@ -1045,11 +1049,50 @@ void harp::mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_m
     tsubstop = MPI_Wtime();
     double time_extract = ( tsubstop - tsubstart );
 
+    // extract band of non-zeros from dense resolution matrix into
+    // slice-local sparse representation
+
+    {
+      elem_matrix_local local_slice_Rdiag ( slice_Rdiag.Height(), slice_Rdiag.Width() );
+      local_matrix_zero ( local_slice_Rdiag );
+
+      size_t hlocal = res.LocalHeight();
+      size_t wlocal = res.LocalWidth();
+
+      size_t rowoff = res.ColShift();
+      size_t rowstride = res.ColStride();
+      long row;
+
+      size_t coloff = res.RowShift();
+      size_t colstride = res.RowStride();
+      long col;
+
+      double mval;
+      long Rwidth = (long)( (Rband - 1) / 2 );
+
+      for ( size_t i = 0; i < wlocal; ++i ) {
+        for ( size_t j = 0; j < hlocal; ++j ) {
+          row = rowoff + j * rowstride;
+          col = coloff + i * colstride;
+          if ( labs ( col - row ) <= Rwidth ) {
+            mval = res.GetLocal ( j, i );
+            local_slice_Rdiag.Set( row, (Rwidth + (col - row)), mval );
+          }
+        }
+      }
+
+      El::AxpyInterface < double > locglob;
+      locglob.Attach( El::LOCAL_TO_GLOBAL, slice_Rdiag );
+      locglob.Axpy ( 1.0, local_slice_Rdiag, 0, 0 );
+      locglob.Detach();
+    }
+
     // accumulate results to gang solution
 
     mpi_accum_spec ( (*regit), full_region, slice_Rf, true, gang_Rf );
     mpi_accum_spec ( (*regit), full_region, slice_f, true, gang_f );
     mpi_accum_spec ( (*regit), full_region, slice_err, true, gang_err );
+    mpi_accum_spec ( (*regit), full_region, slice_Rdiag, true, gang_Rdiag );
 
     // accumulate timing for this region
 
@@ -1107,6 +1150,7 @@ void harp::mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_m
   mpi_gang_accum ( gang_Rf, Rf );
   mpi_gang_accum ( gang_f, f );
   mpi_gang_accum ( gang_err, err );
+  mpi_gang_accum ( gang_Rdiag, Rdiag );
   mpi_gang_accum ( gang_Rtruth, Rtruth );
 
   return;

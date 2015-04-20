@@ -298,6 +298,9 @@ int main ( int argc, char *argv[] ) {
   mpi_matrix data_err ( psf_nbins, 1, grid );
   mpi_matrix_zero ( data_err );
 
+  mpi_matrix data_Rdiag ( psf_nbins, 1, grid );
+  mpi_matrix_zero ( data_Rdiag );
+
 
   // read truth spectra, if provided
 
@@ -419,7 +422,7 @@ int main ( int argc, char *argv[] ) {
     extract_prefix = prefix;
   }
 
-  mpi_extract_slices ( slice, design, measured, invnoise, data_truth, data_Rf, data_f, data_err, data_Rtruth, timing, lambda_mask, prefix );
+  mpi_extract_slices ( slice, design, measured, invnoise, data_truth, 1, data_Rdiag, data_Rf, data_f, data_err, data_Rtruth, timing, lambda_mask, prefix );
 
 
   // subtract sky if needed

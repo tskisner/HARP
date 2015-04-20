@@ -53,6 +53,8 @@ int main ( int argc, char *argv[] ) {
   size_t spec_min = 0;
   size_t spec_max = 499;
 
+  size_t res_width = 10;
+
   bool lambda_mask = true;
   
   string outdir = ".";
@@ -107,6 +109,7 @@ int main ( int argc, char *argv[] ) {
   ( "lambda_res", popts::value < double > ( &lambda_res ), "extraction resolution, in Angstroms" )
   ( "lambda_min", popts::value < double > ( &lambda_min ), "minimum extracted wavelength in Angstroms" )
   ( "lambda_max", popts::value < double > ( &lambda_max ), "maximum extracted wavelength in Angstroms" )
+  ( "res_width", popts::value < size_t > ( &res_width ), "half-band width of diagonal resolution to keep (10)" )
   ;
 
   popts::variables_map vm;
@@ -131,6 +134,8 @@ int main ( int argc, char *argv[] ) {
   if ( vm.count( "debug" ) ) {
     debug = true;
   }
+
+  size_t res_band = 2 * res_width + 1;
 
   // attempt to get metadata from the file name
 
@@ -360,6 +365,9 @@ int main ( int argc, char *argv[] ) {
   mpi_matrix data_err ( psf_nbins, 1, grid );
   mpi_matrix_zero ( data_err );
 
+  mpi_matrix data_Rdiag ( psf_nbins, res_band, grid );
+  mpi_matrix_zero ( data_Rdiag );
+
 
   // read truth spectra, if provided
 
@@ -483,7 +491,7 @@ int main ( int argc, char *argv[] ) {
     extract_prefix = prefix;
   }
 
-  mpi_extract_slices ( slice, design, measured, invnoise, data_truth, data_Rf, data_f, data_err, data_Rtruth, timing, lambda_mask, prefix );
+  mpi_extract_slices ( slice, design, measured, invnoise, data_truth, res_band, data_Rdiag, data_Rf, data_f, data_err, data_Rtruth, timing, lambda_mask, prefix );
 
 
   // subtract sky if needed
@@ -690,15 +698,7 @@ int main ( int argc, char *argv[] ) {
 
   }
 
-  tstop = MPI_Wtime();
-
-  if ( ( myp == 0 ) && ( ! quiet ) ) {
-    cout << prefix << "  time = " << tstop-tstart << " seconds" << endl;
-  }
-
-  // this next bit of code might (if debug == dotruth == true) generate 3 new images and the full PSF for
-  // debugging purposes.  If we are tight on RAM, this could push us over the edge.  Explicitly deallocate
-  // un-needed data objects at this point.
+  // Free unused buffers before writing resolution matrix.
 
   loc_truth.Empty();
   loc_Rtruth.Empty();
@@ -710,6 +710,72 @@ int main ( int argc, char *argv[] ) {
   data_Rf.Empty();
   data_Rtruth.Empty();
   data_err.Empty();
+
+  // The resolution matrix is too large to reduce to a single process
+  // all at once.  We have no choice but to reduce this in buffers and append
+  // to the FITS file...
+
+  fitsfile * fp;
+  int ret;
+  int status = 0;
+  
+  long naxes[3];
+  naxes[0] = psf_nlambda;
+  naxes[1] = res_band;
+  naxes[2] = psf_nspec;
+
+  int fitstype = fits::ftype < double > :: datatype();
+  long fpixel[2];
+
+  elem_matrix_local loc_Rdiag;
+
+  size_t write_spec_chunk = 10;
+  size_t write_spec_offset = 0;
+
+  if ( myp == 0 ) {
+    fits::open_readwrite ( fp, outfile );
+    fits::img_seek ( fp, 3 );
+
+    ret = fits_create_img ( fp, fits::ftype< double >::bitpix(), 3, naxes, &status );
+    fits::check ( status );
+  }
+
+  while ( write_spec_offset < psf_nspec ) {
+    if ( write_spec_offset + write_spec_chunk > psf_nspec ) {
+      write_spec_chunk = psf_nspec - write_spec_offset;
+    }
+
+    globloc.Attach( El::GLOBAL_TO_LOCAL, data_Rdiag );
+    if ( myp == 0 ) {
+      loc_Rdiag.Resize ( write_spec_chunk, res_band );
+      local_matrix_zero ( loc_Rdiag );
+      globloc.Axpy ( 1.0, loc_Rdiag, write_spec_offset, 0 );
+    }
+    globloc.Detach();
+
+    if ( myp == 0 ) {
+      fpixel[0] = 1;
+      fpixel[1] = 1;
+      fpixel[2] = write_spec_offset + 1;
+      long npix = (long)( write_spec_chunk * res_band * psf_nlambda );
+
+      ret = fits_write_pix ( fp, fitstype, fpixel, npix, loc_Rdiag.Buffer(), &status );
+      fits::check ( status );
+    }
+
+    write_spec_offset += write_spec_chunk;
+  }
+
+  if ( myp == 0 ) {
+    fits::close( fp );
+  }
+
+  tstop = MPI_Wtime();
+
+  if ( ( myp == 0 ) && ( ! quiet ) ) {
+    cout << prefix << "  time = " << tstop-tstart << " seconds" << endl;
+  }
+  
 
   if ( debug ) {
 
