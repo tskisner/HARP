@@ -738,6 +738,8 @@ int main ( int argc, char *argv[] ) {
 
     ret = fits_create_img ( fp, fits::ftype< double >::bitpix(), 3, naxes, &status );
     fits::check ( status );
+
+    fits::key_write ( fp, "EXTNAME", string("RESOLUTION"), "" );
   }
 
   while ( write_spec_offset < psf_nspec ) {
