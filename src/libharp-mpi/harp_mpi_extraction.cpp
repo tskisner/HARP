@@ -111,24 +111,15 @@ void harp::mpi_sub_spec ( spec_slice_region const & full_region, spec_slice_regi
 
   mpi_matrix_zero ( sub_data );
 
-  // FIXME: can this be changed to not store a full local copy of the input?
-
-  elem_matrix_local full_loc ( full_data.Height(), 1 );
-  local_matrix_zero ( full_loc );
-
-  El::AxpyInterface < double > globloc;
-  globloc.Attach( El::GLOBAL_TO_LOCAL, full_data );
-  globloc.Axpy ( 1.0, full_loc, 0, 0 );
-  globloc.Detach();
-
-  // Update local output matrix with proper slices from the input
-
   size_t hlocal = sub_data.LocalHeight();
   size_t wlocal = sub_data.LocalWidth();
 
   size_t rowoff = sub_data.ColShift();
   size_t rowstride = sub_data.ColStride();
   size_t row;
+
+  size_t coloff = sub_data.RowShift();
+  size_t colstride = sub_data.RowStride();
 
   size_t global_spec;
   size_t global_lambda;
@@ -141,40 +132,60 @@ void harp::mpi_sub_spec ( spec_slice_region const & full_region, spec_slice_regi
 
   double val;
 
-  //cerr << "mpi_sub proc " << sub_data.Grid().Rank() << " has local storage " << hlocal << " x " << wlocal << endl;
+  // FIXME: can this be changed to not store a full local copy of the input?
 
-  if ( wlocal > 0 ) {
-    for ( size_t j = 0; j < hlocal; ++j ) {
-      // the global element of sub_data
-      row = rowoff + j * rowstride;
+  elem_matrix_local full_loc ( full_data.Height(), 1 );
 
-      // compute the location in the full sub region
+  for ( size_t col = 0; col < full_data.Width(); ++col ) {
 
-      out_spec = (size_t)( row / sub_region.n_lambda );
-      out_lambda = row - ( out_spec * sub_region.n_lambda );
+    local_matrix_zero ( full_loc );
 
-      global_spec = sub_region.first_spec + out_spec;
-      global_lambda = sub_region.first_lambda + out_lambda;
+    El::AxpyInterface < double > globloc;
+    globloc.Attach( El::GLOBAL_TO_LOCAL, full_data );
+    globloc.Axpy ( 1.0, full_loc, 0, col );
+    globloc.Detach();
 
-      // are we within the selected region?
+    // Update local output matrix with proper slices from the input
 
-      if ( ( ( global_spec >= sub_firstspec ) && ( global_spec < sub_firstspec + sub_nspec ) ) && ( ( global_lambda >= sub_firstlambda ) && ( global_lambda < sub_firstlambda + sub_nlambda ) ) ) {
+    for ( size_t i = 0; i < wlocal; ++i ) {
+      // do we have this global column?
+      size_t mycol = coloff + i * colstride;
 
-        // compute the location in the full region
+      if ( mycol == col ) {
 
-        in_lambda = global_lambda - full_region.first_lambda;
-        in_spec = global_spec - full_region.first_spec;
+        for ( size_t j = 0; j < hlocal; ++j ) {
+          // the global element of sub_data
+          row = rowoff + j * rowstride;
 
-        // copy
+          // compute the location in the full sub region
 
-        val = full_loc.Get ( in_spec * full_region.n_lambda + in_lambda, 0 );
+          out_spec = (size_t)( row / sub_region.n_lambda );
+          out_lambda = row - ( out_spec * sub_region.n_lambda );
 
-        //cerr << "proc " << sub_data.Grid().Rank() << " setting sub element " << row << endl;
+          global_spec = sub_region.first_spec + out_spec;
+          global_lambda = sub_region.first_lambda + out_lambda;
 
-        sub_data.SetLocal ( j, 0, val );
+          // are we within the selected region?
 
+          if ( ( ( global_spec >= sub_firstspec ) && ( global_spec < sub_firstspec + sub_nspec ) ) && ( ( global_lambda >= sub_firstlambda ) && ( global_lambda < sub_firstlambda + sub_nlambda ) ) ) {
+
+            // compute the location in the full region
+
+            in_lambda = global_lambda - full_region.first_lambda;
+            in_spec = global_spec - full_region.first_spec;
+
+            // copy
+
+            val = full_loc.Get ( in_spec * full_region.n_lambda + in_lambda, 0 );
+
+            //cerr << "proc " << sub_data.Grid().Rank() << " setting sub element " << row << endl;
+
+            sub_data.SetLocal ( j, i, val );
+
+          }
+
+        }
       }
-
     }
   }
 
@@ -281,47 +292,65 @@ void harp::mpi_accum_spec ( spec_slice_region const & sub_region, spec_slice_reg
   size_t rowstride = sub_data.ColStride();
   size_t row;
 
+  size_t coloff = sub_data.RowShift();
+  size_t colstride = sub_data.RowStride();
+
   double val;
 
-  if ( wlocal > 0 ) {
-    for ( size_t j = 0; j < hlocal; ++j ) {
-      // the global element of sub_data
-      row = rowoff + j * rowstride;
+  for ( size_t col = 0; col < full_data.Width(); ++col ) {
 
-      // compute the location in the full sub region
+    local_matrix_zero ( full_loc );
 
-      in_spec = (size_t)( row / sub_region.n_lambda );
-      in_lambda = row - ( in_spec * sub_region.n_lambda );
+    for ( size_t i = 0; i < wlocal; ++i ) {
+      // do we have this global column?
+      size_t mycol = coloff + i * colstride;
 
-      global_spec = sub_region.first_spec + in_spec;
-      global_lambda = sub_region.first_lambda + in_lambda;
+      if ( mycol == col ) {
+    
+        for ( size_t j = 0; j < hlocal; ++j ) {
+          // the global element of sub_data
+          row = rowoff + j * rowstride;
 
-      // are we within the selected region?
+          // compute the location in the full sub region
 
-      if ( ( ( global_spec >= sub_firstspec ) && ( global_spec < sub_firstspec + sub_nspec ) ) && ( ( global_lambda >= sub_firstlambda ) && ( global_lambda < sub_firstlambda + sub_nlambda ) ) ) {
+          in_spec = (size_t)( row / sub_region.n_lambda );
+          in_lambda = row - ( in_spec * sub_region.n_lambda );
 
-        // compute the location in the full region
+          global_spec = sub_region.first_spec + in_spec;
+          global_lambda = sub_region.first_lambda + in_lambda;
 
-        out_lambda = global_lambda - full_region.first_lambda;
-        out_spec = global_spec - full_region.first_spec;
+          // are we within the selected region?
 
-        // copy
+          if ( ( ( global_spec >= sub_firstspec ) && ( global_spec < sub_firstspec + sub_nspec ) ) && ( ( global_lambda >= sub_firstlambda ) && ( global_lambda < sub_firstlambda + sub_nlambda ) ) ) {
 
-        val = sub_data.GetLocal ( j, 0 );
+            // compute the location in the full region
 
-        full_loc.Set ( out_spec * full_region.n_lambda + out_lambda, 0, val );
+            out_lambda = global_lambda - full_region.first_lambda;
+            out_spec = global_spec - full_region.first_spec;
 
+            // copy
+
+            val = sub_data.GetLocal ( j, i );
+
+            //cerr << "accum[" << row << "," << col << "] : (" << global_spec << ":" << global_lambda << ") (" << (out_spec * full_region.n_lambda + out_lambda) << ",0) = " << val << endl; 
+
+            full_loc.Set ( out_spec * full_region.n_lambda + out_lambda, 0, val );
+
+          }
+
+        }
       }
 
     }
+
+    // accumulate
+
+    El::AxpyInterface < double > locglob;
+    locglob.Attach( El::LOCAL_TO_GLOBAL, full_data );
+    locglob.Axpy ( 1.0, full_loc, 0, col );
+    locglob.Detach();
+
   }
-
-  // accumulate
-
-  El::AxpyInterface < double > locglob;
-  locglob.Attach( El::LOCAL_TO_GLOBAL, full_data );
-  locglob.Axpy ( 1.0, full_loc, 0, 0 );
-  locglob.Detach();
 
   return;
 }
@@ -873,6 +902,9 @@ void harp::mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_m
 
   }
 
+  //ostringstream outres;
+  //ofstream fout;
+
   for ( vector < spec_slice_region > :: const_iterator regit = regions.begin(); regit != regions.end(); ++regit ) {
 
     double tstart = MPI_Wtime();
@@ -1017,6 +1049,14 @@ void harp::mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_m
 
     mpi_resolution ( eig_vals, eig_vecs, slice_err, res );
 
+    /*
+    outres.str("");
+    outres << "res_" << region_index << ".out";
+    fout.open(outres.str().c_str(), ios::out);
+    El::Print ( res, "res", fout );
+    fout.close();
+    */
+
     if ( truth.Height() > 0 ) {
 
       El::Gemv ( El::NORMAL, 1.0, res, slice_truth, 0.0, slice_Rtruth );
@@ -1070,13 +1110,46 @@ void harp::mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_m
       double mval;
       long Rwidth = (long)( (Rband - 1) / 2 );
 
+      long row_slice_spec;
+      long row_slice_lambda;
+      long row_global_spec;
+      long row_global_lambda;
+
+      long col_slice_spec;
+      long col_slice_lambda;
+      long col_global_spec;
+      long col_global_lambda;
+
       for ( size_t i = 0; i < wlocal; ++i ) {
         for ( size_t j = 0; j < hlocal; ++j ) {
           row = rowoff + j * rowstride;
           col = coloff + i * colstride;
-          if ( labs ( col - row ) <= Rwidth ) {
-            mval = res.GetLocal ( j, i );
-            local_slice_Rdiag.Set( row, (Rwidth + (col - row)), mval );
+
+          row_slice_spec = (long)( row / regit->n_lambda );
+          row_slice_lambda = row - ( row_slice_spec * regit->n_lambda );
+          row_global_spec = regit->first_spec + row_slice_spec;
+          row_global_lambda = regit->first_lambda + row_slice_lambda;
+
+          col_slice_spec = (long)( col / regit->n_lambda );
+          col_slice_lambda = col - ( col_slice_spec * regit->n_lambda );
+          col_global_spec = regit->first_spec + col_slice_spec;
+          col_global_lambda = regit->first_lambda + col_slice_lambda;
+
+          if ( row_global_spec == col_global_spec ) {
+            // we only consider correlations within a single spec
+
+            bool row_spec_inbounds = ( row_global_spec >= regit->first_good_spec ) && ( row_global_spec < (regit->first_good_spec + regit->n_good_spec) );
+            bool row_lambda_inbounds = ( row_global_lambda >= regit->first_good_lambda ) && ( row_global_lambda < (regit->first_good_lambda + regit->n_good_lambda) );
+            bool col_spec_inbounds = ( col_global_spec >= regit->first_good_spec ) && ( col_global_spec < (regit->first_good_spec + regit->n_good_spec) );
+            bool col_lambda_inbounds = ( col_global_lambda >= regit->first_good_lambda ) && ( col_global_lambda < (regit->first_good_lambda + regit->n_good_lambda) );
+
+            if ( row_spec_inbounds && row_lambda_inbounds && col_spec_inbounds && col_lambda_inbounds ) {
+              if ( labs ( col_global_lambda - row_global_lambda ) <= Rwidth ) {
+                mval = res.GetLocal ( j, i );
+                //cerr << "R[" << row << "," << col << "] : (" << row_global_spec << ":" << row_global_lambda << ") (" << col_global_spec << ":" << col_global_lambda << ") = " << mval << " --> [" << row << "," << (Rwidth + (col_global_lambda - row_global_lambda)) << "]" << endl;
+                local_slice_Rdiag.Set( row, (Rwidth + (col_global_lambda - row_global_lambda)), mval );
+              }
+            }
           }
         }
       }
@@ -1085,6 +1158,14 @@ void harp::mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_m
       locglob.Attach( El::LOCAL_TO_GLOBAL, slice_Rdiag );
       locglob.Axpy ( 1.0, local_slice_Rdiag, 0, 0 );
       locglob.Detach();
+
+      /*
+      outres.str("");
+      outres << "res_diag_" << region_index << ".out";
+      fout.open(outres.str().c_str(), ios::out);
+      El::Print ( slice_Rdiag, "res_diag", fout );
+      fout.close();
+      */
     }
 
     // accumulate results to gang solution
@@ -1093,6 +1174,14 @@ void harp::mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_m
     mpi_accum_spec ( (*regit), full_region, slice_f, true, gang_f );
     mpi_accum_spec ( (*regit), full_region, slice_err, true, gang_err );
     mpi_accum_spec ( (*regit), full_region, slice_Rdiag, true, gang_Rdiag );
+
+    /*
+    outres.str("");
+    outres << "res_diag_gang_" << region_index << ".out";
+    fout.open(outres.str().c_str(), ios::out);
+    El::Print ( gang_Rdiag, "res_diag", fout );
+    fout.close();
+    */
 
     // accumulate timing for this region
 
@@ -1152,6 +1241,14 @@ void harp::mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_m
   mpi_gang_accum ( gang_err, err );
   mpi_gang_accum ( gang_Rdiag, Rdiag );
   mpi_gang_accum ( gang_Rtruth, Rtruth );
+
+  /*
+  outres.str("");
+  outres << "res_diag_global_" << region_index << ".out";
+  fout.open(outres.str().c_str(), ios::out);
+  El::Print ( Rdiag, "res_diag", fout );
+  fout.close();
+  */
 
   return;
 }

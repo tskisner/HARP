@@ -749,9 +749,9 @@ int main ( int argc, char *argv[] ) {
 
     globloc.Attach( El::GLOBAL_TO_LOCAL, data_Rdiag );
     if ( myp == 0 ) {
-      loc_Rdiag.Resize ( write_spec_chunk, res_band );
+      loc_Rdiag.Resize ( write_spec_chunk*psf_nlambda, res_band );
       local_matrix_zero ( loc_Rdiag );
-      globloc.Axpy ( 1.0, loc_Rdiag, write_spec_offset, 0 );
+      globloc.Axpy ( 1.0, loc_Rdiag, write_spec_offset*psf_nlambda, 0 );
     }
     globloc.Detach();
 
@@ -777,6 +777,11 @@ int main ( int argc, char *argv[] ) {
   if ( ( myp == 0 ) && ( ! quiet ) ) {
     cout << prefix << "  time = " << tstop-tstart << " seconds" << endl;
   }
+
+  // free more memory
+
+  loc_Rdiag.Empty();
+  data_Rdiag.Empty();
   
 
   if ( debug ) {

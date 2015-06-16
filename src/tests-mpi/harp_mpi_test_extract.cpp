@@ -51,7 +51,7 @@ void mpi_test_extract_subaccum ( mpi_spec_slice_p slice, mpi_matrix & full_data,
 
     size_t sub_nbin = sit->n_spec * sit->n_lambda;
 
-    mpi_matrix sub_data ( sub_nbin, 1, full_data.Grid() );
+    mpi_matrix sub_data ( sub_nbin, full_data.Width(), full_data.Grid() );
     mpi_matrix_zero ( sub_data );
 
     mpi_sub_spec ( full_region, (*sit), full_data, false, sub_data );
@@ -61,13 +61,19 @@ void mpi_test_extract_subaccum ( mpi_spec_slice_p slice, mpi_matrix & full_data,
 
     rowoff = sub_data.ColShift();
     rowstride = sub_data.ColStride();
-    row;
+    size_t row;
 
-    if ( wlocal > 0 ) {
+    size_t coloff = sub_data.RowShift();
+    size_t colstride = sub_data.RowStride();
+    size_t col;
+
+    for ( size_t i = 0; i < wlocal; ++i ) {
+
       for ( size_t j = 0; j < hlocal; ++j ) {
 
         row = rowoff + j * rowstride;
-        double specval = sub_data.GetLocal ( j, 0 );
+        col = coloff + i * colstride;
+        double specval = sub_data.GetLocal ( j, i );
 
         size_t spec_offset = (size_t)( row / sit->n_lambda );
         size_t cur_spec = sit->first_spec + spec_offset;
@@ -78,7 +84,7 @@ void mpi_test_extract_subaccum ( mpi_spec_slice_p slice, mpi_matrix & full_data,
         size_t cur_bin = cur_spec * full_region.n_lambda + cur_lambda;
 
         if ( (size_t)specval != cur_bin ) {
-          cerr << "FAIL on sub_spec gang " << rcomm.rank() << ", proc " << gcomm.rank() << ", region " << indx << ", bin " << cur_bin << ", " << (size_t)specval << " != " << cur_bin << endl;
+          cerr << "FAIL on sub_spec gang " << rcomm.rank() << ", proc " << gcomm.rank() << ", region " << indx << ", bin " << cur_bin << ", column " << col << ", " << (size_t)specval << " != " << cur_bin << endl;
           exit(1);
         }
 
@@ -155,22 +161,26 @@ void harp::mpi_test_extract ( string const & datadir ) {
     cout << "Testing extraction spectral sub/accum functions..." << endl;
   }
 
-  size_t nspec = 5;
-  size_t nlambda = 200;
-  size_t chunk_spec = 5;
+  size_t nspec = 3;
+  size_t nlambda = 4;
+  size_t chunk_spec = 3;
   size_t overlap_spec = 0;
-  size_t chunk_lambda = 20;
-  size_t overlap_lambda = 10;
+  size_t chunk_lambda = 4;
+  size_t overlap_lambda = 2;
 
   size_t nbin = nspec * nlambda;
 
-  mpi_matrix full_data ( nbin, 1, grid );
+  size_t ncoltest = 10;
+
+  mpi_matrix full_data ( nbin, ncoltest, grid );
   mpi_matrix_zero ( full_data );
 
-  mpi_matrix check_data ( nbin, 1, grid );
+  mpi_matrix check_data ( nbin, ncoltest, grid );
 
   for ( size_t i = 0; i < nbin; ++i ) {
-    full_data.Set ( i, 0, (double)i );
+    for ( size_t j = 0; j < ncoltest; ++j ) {
+      full_data.Set ( i, j, (double)i );
+    }
   }
   
   mpi_spec_slice_p slice ( new mpi_spec_slice ( selfcomm, comm, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
@@ -185,11 +195,15 @@ void harp::mpi_test_extract ( string const & datadir ) {
   size_t rowoff = check_data.ColShift();
   size_t rowstride = check_data.ColStride();
 
-  if ( wlocal > 0 ) {
+  size_t coloff = check_data.RowShift();
+  size_t colstride = check_data.RowStride();
+
+  for ( size_t i = 0; i < wlocal; ++i ) {
     for ( size_t j = 0; j < hlocal; ++j ) {
 
       size_t row = rowoff + j * rowstride;
-      double specval = check_data.GetLocal ( j, 0 );
+      size_t col = coloff + i * colstride;
+      double specval = check_data.GetLocal ( j, i );
 
       size_t spec_offset = (size_t)( row / full_region.n_lambda );
       size_t cur_spec = full_region.first_spec + spec_offset;
@@ -200,7 +214,7 @@ void harp::mpi_test_extract ( string const & datadir ) {
       size_t cur_bin = cur_spec * full_region.n_lambda + cur_lambda;
 
       if ( (size_t)specval != cur_bin ) {
-        cerr << "FAIL on accum_spec gang " << selfcomm.rank() << ", proc " << comm.rank() << ", bin " << cur_bin << ", " << (size_t)specval << " != " << cur_bin << endl;
+        cerr << "FAIL on accum_spec world " << selfcomm.rank() << ", proc " << comm.rank() << ", bin " << cur_bin << ", column " << col << ", " << (size_t)specval << " != " << cur_bin << endl;
         exit(1);
       }
 
@@ -221,8 +235,8 @@ void harp::mpi_test_extract ( string const & datadir ) {
 
   mpi_matrix_zero ( check_data );
 
-  mpi_matrix gang_full_data ( nbin, 1, gang_grid );
-  mpi_matrix gang_check_data ( nbin, 1, gang_grid );
+  mpi_matrix gang_full_data ( nbin, ncoltest, gang_grid );
+  mpi_matrix gang_check_data ( nbin, ncoltest, gang_grid );
 
   // world --> gang
 
@@ -248,11 +262,15 @@ void harp::mpi_test_extract ( string const & datadir ) {
   rowoff = check_data.ColShift();
   rowstride = check_data.ColStride();
 
-  if ( wlocal > 0 ) {
+  coloff = check_data.RowShift();
+  colstride = check_data.RowStride();
+
+  for ( size_t i = 0; i < wlocal; ++i ) {
     for ( size_t j = 0; j < hlocal; ++j ) {
 
       size_t row = rowoff + j * rowstride;
-      double specval = check_data.GetLocal ( j, 0 );
+      size_t col = coloff + i * colstride;
+      double specval = check_data.GetLocal ( j, i );
 
       size_t spec_offset = (size_t)( row / full_region.n_lambda );
       size_t cur_spec = full_region.first_spec + spec_offset;
@@ -263,7 +281,7 @@ void harp::mpi_test_extract ( string const & datadir ) {
       size_t cur_bin = cur_spec * full_region.n_lambda + cur_lambda;
 
       if ( (size_t)specval != cur_bin ) {
-        cerr << "FAIL on accum_spec gang " << rcomm.rank() << ", proc " << gcomm.rank() << ", bin " << cur_bin << ", " << (size_t)specval << " != " << cur_bin << endl;
+        cerr << "FAIL on accum_spec gang " << rcomm.rank() << ", proc " << gcomm.rank() << ", bin " << cur_bin << ", column " << col << ", " << (size_t)specval << " != " << cur_bin << endl;
         exit(1);
       }
 
@@ -458,8 +476,6 @@ void harp::mpi_test_extract ( string const & datadir ) {
 
     // get design matrix
 
-    
-
     serial_gauss_psf->project_transpose ( speclambda, serial_AT );
 
     // compare to local copy of distributed AT
@@ -583,7 +599,7 @@ void harp::mpi_test_extract ( string const & datadir ) {
     cout << "Testing high-level, chunked extraction..." << endl;
   }
   
-  size_t Rwidth = 0;
+  size_t Rwidth = 1;
   size_t Rband = 2 * Rwidth + 1;
 
   mpi_matrix Rtruth ( nbin, 1, grid );
@@ -648,6 +664,8 @@ void harp::mpi_test_extract ( string const & datadir ) {
   }
   globloc.Detach();
 
+  string outfile;
+
   if ( myp == 0 ) {
 
     vector_double ubuf;
@@ -659,7 +677,7 @@ void harp::mpi_test_extract ( string const & datadir ) {
     fake_err.clear();
 
     elem_to_ublas ( loc_truth, ubuf );
-    string outfile = datadir + "/mpi_extract_spec_truth.fits.out";
+    outfile = datadir + "/mpi_extract_spec_truth.fits.out";
     spec_fits::write ( outfile, ubuf, fake_err, lambda );
 
     elem_to_ublas ( loc_Rtruth, ubuf );
@@ -687,7 +705,93 @@ void harp::mpi_test_extract ( string const & datadir ) {
     chisq_reduced /= (double)( loc_Rf.Height() - 1 );
 
     cout << prefix << "Reduced Chi square = " << chisq_reduced << endl;
+
     cout << "  (PASSED)" << endl;
+  }
+
+  // write out block diagonal resolution
+
+  //string outtxt = datadir + "/mpi_extract_spec_res.txt.out";
+
+  //ofstream fout;
+  
+  outfile = datadir + "/mpi_extract_spec_res.fits.out";
+
+  fitsfile * fp;
+  int ret;
+  int status = 0;
+  
+  long naxes[3];
+  naxes[0] = nlambda;
+  naxes[1] = Rband;
+  naxes[2] = nspec;
+
+  int fitstype = fits::ftype < double > :: datatype();
+  long fpixel[2];
+
+  elem_matrix_local loc_Rdiag;
+
+  size_t write_spec_chunk = 10;
+  size_t write_spec_offset = 0;
+
+  if ( myp == 0 ) {
+    //fout.open ( outtxt.c_str(), ios::out );
+    //fout.precision(3);
+
+    fits::create ( fp, outfile );
+
+    ret = fits_create_img ( fp, fits::ftype< double >::bitpix(), 3, naxes, &status );
+    fits::check ( status );
+
+    fits::key_write ( fp, "EXTNAME", string("RESOLUTION"), "" );
+  }
+
+  while ( write_spec_offset < nspec ) {
+    if ( write_spec_offset + write_spec_chunk > nspec ) {
+      write_spec_chunk = nspec - write_spec_offset;
+    }
+
+    //cerr << "write_spec_chunk = " << write_spec_chunk << endl;
+
+    globloc.Attach( El::GLOBAL_TO_LOCAL, Rdiag );
+    if ( myp == 0 ) {
+      loc_Rdiag.Resize ( write_spec_chunk*nlambda, Rband );
+      local_matrix_zero ( loc_Rdiag );
+      globloc.Axpy ( 1.0, loc_Rdiag, write_spec_offset*nlambda, 0 );
+    }
+    globloc.Detach();
+
+    if ( myp == 0 ) {
+      fpixel[0] = 1;
+      fpixel[1] = 1;
+      fpixel[2] = write_spec_offset + 1;
+      long npix = (long)( write_spec_chunk * Rband * nlambda );
+
+      ret = fits_write_pix ( fp, fitstype, fpixel, npix, loc_Rdiag.Buffer(), &status );
+      fits::check ( status );
+
+      /*
+      for ( size_t k = 0; k < write_spec_chunk; ++k ) {
+        for ( size_t j = 0; j < Rband; ++j ) {
+          for ( size_t i = 0; i < nlambda; ++i ) {
+            double val = loc_Rdiag.Get((write_spec_offset + k)*nlambda + i, j);
+            if ( fabs(val) < 1.0e-100 ) {
+              val = 0.0;
+            }
+            fout << val << " ";
+          }
+          fout << endl;
+        }
+      }
+      */
+    }
+
+    write_spec_offset += write_spec_chunk;
+  }
+
+  if ( myp == 0 ) {
+    fits::close( fp );
+    //fout.close();
   }
 
 
