@@ -162,7 +162,7 @@ void harp::mpi_test_extract ( string const & datadir ) {
   }
 
   size_t nspec = 3;
-  size_t nlambda = 4;
+  size_t nlambda = 10;
   size_t chunk_spec = 3;
   size_t overlap_spec = 0;
   size_t chunk_lambda = 4;
@@ -711,9 +711,8 @@ void harp::mpi_test_extract ( string const & datadir ) {
 
   // write out block diagonal resolution
 
-  //string outtxt = datadir + "/mpi_extract_spec_res.txt.out";
-
-  //ofstream fout;
+  string outtxt = datadir + "/mpi_extract_spec_res.txt.out";
+  ofstream fout;
   
   outfile = datadir + "/mpi_extract_spec_res.fits.out";
 
@@ -731,12 +730,9 @@ void harp::mpi_test_extract ( string const & datadir ) {
 
   elem_matrix_local loc_Rdiag;
 
-  size_t write_spec_chunk = 10;
-  size_t write_spec_offset = 0;
-
   if ( myp == 0 ) {
-    //fout.open ( outtxt.c_str(), ios::out );
-    //fout.precision(3);
+    fout.open ( outtxt.c_str(), ios::out );
+    fout.precision(3);
 
     fits::create ( fp, outfile );
 
@@ -746,52 +742,69 @@ void harp::mpi_test_extract ( string const & datadir ) {
     fits::key_write ( fp, "EXTNAME", string("RESOLUTION"), "" );
   }
 
-  while ( write_spec_offset < nspec ) {
-    if ( write_spec_offset + write_spec_chunk > nspec ) {
-      write_spec_chunk = nspec - write_spec_offset;
-    }
-
-    //cerr << "write_spec_chunk = " << write_spec_chunk << endl;
+  for ( size_t k = 0; k < nspec; ++k ) {
 
     globloc.Attach( El::GLOBAL_TO_LOCAL, Rdiag );
     if ( myp == 0 ) {
-      loc_Rdiag.Resize ( write_spec_chunk*nlambda, Rband );
+      loc_Rdiag.Resize ( nlambda, Rband );
       local_matrix_zero ( loc_Rdiag );
-      globloc.Axpy ( 1.0, loc_Rdiag, write_spec_offset*nlambda, 0 );
+      globloc.Axpy ( 1.0, loc_Rdiag, k*nlambda, 0 );
     }
     globloc.Detach();
 
     if ( myp == 0 ) {
       fpixel[0] = 1;
       fpixel[1] = 1;
-      fpixel[2] = write_spec_offset + 1;
-      long npix = (long)( write_spec_chunk * Rband * nlambda );
+      fpixel[2] = k + 1;
+      long npix = (long)( Rband * nlambda );
 
-      ret = fits_write_pix ( fp, fitstype, fpixel, npix, loc_Rdiag.Buffer(), &status );
-      fits::check ( status );
+      // remap memory to match output format
+      vector_double buffer(npix);
+      buffer.clear();
 
-      /*
-      for ( size_t k = 0; k < write_spec_chunk; ++k ) {
+      for ( size_t i = 0; i < nlambda; ++i ) {
         for ( size_t j = 0; j < Rband; ++j ) {
-          for ( size_t i = 0; i < nlambda; ++i ) {
-            double val = loc_Rdiag.Get((write_spec_offset + k)*nlambda + i, j);
+          size_t outdiag = (Rband - 1) - j;
+          int64_t outlambda = -1;
+          if ( j >= Rwidth ) {
+            outlambda = (Rband - j) + i;
+
+            // fixme : clean up indexing!
+
+
+          } else {
+            if ( i >= (Rwidth - j) ) {
+              outlambda = i - (Rwidth - j);
+            }
+          }
+          if ( outlambda >= 0 ) {
+            double val = loc_Rdiag.Get(i, j);
             if ( fabs(val) < 1.0e-100 ) {
               val = 0.0;
             }
-            fout << val << " ";
+            buffer[outdiag * nlambda + outlambda] = val;
           }
-          fout << endl;
         }
       }
-      */
-    }
 
-    write_spec_offset += write_spec_chunk;
+      ret = fits_write_pix ( fp, fitstype, fpixel, npix, &(buffer[0]), &status );
+      fits::check ( status );
+
+      fout << "spec " << k << endl;
+
+      for ( size_t j = 0; j < Rband; ++j ) {
+        for ( size_t i = 0; i < nlambda; ++i ) {        
+          fout << buffer[j*nlambda+i] << " ";
+        }
+        fout << endl;
+      }
+      
+    }
   }
 
   if ( myp == 0 ) {
     fits::close( fp );
-    //fout.close();
+    fout.close();
   }
 
 
