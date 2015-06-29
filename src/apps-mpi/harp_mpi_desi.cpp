@@ -732,6 +732,10 @@ int main ( int argc, char *argv[] ) {
   size_t write_spec_chunk = 10;
   size_t write_spec_offset = 0;
 
+  // write buffer
+  size_t write_spec_nbuf = write_spec_chunk * res_band * psf_nlambda;
+  vector_double resbuffer;
+
   if ( myp == 0 ) {
     fits::open_readwrite ( fp, outfile );
     fits::img_seek ( fp, 3 );
@@ -740,6 +744,8 @@ int main ( int argc, char *argv[] ) {
     fits::check ( status );
 
     fits::key_write ( fp, "EXTNAME", string("RESOLUTION"), "" );
+
+    resbuffer.resize(write_spec_nbuf);
   }
 
   while ( write_spec_offset < psf_nspec ) {
@@ -747,13 +753,52 @@ int main ( int argc, char *argv[] ) {
       write_spec_chunk = psf_nspec - write_spec_offset;
     }
 
-    globloc.Attach( El::GLOBAL_TO_LOCAL, data_Rdiag );
     if ( myp == 0 ) {
-      loc_Rdiag.Resize ( write_spec_chunk*psf_nlambda, res_band );
-      local_matrix_zero ( loc_Rdiag );
-      globloc.Axpy ( 1.0, loc_Rdiag, write_spec_offset*psf_nlambda, 0 );
+      resbuffer.clear();
     }
-    globloc.Detach();
+
+    // we have to copy the data into the buffer one spec
+    // at a time, due to memory layout.
+    for ( size_t k = 0; k < write_spec_chunk; ++k ) {
+
+      globloc.Attach( El::GLOBAL_TO_LOCAL, data_Rdiag );
+      if ( myp == 0 ) {
+        loc_Rdiag.Resize ( psf_nlambda, res_band );
+        local_matrix_zero ( loc_Rdiag );
+        globloc.Axpy ( 1.0, loc_Rdiag, (write_spec_offset+k)*psf_nlambda, 0 );
+      }
+      globloc.Detach();
+
+      if ( myp == 0 ) {
+        size_t boff = k * res_band * psf_nlambda;
+
+        for ( size_t j = 0; j < res_band; ++j ) {
+          for ( size_t i = 0; i < psf_nlambda; ++i ) {
+          
+            size_t outdiag = (res_band - 1) - j;
+            int64_t outlambda = -1;
+            
+            int64_t loff = (int64_t)j - (int64_t)res_width;
+
+            if ( loff >= 0 ) {
+              outlambda = (int64_t)i + loff;
+              if ( outlambda >= (int64_t)psf_nlambda ) {
+                outlambda = -1;
+              }
+            } else {
+              outlambda = (int64_t)i + loff;
+            }
+            if ( outlambda >= 0 ) {
+              double val = loc_Rdiag.Get(i, j);
+              if ( fabs(val) < 1.0e-100 ) {
+                val = 0.0;
+              }
+              resbuffer[boff + outdiag * psf_nlambda + outlambda] = val;
+            }
+          }
+        }
+      }
+    }
 
     if ( myp == 0 ) {
       fpixel[0] = 1;
@@ -761,7 +806,7 @@ int main ( int argc, char *argv[] ) {
       fpixel[2] = write_spec_offset + 1;
       long npix = (long)( write_spec_chunk * res_band * psf_nlambda );
 
-      ret = fits_write_pix ( fp, fitstype, fpixel, npix, loc_Rdiag.Buffer(), &status );
+      ret = fits_write_pix ( fp, fitstype, fpixel, npix, &(resbuffer[0]), &status );
       fits::check ( status );
     }
 

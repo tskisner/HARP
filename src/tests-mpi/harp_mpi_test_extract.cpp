@@ -730,6 +730,13 @@ void harp::mpi_test_extract ( string const & datadir ) {
 
   elem_matrix_local loc_Rdiag;
 
+  size_t write_spec_chunk = 2;
+  size_t write_spec_offset = 0;
+
+  // write buffer
+  size_t write_spec_nbuf = write_spec_chunk * Rband * nlambda;
+  vector_double buffer;
+
   if ( myp == 0 ) {
     fout.open ( outtxt.c_str(), ios::out );
     fout.precision(3);
@@ -740,67 +747,82 @@ void harp::mpi_test_extract ( string const & datadir ) {
     fits::check ( status );
 
     fits::key_write ( fp, "EXTNAME", string("RESOLUTION"), "" );
+
+    buffer.resize(write_spec_nbuf);
   }
 
-  for ( size_t k = 0; k < nspec; ++k ) {
-
-    globloc.Attach( El::GLOBAL_TO_LOCAL, Rdiag );
-    if ( myp == 0 ) {
-      loc_Rdiag.Resize ( nlambda, Rband );
-      local_matrix_zero ( loc_Rdiag );
-      globloc.Axpy ( 1.0, loc_Rdiag, k*nlambda, 0 );
+  while ( write_spec_offset < nspec ) {
+    if ( write_spec_offset + write_spec_chunk > nspec ) {
+      write_spec_chunk = nspec - write_spec_offset;
     }
-    globloc.Detach();
+
+    if ( myp == 0 ) {
+      buffer.clear();
+    }
+
+    // we have to copy the data into the buffer one spec
+    // at a time, due to memory layout.
+    for ( size_t k = 0; k < write_spec_chunk; ++k ) {
+
+      globloc.Attach( El::GLOBAL_TO_LOCAL, Rdiag );
+      if ( myp == 0 ) {
+        loc_Rdiag.Resize ( nlambda, Rband );
+        local_matrix_zero ( loc_Rdiag );
+        globloc.Axpy ( 1.0, loc_Rdiag, (write_spec_offset+k)*nlambda, 0 );
+      }
+      globloc.Detach();
+
+      if ( myp == 0 ) {
+        fout << "spec " << k << endl;
+
+        size_t boff = k * Rband * nlambda;
+
+        for ( size_t j = 0; j < Rband; ++j ) {
+          for ( size_t i = 0; i < nlambda; ++i ) {
+          
+            size_t outdiag = (Rband - 1) - j;
+            int64_t outlambda = -1;
+            
+            int64_t loff = (int64_t)j - (int64_t)Rwidth;
+
+            if ( loff >= 0 ) {
+              outlambda = (int64_t)i + loff;
+              if ( outlambda >= (int64_t)nlambda ) {
+                outlambda = -1;
+              }
+            } else {
+              outlambda = (int64_t)i + loff;
+            }
+            if ( outlambda >= 0 ) {
+              double val = loc_Rdiag.Get(i, j);
+              if ( fabs(val) < 1.0e-100 ) {
+                val = 0.0;
+              }
+              buffer[boff + outdiag * nlambda + outlambda] = val;
+            }
+          }
+        }
+
+        for ( size_t j = 0; j < Rband; ++j ) {
+          for ( size_t i = 0; i < nlambda; ++i ) {        
+            fout << buffer[boff+j*nlambda+i] << " ";
+          }
+          fout << endl;
+        }
+      }
+    }
 
     if ( myp == 0 ) {
       fpixel[0] = 1;
       fpixel[1] = 1;
-      fpixel[2] = k + 1;
-      long npix = (long)( Rband * nlambda );
-
-      // remap memory to match output format
-      vector_double buffer(npix);
-      buffer.clear();
-
-      for ( size_t j = 0; j < Rband; ++j ) {
-        for ( size_t i = 0; i < nlambda; ++i ) {
-        
-          size_t outdiag = (Rband - 1) - j;
-          int64_t outlambda = -1;
-          
-          int64_t loff = (int64_t)j - (int64_t)Rwidth;
-
-          if ( loff >= 0 ) {
-            outlambda = (int64_t)i + loff;
-            if ( outlambda >= (int64_t)nlambda ) {
-              outlambda = -1;
-            }
-          } else {
-            outlambda = (int64_t)i + loff;
-          }
-          if ( outlambda >= 0 ) {
-            double val = loc_Rdiag.Get(i, j);
-            if ( fabs(val) < 1.0e-100 ) {
-              val = 0.0;
-            }
-            buffer[outdiag * nlambda + outlambda] = val;
-          }
-        }
-      }
+      fpixel[2] = write_spec_offset + 1;
+      long npix = (long)( write_spec_chunk * Rband * nlambda );
 
       ret = fits_write_pix ( fp, fitstype, fpixel, npix, &(buffer[0]), &status );
       fits::check ( status );
-
-      fout << "spec " << k << endl;
-
-      for ( size_t j = 0; j < Rband; ++j ) {
-        for ( size_t i = 0; i < nlambda; ++i ) {        
-          fout << buffer[j*nlambda+i] << " ";
-        }
-        fout << endl;
-      }
-      
     }
+
+    write_spec_offset += write_spec_chunk;
   }
 
   if ( myp == 0 ) {
