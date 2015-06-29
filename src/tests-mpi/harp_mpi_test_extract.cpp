@@ -762,20 +762,21 @@ void harp::mpi_test_extract ( string const & datadir ) {
       vector_double buffer(npix);
       buffer.clear();
 
-      for ( size_t i = 0; i < nlambda; ++i ) {
-        for ( size_t j = 0; j < Rband; ++j ) {
+      for ( size_t j = 0; j < Rband; ++j ) {
+        for ( size_t i = 0; i < nlambda; ++i ) {
+        
           size_t outdiag = (Rband - 1) - j;
           int64_t outlambda = -1;
-          if ( j >= Rwidth ) {
-            outlambda = (Rband - j) + i;
+          
+          int64_t loff = (int64_t)j - (int64_t)Rwidth;
 
-            // fixme : clean up indexing!
-
-
-          } else {
-            if ( i >= (Rwidth - j) ) {
-              outlambda = i - (Rwidth - j);
+          if ( loff >= 0 ) {
+            outlambda = (int64_t)i + loff;
+            if ( outlambda >= (int64_t)nlambda ) {
+              outlambda = -1;
             }
+          } else {
+            outlambda = (int64_t)i + loff;
           }
           if ( outlambda >= 0 ) {
             double val = loc_Rdiag.Get(i, j);
