@@ -165,8 +165,11 @@ void harp::mpi_test_extract ( string const & datadir ) {
   size_t nlambda = 10;
   size_t chunk_spec = 3;
   size_t overlap_spec = 0;
-  size_t chunk_lambda = 4;
-  size_t overlap_lambda = 2;
+  size_t chunk_lambda = 2;
+  size_t overlap_lambda = 3;
+
+  size_t Rwidth = 2;
+  size_t Rband = 2 * Rwidth + 1;
 
   size_t nbin = nspec * nlambda;
 
@@ -329,6 +332,7 @@ void harp::mpi_test_extract ( string const & datadir ) {
   gauss_props.put_child ( "lambda_spec", spec_props );
   gauss_props.put ( "bundle_size", nspec );
   gauss_props.put ( "nbundle", 1 );
+  gauss_props.put ( "fwhm", 3.0 );
 
   mpi_psf_p gauss_psf ( new mpi_psf ( comm, "gauss_sim", gauss_props ) );
 
@@ -599,8 +603,7 @@ void harp::mpi_test_extract ( string const & datadir ) {
     cout << "Testing high-level, chunked extraction..." << endl;
   }
   
-  size_t Rwidth = 1;
-  size_t Rband = 2 * Rwidth + 1;
+  
 
   mpi_matrix Rtruth ( nbin, 1, grid );
   mpi_matrix f ( nbin, 1, grid );
