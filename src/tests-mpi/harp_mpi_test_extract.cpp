@@ -312,10 +312,10 @@ void harp::mpi_test_extract ( string const & datadir ) {
   spec_props.put ( "lambda_n", nlambda );
   spec_props.put ( "lambda_start", first_lambda );
   spec_props.put ( "lambda_stop", last_lambda );
-  spec_props.put ( "back", 10.0 );
-  spec_props.put ( "atm", 500.0 );
-  spec_props.put ( "obj", 80.0 );
-  spec_props.put ( "atmspace", 12 );
+  spec_props.put ( "back", 500.0 );
+  spec_props.put ( "atm", 0.0 );
+  spec_props.put ( "obj", 0.0 );
+  spec_props.put ( "atmspace", 3 );
   spec_props.put ( "skymod", nspec );
   mpi_spec_p testspec ( new mpi_spec ( comm, "sim", spec_props ) );
 
@@ -332,7 +332,7 @@ void harp::mpi_test_extract ( string const & datadir ) {
   gauss_props.put_child ( "lambda_spec", spec_props );
   gauss_props.put ( "bundle_size", nspec );
   gauss_props.put ( "nbundle", 1 );
-  gauss_props.put ( "fwhm", 3.0 );
+  gauss_props.put ( "fwhm", 6.0 );
 
   mpi_psf_p gauss_psf ( new mpi_psf ( comm, "gauss_sim", gauss_props ) );
 
@@ -603,7 +603,14 @@ void harp::mpi_test_extract ( string const & datadir ) {
     cout << "Testing high-level, chunked extraction..." << endl;
   }
   
-  
+  if ( myp == 0 ) {
+    string outfile = datadir + "/mpi_extract_image_input.fits.out";
+    vector_double udata;
+    vector_double uinv;
+    elem_to_ublas( img_data, udata );
+    elem_to_ublas( img_inv, uinv );
+    image_fits::write ( outfile, img->n_rows(), udata, uinv );
+  }
 
   mpi_matrix Rtruth ( nbin, 1, grid );
   mpi_matrix f ( nbin, 1, grid );

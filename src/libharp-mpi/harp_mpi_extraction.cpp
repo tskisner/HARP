@@ -1049,13 +1049,13 @@ void harp::mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_m
 
     mpi_resolution ( eig_vals, eig_vecs, slice_err, res );
 
-    
+    /*
     outres.str("");
     outres << "res_" << region_index << ".out";
     fout.open(outres.str().c_str(), ios::out);
     El::Print ( res, "res", fout );
     fout.close();
-    
+    */
 
     if ( truth.Height() > 0 ) {
 
@@ -1159,13 +1159,13 @@ void harp::mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_m
       locglob.Axpy ( 1.0, local_slice_Rdiag, 0, 0 );
       locglob.Detach();
 
-      
+      /*
       outres.str("");
       outres << "res_diag_" << region_index << ".out";
       fout.open(outres.str().c_str(), ios::out);
       El::Print ( slice_Rdiag, "res_diag", fout );
       fout.close();
-      
+      */
     }
 
     // accumulate results to gang solution
@@ -1175,13 +1175,13 @@ void harp::mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_m
     mpi_accum_spec ( (*regit), full_region, slice_err, true, gang_err );
     mpi_accum_spec ( (*regit), full_region, slice_Rdiag, true, gang_Rdiag );
 
-    
+    /*
     outres.str("");
     outres << "res_diag_gang_" << region_index << ".out";
     fout.open(outres.str().c_str(), ios::out);
     El::Print ( gang_Rdiag, "res_diag", fout );
     fout.close();
-    
+    */
 
     // accumulate timing for this region
 
@@ -1242,13 +1242,13 @@ void harp::mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_m
   mpi_gang_accum ( gang_Rdiag, Rdiag );
   mpi_gang_accum ( gang_Rtruth, Rtruth );
 
-  
+  /*
   outres.str("");
   outres << "res_diag_global.out";
   fout.open(outres.str().c_str(), ios::out);
   El::Print ( Rdiag, "res_diag", fout );
   fout.close();
-  
+  */
 
   return;
 }
