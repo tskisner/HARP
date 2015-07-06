@@ -47,6 +47,8 @@ int main ( int argc, char *argv[] ) {
   double lambda_z_max = 9824.0;
   double lambda_min;
   double lambda_max;
+  double lambda_hard_min;
+  double lambda_hard_max;
 
   size_t spec_width = 25;
   size_t spec_overlap = 0;
@@ -187,6 +189,12 @@ int main ( int argc, char *argv[] ) {
     }
   }
 
+  // we specify an extra overlap range in lambda, to remove
+  // edge effects.
+
+  lambda_hard_min = lambda_min - (lambda_overlap * lambda_res);
+  lambda_hard_max = lambda_max + (lambda_overlap * lambda_res);
+
 
   // intra-gang communicator and grid
 
@@ -220,7 +228,7 @@ int main ( int argc, char *argv[] ) {
   boost::mpi::communicator rcomm = comm.split ( grank, gang );
 
 
-  // Create input globally-distributed PSF
+  // Create input globally-distributed PSF from the serial one
 
   if ( ( myp == 0 ) && ( ! quiet ) ) {
     cout << prefix << "Creating PSF..." << endl;
@@ -233,8 +241,8 @@ int main ( int argc, char *argv[] ) {
 
   pathprops.clear();
   pathprops.put ( "path", in_psf );
-  pathprops.put ( "wavemin", lambda_min );
-  pathprops.put ( "wavemax", lambda_max );
+  pathprops.put ( "wavemin", lambda_hard_min );
+  pathprops.put ( "wavemax", lambda_hard_max );
   pathprops.put ( "wavebin", lambda_res );
   pathprops.put ( "fibermin", spec_min );
   pathprops.put ( "fibermax", spec_max );
@@ -543,7 +551,7 @@ int main ( int argc, char *argv[] ) {
 
   tstart = MPI_Wtime();
 
-  // get local copies
+  // get local copies.
 
   elem_matrix_local loc_truth;
   elem_matrix_local loc_Rtruth;
@@ -596,6 +604,19 @@ int main ( int argc, char *argv[] ) {
   boost::property_tree::ptree solution_props;
   string outfile;
 
+  // define the clipping in wavelength to remove the extra overlap
+  // region that we added at the beginning.
+
+  size_t clip_lambda_start = lambda_overlap;
+  size_t clip_lambda_stop = psf_nlambda - lambda_overlap;
+  size_t clip_nlambda = clip_lambda_stop - clip_lambda_start;
+  size_t clip_nbins = psf_nspec * clip_nlambda;
+
+  vector_double clip_lambda( clip_nlambda );
+  for ( size_t i = 0; i < clip_nlambda; ++i ) {
+    clip_lambda[i] = lambda[clip_lambda_start + i];
+  }
+
   if ( myp == 0 ) {
 
     boost::property_tree::ptree child;
@@ -606,7 +627,7 @@ int main ( int argc, char *argv[] ) {
     solution_props = boost::dynamic_pointer_cast < image_desi, image > ( img->local() )->meta();
 
     child.clear();
-    child.put ( "VAL", lambda[0] );
+    child.put ( "VAL", clip_lambda[0] );
     child.put ( "TYPE", "F" );
     child.put ( "COM", "Starting wavelength [Angstroms]" );
     solution_props.put_child ( "CRVAL1", child );
@@ -661,38 +682,58 @@ int main ( int argc, char *argv[] ) {
     vector_double ubuf;
     elem_to_ublas ( loc_Rf, ubuf );
 
+    vector_double clip_errbuf( clip_nbins );
+    vector_double clip_ubuf( clip_nbins );
+
+    for ( size_t i = 0; i < psf_nspec; ++i ) {
+      for ( size_t j = 0; j < clip_nlambda; ++j ) {
+        clip_errbuf[i * clip_nlambda + j] = errbuf[i * psf_nlambda + clip_lambda_start + j];
+        clip_ubuf[i * clip_nlambda + j] = ubuf[i * psf_nlambda + clip_lambda_start + j];
+      }
+    }
+
     outfile = outdir + "/frame-" + camera + "-" + expid + ".fits";
-    spec_desi::write ( outfile, solution_props, ubuf, errbuf, lambda );
+    spec_desi::write ( outfile, solution_props, clip_ubuf, clip_errbuf, clip_lambda );
 
     if ( dotruth ) {
 
       elem_to_ublas ( loc_Rtruth, ubuf );
 
+      for ( size_t i = 0; i < psf_nspec; ++i ) {
+        for ( size_t j = 0; j < clip_nlambda; ++j ) {
+          clip_ubuf[i * clip_nlambda + j] = ubuf[i * psf_nlambda + clip_lambda_start + j];
+        }
+      }
+
       outfile = outdir + "/harp_rsim-" + camera + "-" + expid + ".fits";
-      spec_desi::write ( outfile, solution_props, ubuf, errbuf, lambda );
+      spec_desi::write ( outfile, solution_props, clip_ubuf, clip_errbuf, clip_lambda );
       
-      vector_double data_chisq ( psf_nbins );
+      vector_double data_chisq ( clip_nbins );
 
       double chisq_reduced = 0.0;
 
-      for ( size_t i = 0; i < psf_nbins; ++i ) {
-        if ( loc_err.Get(i,0) > std::numeric_limits < double > :: epsilon() ) {
-          data_chisq[i] = ( loc_Rf.Get(i,0) - loc_Rtruth.Get(i,0) ) / loc_err.Get(i,0);
-          data_chisq[i] *= data_chisq[i];
-        } else {
-          data_chisq[i] = 0.0;
+      for ( size_t i = 0; i < psf_nspec; ++i ) {
+        for ( size_t j = 0; j < clip_nlambda; ++j ) {
+          size_t w = i * psf_nlambda + clip_lambda_start + j;
+          size_t v = i * clip_nlambda + j;
+          if ( loc_err.Get(w,0) > std::numeric_limits < double > :: epsilon() ) {
+            data_chisq[v] = ( loc_Rf.Get(w,0) - loc_Rtruth.Get(w,0) ) / loc_err.Get(w,0);
+            data_chisq[v] *= data_chisq[v];
+          } else {
+            data_chisq[v] = 0.0;
+          }
+          chisq_reduced += data_chisq[v];
         }
-        chisq_reduced += data_chisq[i];
       }
 
-      chisq_reduced /= (double)( psf_nbins - 1 );
+      chisq_reduced /= (double)( clip_nbins - 1 );
 
       if ( ! quiet ) {
         cout << prefix << "  Reduced Chi square = " << chisq_reduced << endl;
       }
 
       outfile = outdir + "/harp_chisq-" + camera + "-" + expid + ".fits";
-      spec_desi::write ( outfile, solution_props, data_chisq, errbuf, lambda );
+      spec_desi::write ( outfile, solution_props, data_chisq, clip_errbuf, clip_lambda );
 
     }
 
@@ -720,7 +761,8 @@ int main ( int argc, char *argv[] ) {
   int status = 0;
   
   long naxes[3];
-  naxes[0] = psf_nlambda;
+  naxes[0] = clip_nlambda;
+  //naxes[0] = psf_nlambda;
   naxes[1] = res_band;
   naxes[2] = psf_nspec;
 
@@ -733,7 +775,8 @@ int main ( int argc, char *argv[] ) {
   size_t write_spec_offset = 0;
 
   // write buffer
-  size_t write_spec_nbuf = write_spec_chunk * res_band * psf_nlambda;
+  size_t write_spec_nbuf = write_spec_chunk * res_band * clip_nlambda;
+  //size_t write_spec_nbuf = write_spec_chunk * res_band * psf_nlambda;
   vector_double resbuffer;
 
   if ( myp == 0 ) {
@@ -770,30 +813,33 @@ int main ( int argc, char *argv[] ) {
       globloc.Detach();
 
       if ( myp == 0 ) {
-        size_t boff = k * res_band * psf_nlambda;
+        size_t boff = k * res_band * clip_nlambda;
+        //size_t boff = k * res_band * psf_nlambda;
 
         for ( size_t j = 0; j < res_band; ++j ) {
-          for ( size_t i = 0; i < psf_nlambda; ++i ) {
+          //for ( size_t i = 0; i < psf_nlambda; ++i ) {
+          for ( size_t i = 0; i < clip_nlambda; ++i ) {
           
             size_t outdiag = (res_band - 1) - j;
             int64_t outlambda = -1;
+            int64_t inlambda = clip_lambda_start + i;
             
             int64_t loff = (int64_t)j - (int64_t)res_width;
 
             if ( loff >= 0 ) {
-              outlambda = (int64_t)i + loff;
-              if ( outlambda >= (int64_t)psf_nlambda ) {
+              outlambda = inlambda + loff;
+              if ( outlambda >= (int64_t)clip_nlambda ) {
                 outlambda = -1;
               }
             } else {
-              outlambda = (int64_t)i + loff;
+              outlambda = inlambda + loff;
             }
             if ( outlambda >= 0 ) {
-              double val = loc_Rdiag.Get(i, j);
+              double val = loc_Rdiag.Get(inlambda, j);
               if ( fabs(val) < 1.0e-100 ) {
                 val = 0.0;
               }
-              resbuffer[boff + outdiag * psf_nlambda + outlambda] = val;
+              resbuffer[boff + outdiag * clip_nlambda + outlambda] = val;
             }
           }
         }
@@ -804,7 +850,7 @@ int main ( int argc, char *argv[] ) {
       fpixel[0] = 1;
       fpixel[1] = 1;
       fpixel[2] = write_spec_offset + 1;
-      long npix = (long)( write_spec_chunk * res_band * psf_nlambda );
+      long npix = (long)( write_spec_chunk * res_band * clip_nlambda );
 
       ret = fits_write_pix ( fp, fitstype, fpixel, npix, &(resbuffer[0]), &status );
       fits::check ( status );
@@ -830,6 +876,14 @@ int main ( int argc, char *argv[] ) {
   
 
   if ( debug ) {
+
+    boost::property_tree::ptree child;
+    child.clear();
+    child.put ( "VAL", lambda[0] );
+    child.put ( "TYPE", "F" );
+    child.put ( "COM", "Starting wavelength [Angstroms]" );
+    solution_props.erase("CRVAL1");
+    solution_props.put_child ( "CRVAL1", child );
 
     if ( ( myp == 0 ) && ( ! quiet ) ) {
       cout << prefix << "Writing projected, deconvolved spectra..." << endl;
