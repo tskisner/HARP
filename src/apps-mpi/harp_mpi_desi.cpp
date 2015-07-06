@@ -682,6 +682,8 @@ int main ( int argc, char *argv[] ) {
     vector_double ubuf;
     elem_to_ublas ( loc_Rf, ubuf );
 
+    //cerr << "clipping " << psf_nspec << " spectra to lambda [0," << (psf_nlambda-1) << "] --> [" << clip_lambda_start << "," << (clip_lambda_stop-1) << "] (" << clip_nbins << " bins)" << endl; 
+
     vector_double clip_errbuf( clip_nbins );
     vector_double clip_ubuf( clip_nbins );
 
@@ -814,6 +816,7 @@ int main ( int argc, char *argv[] ) {
 
       if ( myp == 0 ) {
         size_t boff = k * res_band * clip_nlambda;
+	//cerr << "copying resolution spec " << (k + write_spec_offset) << "(" << boff << "-" << (boff + res_band * clip_nlambda) << ") to memory buffer" << endl;
         //size_t boff = k * res_band * psf_nlambda;
 
         for ( size_t j = 0; j < res_band; ++j ) {
@@ -826,14 +829,11 @@ int main ( int argc, char *argv[] ) {
             
             int64_t loff = (int64_t)j - (int64_t)res_width;
 
-            if ( loff >= 0 ) {
-              outlambda = inlambda + loff;
-              if ( outlambda >= (int64_t)clip_nlambda ) {
-                outlambda = -1;
-              }
-            } else {
-              outlambda = inlambda + loff;
+            outlambda = inlambda + loff;
+            if ( outlambda >= (int64_t)clip_nlambda ) {
+              outlambda = -1;
             }
+
             if ( outlambda >= 0 ) {
               double val = loc_Rdiag.Get(inlambda, j);
               if ( fabs(val) < 1.0e-100 ) {
