@@ -195,7 +195,6 @@ int main ( int argc, char *argv[] ) {
   lambda_hard_min = lambda_min - (lambda_overlap * lambda_res);
   lambda_hard_max = lambda_max + (lambda_overlap * lambda_res);
 
-
   // intra-gang communicator and grid
 
   if ( gangsize == 0 ) {
@@ -244,8 +243,8 @@ int main ( int argc, char *argv[] ) {
   pathprops.put ( "wavemin", lambda_hard_min );
   pathprops.put ( "wavemax", lambda_hard_max );
   pathprops.put ( "wavebin", lambda_res );
-  pathprops.put ( "fibermin", spec_min );
-  pathprops.put ( "fibermax", spec_max );
+  pathprops.put ( "fibermin", 0 );
+  pathprops.put ( "fibermax", 499 );
   pathprops.put ( "type", "xml" );
   if ( vm.count( "psf_interp" ) ) {
     pathprops.put ( "interpolation", 1 );
@@ -355,25 +354,32 @@ int main ( int argc, char *argv[] ) {
 
   }
 
+  // select the globa region of spec and wavelength space that we are
+  // solving for.
+
+  size_t global_first_spec = spec_min;
+  size_t global_nspec = spec_max - spec_min + 1;
+
+  size_t global_nbins = global_nspec * psf_nlambda;
 
   // output spectral products
 
-  mpi_matrix data_truth ( psf_nbins, 1, grid );
+  mpi_matrix data_truth ( global_nbins, 1, grid );
   mpi_matrix_zero ( data_truth );
 
-  mpi_matrix data_Rtruth ( psf_nbins, 1, grid );
+  mpi_matrix data_Rtruth ( global_nbins, 1, grid );
   mpi_matrix_zero ( data_Rtruth );
   
-  mpi_matrix data_f ( psf_nbins, 1, grid );
+  mpi_matrix data_f ( global_nbins, 1, grid );
   mpi_matrix_zero ( data_f );
   
-  mpi_matrix data_Rf ( psf_nbins, 1, grid );
+  mpi_matrix data_Rf ( global_nbins, 1, grid );
   mpi_matrix_zero ( data_Rf );
   
-  mpi_matrix data_err ( psf_nbins, 1, grid );
+  mpi_matrix data_err ( global_nbins, 1, grid );
   mpi_matrix_zero ( data_err );
 
-  mpi_matrix data_Rdiag ( psf_nbins, res_band, grid );
+  mpi_matrix data_Rdiag ( global_nbins, res_band, grid );
   mpi_matrix_zero ( data_Rdiag );
 
 
@@ -401,9 +407,9 @@ int main ( int argc, char *argv[] ) {
     size_t truth_nlambda = truth_spec->n_lambda();
     size_t truth_nbins = truth_nspec * truth_nlambda;
 
-    if ( truth_nbins != psf_nbins ) {
+    if ( truth_nbins != global_nbins ) {
       ostringstream o;
-      o << "truth spectrum has " << truth_nbins << " spectral bins, but the PSF has " << psf_nbins << " bins";
+      o << "truth spectrum has " << truth_nbins << " spectral bins, but the PSF has " << global_nbins << " bins";
       HARP_MPI_ABORT( myp, o.str().c_str() );
     }
 
@@ -891,7 +897,7 @@ int main ( int argc, char *argv[] ) {
 
     tstart = MPI_Wtime();
 
-    mpi_matrix_sparse AT ( comm, psf_nbins, npix );
+    mpi_matrix_sparse AT ( comm, global_nbins, npix );
 
     design->project_transpose ( AT );
 

@@ -68,11 +68,13 @@ void harp::spec_slice::calc ( size_t n, size_t chunk, size_t overlap, vector < s
 
 // the chunk size specified is the desired *output* size.  The input will have the additional overlaps factored in.
 
-harp::spec_slice::spec_slice ( size_t nworker, size_t nspec, size_t nlambda, size_t chunk_nspec, size_t chunk_nlambda, size_t overlap_spec, size_t overlap_lambda ) {
+harp::spec_slice::spec_slice ( size_t nworker, size_t first_spec, size_t first_lambda, size_t nspec, size_t nlambda, size_t chunk_nspec, size_t chunk_nlambda, size_t overlap_spec, size_t overlap_lambda ) {
 
   nworker_ = nworker;
   overlap_spec_ = overlap_spec;
   overlap_lambda_ = overlap_lambda;
+  first_spec_ = first_spec;
+  first_lambda_ = first_lambda_;
   nspec_ = nspec;
   nlambda_ = nlambda;
   chunk_nspec_ = chunk_nspec;
@@ -82,8 +84,8 @@ harp::spec_slice::spec_slice ( size_t nworker, size_t nspec, size_t nlambda, siz
 
   full_region_.overlap_spec = 0;
   full_region_.overlap_lambda = 0;
-  full_region_.first_spec = 0;
-  full_region_.first_lambda = 0;
+  full_region_.first_spec = first_spec;
+  full_region_.first_lambda = first_lambda;
   full_region_.first_good_spec = 0;
   full_region_.first_good_lambda = 0;
   full_region_.n_spec = nspec;
@@ -152,14 +154,14 @@ harp::spec_slice::spec_slice ( size_t nworker, size_t nspec, size_t nlambda, siz
       spec_slice_region reg;
       reg.overlap_spec = overlap_spec_;
       reg.overlap_lambda = overlap_lambda_;
-      reg.first_spec = spec_start[ abs_spec ];
-      reg.first_lambda = lambda_start[ abs_lambda ];
-      reg.first_good_spec = good_spec_start[ abs_spec ];
-      reg.first_good_lambda = good_lambda_start[ abs_lambda ];
-      reg.n_spec = spec_stop[ abs_spec ] - reg.first_spec + 1;
-      reg.n_lambda = lambda_stop[ abs_lambda ] - reg.first_lambda + 1;
-      reg.n_good_spec = good_spec_stop[ abs_spec ] - reg.first_good_spec + 1;
-      reg.n_good_lambda = good_lambda_stop[ abs_lambda ] - reg.first_good_lambda + 1;
+      reg.first_spec = first_spec_ + spec_start[ abs_spec ];
+      reg.first_lambda = first_lambda_ + lambda_start[ abs_lambda ];
+      reg.first_good_spec = first_spec_ + good_spec_start[ abs_spec ];
+      reg.first_good_lambda = first_lambda_ + good_lambda_start[ abs_lambda ];
+      reg.n_spec = (first_spec_ + spec_stop[ abs_spec ]) - reg.first_spec + 1;
+      reg.n_lambda = (first_lambda_ + lambda_stop[ abs_lambda ]) - reg.first_lambda + 1;
+      reg.n_good_spec = (first_spec_ + good_spec_stop[ abs_spec ]) - reg.first_good_spec + 1;
+      reg.n_good_lambda = (first_lambda_ + good_lambda_stop[ abs_lambda ]) - reg.first_good_lambda + 1;
 
       (regions_[ w ]).push_back ( reg );
 

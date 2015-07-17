@@ -15,7 +15,7 @@ namespace harp {
     
     public :
 
-      mpi_spec_slice ( boost::mpi::communicator const & rcomm, boost::mpi::communicator const & gcomm, size_t nspec, size_t nlambda, size_t chunk_nspec, size_t chunk_nlambda, size_t overlap_spec, size_t overlap_lambda );
+      mpi_spec_slice ( boost::mpi::communicator const & rcomm, boost::mpi::communicator const & gcomm, size_t first_spec, size_t first_lambda, size_t nspec, size_t nlambda, size_t chunk_nspec, size_t chunk_nlambda, size_t overlap_spec, size_t overlap_lambda );
       
       ~mpi_spec_slice ( ) { }
 

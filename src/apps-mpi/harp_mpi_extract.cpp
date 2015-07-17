@@ -365,7 +365,7 @@ int main ( int argc, char *argv[] ) {
     lambda_width = psf_nlambda;
   }
 
-  mpi_spec_slice_p slice ( new mpi_spec_slice ( rcomm, gcomm, psf_nspec, psf_nlambda, spec_width, lambda_width, spec_overlap, lambda_overlap ) );
+  mpi_spec_slice_p slice ( new mpi_spec_slice ( rcomm, gcomm, 0, 0, psf_nspec, psf_nlambda, spec_width, lambda_width, spec_overlap, lambda_overlap ) );
 
   size_t gang_nregion = slice->regions().size();
   size_t nregion = 0;

@@ -301,7 +301,7 @@ int main ( int argc, char *argv[] ) {
     lambda_width = psf_nlambda;
   }
 
-  spec_slice_p slice ( new spec_slice ( 1, psf_nspec, psf_nlambda, spec_width, lambda_width, spec_overlap, lambda_overlap ) );
+  spec_slice_p slice ( new spec_slice ( 1, 0, 0, psf_nspec, psf_nlambda, spec_width, lambda_width, spec_overlap, lambda_overlap ) );
 
   vector < spec_slice_region > regions = slice->regions ( 0 );
 

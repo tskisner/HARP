@@ -110,7 +110,7 @@ namespace harp {
         chunk_nspec_(0),
         chunk_nlambda_(0) { }
 
-      spec_slice ( size_t nworker, size_t nspec, size_t nlambda, size_t chunk_nspec, size_t chunk_nlambda, size_t overlap_spec, size_t overlap_lambda );
+      spec_slice ( size_t nworker, size_t first_spec, size_t first_lambda, size_t nspec, size_t nlambda, size_t chunk_nspec, size_t chunk_nlambda, size_t overlap_spec, size_t overlap_lambda );
       
       ~spec_slice ( ) { }
 
@@ -125,6 +125,8 @@ namespace harp {
       size_t overlap_lambda_;
       size_t nspec_;
       size_t nlambda_;
+      size_t first_spec_;
+      size_t first_lambda_;
       size_t chunk_nspec_;
       size_t chunk_nlambda_;
       std::map < size_t, std::vector < spec_slice_region > > regions_;
@@ -139,6 +141,8 @@ namespace harp {
         ar & BOOST_SERIALIZATION_NVP(overlap_lambda_);
         ar & BOOST_SERIALIZATION_NVP(nspec_);
         ar & BOOST_SERIALIZATION_NVP(nlambda_);
+        ar & BOOST_SERIALIZATION_NVP(first_spec_);
+        ar & BOOST_SERIALIZATION_NVP(first_lambda_);
         ar & BOOST_SERIALIZATION_NVP(chunk_nspec_);
         ar & BOOST_SERIALIZATION_NVP(chunk_nlambda_);
         ar & BOOST_SERIALIZATION_NVP(regions_);
