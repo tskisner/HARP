@@ -37,7 +37,7 @@ void harp::test_extract ( string const & datadir ) {
   
   size_t procs = 10;
 
-  spec_slice_p slice ( new spec_slice ( procs, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
+  spec_slice_p slice ( new spec_slice ( procs, 0, 0, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
 
   spec_slice_region full_region = slice->full_region();
 
@@ -101,7 +101,7 @@ void harp::test_extract ( string const & datadir ) {
 
   cout << "Testing high-level, chunked extraction..." << endl;
 
-  slice.reset ( new spec_slice ( 1, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
+  slice.reset ( new spec_slice ( 1, 0, 0, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
 
   vector_double truth ( nbin );
   vector_double Rtruth ( nbin );

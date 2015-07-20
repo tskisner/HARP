@@ -186,7 +186,7 @@ void harp::mpi_test_extract ( string const & datadir ) {
     }
   }
   
-  mpi_spec_slice_p slice ( new mpi_spec_slice ( selfcomm, comm, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
+  mpi_spec_slice_p slice ( new mpi_spec_slice ( selfcomm, comm, 0, 0, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
 
   spec_slice_region full_region = slice->full_region();
 
@@ -247,7 +247,7 @@ void harp::mpi_test_extract ( string const & datadir ) {
 
   // define slices
 
-  mpi_spec_slice_p gang_slice ( new mpi_spec_slice ( rcomm, gcomm, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
+  mpi_spec_slice_p gang_slice ( new mpi_spec_slice ( rcomm, gcomm, 0, 0, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
 
   full_region = slice->full_region();
 

@@ -35,9 +35,9 @@ void harp::test_specslice ( string const & datadir ) {
 
   size_t procs = 100;
 
-  spec_slice_p slice_one ( new spec_slice ( 1, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
+  spec_slice_p slice_one ( new spec_slice ( 1, 0, 0, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
 
-  spec_slice_p slice ( new spec_slice ( procs, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
+  spec_slice_p slice ( new spec_slice ( procs, 0, 0, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
 
   // immediately serialize and restore, so that any issues with that process will impact the code that follows
 

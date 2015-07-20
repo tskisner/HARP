@@ -38,7 +38,7 @@ void harp::mpi_test_specslice ( string const & datadir ) {
   size_t nchunk_lambda = (size_t)( nlambda / chunk_lambda );
   size_t nchunk = nchunk_spec * nchunk_lambda;
 
-  mpi_spec_slice_p slice ( new mpi_spec_slice ( rcomm, comm, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
+  mpi_spec_slice_p slice ( new mpi_spec_slice ( rcomm, comm, 0, 0, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
 
   matrix_float coverage ( nspec, nlambda );
   coverage.clear();
