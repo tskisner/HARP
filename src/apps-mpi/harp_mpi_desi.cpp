@@ -354,7 +354,7 @@ int main ( int argc, char *argv[] ) {
 
   }
 
-  // select the globa region of spec and wavelength space that we are
+  // select the global region of spec and wavelength space that we are
   // solving for.
 
   size_t global_first_spec = spec_min;
@@ -364,11 +364,8 @@ int main ( int argc, char *argv[] ) {
 
   // output spectral products
 
-  mpi_matrix data_truth ( global_nbins, 1, grid );
-  mpi_matrix_zero ( data_truth );
-
-  mpi_matrix data_Rtruth ( global_nbins, 1, grid );
-  mpi_matrix_zero ( data_Rtruth );
+  mpi_matrix data_truth ( 0, 1, grid );
+  mpi_matrix data_Rtruth ( 0, 1, grid );
   
   mpi_matrix data_f ( global_nbins, 1, grid );
   mpi_matrix_zero ( data_f );
@@ -412,6 +409,12 @@ int main ( int argc, char *argv[] ) {
       o << "truth spectrum has " << truth_nbins << " spectral bins, but the PSF has " << global_nbins << " bins";
       HARP_MPI_ABORT( myp, o.str().c_str() );
     }
+
+    data_truth.Resize ( global_nbins, 1 );
+    mpi_matrix_zero ( data_truth );
+
+    data_Rtruth.Resize ( global_nbins, 1 );
+    mpi_matrix_zero ( data_Rtruth );
 
     vector_double truth_lambda;
 
@@ -567,21 +570,23 @@ int main ( int argc, char *argv[] ) {
 
   El::AxpyInterface < double > globloc;
 
-  globloc.Attach( El::GLOBAL_TO_LOCAL, data_Rtruth );
-  if ( myp == 0 ) {
-    loc_Rtruth.Resize ( data_Rtruth.Height(), 1 );
-    local_matrix_zero ( loc_Rtruth );
-    globloc.Axpy ( 1.0, loc_Rtruth, 0, 0 );
-  }
-  globloc.Detach();
+  if ( dotruth ) {
+    globloc.Attach( El::GLOBAL_TO_LOCAL, data_Rtruth );
+    if ( myp == 0 ) {
+      loc_Rtruth.Resize ( data_Rtruth.Height(), 1 );
+      local_matrix_zero ( loc_Rtruth );
+      globloc.Axpy ( 1.0, loc_Rtruth, 0, 0 );
+    }
+    globloc.Detach();
 
-  globloc.Attach( El::GLOBAL_TO_LOCAL, data_truth );
-  if ( myp == 0 ) {
-    loc_truth.Resize ( data_truth.Height(), 1 );
-    local_matrix_zero ( loc_truth );
-    globloc.Axpy ( 1.0, loc_truth, 0, 0 );
+    globloc.Attach( El::GLOBAL_TO_LOCAL, data_truth );
+    if ( myp == 0 ) {
+      loc_truth.Resize ( data_truth.Height(), 1 );
+      local_matrix_zero ( loc_truth );
+      globloc.Axpy ( 1.0, loc_truth, 0, 0 );
+    }
+    globloc.Detach();
   }
-  globloc.Detach();
 
   globloc.Attach( El::GLOBAL_TO_LOCAL, data_Rf );
   if ( myp == 0 ) {
@@ -613,10 +618,17 @@ int main ( int argc, char *argv[] ) {
   // define the clipping in wavelength to remove the extra overlap
   // region that we added at the beginning.
 
+  size_t clip_lambda_start = 0;
+  size_t clip_lambda_stop = psf_nlambda;
+  size_t clip_nlambda = clip_lambda_stop - clip_lambda_start;
+  size_t clip_nbins = global_nspec * clip_nlambda;
+
+  /*
   size_t clip_lambda_start = lambda_overlap;
   size_t clip_lambda_stop = psf_nlambda - lambda_overlap;
   size_t clip_nlambda = clip_lambda_stop - clip_lambda_start;
-  size_t clip_nbins = psf_nspec * clip_nlambda;
+  size_t clip_nbins = global_nspec * clip_nlambda;
+  */
 
   vector_double clip_lambda( clip_nlambda );
   for ( size_t i = 0; i < clip_nlambda; ++i ) {
@@ -688,12 +700,12 @@ int main ( int argc, char *argv[] ) {
     vector_double ubuf;
     elem_to_ublas ( loc_Rf, ubuf );
 
-    //cerr << "clipping " << psf_nspec << " spectra to lambda [0," << (psf_nlambda-1) << "] --> [" << clip_lambda_start << "," << (clip_lambda_stop-1) << "] (" << clip_nbins << " bins)" << endl; 
+    cerr << "clipping " << global_nspec << " spectra to lambda [0," << (psf_nlambda-1) << "] --> [" << clip_lambda_start << "," << (clip_lambda_stop-1) << "] (" << clip_nbins << " bins)" << endl; 
 
     vector_double clip_errbuf( clip_nbins );
     vector_double clip_ubuf( clip_nbins );
 
-    for ( size_t i = 0; i < psf_nspec; ++i ) {
+    for ( size_t i = 0; i < global_nspec; ++i ) {
       for ( size_t j = 0; j < clip_nlambda; ++j ) {
         clip_errbuf[i * clip_nlambda + j] = errbuf[i * psf_nlambda + clip_lambda_start + j];
         clip_ubuf[i * clip_nlambda + j] = ubuf[i * psf_nlambda + clip_lambda_start + j];
@@ -707,7 +719,7 @@ int main ( int argc, char *argv[] ) {
 
       elem_to_ublas ( loc_Rtruth, ubuf );
 
-      for ( size_t i = 0; i < psf_nspec; ++i ) {
+      for ( size_t i = 0; i < global_nspec; ++i ) {
         for ( size_t j = 0; j < clip_nlambda; ++j ) {
           clip_ubuf[i * clip_nlambda + j] = ubuf[i * psf_nlambda + clip_lambda_start + j];
         }
@@ -720,7 +732,7 @@ int main ( int argc, char *argv[] ) {
 
       double chisq_reduced = 0.0;
 
-      for ( size_t i = 0; i < psf_nspec; ++i ) {
+      for ( size_t i = 0; i < global_nspec; ++i ) {
         for ( size_t j = 0; j < clip_nlambda; ++j ) {
           size_t w = i * psf_nlambda + clip_lambda_start + j;
           size_t v = i * clip_nlambda + j;
@@ -772,7 +784,7 @@ int main ( int argc, char *argv[] ) {
   naxes[0] = clip_nlambda;
   //naxes[0] = psf_nlambda;
   naxes[1] = res_band;
-  naxes[2] = psf_nspec;
+  naxes[2] = global_nspec;
 
   int fitstype = fits::ftype < double > :: datatype();
   long fpixel[2];
@@ -799,9 +811,9 @@ int main ( int argc, char *argv[] ) {
     resbuffer.resize(write_spec_nbuf);
   }
 
-  while ( write_spec_offset < psf_nspec ) {
-    if ( write_spec_offset + write_spec_chunk > psf_nspec ) {
-      write_spec_chunk = psf_nspec - write_spec_offset;
+  while ( write_spec_offset < global_nspec ) {
+    if ( write_spec_offset + write_spec_chunk > global_nspec ) {
+      write_spec_chunk = global_nspec - write_spec_offset;
     }
 
     if ( myp == 0 ) {
@@ -822,7 +834,7 @@ int main ( int argc, char *argv[] ) {
 
       if ( myp == 0 ) {
         size_t boff = k * res_band * clip_nlambda;
-	//cerr << "copying resolution spec " << (k + write_spec_offset) << "(" << boff << "-" << (boff + res_band * clip_nlambda) << ") to memory buffer" << endl;
+        cerr << "copying resolution spec " << (k + write_spec_offset) << "(" << boff << "-" << (boff + res_band * clip_nlambda) << ") to memory buffer" << endl;
         //size_t boff = k * res_band * psf_nlambda;
 
         for ( size_t j = 0; j < res_band; ++j ) {

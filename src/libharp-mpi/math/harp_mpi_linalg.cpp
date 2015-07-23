@@ -472,7 +472,9 @@ void harp::mpi_gang_distribute ( mpi_matrix const & mat, mpi_matrix & gmat ) {
   MPI_Comm_rank ( gmat.Grid().Comm().comm, &gang_myp );
 
   if ( ( mat.Height() != gmat.Height() ) || ( mat.Width() != gmat.Width() ) ) {
-    HARP_MPI_ABORT( gang_myp, "matrix dimensions do not match" );
+    ostringstream o;
+    o << "matrix dimensions do not match (" << mat.Height() << "," << mat.Width() << " != " << gmat.Height() << "," << gmat.Width() << ")";
+    HARP_MPI_ABORT( gang_myp, o.str().c_str() );
   }
 
   // local column buffer

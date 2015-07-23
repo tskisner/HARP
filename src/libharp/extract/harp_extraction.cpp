@@ -448,6 +448,10 @@ void harp::extract ( vector_double const & D, matrix_double const & W, vector_do
 
 void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double const & img, vector_double const & img_inv_var, vector_double const & truth, vector_double & Rf, vector_double & f, vector_double & err, vector_double & Rtruth, map < string, double > & profile, bool region_threads, bool lambda_mask, string const & status_prefix ) {
 
+  // create a region description that contains all spectral bins
+
+  spec_slice_region full_region = slice->full_region();
+
   // check dimensions and clear output
 
   if ( img.size() != img_inv_var.size() ) {
@@ -463,22 +467,22 @@ void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double cons
     HARP_THROW( "image size must match PSF image dimensions" );
   }
 
-  size_t psf_specsize = design->n_spec() * design->n_lambda();
+  size_t specsize = full_region.n_spec * full_region.n_lambda;
 
-  if ( ( truth.size() > 0 ) && ( truth.size() != psf_specsize ) ) {
+  if ( ( truth.size() > 0 ) && ( truth.size() != specsize ) ) {
     HARP_THROW( "input truth size must either be zero or match PSF spectral dimensions" );
   }
 
-  Rf.resize ( psf_specsize );
+  Rf.resize ( specsize );
   Rf.clear();
 
-  f.resize ( psf_specsize );
+  f.resize ( specsize );
   f.clear();
 
-  err.resize ( psf_specsize );
+  err.resize ( specsize );
   err.clear();
 
-  Rtruth.resize ( psf_specsize );
+  Rtruth.resize ( specsize );
   Rtruth.clear();
 
   profile.clear();
@@ -491,10 +495,6 @@ void harp::extract_slices ( spec_slice_p slice, psf_p design, vector_double cons
   profile [ "norm" ] = 0.0;
   profile [ "nsespec" ] = 0.0;
   profile [ "extract" ] = 0.0;
-
-  // create a region description that contains all spectral bins
-
-  spec_slice_region full_region = slice->full_region();
 
   // Matrices and vectors that we use for all slices.  These are resized for each slice,
   // but if the slices have the same number of bins then the resize does nothing and

@@ -774,6 +774,10 @@ void harp::mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_m
   // the design matrix and spectral domain quantities have been distributed over the
   // global communicator (we redistribute these inside this function).
 
+  // create a region description that contains all spectral bins
+
+  spec_slice_region full_region = slice->full_region();
+
   // check dimensions and clear output
 
   if ( img.Height() != img_inv_var.Height() ) {
@@ -789,22 +793,22 @@ void harp::mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_m
     HARP_MPI_ABORT( slice->gang_comm().rank(), "image size must match PSF image dimensions" );
   }
 
-  size_t psf_specsize = design->n_spec() * design->n_lambda();
+  size_t specsize = full_region.n_spec * full_region.n_lambda;
 
-  if ( ( truth.Height() > 0 ) && ( truth.Height() != psf_specsize ) ) {
+  if ( ( truth.Height() > 0 ) && ( truth.Height() != specsize ) ) {
     HARP_MPI_ABORT( slice->gang_comm().rank(), "input truth size must either be zero or match PSF spectral dimensions" );
   }
 
-  Rf.Resize ( psf_specsize, 1 );
+  Rf.Resize ( specsize, 1 );
   mpi_matrix_zero ( Rf );
 
-  f.Resize ( psf_specsize, 1 );
+  f.Resize ( specsize, 1 );
   mpi_matrix_zero ( f );
 
-  err.Resize ( psf_specsize, 1 );
+  err.Resize ( specsize, 1 );
   mpi_matrix_zero ( err );
 
-  Rdiag.Resize ( psf_specsize, Rband );
+  Rdiag.Resize ( specsize, Rband );
   mpi_matrix_zero ( Rdiag );
 
   Rtruth.Resize ( truth.Height(), 1 );
@@ -826,10 +830,6 @@ void harp::mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_m
     profile[ (*itcounter) ] = 0.0;
   }
 
-  // create a region description that contains all spectral bins
-
-  spec_slice_region full_region = slice->full_region();
-
   // gang-distributed quantities and redistribution
 
   El::Grid gang_grid ( (MPI_Comm)slice->gang_comm() );
@@ -840,16 +840,16 @@ void harp::mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_m
   mpi_matrix gang_Rtruth ( truth.Height(), 1, gang_grid );
   mpi_matrix_zero ( gang_Rtruth );
 
-  mpi_matrix gang_Rf ( psf_specsize, 1, gang_grid );
+  mpi_matrix gang_Rf ( specsize, 1, gang_grid );
   mpi_matrix_zero ( gang_Rf );
   
-  mpi_matrix gang_f ( psf_specsize, 1, gang_grid );
+  mpi_matrix gang_f ( specsize, 1, gang_grid );
   mpi_matrix_zero ( gang_f );
   
-  mpi_matrix gang_err ( psf_specsize, 1, gang_grid );
+  mpi_matrix gang_err ( specsize, 1, gang_grid );
   mpi_matrix_zero ( gang_err );
 
-  mpi_matrix gang_Rdiag ( psf_specsize, Rband, gang_grid );
+  mpi_matrix gang_Rdiag ( specsize, Rband, gang_grid );
   mpi_matrix_zero ( gang_Rdiag );
 
   mpi_gang_distribute ( truth, gang_truth );
@@ -967,6 +967,7 @@ void harp::mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_m
 
     for ( size_t s = 0; s < regit->n_spec; ++s ) {
       for ( size_t l = 0; l < regit->n_lambda; ++l ) {
+        //cerr << "using spec " << (s + regit->first_spec) << ", lambda " << (l + regit->first_lambda) << endl;
         speclambda[ s + regit->first_spec ].insert ( l + regit->first_lambda );
       }
     }
