@@ -8,13 +8,14 @@
 #ifndef HARP_DATA_HPP
 #define HARP_DATA_HPP
 
+#include <harp/math.hpp>
+
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree_serialization.hpp>
 
 #include <boost/foreach.hpp>
-
-#include <harp/math.hpp>
+  
 
 namespace harp {
 

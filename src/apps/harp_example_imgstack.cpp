@@ -21,6 +21,7 @@
 */
 
 
+#include <deque>
 #include <iostream>
 #include <cstdio>
 
