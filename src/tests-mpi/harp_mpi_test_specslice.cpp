@@ -38,9 +38,9 @@ void harp::mpi_test_specslice ( string const & datadir ) {
   size_t nchunk_lambda = (size_t)( nlambda / chunk_lambda );
   size_t nchunk = nchunk_spec * nchunk_lambda;
 
-  mpi_spec_slice_p slice ( new mpi_spec_slice ( rcomm, comm, 0, 0, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
+  mpi_spec_slice_p slice ( new mpi_spec_slice ( rcomm, comm, overlap_spec, overlap_lambda, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
 
-  matrix_float coverage ( nspec, nlambda );
+  matrix_float coverage ( slice->full_region().n_spec, slice->full_region().n_lambda );
   coverage.clear();
 
   std::vector < spec_slice_region > myslice = slice->regions();
@@ -62,7 +62,8 @@ void harp::mpi_test_specslice ( string const & datadir ) {
 
   }
 
-  matrix_float full_coverage ( nspec, nlambda );
+  matrix_float full_coverage ( slice->full_region().n_spec, slice->full_region().n_lambda );
+  full_coverage.clear();
 
   boost::mpi::reduce ( rcomm, coverage, full_coverage, std::plus < matrix_float > (), 0 );
 
@@ -74,9 +75,12 @@ void harp::mpi_test_specslice ( string const & datadir ) {
 
       for ( size_t j = 0; j < nlambda; ++j ) {
 
-        if ( ( full_coverage(i,j) < 0.5 ) || ( full_coverage(i,j) > 1.5 ) ) {
+        size_t sp = overlap_spec + i;
+        size_t la = overlap_lambda + j;
+
+        if ( ( full_coverage(sp,la) < 0.5 ) || ( full_coverage(sp,la) > 1.5 ) ) {
           ostringstream o;
-          o << "FAIL:  spectrum " << i << ", lambda " << j << " was assigned to " << full_coverage(i,j) << " workers";
+          o << "FAIL:  spectrum " << sp << ", lambda " << la << " was assigned to " << full_coverage(sp,la) << " workers";
           cerr << o.str() << endl;
           exit(1);
         }

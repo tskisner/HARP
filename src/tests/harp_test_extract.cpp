@@ -37,7 +37,7 @@ void harp::test_extract ( string const & datadir ) {
   
   size_t procs = 10;
 
-  spec_slice_p slice ( new spec_slice ( procs, 0, 0, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
+  spec_slice_p slice ( new spec_slice ( procs, 0, overlap_lambda, nspec, nlambda-2*overlap_lambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
 
   spec_slice_region full_region = slice->full_region();
 
@@ -88,9 +88,13 @@ void harp::test_extract ( string const & datadir ) {
   }
 
   for ( size_t i = 0; i < nbin; ++i ) {
-    if ( ( fabs ( ( check_data[i] - full_data[i] ) / full_data[i] ) ) > std::numeric_limits < double > :: epsilon() ) {
-      cerr << "FAIL on spectral bin " << i << ", " << check_data[i] << " != " << full_data[i] << endl;
-      exit(1);
+    size_t cur_spec = (size_t)( i / nlambda );
+    size_t cur_lambda = i - (cur_spec * nlambda);
+    if ( ( cur_spec >= overlap_spec ) && ( cur_spec < (nspec - overlap_spec) ) && ( cur_lambda >= overlap_lambda ) && ( cur_lambda < (nlambda - overlap_lambda) ) ) {
+      if ( ( fabs ( ( check_data[i] - full_data[i] ) / full_data[i] ) ) > std::numeric_limits < double > :: epsilon() ) {
+        cerr << "FAIL on spectral bin " << i << ", " << check_data[i] << " != " << full_data[i] << endl;
+        exit(1);
+      }
     }
   }
 
@@ -101,7 +105,7 @@ void harp::test_extract ( string const & datadir ) {
 
   cout << "Testing high-level, chunked extraction..." << endl;
 
-  slice.reset ( new spec_slice ( 1, 0, 0, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
+  slice.reset ( new spec_slice ( 1, 0, overlap_lambda, nspec, nlambda-2*overlap_lambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
 
   vector_double truth ( nbin );
   vector_double Rtruth ( nbin );

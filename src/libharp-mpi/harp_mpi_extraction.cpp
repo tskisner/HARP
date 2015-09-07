@@ -1001,6 +1001,7 @@ void harp::mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_m
         
         for ( size_t i = 0; i < ny[b]; ++i ) {
           mask[ ( xoff[b] + j ) * img_rows + yoff[b] + i ] = 1;
+          //cerr << "mask pixel " << (( xoff[b] + j ) * img_rows + yoff[b] + i) << endl;
         }
 
       }
@@ -1137,17 +1138,45 @@ void harp::mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_m
           col_global_lambda = regit->first_lambda + col_slice_lambda;
 
           if ( row_global_spec == col_global_spec ) {
-            // we only consider correlations within a single spec
+            // we only consider correlations within a single spec.  however, each region
+            // must also fill in the off-diagonal elements in the overlap region (up
+            // to the resolution bandwidth).
+
+            //size_t lambda_buffer = (size_t) ( ( (regit->first_lambda + regit->n_lambda) - (regit->first_good_lambda + regit->n_good_lambda) ) / 2 );
+
+            size_t lambda_buffer = (size_t) ( regit->overlap_lambda / 2 );
 
             bool row_spec_inbounds = ( row_global_spec >= regit->first_good_spec ) && ( row_global_spec < (regit->first_good_spec + regit->n_good_spec) );
+
             bool row_lambda_inbounds = ( row_global_lambda >= regit->first_good_lambda ) && ( row_global_lambda < (regit->first_good_lambda + regit->n_good_lambda) );
+
+            bool row_lambda_ext = ( row_global_lambda >= (regit->first_good_lambda + regit->n_good_lambda) ) && ( row_global_lambda < (regit->first_good_lambda + regit->n_good_lambda + lambda_buffer) );
+
             bool col_spec_inbounds = ( col_global_spec >= regit->first_good_spec ) && ( col_global_spec < (regit->first_good_spec + regit->n_good_spec) );
+
             bool col_lambda_inbounds = ( col_global_lambda >= regit->first_good_lambda ) && ( col_global_lambda < (regit->first_good_lambda + regit->n_good_lambda) );
 
-            if ( row_spec_inbounds && row_lambda_inbounds && col_spec_inbounds && col_lambda_inbounds ) {
+            bool col_lambda_ext = ( col_global_lambda >= (regit->first_good_lambda + regit->n_good_lambda) ) && ( col_global_lambda < (regit->first_good_lambda + regit->n_good_lambda + lambda_buffer) );
+
+            bool row_lambda_keep = row_lambda_inbounds || ( row_lambda_ext && col_lambda_inbounds );
+
+            bool col_lambda_keep = col_lambda_inbounds || ( col_lambda_ext && row_lambda_inbounds );
+
+            
+
+            if ( row_spec_inbounds && row_lambda_keep && col_spec_inbounds && col_lambda_keep ) {
+
+              //cerr << "R[" << row_global_spec << ":" << row_global_lambda << "," << col_global_spec << ":" << col_global_lambda << "]" << endl;
+
               if ( labs ( col_global_lambda - row_global_lambda ) <= Rwidth ) {
-                mval = res.GetLocal ( j, i );
-                //cerr << "R[" << row << "," << col << "] : (" << row_global_spec << ":" << row_global_lambda << ") (" << col_global_spec << ":" << col_global_lambda << ") = " << mval << " --> [" << row << "," << (Rwidth + (col_global_lambda - row_global_lambda)) << "]" << endl;
+                mval = res.GetLocal ( j, i );  
+
+                //cerr << "  row: s_in = " << (int)row_spec_inbounds << " l_in = " << (int)row_lambda_inbounds << " l_ext = " << (int)row_lambda_ext << " l_keep = " << (int)row_lambda_keep << endl;
+
+                //cerr << "  col: s_in = " << (int)col_spec_inbounds << " l_in = " << (int)col_lambda_inbounds << " l_ext = " << (int)col_lambda_ext << " l_keep = " << (int)col_lambda_keep << endl;
+
+                //cerr << "  set " << row << ", " << (Rwidth + (col_global_lambda - row_global_lambda)) << endl;
+
                 local_slice_Rdiag.Set( row, (Rwidth + (col_global_lambda - row_global_lambda)), mval );
               }
             }
@@ -1174,7 +1203,9 @@ void harp::mpi_extract_slices ( mpi_spec_slice_p slice, mpi_psf_p design, elem_m
     mpi_accum_spec ( (*regit), full_region, slice_Rf, true, gang_Rf );
     mpi_accum_spec ( (*regit), full_region, slice_f, true, gang_f );
     mpi_accum_spec ( (*regit), full_region, slice_err, true, gang_err );
-    mpi_accum_spec ( (*regit), full_region, slice_Rdiag, true, gang_Rdiag );
+
+    // this must be false in order to accumulate the border regions
+    mpi_accum_spec ( (*regit), full_region, slice_Rdiag, false, gang_Rdiag );
 
     /*
     outres.str("");

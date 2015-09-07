@@ -16,12 +16,12 @@ void harp::test_specslice ( string const & datadir ) {
 
   string specfile = datadir + "/spec_sim.fits.out";
 
-  size_t nspec = 20;
-  size_t nlambda = 101;
+  size_t nspec = 5;
+  size_t nlambda = 21;
   size_t overlap_spec = 1;
   size_t overlap_lambda = 10;
   size_t chunk_spec = 3;
-  size_t chunk_lambda = 13;
+  size_t chunk_lambda = 10;
 
   size_t nchunk_spec = (size_t)( nspec / chunk_spec );
   if ( ! ( nspec % chunk_spec == 0 ) ) {
@@ -35,9 +35,9 @@ void harp::test_specslice ( string const & datadir ) {
 
   size_t procs = 100;
 
-  spec_slice_p slice_one ( new spec_slice ( 1, 0, 0, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
+  spec_slice_p slice_one ( new spec_slice ( 1, overlap_spec, overlap_lambda, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
 
-  spec_slice_p slice ( new spec_slice ( procs, 0, 0, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
+  spec_slice_p slice ( new spec_slice ( procs, overlap_spec, overlap_lambda, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
 
   // immediately serialize and restore, so that any issues with that process will impact the code that follows
 
@@ -62,7 +62,7 @@ void harp::test_specslice ( string const & datadir ) {
     exit(1);
   }
 
-  matrix_float coverage ( nspec, nlambda );
+  matrix_float coverage ( slice_one->full_region().n_spec, slice_one->full_region().n_lambda );
   coverage.clear();
 
   for ( size_t p = 0; p < procs; ++p ) {
@@ -92,9 +92,12 @@ void harp::test_specslice ( string const & datadir ) {
   for ( size_t i = 0; i < nspec; ++i ) {
     for ( size_t j = 0; j < nlambda; ++j ) {
 
-      if ( ( coverage(i,j) < 0.5 ) || ( coverage(i,j) > 1.5 ) ) {
+      size_t sp = overlap_spec + i;
+      size_t la = overlap_lambda + j;
+
+      if ( ( coverage(sp,la) < 0.5 ) || ( coverage(sp,la) > 1.5 ) ) {
         ostringstream o;
-        o << "FAIL:  spectrum " << i << ", lambda " << j << " was assigned to " << coverage(i,j) << " workers";
+        o << "FAIL:  spectrum " << sp << ", lambda " << la << " was assigned to " << coverage(sp,la) << " workers";
         cerr << o.str() << endl;
         exit(1);
       }

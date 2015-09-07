@@ -186,7 +186,7 @@ void harp::mpi_test_extract ( string const & datadir ) {
     }
   }
   
-  mpi_spec_slice_p slice ( new mpi_spec_slice ( selfcomm, comm, 0, 0, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
+  mpi_spec_slice_p slice ( new mpi_spec_slice ( selfcomm, comm, overlap_spec, overlap_lambda, nspec, nlambda-2*overlap_lambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
 
   spec_slice_region full_region = slice->full_region();
 
@@ -216,9 +216,13 @@ void harp::mpi_test_extract ( string const & datadir ) {
 
       size_t cur_bin = cur_spec * full_region.n_lambda + cur_lambda;
 
-      if ( (size_t)specval != cur_bin ) {
-        cerr << "FAIL on accum_spec world " << selfcomm.rank() << ", proc " << comm.rank() << ", bin " << cur_bin << ", column " << col << ", " << (size_t)specval << " != " << cur_bin << endl;
-        exit(1);
+      if ( ( cur_spec >= overlap_spec ) && ( cur_spec < (nspec - overlap_spec) ) && ( cur_lambda >= overlap_lambda ) && ( cur_lambda < (nlambda - overlap_lambda) ) ) {
+
+        if ( (size_t)specval != cur_bin ) {
+          cerr << "FAIL on accum_spec world " << selfcomm.rank() << ", proc " << comm.rank() << ", bin " << cur_bin << ", column " << col << ", " << (size_t)specval << " != " << cur_bin << endl;
+          exit(1);
+        }
+
       }
 
     }
@@ -247,7 +251,7 @@ void harp::mpi_test_extract ( string const & datadir ) {
 
   // define slices
 
-  mpi_spec_slice_p gang_slice ( new mpi_spec_slice ( rcomm, gcomm, 0, 0, nspec, nlambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
+  mpi_spec_slice_p gang_slice ( new mpi_spec_slice ( rcomm, gcomm, overlap_spec, overlap_lambda, nspec, nlambda-2*overlap_lambda, chunk_spec, chunk_lambda, overlap_spec, overlap_lambda ) );
 
   full_region = slice->full_region();
 
@@ -283,9 +287,13 @@ void harp::mpi_test_extract ( string const & datadir ) {
 
       size_t cur_bin = cur_spec * full_region.n_lambda + cur_lambda;
 
-      if ( (size_t)specval != cur_bin ) {
-        cerr << "FAIL on accum_spec gang " << rcomm.rank() << ", proc " << gcomm.rank() << ", bin " << cur_bin << ", column " << col << ", " << (size_t)specval << " != " << cur_bin << endl;
-        exit(1);
+      if ( ( cur_spec >= overlap_spec ) && ( cur_spec < (nspec - overlap_spec) ) && ( cur_lambda >= overlap_lambda ) && ( cur_lambda < (nlambda - overlap_lambda) ) ) {
+
+        if ( (size_t)specval != cur_bin ) {
+          cerr << "FAIL on accum_spec gang " << rcomm.rank() << ", proc " << gcomm.rank() << ", bin " << cur_bin << ", column " << col << ", " << (size_t)specval << " != " << cur_bin << endl;
+          exit(1);
+        }
+
       }
 
     }

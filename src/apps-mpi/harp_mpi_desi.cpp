@@ -37,7 +37,6 @@ int main ( int argc, char *argv[] ) {
   cerr.precision ( 10 );
 
   size_t lambda_width = 50;
-  size_t lambda_overlap = 22;
   double lambda_res = 0.6;
   double lambda_b_min = 3579.0;
   double lambda_b_max = 5939.0;
@@ -50,14 +49,14 @@ int main ( int argc, char *argv[] ) {
   double lambda_hard_min;
   double lambda_hard_max;
 
-  size_t spec_width = 25;
+  size_t spec_width = 0;
   size_t spec_overlap = 0;
   size_t spec_min = 0;
   size_t spec_max = 499;
 
   size_t res_width = 10;
 
-  bool lambda_mask = true;
+  bool lambda_mask = false;
   
   string outdir = ".";
   string fibermap = "";
@@ -107,7 +106,6 @@ int main ( int argc, char *argv[] ) {
   ( "spec_min", popts::value < size_t > ( &spec_min ), "first spectrum to solve (0)" )
   ( "spec_max", popts::value < size_t > ( &spec_max ), "last spectrum to solve (499)" )
   ( "lambda_width", popts::value < size_t > ( &lambda_width ), "number of wavelength points to solve at once" )
-  ( "lambda_overlap", popts::value < size_t > ( &lambda_overlap ), "minimum wavelength points to overlap" )
   ( "lambda_res", popts::value < double > ( &lambda_res ), "extraction resolution, in Angstroms" )
   ( "lambda_min", popts::value < double > ( &lambda_min ), "minimum extracted wavelength in Angstroms" )
   ( "lambda_max", popts::value < double > ( &lambda_max ), "maximum extracted wavelength in Angstroms" )
@@ -192,8 +190,11 @@ int main ( int argc, char *argv[] ) {
   // we specify an extra overlap range in lambda, to remove
   // edge effects.
 
-  lambda_hard_min = lambda_min - (lambda_overlap * lambda_res);
-  lambda_hard_max = lambda_max + (lambda_overlap * lambda_res);
+  size_t lambda_pre = (res_band * lambda_res);
+  size_t lambda_post = (res_band * lambda_res);
+  //size_t lambda_post = ((res_band + 1) * lambda_res);
+  lambda_hard_min = lambda_min - lambda_pre;
+  lambda_hard_max = lambda_max + lambda_post;
 
   // intra-gang communicator and grid
 
@@ -266,7 +267,14 @@ int main ( int argc, char *argv[] ) {
   size_t psf_nlambda = design->n_lambda();
   size_t psf_nbins = psf_nspec * psf_nlambda;
 
-  vector_double lambda = design->lambda();
+  vector_double psf_lambda = design->lambda();
+
+  size_t nlambda = psf_nlambda - 2*res_band;
+
+  vector_double lambda(nlambda);
+  for ( size_t i = 0; i < nlambda; ++i ) {
+    lambda[i] = psf_lambda[i + res_band];
+  }
 
   tstop = MPI_Wtime();
 
@@ -362,6 +370,10 @@ int main ( int argc, char *argv[] ) {
 
   size_t global_nbins = global_nspec * psf_nlambda;
 
+  if ( ( myp == 0 ) && ( ! quiet ) ) {
+    cout << prefix << "Solving globally for " << global_nspec << " spectra and " << psf_nlambda << " wavelength points" << endl;
+  }
+
   // output spectral products
 
   mpi_matrix data_truth ( 0, 1, grid );
@@ -421,7 +433,7 @@ int main ( int argc, char *argv[] ) {
     truth_spec->values ( data_truth );
     truth_spec->lambda ( truth_lambda );
 
-    for ( size_t i = 0; i < psf_nlambda; ++i ) {
+    for ( size_t i = 0; i < nlambda; ++i ) {
       if ( fabs ( truth_lambda[i] - lambda[i] ) / lambda[i] > 1.0e-5 ) {
         ostringstream o;
         o << "wavelength point " << i << " does not match between PSF (" << lambda[i] << ") and truth spec (" << truth_lambda[i] << ")";
@@ -444,14 +456,14 @@ int main ( int argc, char *argv[] ) {
 
   if ( spec_width < 1 ) {
     // do all spectra
-    spec_width = psf_nspec;
+    spec_width = global_nspec;
   }
 
   if ( lambda_width < 1 ) {
     lambda_width = psf_nlambda;
   }
 
-  mpi_spec_slice_p slice ( new mpi_spec_slice ( rcomm, gcomm, global_first_spec, 0, global_nspec, psf_nlambda, spec_width, lambda_width, spec_overlap, lambda_overlap ) );
+  mpi_spec_slice_p slice ( new mpi_spec_slice ( rcomm, gcomm, global_first_spec, res_band, global_nspec, nlambda, spec_width, lambda_width, spec_overlap, res_band ) );
 
   size_t gang_nregion = slice->regions().size();
   size_t nregion = 0;
@@ -459,7 +471,7 @@ int main ( int argc, char *argv[] ) {
   boost::mpi::reduce ( rcomm, gang_nregion, nregion, std::plus < size_t > (), 0 );
 
   if ( ( myp == 0 ) && ( ! quiet ) ) {
-    cout << prefix << "Extracting " << nregion << " spectral chunks, each with " << spec_width << " spectra ( overlap = " << spec_overlap << " ) and " << lambda_width << " lambda points ( overlap = " << lambda_overlap << " )" << endl;
+    cout << prefix << "Extracting " << nregion << " spectral chunks, each with " << spec_width << " spectra ( overlap = " << spec_overlap << " ) and " << lambda_width << " lambda points ( overlap = " << res_band << " )" << endl;
   }
 
   if ( debug && ( ! quiet ) ) {
@@ -510,6 +522,13 @@ int main ( int argc, char *argv[] ) {
 
   mpi_extract_slices ( slice, design, measured, invnoise, data_truth, res_band, data_Rdiag, data_Rf, data_f, data_err, data_Rtruth, timing, lambda_mask, prefix );
 
+  /*
+  string outres = outdir + "/debug_res.out";
+  ofstream fres;
+  fres.open(outres.c_str(), ios::out);
+  El::Print ( data_Rdiag, "res_diag", fres );
+  fres.close();
+  */
 
   // subtract sky if needed
 
@@ -618,22 +637,18 @@ int main ( int argc, char *argv[] ) {
   // define the clipping in wavelength to remove the extra overlap
   // region that we added at the beginning.
 
-  size_t clip_lambda_start = 0;
-  size_t clip_lambda_stop = psf_nlambda;
-  size_t clip_nlambda = clip_lambda_stop - clip_lambda_start;
+  size_t clip_nlambda = nlambda;
+  //size_t clip_nlambda = psf_nlambda;
+
+  vector_double & clip_lambda = lambda;
+  //vector_double & clip_lambda = psf_lambda;
+  
+  size_t clip_lambda_start = res_band;
+  //size_t clip_lambda_start = 0;
+
+  size_t clip_lambda_stop = clip_lambda_start + clip_nlambda - 1;
   size_t clip_nbins = global_nspec * clip_nlambda;
 
-  /*
-  size_t clip_lambda_start = lambda_overlap;
-  size_t clip_lambda_stop = psf_nlambda - lambda_overlap;
-  size_t clip_nlambda = clip_lambda_stop - clip_lambda_start;
-  size_t clip_nbins = global_nspec * clip_nlambda;
-  */
-
-  vector_double clip_lambda( clip_nlambda );
-  for ( size_t i = 0; i < clip_nlambda; ++i ) {
-    clip_lambda[i] = lambda[clip_lambda_start + i];
-  }
 
   if ( myp == 0 ) {
 
@@ -700,7 +715,7 @@ int main ( int argc, char *argv[] ) {
     vector_double ubuf;
     elem_to_ublas ( loc_Rf, ubuf );
 
-    cerr << "clipping " << global_nspec << " spectra to lambda [0," << (psf_nlambda-1) << "] --> [" << clip_lambda_start << "," << (clip_lambda_stop-1) << "] (" << clip_nbins << " bins)" << endl; 
+    //cerr << "clipping " << global_nspec << " spectra to lambda [0," << (psf_nlambda-1) << "] --> [" << clip_lambda_start << "," << (clip_lambda_stop) << "] (" << clip_nbins << " bins)" << endl; 
 
     vector_double clip_errbuf( clip_nbins );
     vector_double clip_ubuf( clip_nbins );
@@ -764,7 +779,6 @@ int main ( int argc, char *argv[] ) {
   loc_truth.Empty();
   loc_Rtruth.Empty();
   loc_Rf.Empty();
-  loc_f.Empty();
   loc_err.Empty();
 
   measured.Empty();
@@ -782,7 +796,6 @@ int main ( int argc, char *argv[] ) {
   
   long naxes[3];
   naxes[0] = clip_nlambda;
-  //naxes[0] = psf_nlambda;
   naxes[1] = res_band;
   naxes[2] = global_nspec;
 
@@ -794,9 +807,11 @@ int main ( int argc, char *argv[] ) {
   size_t write_spec_chunk = 10;
   size_t write_spec_offset = 0;
 
+  if (write_spec_chunk > global_nspec) {
+    write_spec_chunk = global_nspec;
+  }
+
   // write buffer
-  size_t write_spec_nbuf = write_spec_chunk * res_band * clip_nlambda;
-  //size_t write_spec_nbuf = write_spec_chunk * res_band * psf_nlambda;
   vector_double resbuffer;
 
   if ( myp == 0 ) {
@@ -807,8 +822,6 @@ int main ( int argc, char *argv[] ) {
     fits::check ( status );
 
     fits::key_write ( fp, "EXTNAME", string("RESOLUTION"), "" );
-
-    resbuffer.resize(write_spec_nbuf);
   }
 
   while ( write_spec_offset < global_nspec ) {
@@ -816,7 +829,10 @@ int main ( int argc, char *argv[] ) {
       write_spec_chunk = global_nspec - write_spec_offset;
     }
 
+    size_t write_spec_nbuf = write_spec_chunk * res_band * clip_nlambda;
+
     if ( myp == 0 ) {
+      resbuffer.resize(write_spec_nbuf);
       resbuffer.clear();
     }
 
@@ -825,25 +841,25 @@ int main ( int argc, char *argv[] ) {
     for ( size_t k = 0; k < write_spec_chunk; ++k ) {
 
       globloc.Attach( El::GLOBAL_TO_LOCAL, data_Rdiag );
+      //cerr << "data_Rdiag has dimensions " << data_Rdiag.Height() << " x " << data_Rdiag.Width() << endl;
       if ( myp == 0 ) {
-        loc_Rdiag.Resize ( psf_nlambda, res_band );
+        loc_Rdiag.Resize ( clip_nlambda, res_band );
         local_matrix_zero ( loc_Rdiag );
-        globloc.Axpy ( 1.0, loc_Rdiag, (write_spec_offset+k)*psf_nlambda, 0 );
+        globloc.Axpy ( 1.0, loc_Rdiag, (write_spec_offset+k)*psf_nlambda + clip_lambda_start, 0 );
       }
       globloc.Detach();
 
       if ( myp == 0 ) {
         size_t boff = k * res_band * clip_nlambda;
-        cerr << "copying resolution spec " << (k + write_spec_offset) << "(" << boff << "-" << (boff + res_band * clip_nlambda) << ") to memory buffer" << endl;
-        //size_t boff = k * res_band * psf_nlambda;
+        //cerr << "copying resolution spec " << (k + write_spec_offset) << "(" << boff << "-" << (boff + res_band * clip_nlambda) << ") to memory buffer" << endl;
 
         for ( size_t j = 0; j < res_band; ++j ) {
-          //for ( size_t i = 0; i < psf_nlambda; ++i ) {
+
           for ( size_t i = 0; i < clip_nlambda; ++i ) {
           
             size_t outdiag = (res_band - 1) - j;
             int64_t outlambda = -1;
-            int64_t inlambda = clip_lambda_start + i;
+            int64_t inlambda = i;
             
             int64_t loff = (int64_t)j - (int64_t)res_width;
 
@@ -868,7 +884,7 @@ int main ( int argc, char *argv[] ) {
       fpixel[0] = 1;
       fpixel[1] = 1;
       fpixel[2] = write_spec_offset + 1;
-      long npix = (long)( write_spec_chunk * res_band * clip_nlambda );
+      long npix = (long)( write_spec_nbuf );
 
       ret = fits_write_pix ( fp, fitstype, fpixel, npix, &(resbuffer[0]), &status );
       fits::check ( status );
@@ -909,13 +925,43 @@ int main ( int argc, char *argv[] ) {
 
     tstart = MPI_Wtime();
 
-    mpi_matrix_sparse AT ( comm, global_nbins, npix );
+    map < size_t, set < size_t > > speclambda;
 
-    design->project_transpose ( AT );
+    //size_t slbins = 0;
+    for ( size_t s = 0; s < global_nspec; ++s ) {
+      for ( size_t l = 0; l < clip_nlambda; ++l ) {
+        //cerr << "using spec " << (s + spec_min) << ", lambda " << (l + clip_lambda_start) << endl;
+        speclambda[ s + spec_min ].insert ( l + clip_lambda_start );
+        //++slbins;
+      }
+    }
+
+    mpi_matrix_sparse AT ( comm, clip_nbins, psf_npix );
+
+    design->project_transpose ( speclambda, AT );
 
     elem_matrix_local f_projected;
 
-    mpi_sparse_mv_trans ( AT, data_f, f_projected );
+    elem_matrix_local newloc_f;
+    newloc_f.Resize ( clip_nbins, 1 );
+    local_matrix_zero ( newloc_f );
+
+    for ( size_t i = 0; i < global_nspec; ++i ) {
+      for ( size_t j = 0; j < clip_nlambda; ++j ) {
+        newloc_f.Set( i * clip_nlambda + j, 0, loc_f.Get( i * psf_nlambda + clip_lambda_start + j, 0 ) );
+      }
+    }
+
+    mpi_matrix new_f ( clip_nbins, 1, grid );
+    mpi_matrix_zero ( new_f );
+
+    globloc.Attach( El::LOCAL_TO_GLOBAL, new_f );
+    if ( myp == 0 ) {
+      globloc.Axpy ( 1.0, newloc_f, 0, 0 );
+    }
+    globloc.Detach();
+
+    mpi_sparse_mv_trans ( AT, new_f, f_projected );
 
     vector_double u_f_projected;
     vector_double u_invnoise;
@@ -933,7 +979,8 @@ int main ( int argc, char *argv[] ) {
 
     }
 
-    data_f.Empty();    
+    loc_f.Empty();
+    data_f.Empty();
 
     tstop = MPI_Wtime();
 

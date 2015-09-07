@@ -132,7 +132,7 @@ namespace harp {
       std::map < size_t, std::vector < spec_slice_region > > regions_;
       spec_slice_region full_region_;
 
-      void calc ( size_t n, size_t chunk, size_t overlap, std::vector < size_t > & start, std::vector < size_t > & stop, std::vector < size_t > & good_start, std::vector < size_t > & good_stop );
+      void calc ( size_t n, size_t chunk, size_t overlap, size_t offset, std::vector < size_t > & start, std::vector < size_t > & stop, std::vector < size_t > & good_start, std::vector < size_t > & good_stop );
 
       template < class Archive >
       void serialize ( Archive & ar, const unsigned int version ) {

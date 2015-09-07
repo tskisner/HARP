@@ -17,7 +17,11 @@ spec_slice_region const & harp::spec_slice::full_region ( ) const {
 
 // helper function for 1-D decomposition
 
-void harp::spec_slice::calc ( size_t n, size_t chunk, size_t overlap, vector < size_t > & start, vector < size_t > & stop, vector < size_t > & good_start, vector < size_t > & good_stop ) {
+void harp::spec_slice::calc ( size_t n, size_t chunk, size_t overlap, size_t offset, vector < size_t > & start, vector < size_t > & stop, vector < size_t > & good_start, vector < size_t > & good_stop ) {
+
+  if ( offset < overlap ) {
+    HARP_THROW( "for slice calculation, the offset must be at least as much as the overlap" );
+  }
 
   start.clear();
   stop.clear();
@@ -29,37 +33,32 @@ void harp::spec_slice::calc ( size_t n, size_t chunk, size_t overlap, vector < s
   size_t chunkstart;
   size_t chunkstop;
 
+  //cout << "calc:  " << n << " / " << chunk << " off = " << offset << " overlap = " << overlap << endl;
+
   for ( size_t i = 0; i < nchunk; ++i ) {
-    chunkstart = i * chunk;
-    chunkstop = (i + 1) * chunk - 1;
+    chunkstart = i * chunk + offset;
+    chunkstop = (i + 1) * chunk - 1 + offset;
 
     good_start.push_back ( chunkstart );
     good_stop.push_back ( chunkstop );
 
-    if ( chunkstart > overlap ) {
-      start.push_back ( chunkstart - overlap );
-    } else {
-      start.push_back ( 0 );
-    }
-    if ( chunkstop + overlap > n - 1 ) {
-      stop.push_back ( n - 1 );
-    } else {
-      stop.push_back ( chunkstop + overlap );
-    }
+    start.push_back ( chunkstart - overlap );
+    stop.push_back ( chunkstop + overlap );
+    //cout << "calc:    " << i << ":  [" << (chunkstart - overlap) << " (" << chunkstart << " " << chunkstop << ") " << (chunkstop + overlap) << "]" << endl;
   }
 
+  // do we need an extra chunk at the end?
+
   if ( n > nchunk * chunk ) {
-    chunkstart = nchunk * chunk;
-    chunkstop = n - 1;
+    chunkstart = nchunk * chunk + offset;
+    chunkstop = n - 1 + offset;
 
     good_start.push_back ( chunkstart );
     good_stop.push_back ( chunkstop );
-    if ( chunkstart > overlap ) {
-      start.push_back ( chunkstart - overlap );
-    } else {
-      start.push_back ( 0 );
-    }
-    stop.push_back ( chunkstop );
+    start.push_back ( chunkstart - overlap );
+    stop.push_back ( chunkstop + overlap );
+
+    //cout << "calc:    " << nchunk << ":  [" << (chunkstart - overlap) << " (" << chunkstart << " " << chunkstop << ") " << (chunkstop + overlap) << "]" << endl;
   } 
 
   return;
@@ -80,19 +79,6 @@ harp::spec_slice::spec_slice ( size_t nworker, size_t first_spec, size_t first_l
   chunk_nspec_ = chunk_nspec;
   chunk_nlambda_ = chunk_nlambda;
 
-  // Define a region which contains all bins
-
-  full_region_.overlap_spec = 0;
-  full_region_.overlap_lambda = 0;
-  full_region_.first_spec = first_spec;
-  full_region_.first_lambda = first_lambda;
-  full_region_.first_good_spec = 0;
-  full_region_.first_good_lambda = 0;
-  full_region_.n_spec = nspec;
-  full_region_.n_lambda = nlambda;
-  full_region_.n_good_spec = nspec;
-  full_region_.n_good_lambda = nlambda;
-
   // Determine spectral chunk boundaries
 
   vector < size_t > spec_start;
@@ -100,7 +86,7 @@ harp::spec_slice::spec_slice ( size_t nworker, size_t first_spec, size_t first_l
   vector < size_t > good_spec_start;
   vector < size_t > good_spec_stop;
 
-  calc ( nspec_, chunk_nspec_, overlap_spec_, spec_start, spec_stop, good_spec_start, good_spec_stop );
+  calc ( nspec_, chunk_nspec_, overlap_spec_, first_spec_, spec_start, spec_stop, good_spec_start, good_spec_stop );
 
   size_t nchunk_spec = spec_start.size();
 
@@ -111,9 +97,22 @@ harp::spec_slice::spec_slice ( size_t nworker, size_t first_spec, size_t first_l
   vector < size_t > good_lambda_start;
   vector < size_t > good_lambda_stop;
 
-  calc ( nlambda_, chunk_nlambda_, overlap_lambda_, lambda_start, lambda_stop, good_lambda_start, good_lambda_stop );
+  calc ( nlambda_, chunk_nlambda_, overlap_lambda_, first_lambda_, lambda_start, lambda_stop, good_lambda_start, good_lambda_stop );
 
   size_t nchunk_lambda = lambda_start.size();
+
+  // Define a region which contains all bins
+
+  full_region_.overlap_spec = 0;
+  full_region_.overlap_lambda = 0;
+  full_region_.first_spec = spec_start[0];
+  full_region_.first_lambda = lambda_start[0];
+  full_region_.first_good_spec = full_region_.first_spec;
+  full_region_.first_good_lambda = full_region_.first_lambda;
+  full_region_.n_spec = spec_stop[nchunk_spec - 1] - full_region_.first_spec + 1;
+  full_region_.n_lambda = lambda_stop[nchunk_lambda - 1] - full_region_.first_lambda + 1;
+  full_region_.n_good_spec = full_region_.n_spec;
+  full_region_.n_good_lambda = full_region_.n_lambda;
 
   // Assign ranges of chunks to workers
 
@@ -154,18 +153,18 @@ harp::spec_slice::spec_slice ( size_t nworker, size_t first_spec, size_t first_l
       spec_slice_region reg;
       reg.overlap_spec = overlap_spec_;
       reg.overlap_lambda = overlap_lambda_;
-      reg.first_spec = first_spec_ + spec_start[ abs_spec ];
-      reg.first_lambda = first_lambda_ + lambda_start[ abs_lambda ];
-      reg.first_good_spec = first_spec_ + good_spec_start[ abs_spec ];
-      reg.first_good_lambda = first_lambda_ + good_lambda_start[ abs_lambda ];
-      reg.n_spec = (first_spec_ + spec_stop[ abs_spec ]) - reg.first_spec + 1;
-      reg.n_lambda = (first_lambda_ + lambda_stop[ abs_lambda ]) - reg.first_lambda + 1;
-      reg.n_good_spec = (first_spec_ + good_spec_stop[ abs_spec ]) - reg.first_good_spec + 1;
-      reg.n_good_lambda = (first_lambda_ + good_lambda_stop[ abs_lambda ]) - reg.first_good_lambda + 1;
+      reg.first_spec = spec_start[ abs_spec ];
+      reg.first_lambda = lambda_start[ abs_lambda ];
+      reg.first_good_spec = good_spec_start[ abs_spec ];
+      reg.first_good_lambda = good_lambda_start[ abs_lambda ];
+      reg.n_spec = spec_stop[ abs_spec ] - reg.first_spec + 1;
+      reg.n_lambda = lambda_stop[ abs_lambda ] - reg.first_lambda + 1;
+      reg.n_good_spec = good_spec_stop[ abs_spec ] - reg.first_good_spec + 1;
+      reg.n_good_lambda = good_lambda_stop[ abs_lambda ] - reg.first_good_lambda + 1;
 
       (regions_[ w ]).push_back ( reg );
 
-      
+      /*
       cerr << "DBG:  worker " << w << " global chunk " << abs_chunk << " :" << endl;
       cerr << "DBG:     n_spec = " << regions_[w][ regions_[w].size() - 1 ].n_spec << endl;
       cerr << "DBG:     n_good_spec = " << regions_[w][ regions_[w].size() - 1 ].n_good_spec << endl;
@@ -177,7 +176,7 @@ harp::spec_slice::spec_slice ( size_t nworker, size_t first_spec, size_t first_l
       cerr << "DBG:     first_lambda = " << regions_[w][ regions_[w].size() - 1 ].first_lambda << endl;
       cerr << "DBG:     first_good_lambda = " << regions_[w][ regions_[w].size() - 1 ].first_good_lambda << endl;
       cerr << "DBG:     overlap_lambda = " << regions_[w][ regions_[w].size() - 1 ].overlap_lambda << endl;
-      
+      */
 
     }
 
