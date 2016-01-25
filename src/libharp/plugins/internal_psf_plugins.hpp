@@ -312,6 +312,7 @@ namespace harp {
 
   // Specter PSF formats
 
+  /*
   class psf_pyspecter : public psf {
 
     friend class boost::serialization::access;
@@ -398,7 +399,7 @@ namespace harp {
   BOOST_SERIALIZATION_SHARED_PTR(psf_pyspecter)
 
   psf * psf_pyspecter_create ( boost::property_tree::ptree const & props );
-
+  */
 
 }
 
