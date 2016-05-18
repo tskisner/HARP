@@ -9,7 +9,6 @@ AM_LIBS =
 # Append compile and linking flags based on configure variables
 include $(top_srcdir)/src/build_options.am
 
-
 noinst_HEADERS = harp_data_internal.hpp
 
 noinst_LTLIBRARIES = libharpdata.la
@@ -36,6 +35,8 @@ libharpdata_la_SOURCES = \
 	harp_metadata.cpp
 
 libharpdata_la_LIBADD = 
+
+EXTRA_DIST = git-version.cpp
 
 MAINTAINERCLEANFILES = git-version.cpp
 

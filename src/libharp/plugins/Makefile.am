@@ -19,7 +19,7 @@ libharpplugins_la_include_HEADERS = harp/static_plugins.hpp
 libharpplugins_la_SOURCES = 
 libharpplugins_la_LIBADD = 
 
-EXTRA_DIST = harp/static_plugins.hpp.in plugin.am
+EXTRA_DIST = harp/static_plugins.hpp.in plugin.am plugin_register.cpp internal_image_plugins.hpp internal_spec_plugins.hpp internal_psf_plugins.hpp
 
 MAINTAINERCLEANFILES = harp/static_plugins.hpp plugin.am plugin_register.cpp
 
