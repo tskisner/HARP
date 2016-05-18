@@ -4,7 +4,7 @@ dnl
 dnl +------------------------
 dnl | Initialize package info
 dnl +------------------------
-AC_INIT([HARP], [1.0-beta], [work@theodorekisner.com], [harp], [https://theodorekisner.com/software/harp/])
+AC_INIT([HARP], [1.0.0], [work@theodorekisner.com], [harp], [https://theodorekisner.com/software/harp/])
 AC_CONFIG_SRCDIR([Makefile.am])
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_HEADERS(config.h)
