@@ -24,6 +24,8 @@ PLUGCOMP="@PLUGCOMP@"
 PLUGLINK="@PLUGLINK@"
 PLUGEXT="@PLUGEXT@"
 
+LIBEXT="@LIBEXT@"
+
 # Print out usage information
 
 help() {
@@ -33,14 +35,15 @@ help() {
   echo "        [ --cxx (print compiler used) ]"
   echo "        [ --cxxflags (print compiler optimizations used) ]"
   echo "        [ --cppflags (print include flags) ]"
-  echo "        [ --ldflags (print library include path) ]"
-  echo "        [ --libs (print serial linking flags) ]"
+  echo "        [ --ldflags (print library include paths and flags) ]"
+  echo "        [ --libs (print serial libraries) ]"
   echo "        [ --link (print full serial link command) ]"
+  echo "        [ --libext (print shared library file extension) ]"
   echo "        [ --mpi-cxx (print MPI compiler used) ]"
   echo "        [ --mpi-cxxflags (print MPI compiler optimizations used) ]"
   echo "        [ --mpi-cppflags (print MPI include flags) ]"
-  echo "        [ --mpi-ldflags (print MPI library include path) ]"
-  echo "        [ --mpi-libs (print MPI linking flags) ]"
+  echo "        [ --mpi-ldflags (print MPI library include paths and flags) ]"
+  echo "        [ --mpi-libs (print MPI libraries) ]"
   echo "        [ --mpi-link (print full MPI link command) ]"
   echo "        [ --python (print python module location for PYTHONPATH) ]"
   echo "        [ --plugflags (print external plugin compiling flags) ]"

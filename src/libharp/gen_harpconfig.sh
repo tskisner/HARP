@@ -18,6 +18,8 @@ PLUGCOMP=${12}
 PLUGLINK=${13}
 PLUGEXT=${14}
 
+LIBEXT=${15}
+
 sed \
 -e "s#@MPICXX@#${MPICXX}#g" \
 -e "s#@MPICXXFLAGS@#${MPICXXFLAGS}#g" \
@@ -33,5 +35,6 @@ sed \
 -e "s#@PLUGCOMP@#${PLUGCOMP}#g" \
 -e "s#@PLUGLINK@#${PLUGLINK}#g" \
 -e "s#@PLUGEXT@#${PLUGEXT}#g" \
+-e "s#@LIBEXT@#${LIBEXT}#g" \
 harpconfig.in > harpconfig
 

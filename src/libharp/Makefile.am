@@ -37,7 +37,8 @@ harpconfig : harpconfig.in
 	"$(pyexecdir)" \
 	"$(HARP_PLUGIN_COMPILE)" \
 	"$(HARP_PLUGIN_LINK)" \
-	"$(HARP_PLUGIN_EXT)"
+	"$(HARP_PLUGIN_EXT)" \
+	"$(HARP_SHLIB_EXT)"
 
 
 lib_LTLIBRARIES = libharp.la

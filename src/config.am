@@ -137,3 +137,11 @@ CONF_LIBS += -lm
 
 CONF_MPI_LIBS += -lm
 
+# Append any user-specified libraries and linking flags
+
+CONF_LDFLAGS += $(LDFLAGS)
+CONF_LIBS += $(LIBS)
+
+CONF_MPI_LDFLAGS += $(LDFLAGS)
+CONF_MPI_LIBS += $(LIBS)
+

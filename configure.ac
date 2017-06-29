@@ -30,22 +30,26 @@ case $host_os in
   darwin* )
     HARP_PLUGIN_COMPILE="-bundle"
     HARP_PLUGIN_LINK="-flat_namespace -undefined suppress"
-    HARP_PLUGIN_EXT="dylib"
+    HARP_PLUGIN_EXT="bundle"
+    HARP_SHLIB_EXT="dylib"
     ;;
   linux*)
     HARP_PLUGIN_COMPILE=""
     HARP_PLUGIN_LINK="-shared"
     HARP_PLUGIN_EXT="so"
+    HARP_SHLIB_EXT="so"
     ;;
   *BSD*)
     HARP_PLUGIN_COMPILE=""
     HARP_PLUGIN_LINK="-shared"
     HARP_PLUGIN_EXT="so"
+    HARP_SHLIB_EXT="so"
     ;;
   *)
     HARP_PLUGIN_COMPILE=""
     HARP_PLUGIN_LINK="-shared"
     HARP_PLUGIN_EXT="so"
+    HARP_SHLIB_EXT="so"
     AC_MSG_WARN([Your platform was not detected- using Linux defaults for Plugin compilation])
     ;;
 esac
@@ -123,6 +127,7 @@ AC_SUBST(HARP_PLUGIN_COMPILE)
 AC_SUBST(HARP_PLUGIN_SHARED)
 AC_SUBST(HARP_PLUGIN_LINK)
 AC_SUBST(HARP_PLUGIN_EXT)
+AC_SUBST(HARP_SHLIB_EXT)
 dnl
 dnl =========================================
 dnl Do these checks with the C compiler
