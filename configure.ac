@@ -4,7 +4,7 @@ dnl
 dnl +------------------------
 dnl | Initialize package info
 dnl +------------------------
-AC_INIT([HARP], [1.0.2], [work@theodorekisner.com], [harp], [https://theodorekisner.com/software/harp/])
+AC_INIT([HARP], [1.0.3], [work@theodorekisner.com], [harp], [https://theodorekisner.com/software/harp/])
 AC_CONFIG_SRCDIR([Makefile.am])
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_HEADERS(config.h)
@@ -17,7 +17,7 @@ dnl | current, and set revision to 0.  If any interfaces have been added
 dnl | since the last public release, then increment age.  If any interfaces 
 dnl | have been removed since the last public release, then set age to 0.
 dnl +-------------------------
-HARP_LT_VERSION="0:0:0"
+HARP_LT_VERSION="0:1:0"
 AC_SUBST(HARP_LT_VERSION)
 dnl +----------------------------------------
 dnl | Check OS.  Basically on Darwin we have to jump through hoops
