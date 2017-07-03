@@ -30,7 +30,9 @@ harp_test_SOURCES = \
 	harp_test_specslice.cpp \
 	harp_test_extract.cpp
 
-harp_test_LDADD = $(top_builddir)/src/libharp/libharp.la
+harp_test_LDADD = \
+	$(top_builddir)/src/libharp/libharp.la \
+	$(AM_LIBS)
 
 # Manual dependency on the data directory
 

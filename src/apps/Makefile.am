@@ -19,13 +19,19 @@ CLEANFILES =
 bin_PROGRAMS = harp_example_imgstack harp_extract harp_validate
 
 harp_example_imgstack_SOURCES = harp_example_imgstack.cpp
-harp_example_imgstack_LDADD = $(top_builddir)/src/libharp/libharp.la
+harp_example_imgstack_LDADD = \
+	$(top_builddir)/src/libharp/libharp.la \
+	$(AM_LIBS)
 
 harp_extract_SOURCES = harp_extract.cpp
-harp_extract_LDADD = $(top_builddir)/src/libharp/libharp.la
+harp_extract_LDADD = \
+	$(top_builddir)/src/libharp/libharp.la \
+	$(AM_LIBS)
 
 harp_validate_SOURCES = harp_validate.cpp
-harp_validate_LDADD = $(top_builddir)/src/libharp/libharp.la
+harp_validate_LDADD = \
+	$(top_builddir)/src/libharp/libharp.la \
+	$(AM_LIBS)
 
 
 if HAVE_AM_PYTHON

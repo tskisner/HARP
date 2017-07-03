@@ -23,7 +23,9 @@ harp_mpi_test_SOURCES = \
 	harp_mpi_test_spec.cpp \
 	harp_mpi_test_extract.cpp
 
-harp_mpi_test_LDADD = $(top_builddir)/src/libharp-mpi/libharp-mpi.la
+harp_mpi_test_LDADD = \
+	$(top_builddir)/src/libharp-mpi/libharp-mpi.la
+	$(AM_LIBS)
 
 
 MAINTAINERCLEANFILES =
