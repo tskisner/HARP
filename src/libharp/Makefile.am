@@ -55,7 +55,8 @@ libharp_la_LIBADD = \
 	$(top_builddir)/src/libharp/data/libharpdata.la \
 	$(top_builddir)/src/libharp/math/libharpmath.la \
 	$(top_builddir)/src/libharp/plugins/libharpplugins.la \
-	$(top_builddir)/src/libharp/extract/libharpextract.la
+	$(top_builddir)/src/libharp/extract/libharpextract.la \
+	$(AM_LIBS)
 
 
 CLEANFILES = harpconfig

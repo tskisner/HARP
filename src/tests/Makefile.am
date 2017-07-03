@@ -4,8 +4,7 @@
 AM_CPPFLAGS =
 AM_CXXFLAGS =
 AM_LDFLAGS =
-AM_LIBS = \
-$(top_builddir)/src/libharp/libharp.la
+AM_LIBS =
 
 # Append compile and linking flags based on configure variables
 include $(top_srcdir)/src/build_options.am
@@ -31,7 +30,7 @@ harp_test_SOURCES = \
 	harp_test_specslice.cpp \
 	harp_test_extract.cpp
 
-harp_test_LDADD = $(AM_LIBS)
+harp_test_LDADD = $(top_builddir)/src/libharp/libharp.la
 
 # Manual dependency on the data directory
 

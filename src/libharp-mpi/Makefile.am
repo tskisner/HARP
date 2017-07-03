@@ -46,5 +46,6 @@ libharp_mpi_la_LIBADD = \
 	$(top_builddir)/src/libharp/math/libharpmath.la \
 	$(top_builddir)/src/libharp/extract/libharpextract.la \
 	$(top_builddir)/src/libharp/plugins/libharpplugins.la \
-	$(top_builddir)/src/libharp-mpi/math/libharpmath-mpi.la
+	$(top_builddir)/src/libharp-mpi/math/libharpmath-mpi.la \
+	$(AM_LIBS)
 
